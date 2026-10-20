@@ -7670,7 +7670,7 @@
         "requestModel": "DramaClaw model pattern",
         "upstreamModel": "Upstream model",
         "modelsPlaceholder": "One per line, e.g. gpt-5 or gemini-embedding-*",
-        "modelsHint": "Use an exact model name or a trailing * prefix pattern; exact matches win.",
+        "modelsHint": "Map DramaClaw request models (for example DC-freezone-text-writer-LLM) to the selected Sub2API upstream model. Request rules may end with *; exact matches win.",
         "modelSearch": "Filter models",
         "fetchModels": "Fetch models",
         "availableModels": "Available models",

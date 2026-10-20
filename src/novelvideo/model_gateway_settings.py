@@ -1185,6 +1185,47 @@ def get_ce_media_model_catalog(
     )
 
 
+def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
+    capability = str(media_type or "").strip().lower()
+    if capability not in {CAPABILITY_IMAGE, CAPABILITY_VIDEO}:
+        return []
+    catalog: list[dict[str, Any]] = []
+    for group in get_sub2api_groups(masked=True):
+        if capability not in group.get("capabilities", []):
+            continue
+        for mapping in group.get("modelMappings", []):
+            request_model = str(mapping.get("requestPattern") or "").strip()
+            upstream_model = str(mapping.get("upstreamModel") or "").strip()
+            if not request_model or request_model.endswith("*") or not upstream_model:
+                continue
+            api_model = request_model if capability == CAPABILITY_IMAGE else f"newapi_{request_model}"
+            catalog.append(
+                {
+                    "catalogId": request_model,
+                    "catalog_id": request_model,
+                    "id": request_model,
+                    "providerId": "newapi",
+                    "provider": "newapi",
+                    "apiModel": api_model,
+                    "api_model": api_model,
+                    "gatewayModel": upstream_model,
+                    "gateway_model": upstream_model,
+                    "upstreamModel": upstream_model,
+                    "upstream_model": upstream_model,
+                    "label": f"{group['name']} · {request_model}",
+                    "mediaType": capability,
+                    "sortOrder": 100,
+                    "request": {
+                        "endpoint": "images/generations"
+                        if capability == CAPABILITY_IMAGE
+                        else "video/generations",
+                        "parameters": [],
+                    },
+                }
+            )
+    return catalog
+
+
 def get_newapi_embedding_model_config() -> dict[str, Any]:
     settings = get_model_gateway_settings()
     return _decode_embedding_model_config(settings.get("custom_newapi_embedding_model"))

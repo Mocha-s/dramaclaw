@@ -167,6 +167,38 @@ def test_agent_config_api_masks_secret_and_requires_key_for_new_host(
     assert response.json()["detail"] == "apiKey is required"
 
 
+def test_agent_config_api_does_not_require_local_newapi_provisioner(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "false")
+    monkeypatch.setattr(
+        model_gateway,
+        "refresh_model_gateway_runtime",
+        lambda: {"refreshed": True},
+    )
+    monkeypatch.setattr(
+        model_gateway,
+        "restart_shared_codex_runtime_when_idle",
+        lambda: "stopped",
+    )
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/agent/config",
+        json={
+            "mode": "third_party",
+            "baseUrl": "https://agent.example",
+            "apiKey": "sk-agent-secret",
+            "model": "vendor-agent-model",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "sk-agent-secret" not in response.text
+
+
 def test_inherited_agent_route_rotates_when_gateway_mode_changes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

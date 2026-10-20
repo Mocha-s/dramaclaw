@@ -1036,6 +1036,34 @@ def test_sub2api_text_client_sends_mapped_upstream_model(monkeypatch, tmp_path):
     assert model == "gpt-5.2"
 
 
+def test_sub2api_unmatched_text_model_reports_missing_mapping(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "openai-text",
+                "name": "OpenAI text",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-openai",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {"requestPattern": "g6", "upstreamModel": "gpt-6-sol"}
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    with pytest.raises(ValueError, match="No Sub2API text group matches DramaClaw model") as exc:
+        config.get_newapi_text_pydantic_model(
+            "FREEZONE_TEXT_WRITER_MODEL",
+            model_name_override="DC-freezone-text-writer-LLM",
+        )
+
+    assert "DC-freezone-text-writer-LLM" in str(exc.value)
+
+
 def test_sub2api_status_masks_each_capability_key(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     save_sub2api_gateway(

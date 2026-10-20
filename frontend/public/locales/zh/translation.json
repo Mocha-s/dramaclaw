@@ -7670,7 +7670,7 @@
         "requestModel": "DramaClaw 模型规则",
         "upstreamModel": "上游模型",
         "modelsPlaceholder": "每行一条，例如：gpt-5 或 gemini-embedding-*",
-        "modelsHint": "填写精确模型名，或用末尾 * 匹配前缀；精确匹配优先。",
+        "modelsHint": "左侧填写 DramaClaw 请求模型名（例如 DC-freezone-text-writer-LLM），右侧选择 Sub2API 上游模型；请求规则可用末尾 *，精确匹配优先。",
         "modelSearch": "筛选模型",
         "fetchModels": "拉取模型列表",
         "availableModels": "可用模型列表",

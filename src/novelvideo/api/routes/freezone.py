@@ -9255,9 +9255,11 @@ async def _ee_media_model_catalog(media_type: str) -> list[dict[str, Any]] | Non
         from novelvideo.model_gateway_settings import (
             MODE_CUSTOM,
             MODE_HYBRID,
+            MODE_SUB2API,
             get_ce_media_model_catalog,
             get_effective_newapi_config,
             get_official_media_model_catalog,
+            get_sub2api_media_model_catalog,
         )
         from novelvideo.shared.runtime_env import is_ce_effective
 
@@ -9278,6 +9280,8 @@ async def _ee_media_model_catalog(media_type: str) -> list[dict[str, Any]] | Non
                     _static_media_model_catalog(media_type),
                     local,
                 )
+            if mode == MODE_SUB2API:
+                return get_sub2api_media_model_catalog(media_type)
             return get_official_media_model_catalog(media_type)
         return None
     return await catalog.list_models(media_type)

@@ -879,7 +879,7 @@ async def save_official_gateway_config(body: OfficialGatewayBody) -> dict[str, A
 async def save_agent_gateway_config(body: AgentLlmConfigBody) -> dict[str, Any]:
     """Save the CE Agent route independently from media gateway selection."""
     try:
-        require_ce_gateway_management()
+        require_ce_gateway_settings_management()
     except PermissionError as exc:
         raise _permission_error(exc) from exc
     if body.mode not in {AGENT_LLM_MODE_INHERIT, AGENT_LLM_MODE_THIRD_PARTY}:
