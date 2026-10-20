@@ -26,6 +26,8 @@ import {
   useCheckOfficialMediaCatalog,
   useOfficialMediaCatalogWatcher,
   useSaveProviderChannels,
+  useSaveSub2ApiConfig,
+  useEnableSub2Api,
 } from "@/lib/queries/model-gateway";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -301,6 +303,52 @@ describe("provider channel persistence", () => {
       providerChannels: [],
       mediaModels: {},
       embeddingModel: undefined,
+    });
+  });
+});
+
+describe("Sub2API capability credentials", () => {
+  it("saves the shared endpoint and five capability keys", async () => {
+    let requestBody: unknown;
+    server.use(
+      http.post(
+        "http://localhost:3000/api/v1/model-gateway/sub2api/config",
+        async ({ request }) => {
+          requestBody = await request.json();
+          return HttpResponse.json({ ok: true, data: {} });
+        },
+      ),
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result } = renderHook(
+      () => ({ save: useSaveSub2ApiConfig(), enable: useEnableSub2Api() }),
+      { wrapper: wrapper(queryClient) },
+    );
+
+    await act(async () => {
+      await result.current.save.mutateAsync({
+        baseUrl: "https://sub2api.example/v1",
+        keys: {
+          text: "sk-text",
+          embedding: "sk-embedding",
+          image: "sk-image",
+          video: "sk-video",
+          audio: "sk-audio",
+        },
+      });
+    });
+
+    expect(requestBody).toEqual({
+      baseUrl: "https://sub2api.example/v1",
+      keys: {
+        text: "sk-text",
+        embedding: "sk-embedding",
+        image: "sk-image",
+        video: "sk-video",
+        audio: "sk-audio",
+      },
     });
   });
 });

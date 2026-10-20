@@ -604,13 +604,14 @@ NEWAPI_BASE_URL = os.environ.get("NEWAPI_BASE_URL", "")
 NEWAPI_API_KEY = os.environ.get("NEWAPI_API_KEY", "")
 
 
-def get_effective_newapi_gateway_config():
+def get_effective_newapi_gateway_config(*, capability: str = "text"):
     """Return the selected NewAPI runtime gateway credentials."""
     from novelvideo.model_gateway_settings import get_effective_newapi_config
 
     return get_effective_newapi_config(
         official_base_url=OFFICIAL_NEWAPI_BASE_URL,
         official_api_key=NEWAPI_API_KEY,
+        capability=capability,
     )
 
 
@@ -618,6 +619,7 @@ def get_newapi_runtime_credentials(
     *,
     api_key_override: str | None = None,
     base_url_override: str | None = None,
+    capability: str = "text",
     env_api_key: str = "NEWAPI_API_KEY",
     env_base_url: str = "NEWAPI_BASE_URL",
 ) -> tuple[str, str]:
@@ -628,7 +630,7 @@ def get_newapi_runtime_credentials(
     backed. Explicit per-call overrides remain available for isolated tools.
     """
 
-    gateway = get_effective_newapi_gateway_config()
+    gateway = get_effective_newapi_gateway_config(capability=capability)
     environment_backed = gateway.source == "environment"
     api_key = (
         str(api_key_override or "").strip()
@@ -1321,7 +1323,7 @@ def _image_provider_config(
             "model": model or OPENAI_IMAGE_MODEL,
         }
     if provider == "newapi":
-        gateway = get_effective_newapi_gateway_config()
+        gateway = get_effective_newapi_gateway_config(capability="image")
         return {
             "provider": provider,
             "api_key": gateway.api_key,

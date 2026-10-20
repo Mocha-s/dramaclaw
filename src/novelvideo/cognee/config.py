@@ -327,11 +327,11 @@ def _get_endpoint_env(provider: str, primary_key: str, fallback_key: str) -> str
     return ""
 
 
-def _effective_newapi_gateway() -> tuple[str, str]:
+def _effective_newapi_gateway(*, capability: str = "text") -> tuple[str, str]:
     try:
         from novelvideo.config import get_newapi_runtime_credentials
 
-        return get_newapi_runtime_credentials()
+        return get_newapi_runtime_credentials(capability=capability)
     except Exception:
         if uses_local_ce_runtime():
             # CE credentials are never allowed to fall back to deployment env.
@@ -1236,10 +1236,10 @@ def _apply_embedding_env(llm_provider: str, api_key: str) -> tuple[str, str, str
         ):
             embedding_api_key = os.getenv("OPENROUTER_API_KEY", "")
         elif _uses_newapi_gateway(raw_embedding_provider):
-            embedding_api_key = _effective_newapi_gateway()[0]
+            embedding_api_key = _effective_newapi_gateway(capability="embedding")[0]
         else:
             embedding_api_key = (
-                _effective_newapi_gateway()[0]
+                _effective_newapi_gateway(capability="embedding")[0]
                 or os.getenv("EMBEDDING_API_KEY", "")
                 or os.getenv("OPENAI_API_KEY", "")
             )

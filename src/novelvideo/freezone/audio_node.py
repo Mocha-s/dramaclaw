@@ -712,7 +712,9 @@ def _newapi_audio_endpoint(base_url: str | None = None) -> str:
     if base_url is None:
         from novelvideo.config import get_newapi_runtime_credentials
 
-        _api_key, resolved_base_url = get_newapi_runtime_credentials()
+        _api_key, resolved_base_url = get_newapi_runtime_credentials(
+            capability="audio"
+        )
     else:
         resolved_base_url = base_url
     endpoint = str(resolved_base_url or "http://localhost:3000/v1").rstrip("/")
@@ -797,6 +799,7 @@ async def _write_newapi_audio_speech(
         key, resolved_base_url = get_newapi_runtime_credentials(
             api_key_override=api_key,
             base_url_override=base_url,
+            capability="audio",
         )
     key = str(key or "").strip()
     if not key:

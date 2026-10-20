@@ -1962,7 +1962,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             from novelvideo.config import get_effective_newapi_gateway_config
             from novelvideo.shared.runtime_env import is_ce_effective
 
-            gateway = get_effective_newapi_gateway_config()
+            gateway = get_effective_newapi_gateway_config(capability="video")
             if is_ce_effective():
                 try:
                     from novelvideo.model_gateway_settings import (

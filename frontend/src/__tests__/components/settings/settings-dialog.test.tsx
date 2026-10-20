@@ -12,6 +12,7 @@ const modelGatewayMocks = vi.hoisted(() => ({
   config: undefined as Record<string, unknown> | undefined,
   saveAgent: vi.fn(),
   saveBrainClaw: vi.fn(),
+  saveSub2Api: vi.fn(),
   setCustomLlmMode: vi.fn(),
 }));
 const freezoneAgentConfigMocks = vi.hoisted(() => ({
@@ -72,6 +73,7 @@ vi.mock("@/lib/queries/model-gateway", () => ({
   useEnableOfficial: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableCustom: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableHybrid: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useEnableSub2Api: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableBrainClaw: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveOfficialConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveAgentLlmConfig: () => ({
@@ -80,6 +82,10 @@ vi.mock("@/lib/queries/model-gateway", () => ({
   }),
   useSaveBrainClawConfig: () => ({
     mutateAsync: modelGatewayMocks.saveBrainClaw,
+    isPending: false,
+  }),
+  useSaveSub2ApiConfig: () => ({
+    mutateAsync: modelGatewayMocks.saveSub2Api,
     isPending: false,
   }),
   useSetCustomLlmMode: () => ({
@@ -140,6 +146,20 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.gatewayNotConfiguredImpact": "模型网关未配置",
         "settings.modelConfig.modes.official": "官方渠道",
         "settings.modelConfig.modes.custom": "自定义 NewAPI",
+        "settings.modelConfig.modes.hybrid": "本地 + 官方混合",
+        "settings.modelConfig.modes.sub2api": "Sub2API",
+        "settings.modelConfig.sub2api.description": "Sub2API 配置",
+        "settings.modelConfig.sub2api.baseUrl": "Sub2API 地址",
+        "settings.modelConfig.sub2api.keyPlaceholder": "输入 API Key",
+        "settings.modelConfig.sub2api.keyHint": "能力组 Key",
+        "settings.modelConfig.sub2api.save": "保存 Sub2API 配置",
+        "settings.modelConfig.sub2api.saved": "Sub2API 配置已保存",
+        "settings.modelConfig.sub2api.missingFields": "请填写完整配置",
+        "settings.modelConfig.sub2api.capabilities.text": "文本 / 视觉",
+        "settings.modelConfig.sub2api.capabilities.embedding": "Embedding",
+        "settings.modelConfig.sub2api.capabilities.image": "图片",
+        "settings.modelConfig.sub2api.capabilities.video": "视频",
+        "settings.modelConfig.sub2api.capabilities.audio": "音频",
         "settings.modelConfig.official.description": "官方渠道说明",
         "settings.modelConfig.official.registerLink": "注册",
         "settings.modelConfig.official.save": "保存并启用",
@@ -364,6 +384,7 @@ beforeEach(() => {
   modelGatewayMocks.config = undefined;
   modelGatewayMocks.saveAgent.mockReset();
   modelGatewayMocks.saveBrainClaw.mockReset();
+  modelGatewayMocks.saveSub2Api.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockResolvedValue({ ok: true });
   freezoneAgentConfigMocks.delete.mockReset();
@@ -393,6 +414,56 @@ describe("SettingsDialog pages", () => {
     );
     expect(screen.getByText("选择模型网关渠道")).toBeInTheDocument();
     expect(screen.getByText("Agent 模型")).toBeInTheDocument();
+  });
+
+  it("saves one API key for each Sub2API capability", async () => {
+    modelGatewayMocks.config = {
+      mode: "official",
+      effective: { source: "official", baseUrl: "", apiKeyPreview: "", configured: false },
+      llmEffective: { mode: "official", source: "official", baseUrl: "", apiKeyPreview: "", configured: false, model: "", brainclaw: true },
+      agent: { mode: "inherit", baseUrl: "", apiKeyPreview: "", configured: false, model: "" },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: false, adminBaseUrl: "", tokenName: "", tokenId: "" },
+      sub2api: {
+        baseUrl: "",
+        configured: false,
+        keys: Object.fromEntries(
+          ["text", "embedding", "image", "video", "audio"].map((capability) => [
+            capability,
+            { apiKeyPreview: "", configured: false },
+          ]),
+        ),
+      },
+    };
+    modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
+
+    renderSettingsDialog();
+    fireEvent.click(screen.getByRole("tab", { name: "Sub2API" }));
+    const baseUrl = document.querySelector('input[name="sub2api-base-url"]');
+    expect(baseUrl).not.toBeNull();
+    fireEvent.change(baseUrl!, {
+      target: { value: "https://sub2api.example/v1" },
+    });
+    const keys = ["text", "embedding", "image", "video", "audio"];
+    for (const capability of keys) {
+      const input = document.querySelector(`input[name="sub2api-${capability}-key"]`);
+      expect(input).not.toBeNull();
+      fireEvent.change(input!, { target: { value: `sk-${capability}` } });
+    }
+    fireEvent.click(screen.getByRole("button", { name: "保存 Sub2API 配置" }));
+
+    await waitFor(() => {
+      expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
+        baseUrl: "https://sub2api.example/v1",
+        keys: {
+          text: "sk-text",
+          embedding: "sk-embedding",
+          image: "sk-image",
+          video: "sk-video",
+          audio: "sk-audio",
+        },
+      });
+    });
   });
 
   it("saves an independent third-party Agent model", async () => {
