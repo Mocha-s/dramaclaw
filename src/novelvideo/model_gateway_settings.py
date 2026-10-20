@@ -1467,7 +1467,7 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
             or "codex"
         ).strip().lower()
         selected_model = str(model or "").strip() or (
-            str(os.environ.get("HERMES_MODEL", "") or "").strip()
+            str(os.environ.get("HERMES_MODEL", "DC-hermes-LLM") or "DC-hermes-LLM").strip()
             if backend == "hermes"
             else str(os.environ.get("CODEX_MODEL", "DC-codex-agent-LLM") or "").strip()
         )
