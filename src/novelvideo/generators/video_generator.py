@@ -1953,6 +1953,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         )
 
         self.egress_context = _video_egress_context(egress_context)
+        resolved_gateway_model = ""
         if self.egress_context is not None and self.egress_context.is_organization:
             # Organization egress is request-scoped: the credential never lands on
             # the instance, so there is no local gateway to select a mode from.
@@ -1962,7 +1963,10 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             from novelvideo.config import get_effective_newapi_gateway_config
             from novelvideo.shared.runtime_env import is_ce_effective
 
-            gateway = get_effective_newapi_gateway_config(capability="video")
+            gateway = get_effective_newapi_gateway_config(
+                capability="video",
+                model=model or NEWAPI_VIDEO_MODEL,
+            )
             if is_ce_effective():
                 try:
                     from novelvideo.model_gateway_settings import (
@@ -1987,7 +1991,10 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                     pass
             self.api_key = api_key if api_key is not None else gateway.api_key
             self.base_url = (endpoint or gateway.base_url).rstrip("/")
+            resolved_gateway_model = gateway.model
         self.model = model or NEWAPI_VIDEO_MODEL
+        if resolved_gateway_model:
+            self.model = resolved_gateway_model
         self.resolution = resolution or NEWAPI_VIDEO_RESOLUTION
         self.model_params = model_params or {}
         self.request_schema = request_schema or {}

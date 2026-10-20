@@ -329,26 +329,50 @@ describe("Sub2API capability credentials", () => {
 
     await act(async () => {
       await result.current.save.mutateAsync({
-        baseUrl: "https://sub2api.example/v1",
-        keys: {
-          text: "sk-text",
-          embedding: "sk-embedding",
-          image: "sk-image",
-          video: "sk-video",
-          audio: "sk-audio",
-        },
+        groups: [
+          {
+            id: "openai-main",
+            name: "OpenAI main",
+            protocol: "openai",
+            baseUrl: "https://sub2api.example/v1",
+            apiKey: "sk-openai",
+            capabilities: ["text", "image"],
+            modelMappings: [{ requestPattern: "DC-*", upstreamModel: "gpt-4o" }],
+          },
+          {
+            id: "gemini-embedding",
+            name: "Gemini embedding",
+            protocol: "gemini",
+            baseUrl: "https://sub2api.example/v1beta",
+            apiKey: "sk-gemini",
+            capabilities: ["embedding"],
+            modelMappings: [{ requestPattern: "DC-cognee-embedding", upstreamModel: "gemini-embedding-001" }],
+          },
+        ],
       });
     });
 
     expect(requestBody).toEqual({
-      baseUrl: "https://sub2api.example/v1",
-      keys: {
-        text: "sk-text",
-        embedding: "sk-embedding",
-        image: "sk-image",
-        video: "sk-video",
-        audio: "sk-audio",
-      },
+      groups: [
+        {
+          id: "openai-main",
+          name: "OpenAI main",
+          protocol: "openai",
+          baseUrl: "https://sub2api.example/v1",
+          apiKey: "sk-openai",
+          capabilities: ["text", "image"],
+          modelMappings: [{ requestPattern: "DC-*", upstreamModel: "gpt-4o" }],
+        },
+        {
+          id: "gemini-embedding",
+          name: "Gemini embedding",
+          protocol: "gemini",
+          baseUrl: "https://sub2api.example/v1beta",
+          apiKey: "sk-gemini",
+          capabilities: ["embedding"],
+          modelMappings: [{ requestPattern: "DC-cognee-embedding", upstreamModel: "gemini-embedding-001" }],
+        },
+      ],
     });
   });
 });

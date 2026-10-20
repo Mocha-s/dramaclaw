@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ const modelGatewayMocks = vi.hoisted(() => ({
   saveAgent: vi.fn(),
   saveBrainClaw: vi.fn(),
   saveSub2Api: vi.fn(),
+  fetchSub2ApiModels: vi.fn(),
   setCustomLlmMode: vi.fn(),
 }));
 const freezoneAgentConfigMocks = vi.hoisted(() => ({
@@ -88,6 +89,7 @@ vi.mock("@/lib/queries/model-gateway", () => ({
     mutateAsync: modelGatewayMocks.saveSub2Api,
     isPending: false,
   }),
+  useFetchSub2ApiModels: () => ({ mutateAsync: modelGatewayMocks.fetchSub2ApiModels, isPending: false }),
   useSetCustomLlmMode: () => ({
     mutateAsync: modelGatewayMocks.setCustomLlmMode,
     isPending: false,
@@ -149,6 +151,23 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.modes.hybrid": "本地 + 官方混合",
         "settings.modelConfig.modes.sub2api": "Sub2API",
         "settings.modelConfig.sub2api.description": "Sub2API 配置",
+        "settings.modelConfig.sub2api.newGroup": "新账号组",
+        "settings.modelConfig.sub2api.addGroup": "添加账号组",
+        "settings.modelConfig.sub2api.removeGroup": "删除账号组",
+        "settings.modelConfig.sub2api.groupName": "账号组名称",
+        "settings.modelConfig.sub2api.protocol": "协议",
+        "settings.modelConfig.sub2api.apiKey": "API Key",
+        "settings.modelConfig.sub2api.capabilitiesLabel": "支持能力",
+        "settings.modelConfig.sub2api.models": "模型匹配规则",
+        "settings.modelConfig.sub2api.requestModel": "DramaClaw 模型规则",
+        "settings.modelConfig.sub2api.upstreamModel": "上游模型",
+        "settings.modelConfig.sub2api.modelsPlaceholder": "每行一条",
+        "settings.modelConfig.sub2api.modelsHint": "匹配模型",
+        "settings.modelConfig.sub2api.fetchModels": "拉取模型列表",
+        "settings.modelConfig.sub2api.modelSearch": "筛选模型",
+        "settings.modelConfig.sub2api.availableModels": "可用模型列表",
+        "settings.modelConfig.sub2api.noModels": "没有匹配模型",
+        "settings.modelConfig.sub2api.fetchFailed": "拉取模型失败",
         "settings.modelConfig.sub2api.baseUrl": "Sub2API 地址",
         "settings.modelConfig.sub2api.keyPlaceholder": "输入 API Key",
         "settings.modelConfig.sub2api.keyHint": "能力组 Key",
@@ -385,6 +404,7 @@ beforeEach(() => {
   modelGatewayMocks.saveAgent.mockReset();
   modelGatewayMocks.saveBrainClaw.mockReset();
   modelGatewayMocks.saveSub2Api.mockReset();
+  modelGatewayMocks.fetchSub2ApiModels.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockResolvedValue({ ok: true });
   freezoneAgentConfigMocks.delete.mockReset();
@@ -416,7 +436,7 @@ describe("SettingsDialog pages", () => {
     expect(screen.getByText("Agent 模型")).toBeInTheDocument();
   });
 
-  it("saves one API key for each Sub2API capability", async () => {
+  it("lets users create partial OpenAI and Gemini groups", async () => {
     modelGatewayMocks.config = {
       mode: "official",
       effective: { source: "official", baseUrl: "", apiKeyPreview: "", configured: false },
@@ -425,43 +445,66 @@ describe("SettingsDialog pages", () => {
       official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
       custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: false, adminBaseUrl: "", tokenName: "", tokenId: "" },
       sub2api: {
-        baseUrl: "",
         configured: false,
-        keys: Object.fromEntries(
-          ["text", "embedding", "image", "video", "audio"].map((capability) => [
-            capability,
-            { apiKeyPreview: "", configured: false },
-          ]),
-        ),
+        groups: [],
       },
     };
     modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
 
     renderSettingsDialog();
     fireEvent.click(screen.getByRole("tab", { name: "Sub2API" }));
-    const baseUrl = document.querySelector('input[name="sub2api-base-url"]');
-    expect(baseUrl).not.toBeNull();
-    fireEvent.change(baseUrl!, {
-      target: { value: "https://sub2api.example/v1" },
-    });
-    const keys = ["text", "embedding", "image", "video", "audio"];
-    for (const capability of keys) {
-      const input = document.querySelector(`input[name="sub2api-${capability}-key"]`);
-      expect(input).not.toBeNull();
-      fireEvent.change(input!, { target: { value: `sk-${capability}` } });
-    }
+    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
+    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
+    const [openaiGroup, geminiGroup] = screen.getAllByRole("group").map((element) => within(element));
+
+    fireEvent.change(openaiGroup.getByLabelText("账号组名称"), { target: { value: "OpenAI main" } });
+    fireEvent.change(openaiGroup.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1" } });
+    fireEvent.change(openaiGroup.getByLabelText("API Key"), { target: { value: "sk-openai" } });
+    modelGatewayMocks.fetchSub2ApiModels
+      .mockResolvedValueOnce({ ok: true, data: { models: ["gpt-5", "gpt-4o"] } })
+      .mockResolvedValueOnce({ ok: true, data: { models: ["gemini-embedding-001"] } });
+    fireEvent.click(openaiGroup.getByRole("button", { name: "拉取模型列表" }));
+    await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(1));
+    fireEvent.change(openaiGroup.getByLabelText("筛选模型"), { target: { value: "gpt-5" } });
+    fireEvent.click(openaiGroup.getByLabelText("gpt-5"));
+    fireEvent.change(openaiGroup.getByLabelText("DramaClaw 模型规则"), { target: { value: "DC-codex-agent-LLM" } });
+    fireEvent.click(openaiGroup.getByLabelText("文本 / 视觉"));
+    fireEvent.click(openaiGroup.getByLabelText("图片"));
+
+    fireEvent.change(geminiGroup.getByLabelText("账号组名称"), { target: { value: "Gemini embedding" } });
+    fireEvent.change(geminiGroup.getByLabelText("协议"), { target: { value: "gemini" } });
+    fireEvent.change(geminiGroup.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1beta" } });
+    fireEvent.change(geminiGroup.getByLabelText("API Key"), { target: { value: "sk-gemini" } });
+    fireEvent.click(geminiGroup.getByRole("button", { name: "拉取模型列表" }));
+    await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(2));
+    fireEvent.click(geminiGroup.getByLabelText("文本 / 视觉"));
+    fireEvent.click(geminiGroup.getByLabelText("Embedding"));
+    fireEvent.click(geminiGroup.getByLabelText("gemini-embedding-001"));
+    fireEvent.change(geminiGroup.getByLabelText("DramaClaw 模型规则"), { target: { value: "DC-cognee-embedding" } });
     fireEvent.click(screen.getByRole("button", { name: "保存 Sub2API 配置" }));
 
     await waitFor(() => {
       expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
-        baseUrl: "https://sub2api.example/v1",
-        keys: {
-          text: "sk-text",
-          embedding: "sk-embedding",
-          image: "sk-image",
-          video: "sk-video",
-          audio: "sk-audio",
-        },
+        groups: [
+          {
+            id: expect.any(String),
+            name: "OpenAI main",
+            protocol: "openai",
+            baseUrl: "https://sub2api.example/v1",
+            apiKey: "sk-openai",
+            capabilities: ["image"],
+            modelMappings: [{ requestPattern: "DC-codex-agent-LLM", upstreamModel: "gpt-5" }],
+          },
+          {
+            id: expect.any(String),
+            name: "Gemini embedding",
+            protocol: "gemini",
+            baseUrl: "https://sub2api.example/v1beta",
+            apiKey: "sk-gemini",
+            capabilities: ["embedding"],
+            modelMappings: [{ requestPattern: "DC-cognee-embedding", upstreamModel: "gemini-embedding-001" }],
+          },
+        ],
       });
     });
   });

@@ -676,6 +676,7 @@ def _project_embedding_request_kwargs(
     """Apply the current project's immutable model and gateway to LiteLLM kwargs."""
 
     spec = require_current_embedding_model_spec()
+    from novelvideo.embedding_models import embedding_gateway_model
     from novelvideo.model_gateway_runtime import current_model_gateway_context
 
     context = current_model_gateway_context()
@@ -691,7 +692,9 @@ def _project_embedding_request_kwargs(
 
     routed = dict(kwargs)
     routed["custom_llm_provider"] = "openai"
-    routed["model"] = _normalize_embedding_model("newapi", spec.internal_model)
+    routed["model"] = _normalize_embedding_model(
+        "newapi", embedding_gateway_model(spec)
+    )
     routed["api_key"] = api_key
     routed["api_base"] = base_url
     if spec.send_dimensions:

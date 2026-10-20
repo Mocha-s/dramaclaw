@@ -708,12 +708,13 @@ async def _write_edge_tts_speech(
         raise RuntimeError(result.error or "Edge TTS generation failed")
 
 
-def _newapi_audio_endpoint(base_url: str | None = None) -> str:
+def _newapi_audio_endpoint(base_url: str | None = None, *, model: str = "") -> str:
     if base_url is None:
         from novelvideo.config import get_newapi_runtime_credentials
 
         _api_key, resolved_base_url = get_newapi_runtime_credentials(
-            capability="audio"
+            capability="audio",
+            model=model,
         )
     else:
         resolved_base_url = base_url
@@ -800,6 +801,7 @@ async def _write_newapi_audio_speech(
             api_key_override=api_key,
             base_url_override=base_url,
             capability="audio",
+            model=model,
         )
     key = str(key or "").strip()
     if not key:
@@ -823,7 +825,7 @@ async def _write_newapi_audio_speech(
         async with httpx.AsyncClient(
             timeout=timeout_seconds, follow_redirects=True
         ) as client:
-            endpoint = _newapi_audio_endpoint(resolved_base_url)
+            endpoint = _newapi_audio_endpoint(resolved_base_url, model=model)
             transport_started = True
             response = None
             max_attempts = 1 if lease is not None else 3

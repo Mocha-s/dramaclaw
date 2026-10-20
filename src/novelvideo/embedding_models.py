@@ -139,7 +139,10 @@ def embedding_gateway_credentials(spec: EmbeddingModelSpec) -> tuple[str, str]:
 
     if is_ce_effective():
         gateway = (
-            get_effective_newapi_config(capability="embedding")
+            get_effective_newapi_config(
+                capability="embedding",
+                model=spec.internal_model,
+            )
             if spec.gateway == MODE_SUB2API
             else get_ce_newapi_config_for_mode(spec.gateway)
         )
@@ -148,6 +151,16 @@ def embedding_gateway_credentials(spec: EmbeddingModelSpec) -> tuple[str, str]:
         raise RuntimeError("Custom embedding gateway is only available in CE")
     gateway = get_effective_newapi_config(official_base_url=OFFICIAL_NEWAPI_BASE_URL)
     return gateway.api_key, gateway.base_url
+
+
+def embedding_gateway_model(spec: EmbeddingModelSpec) -> str:
+    if is_ce_effective() and spec.gateway == MODE_SUB2API:
+        gateway = get_effective_newapi_config(
+            capability="embedding",
+            model=spec.internal_model,
+        )
+        return gateway.model or spec.internal_model
+    return spec.internal_model
 
 
 def current_embedding_model_spec() -> EmbeddingModelSpec | None:

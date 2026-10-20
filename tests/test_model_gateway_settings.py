@@ -49,6 +49,7 @@ from novelvideo.model_gateway_settings import (
     save_official_newapi_key,
     save_custom_newapi_gateway,
     save_sub2api_gateway,
+    save_sub2api_groups,
     save_newapi_embedding_model_config,
     save_newapi_media_model_mappings,
     save_media_relay_config,
@@ -869,20 +870,50 @@ def test_sub2api_routes_save_masks_keys_and_enable_without_local_provisioner(
     app = FastAPI()
     app.include_router(model_gateway.router)
     client = TestClient(app)
-    capabilities = ("text", "embedding", "image", "video", "audio")
-    keys = {capability: f"sk-{capability}-secret" for capability in capabilities}
+    groups = [
+        {
+            "id": "openai-main",
+            "name": "OpenAI main",
+            "protocol": "openai",
+            "baseUrl": "https://sub2api.example/v1",
+            "apiKey": "sk-openai-secret",
+            "capabilities": ["text", "image"],
+            "models": ["gpt-*"] ,
+        },
+        {
+            "id": "gemini-embedding",
+            "name": "Gemini embedding",
+            "protocol": "gemini",
+            "baseUrl": "https://sub2api.example/v1beta",
+            "apiKey": "sk-gemini-secret",
+            "capabilities": ["embedding"],
+            "models": ["gemini-embedding-*"] ,
+        },
+    ]
 
     saved = client.post(
         "/model-gateway/sub2api/config",
-        json={"baseUrl": "https://sub2api.example/v1", "keys": keys},
+        json={"groups": groups},
     )
 
     assert saved.status_code == 200
-    assert "sk-image-secret" not in saved.text
-    assert saved.json()["data"]["sub2api"]["keys"]["image"]["configured"] is True
+    assert "sk-openai-secret" not in saved.text
+    assert saved.json()["data"]["sub2api"]["configured"] is True
+    assert len(saved.json()["data"]["sub2api"]["groups"]) == 2
     enabled = client.post("/model-gateway/sub2api/enable")
     assert enabled.status_code == 200
     assert enabled.json()["data"]["mode"] == MODE_SUB2API
+
+    updated = client.post(
+        "/model-gateway/sub2api/config",
+        json={"groups": [{**groups[0], "apiKey": ""}]},
+    )
+    assert updated.status_code == 200
+    assert get_effective_newapi_config(capability="image", model="gpt-4o").api_key == "sk-openai-secret"
+
+    cleared = client.post("/model-gateway/sub2api/config", json={"groups": []})
+    assert cleared.status_code == 200
+    assert cleared.json()["data"]["sub2api"]["groups"] == []
 
 
 def test_sub2api_rejects_endpoint_change_without_all_new_keys(monkeypatch, tmp_path):
@@ -900,11 +931,22 @@ def test_sub2api_rejects_endpoint_change_without_all_new_keys(monkeypatch, tmp_p
 
     response = TestClient(app).post(
         "/model-gateway/sub2api/config",
-        json={"baseUrl": "https://new-sub2api.example/v1", "keys": {"text": "sk-new"}},
+        json={
+            "groups": [
+                {
+                    "id": "text",
+                    "name": "Text",
+                    "protocol": "openai",
+                    "baseUrl": "https://new-sub2api.example/v1",
+                    "capabilities": ["text"],
+                    "models": ["*"] ,
+                }
+            ]
+        },
     )
 
     assert response.status_code == 400
-    assert "all capability API keys are required" in response.json()["detail"]
+    assert "API Key is required when changing the Base URL" in response.json()["detail"]
     assert get_effective_newapi_config().base_url == "https://old-sub2api.example/v1"
 
 
@@ -915,13 +957,15 @@ def test_sub2api_rejects_non_http_base_url(monkeypatch, tmp_path):
 
     response = TestClient(app).post(
         "/model-gateway/sub2api/config",
-        json={
+        json={"groups": [{
+            "id": "text",
+            "name": "Text",
+            "protocol": "openai",
             "baseUrl": "file:///tmp/sub2api",
-            "keys": {
-                capability: f"sk-{capability}"
-                for capability in ("text", "embedding", "image", "video", "audio")
-            },
-        },
+            "apiKey": "sk-text",
+            "capabilities": ["text"],
+            "models": ["*"] ,
+        }]},
     )
 
     assert response.status_code == 400
@@ -960,6 +1004,38 @@ def test_sub2api_missing_capability_key_fails_closed(monkeypatch, tmp_path):
     assert get_effective_newapi_config(capability=CAPABILITY_IMAGE).api_key == ""
 
 
+def test_sub2api_text_client_sends_mapped_upstream_model(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "openai-text",
+                "name": "OpenAI text",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-openai",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "DC-codex-agent-LLM",
+                        "upstreamModel": "gpt-5.2",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+    monkeypatch.setattr(config, "_get_newapi_text_model_profile", lambda _model: None)
+    monkeypatch.setattr(config, "_newapi_text_openai_model", lambda model_name, **_kwargs: model_name)
+
+    model = config.get_newapi_text_pydantic_model(
+        "CODEX_MODEL",
+        model_name_override="DC-codex-agent-LLM",
+    )
+
+    assert model == "gpt-5.2"
+
+
 def test_sub2api_status_masks_each_capability_key(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     save_sub2api_gateway(
@@ -977,9 +1053,225 @@ def test_sub2api_status_masks_each_capability_key(monkeypatch, tmp_path):
     status = build_model_gateway_status()
 
     assert status["mode"] == MODE_SUB2API
-    assert status["sub2api"]["baseUrl"] == "https://sub2api.example/v1"
-    assert status["sub2api"]["keys"][CAPABILITY_IMAGE]["apiKeyPreview"] == "sk-i...cret"
+    assert status["sub2api"]["groups"][0]["apiKeyPreview"] == "sk-t...cret"
     assert "sk-image-secret" not in json.dumps(status)
+
+
+def test_sub2api_supports_partial_user_defined_groups_and_model_matching(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "openai-main",
+                "name": "OpenAI main",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-openai-secret",
+                "capabilities": ["text", "image"],
+                "modelMappings": [
+                    {"requestPattern": "DC-codex-agent-LLM", "upstreamModel": "gpt-5.2"},
+                    {"requestPattern": "DC-image-*", "upstreamModel": "gpt-4o"},
+                ],
+            },
+            {
+                "id": "gemini-embedding",
+                "name": "Gemini embedding",
+                "protocol": "gemini",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-gemini-secret",
+                "capabilities": ["embedding"],
+                "modelMappings": [
+                    {"requestPattern": "DC-cognee-embedding", "upstreamModel": "gemini-embedding-001"}
+                ],
+            },
+        ],
+        activate=True,
+    )
+
+    openai = get_effective_newapi_config(capability="text", model="DC-codex-agent-LLM")
+    assert openai.api_key == "sk-openai-secret"
+    assert openai.model == "gpt-5.2"
+    embedding = get_effective_newapi_config(
+        capability="embedding", model="DC-cognee-embedding"
+    )
+    assert embedding.api_key == "sk-gemini-secret"
+    assert embedding.model == "gemini-embedding-001"
+    assert get_effective_newapi_config(capability="video", model="seedance-2").base_url == ""
+
+
+@pytest.mark.parametrize(
+    ("protocol", "base_url", "upstream_body", "expected_models", "expected_header"),
+    [
+        (
+            "openai",
+            "https://openai.sub2api.test/v1",
+            {"data": [{"id": "gpt-5"}, {"id": "gpt-4o"}]},
+            ["gpt-5", "gpt-4o"],
+            "Authorization",
+        ),
+        (
+            "gemini",
+            "https://gemini.sub2api.test/v1beta",
+            {"models": [{"name": "models/gemini-3-flash", "baseModelId": "gemini-3-flash"}]},
+            ["gemini-3-flash"],
+            "x-goog-api-key",
+        ),
+    ],
+)
+def test_sub2api_model_discovery_uses_protocol_auth_and_normalizes_models(
+    monkeypatch, tmp_path, protocol, base_url, upstream_body, expected_models, expected_header
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    requests: list[dict[str, Any]] = []
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, url, *, headers, params):
+            requests.append({"url": url, "headers": headers, "params": params})
+            return Response(200, json=upstream_body)
+
+    monkeypatch.setattr(model_gateway.httpx, "Client", FakeClient)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/sub2api/models",
+        json={
+            "id": "group-1",
+            "protocol": protocol,
+            "baseUrl": base_url,
+            "apiKey": "sk-group-secret",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["models"] == expected_models
+    assert "sk-group-secret" not in response.text
+    request = requests[0]
+    if expected_header == "Authorization":
+        assert request["headers"][expected_header] == "Bearer sk-group-secret"
+    else:
+        assert request["headers"][expected_header] == "sk-group-secret"
+
+
+def test_sub2api_model_discovery_hides_upstream_error_body(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, *_args, **_kwargs):
+            return Response(401, text="invalid key sk-sensitive-secret")
+
+    monkeypatch.setattr(model_gateway.httpx, "Client", FakeClient)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/sub2api/models",
+        json={
+            "id": "group-1",
+            "protocol": "openai",
+            "baseUrl": "https://sub2api.test/v1",
+            "apiKey": "sk-sensitive-secret",
+        },
+    )
+
+    assert response.status_code == 502
+    assert "sk-sensitive-secret" not in response.text
+    assert "invalid key" not in response.text
+
+
+def test_sub2api_exact_model_match_beats_prefix_and_ambiguous_matches_fail_closed(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "prefix",
+                "name": "Prefix",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-prefix",
+                "capabilities": ["text"],
+                "modelMappings": [{"requestPattern": "DC-*", "upstreamModel": "gpt-4o-mini"}],
+            },
+            {
+                "id": "exact",
+                "name": "Exact",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-exact",
+                "capabilities": ["text"],
+                "modelMappings": [{"requestPattern": "DC-codex-agent-LLM", "upstreamModel": "gpt-5"}],
+            },
+        ],
+        activate=True,
+    )
+    exact = get_effective_newapi_config(capability="text", model="DC-codex-agent-LLM")
+    assert exact.api_key == "sk-exact"
+    assert exact.model == "gpt-5"
+
+    save_sub2api_groups(
+        [
+            {
+                "id": "a",
+                "name": "A",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-a",
+                "capabilities": ["text"],
+                "modelMappings": [{"requestPattern": "DC-*", "upstreamModel": "claude-sonnet"}],
+            },
+            {
+                "id": "b",
+                "name": "B",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-b",
+                "capabilities": ["text"],
+                "modelMappings": [{"requestPattern": "DC-*", "upstreamModel": "claude-opus"}],
+            },
+        ],
+        activate=True,
+    )
+    assert get_effective_newapi_config(capability="text", model="DC-codex-agent-LLM").api_key == ""
+
+    save_sub2api_groups(
+        [
+            {
+                "id": "one-group-two-models",
+                "name": "One group, ambiguous default",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-one-group",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {"requestPattern": "DC-*", "upstreamModel": "gpt-4o"},
+                    {"requestPattern": "DC-*", "upstreamModel": "gpt-5"},
+                ],
+            }
+        ],
+        activate=True,
+    )
+    assert get_effective_newapi_config(capability="text", model="DC-codex-agent-LLM").api_key == ""
 
 
 def test_model_gateway_official_database_key_overrides_env(monkeypatch, tmp_path):

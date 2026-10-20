@@ -39,15 +39,19 @@ export type Sub2ApiCapability =
   | "video"
   | "audio";
 
-export interface Sub2ApiCapabilityConfig {
+export interface Sub2ApiAccountGroup {
+  id: string;
+  name: string;
+  protocol: "openai" | "gemini";
+  baseUrl: string;
   apiKeyPreview: string;
-  configured: boolean;
+  capabilities: Sub2ApiCapability[];
+  modelMappings: Array<{ requestPattern: string; upstreamModel: string }>;
 }
 
 export interface Sub2ApiGatewayConfig {
-  baseUrl: string;
   configured: boolean;
-  keys: Record<Sub2ApiCapability, Sub2ApiCapabilityConfig>;
+  groups: Sub2ApiAccountGroup[];
 }
 
 export interface EffectiveGatewayConfig {
@@ -185,8 +189,18 @@ export interface SaveBrainClawConfigInput {
 }
 
 export interface SaveSub2ApiConfigInput {
+  groups: Array<Omit<Sub2ApiAccountGroup, "apiKeyPreview"> & { apiKey?: string }>;
+}
+
+export interface FetchSub2ApiModelsInput {
+  id?: string;
+  protocol: "openai" | "gemini";
   baseUrl: string;
-  keys: Partial<Record<Sub2ApiCapability, string>>;
+  apiKey?: string;
+}
+
+export interface FetchSub2ApiModelsResult {
+  models: string[];
 }
 
 export interface SaveAgentLlmConfigInput {
@@ -547,6 +561,19 @@ export function useEnableSub2Api() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.modelGateway() });
     },
+  });
+}
+
+export function useFetchSub2ApiModels() {
+  return useMutation({
+    mutationFn: (input: FetchSub2ApiModelsInput) =>
+      api
+        .post("api/v1/model-gateway/sub2api/models", {
+          json: input,
+          timeout: 30_000,
+          throwHttpErrors: false,
+        })
+        .json<OkResponse<FetchSub2ApiModelsResult> | ErrorResponse>(),
   });
 }
 

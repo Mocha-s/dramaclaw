@@ -771,7 +771,7 @@ def make_contact_sheet(
     sheet.save(output_dir / "scene_360_contact.jpg", quality=92)
 
 
-def _resolve_newapi_credentials() -> tuple[str, str]:
+def _resolve_newapi_credentials(*, model: str = "") -> tuple[str, str, str]:
     """Resolve newapi credentials, honoring an organization gateway injection.
 
     This builder runs in its own OS process (`stage_asset_tasks.run_scene_360`
@@ -790,17 +790,22 @@ def _resolve_newapi_credentials() -> tuple[str, str]:
     from novelvideo.config import get_newapi_runtime_credentials
 
     if os.environ.get("ST_ORG_EGRESS_MODE") != "1":
-        return get_newapi_runtime_credentials(capability="image")
+        from novelvideo.config import get_effective_newapi_gateway_config
+
+        gateway = get_effective_newapi_gateway_config(capability="image", model=model)
+        return gateway.api_key, gateway.base_url, gateway.model or model
 
     org_key = (os.environ.get("ST_ORG_GATEWAY_API_KEY") or "").strip()
     org_base_url = (os.environ.get("ST_ORG_GATEWAY_BASE_URL") or "").strip()
     if not org_key or not org_base_url:
         raise RuntimeError("ORG_CONTEXT_REQUIRED")
-    return get_newapi_runtime_credentials(
+    key, base_url = get_newapi_runtime_credentials(
         api_key_override=org_key,
         base_url_override=org_base_url,
         capability="image",
+        model=model,
     )
+    return key, base_url, model
 
 
 async def run(args: argparse.Namespace) -> int:
@@ -1031,9 +1036,6 @@ async def run(args: argparse.Namespace) -> int:
             },
         )
     elif provider == "newapi":
-        api_key, base_url = _resolve_newapi_credentials()
-        if not api_key:
-            raise RuntimeError("NEWAPI_API_KEY is missing")
         model = (
             args.model
             or os.environ.get("SCENE_360_IMAGE_MODEL")
@@ -1041,6 +1043,9 @@ async def run(args: argparse.Namespace) -> int:
             or SCENE_360_IMAGE_MODEL
             or NEWAPI_IMAGE_MODEL
         )
+        api_key, base_url, model = _resolve_newapi_credentials(model=model)
+        if not api_key:
+            raise RuntimeError("NEWAPI_API_KEY is missing")
         image_bytes, _text, error = await _call_newapi_image_api(
             api_key=api_key,
             model=model,
