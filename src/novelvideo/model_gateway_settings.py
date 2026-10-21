@@ -52,6 +52,13 @@ SUB2API_CAPABILITIES = (
     CAPABILITY_AUDIO,
 )
 SUB2API_PROTOCOLS = {"openai", "gemini"}
+SUB2API_IMAGE_EDIT_FORMATS = {
+    "dc-media",
+    "images",
+    "input_reference",
+    "multipart",
+}
+SUB2API_VIDEO_ENDPOINTS = {"videos", "video/generations"}
 CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW = "relayclaw_brainclaw"
 CUSTOM_LLM_MODE_ADVANCED = "advanced"
 VALID_CUSTOM_LLM_MODES = {
@@ -190,14 +197,30 @@ def _normalize_sub2api_groups(groups: list[dict[str, Any]]) -> list[dict[str, An
                 for value in raw_models
             ]
         elif isinstance(raw_mappings, list):
-            mappings = [
-                {
+            mappings = []
+            for item in raw_mappings:
+                if not isinstance(item, dict):
+                    continue
+                mapping = {
                     "requestPattern": str(item.get("requestPattern") or "").strip(),
                     "upstreamModel": str(item.get("upstreamModel") or "").strip(),
                 }
-                for item in raw_mappings
-                if isinstance(item, dict)
-            ]
+                image_edit_format = str(item.get("imageEditFormat") or "").strip().lower()
+                if image_edit_format:
+                    if image_edit_format not in SUB2API_IMAGE_EDIT_FORMATS:
+                        raise ValueError(
+                            "unsupported Sub2API image edit format: "
+                            + image_edit_format
+                        )
+                    mapping["imageEditFormat"] = image_edit_format
+                video_endpoint = str(item.get("videoEndpoint") or "").strip().strip("/").lower()
+                if video_endpoint:
+                    if video_endpoint not in SUB2API_VIDEO_ENDPOINTS:
+                        raise ValueError(
+                            "unsupported Sub2API video endpoint: " + video_endpoint
+                        )
+                    mapping["videoEndpoint"] = video_endpoint
+                mappings.append(mapping)
         else:
             raise ValueError("Sub2API modelMappings must be a list")
         mappings = list({(item["requestPattern"], item["upstreamModel"]): item for item in mappings if item["requestPattern"] and item["upstreamModel"]}.values())
@@ -1206,8 +1229,18 @@ def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
             if not request_model or request_model.endswith("*") or not upstream_model:
                 continue
             api_model = request_model if capability == CAPABILITY_IMAGE else f"newapi_{request_model}"
-            catalog.append(
-                {
+            if capability == CAPABILITY_IMAGE:
+                request = {
+                    "endpoint": "images/generations",
+                    "referenceFormat": mapping.get("imageEditFormat") or "images",
+                    "parameters": [],
+                }
+            else:
+                request = {
+                    "endpoint": mapping.get("videoEndpoint") or "videos",
+                    "parameters": [],
+                }
+            catalog_entry: dict[str, Any] = {
                     "catalogId": request_model,
                     "catalog_id": request_model,
                     "id": request_model,
@@ -1222,14 +1255,26 @@ def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
                     "label": f"{group['name']} · {request_model}",
                     "mediaType": capability,
                     "sortOrder": 100,
-                    "request": {
-                        "endpoint": "images/generations"
-                        if capability == CAPABILITY_IMAGE
-                        else "video/generations",
-                        "parameters": [],
-                    },
+                    "request": request,
                 }
-            )
+            if capability == CAPABILITY_IMAGE and (
+                "gpt-image-2" in request_model.lower()
+                or "gpt-image-2" in upstream_model.lower()
+            ):
+                catalog_entry["referenceImageMax"] = 9
+            if capability == CAPABILITY_VIDEO and (
+                request_model.lower() == "sd17-seedance-2.5-2"
+                or upstream_model.lower() == "sd17-seedance-2.5-2"
+            ):
+                catalog_entry.update(
+                    {
+                        "referenceImageMax": 30,
+                        "minDuration": 10,
+                        "maxDuration": 30,
+                        "resolutionOptions": ["720p"],
+                    }
+                )
+            catalog.append(catalog_entry)
     return catalog
 
 

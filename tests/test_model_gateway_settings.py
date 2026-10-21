@@ -1037,6 +1037,116 @@ def test_sub2api_text_client_sends_mapped_upstream_model(monkeypatch, tmp_path):
     assert model == "gpt-5.2"
 
 
+def test_sub2api_media_mapping_preserves_protocol_metadata(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "media",
+                "name": "Media gateway",
+                "protocol": "openai",
+                "baseUrl": "https://media.example/v1",
+                "apiKey": "sk-media",
+                "capabilities": ["image", "video"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "gpt-image-2.5",
+                        "upstreamModel": "gpt-image-2.5",
+                        "imageEditFormat": "input_reference",
+                        "videoEndpoint": "video/generations",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    group = model_gateway_settings.get_sub2api_groups()[0]
+    assert group["modelMappings"][0]["imageEditFormat"] == "input_reference"
+    assert group["modelMappings"][0]["videoEndpoint"] == "video/generations"
+
+
+def test_sub2api_media_catalog_defaults_to_verified_protocols_and_sd17_limits(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "media",
+                "name": "Media gateway",
+                "protocol": "openai",
+                "baseUrl": "https://media.example/v1",
+                "apiKey": "sk-media",
+                "capabilities": ["image", "video"],
+                "modelMappings": [
+                    {"requestPattern": "gpt-image-2.5", "upstreamModel": "gpt-image-2.5"},
+                    {
+                        "requestPattern": "sd17-seedance-2.5-2",
+                        "upstreamModel": "sd17-seedance-2.5-2",
+                    },
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image = next(
+        item
+        for item in model_gateway_settings.get_sub2api_media_model_catalog("image")
+        if item["id"] == "gpt-image-2.5"
+    )
+    video = next(
+        item
+        for item in model_gateway_settings.get_sub2api_media_model_catalog("video")
+        if item["id"] == "sd17-seedance-2.5-2"
+    )
+
+    assert image["request"]["referenceFormat"] == "images"
+    assert video["request"]["endpoint"] == "videos"
+    assert video["referenceImageMax"] == 30
+    assert video["minDuration"] == 10
+    assert video["maxDuration"] == 30
+    assert video["resolutionOptions"] == ["720p"]
+
+
+def test_image_generation_config_uses_sub2api_protocol_but_keeps_newapi_default(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "image",
+                "name": "Image",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-image",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {"requestPattern": "gpt-image-2.5", "upstreamModel": "gpt-image-2.5"}
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    sub2api = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gpt-image-2.5"
+    )
+    assert sub2api["image_edit_reference_format"] == "images"
+
+    save_custom_newapi_gateway(
+        base_url="https://custom-newapi.example/v1",
+        api_key="sk-newapi",
+        activate=True,
+    )
+    newapi = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gpt-image-2.5"
+    )
+    assert newapi["image_edit_reference_format"] == "dc-media"
+
+
 def test_sub2api_unmatched_text_model_reports_missing_mapping(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     save_sub2api_groups(

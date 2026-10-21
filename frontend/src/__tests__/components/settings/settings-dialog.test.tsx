@@ -162,6 +162,14 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.sub2api.models": "模型匹配规则",
         "settings.modelConfig.sub2api.requestModel": "DramaClaw 模型规则",
         "settings.modelConfig.sub2api.upstreamModel": "上游模型",
+        "settings.modelConfig.sub2api.imageEditFormat": "图片编辑协议",
+        "settings.modelConfig.sub2api.imageEditFormats.dc-media": "项目协议",
+        "settings.modelConfig.sub2api.imageEditFormats.images": "Images JSON",
+        "settings.modelConfig.sub2api.imageEditFormats.input_reference": "Input reference",
+        "settings.modelConfig.sub2api.imageEditFormats.multipart": "Multipart",
+        "settings.modelConfig.sub2api.videoEndpoint": "视频任务接口",
+        "settings.modelConfig.sub2api.videoEndpoints.videos": "现代 /videos",
+        "settings.modelConfig.sub2api.videoEndpoints.legacy": "旧版 /video/generations",
         "settings.modelConfig.sub2api.modelsPlaceholder": "每行一条",
         "settings.modelConfig.sub2api.modelsHint": "匹配模型",
         "settings.modelConfig.sub2api.fetchModels": "拉取模型列表",
@@ -548,7 +556,11 @@ describe("SettingsDialog pages", () => {
             baseUrl: "https://sub2api.example/v1",
             apiKey: "sk-openai",
             capabilities: ["image"],
-            modelMappings: [{ requestPattern: "DC-codex-agent-LLM", upstreamModel: "gpt-5" }],
+            modelMappings: [{
+              requestPattern: "DC-codex-agent-LLM",
+              upstreamModel: "gpt-5",
+              imageEditFormat: "images",
+            }],
           },
           {
             id: expect.any(String),
@@ -562,6 +574,70 @@ describe("SettingsDialog pages", () => {
         ],
       });
     });
+  });
+
+  it("saves per-model image and video protocol overrides for Sub2API", async () => {
+    modelGatewayMocks.config = {
+      mode: "official",
+      effective: { source: "official", baseUrl: "", apiKeyPreview: "", configured: false },
+      llmEffective: { mode: "official", source: "official", baseUrl: "", apiKeyPreview: "", configured: false, model: "", brainclaw: true },
+      agent: { mode: "inherit", baseUrl: "", apiKeyPreview: "", configured: false, model: "" },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: false, adminBaseUrl: "", tokenName: "", tokenId: "" },
+      sub2api: { configured: false, groups: [] },
+    };
+    modelGatewayMocks.fetchSub2ApiModels.mockResolvedValue({
+      ok: true,
+      data: { models: ["gpt-image-2.5", "sd17-seedance-2.5-2"] },
+    });
+    modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
+
+    renderSettingsDialog();
+    fireEvent.click(screen.getByRole("tab", { name: "Sub2API" }));
+    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
+    const group = within(screen.getByRole("group"));
+    fireEvent.change(group.getByLabelText("账号组名称"), { target: { value: "media" } });
+    fireEvent.change(group.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1" } });
+    fireEvent.change(group.getByLabelText("API Key"), { target: { value: "sk-media" } });
+    fireEvent.click(group.getByLabelText("文本 / 视觉"));
+    fireEvent.click(group.getByLabelText("图片"));
+    fireEvent.click(group.getByLabelText("视频"));
+    fireEvent.click(group.getByRole("button", { name: "拉取模型列表" }));
+    await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(1));
+    fireEvent.click(group.getByLabelText("gpt-image-2.5"));
+    fireEvent.click(group.getByLabelText("sd17-seedance-2.5-2"));
+    const imageFormats = group.getAllByLabelText("图片编辑协议");
+    const videoEndpoints = group.getAllByLabelText("视频任务接口");
+    fireEvent.change(imageFormats[0], { target: { value: "multipart" } });
+    fireEvent.change(videoEndpoints[1], { target: { value: "video/generations" } });
+    fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[0], { target: { value: "gpt-image-2.5" } });
+    fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[1], { target: { value: "sd17-seedance-2.5-2" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存 Sub2API 配置" }));
+
+    await waitFor(() =>
+      expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
+        groups: [
+          expect.objectContaining({
+            name: "media",
+            capabilities: ["image", "video"],
+            modelMappings: [
+              expect.objectContaining({
+                requestPattern: "gpt-image-2.5",
+                upstreamModel: "gpt-image-2.5",
+                imageEditFormat: "multipart",
+                videoEndpoint: "videos",
+              }),
+              expect.objectContaining({
+                requestPattern: "sd17-seedance-2.5-2",
+                upstreamModel: "sd17-seedance-2.5-2",
+                imageEditFormat: "images",
+                videoEndpoint: "video/generations",
+              }),
+            ],
+          }),
+        ],
+      }),
+    );
   });
 
   it("saves an independent third-party Agent model", async () => {

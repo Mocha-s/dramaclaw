@@ -7669,6 +7669,18 @@
         "models": "模型匹配规则",
         "requestModel": "DramaClaw 模型规则",
         "upstreamModel": "上游模型",
+        "imageEditFormat": "图片编辑请求格式",
+        "imageEditFormats": {
+          "dc-media": "DramaClaw NewAPI JSON",
+          "images": "images[].image_url JSON",
+          "input_reference": "input_reference JSON",
+          "multipart": "Multipart 图片文件"
+        },
+        "videoEndpoint": "视频任务接口",
+        "videoEndpoints": {
+          "videos": "现代 /videos",
+          "legacy": "旧版 /video/generations"
+        },
         "modelsPlaceholder": "每行一条，例如：gpt-5 或 gemini-embedding-*",
         "modelsHint": "左侧填写 DramaClaw 请求模型名（例如 DC-freezone-text-writer-LLM），右侧选择 Sub2API 上游模型；请求规则可用末尾 *，精确匹配优先。",
         "modelSearch": "筛选模型",

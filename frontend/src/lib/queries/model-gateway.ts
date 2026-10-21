@@ -39,6 +39,21 @@ export type Sub2ApiCapability =
   | "video"
   | "audio";
 
+export type Sub2ApiImageEditFormat =
+  | "dc-media"
+  | "images"
+  | "input_reference"
+  | "multipart";
+
+export type Sub2ApiVideoEndpoint = "videos" | "video/generations";
+
+export interface Sub2ApiModelMapping {
+  requestPattern: string;
+  upstreamModel: string;
+  imageEditFormat?: Sub2ApiImageEditFormat;
+  videoEndpoint?: Sub2ApiVideoEndpoint;
+}
+
 export interface Sub2ApiAccountGroup {
   id: string;
   name: string;
@@ -46,7 +61,7 @@ export interface Sub2ApiAccountGroup {
   baseUrl: string;
   apiKeyPreview: string;
   capabilities: Sub2ApiCapability[];
-  modelMappings: Array<{ requestPattern: string; upstreamModel: string }>;
+  modelMappings: Sub2ApiModelMapping[];
 }
 
 export interface Sub2ApiGatewayConfig {
