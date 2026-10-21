@@ -1183,6 +1183,37 @@ def test_gemini_sub2api_gateway_uses_native_v1beta_protocol(monkeypatch, tmp_pat
     assert image_config["gateway_native_base_url"] == "https://gemini.example/v1beta"
 
 
+def test_sub2api_effective_image_gateway_preserves_mapping_protocol_override(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "image",
+                "name": "Image",
+                "protocol": "openai",
+                "baseUrl": "https://image.example/v1",
+                "apiKey": "image-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "image-custom",
+                        "upstreamModel": "image-custom-upstream",
+                        "imageEditFormat": "multipart",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image_config = config.get_grid_generation_config(
+        provider_override="newapi", model_override="image-custom"
+    )
+    assert image_config["image_edit_reference_format"] == "multipart"
+
+
 def test_sub2api_unmatched_text_model_reports_missing_mapping(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     save_sub2api_groups(

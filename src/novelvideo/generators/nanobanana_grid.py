@@ -314,7 +314,15 @@ async def _call_gemini_image_api(
         if isinstance(image_ref, tuple) and len(image_ref) == 3:
             mime_type = str(image_ref[2] or mime_type)
         elif isinstance(image_ref, tuple) and len(image_ref) == 2:
-            mime_type = str(image_ref[1] or mime_type)
+            declared_type = str(image_ref[1] or "").strip().lower()
+            if declared_type.startswith("image/"):
+                mime_type = declared_type
+            else:
+                mime_type = {
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".webp": "image/webp",
+                }.get(Path(declared_type).suffix.lower(), mime_type)
         parts.append(
             {
                 "inlineData": {
@@ -428,6 +436,27 @@ async def _call_gemini_image_api(
         if is_fatal_billing_error(exc):
             raise
         return None, "", f"Gemini request failed: {type(exc).__name__}: {exc}"
+
+
+async def _call_gemini_grid_image_api(
+    *,
+    api_key: str,
+    model: str,
+    prompt: str,
+    reference_images: list[bytes | tuple[bytes, str] | tuple[str, bytes, str]] | None,
+    image_size: str,
+    aspect_ratio: str,
+    base_url: str,
+) -> tuple[bytes | None, str, str]:
+    """Grid-specific seam for native Gemini image generation."""
+    return await _call_gemini_image_api(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        reference_images=reference_images,
+        image_config={"image_size": image_size, "aspect_ratio": aspect_ratio},
+        base_url=base_url,
+    )
 
 
 def _newapi_safe_header_summary(headers: Any) -> dict[str, str]:
@@ -3158,6 +3187,7 @@ async def _generate_image(
                 "provider": "newapi",
                 "api_key": organization_egress.credential.api_key,
                 "base_url": organization_egress.credential.base_url,
+                "gateway_native_base_url": organization_egress.credential.base_url,
             }
         )
         effective_api_key = organization_egress.credential.api_key
@@ -5346,27 +5376,40 @@ class NanoBananaGridGenerator:
                     contents,
                     include_mime=True,
                 )
-                image_bytes, _text, newapi_error = await _call_newapi_image_api_with_egress(
-                    capability="image.generate.grid",
-                    api_key=self.api_key,
-                    model=self.model,
-                    prompt=prompt_text,
-                    reference_images=ref_bytes or None,
-                    image_config={
-                        "aspect_ratio": aspect_ratio,
-                        "image_size": effective_image_size,
-                        "quality": (
-                            self.openai_sketch_image_quality
-                            if sketch
-                            else self.openai_image_quality
-                        ),
-                    "request_schema": self.newapi_request_schema,
-                        "model_params": self.newapi_model_params,
-                    },
-                    base_url=self.base_url,
-                    delivery_path=output_path,
-                    delivery_state=(image_delivery_state := {}),
-                )
+                if self.newapi_protocol == "gemini":
+                    image_bytes, _text, newapi_error = await _call_gemini_grid_image_api(
+                        api_key=self.api_key,
+                        model=self.model,
+                        prompt=prompt_text,
+                        reference_images=ref_bytes or None,
+                        image_size=effective_image_size,
+                        aspect_ratio=aspect_ratio,
+                        base_url=self.gateway_native_base_url or self.base_url,
+                    )
+                    image_delivery_state = {}
+                else:
+                    image_bytes, _text, newapi_error = await _call_newapi_image_api_with_egress(
+                        capability="image.generate.grid",
+                        api_key=self.api_key,
+                        model=self.model,
+                        prompt=prompt_text,
+                        reference_images=ref_bytes or None,
+                        image_config={
+                            "aspect_ratio": aspect_ratio,
+                            "image_size": effective_image_size,
+                            "quality": (
+                                self.openai_sketch_image_quality
+                                if sketch
+                                else self.openai_image_quality
+                            ),
+                            "reference_image_format": self.newapi_image_edit_reference_format,
+                            "request_schema": self.newapi_request_schema,
+                            "model_params": self.newapi_model_params,
+                        },
+                        base_url=self.base_url,
+                        delivery_path=output_path,
+                        delivery_state=(image_delivery_state := {}),
+                    )
                 if not image_bytes:
                     message = "DramaClawAPI Images 未返回图像数据"
                     if newapi_error:

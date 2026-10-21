@@ -94,6 +94,7 @@ class EffectiveNewApiConfig:
     protocol: str = "openai"
     model: str = ""
     native_base_url: str = ""
+    image_edit_reference_format: str = ""
 
 
 @dataclass(frozen=True)
@@ -352,8 +353,17 @@ def _resolve_sub2api_group(
                 for mapping in (group.get("modelMappings") or [])
             ]
             if len(candidates) == 1:
-                return candidates[0][0], str(candidates[0][1].get("upstreamModel") or "")
-        return defaults[0] if len(defaults) == 1 else None
+                return (
+                    candidates[0][0],
+                    str(candidates[0][1].get("upstreamModel") or ""),
+                    dict(candidates[0][1]),
+                )
+        if len(defaults) == 1:
+            return defaults[0][0], defaults[0][1], {
+                "requestPattern": "*",
+                "upstreamModel": defaults[0][1],
+            }
+        return None
     if not matches:
         return None
     best_score = max(score for score, _group, _model in matches)
@@ -364,7 +374,28 @@ def _resolve_sub2api_group(
     ]
     if len(best_matches) != 1:
         return None
-    return best_matches[0]
+    selected_group, selected_model = best_matches[0]
+    selected_mapping = next(
+        (
+            mapping
+            for mapping in (
+                selected_group.get("modelMappings")
+                or [
+                    {"requestPattern": value, "upstreamModel": value}
+                    for value in selected_group.get("models", [])
+                ]
+            )
+            if str(mapping.get("requestPattern") or "").strip() == wanted_model
+            or (
+                str(mapping.get("requestPattern") or "").strip().endswith("*")
+                and wanted_model.startswith(
+                    str(mapping.get("requestPattern") or "").strip()[:-1]
+                )
+            )
+        ),
+        {},
+    )
+    return selected_group, selected_model, dict(selected_mapping)
 
 
 def normalize_custom_llm_mode(value: str | None) -> str:
@@ -1475,6 +1506,7 @@ def get_ce_newapi_config_for_mode(
                 if str(group[0].get("protocol") or "").strip().lower() == "gemini"
                 else ""
             ),
+            image_edit_reference_format=str(group[2].get("imageEditFormat") or "images"),
         )
     if mode == MODE_CUSTOM:
         return EffectiveNewApiConfig(

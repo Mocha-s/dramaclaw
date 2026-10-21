@@ -1049,7 +1049,7 @@ def test_gemini_image_gateway_uses_native_generate_content_json(monkeypatch):
             api_key="gemini-key",
             model="gemini-2.5-flash-image",
             prompt="make a poster",
-            reference_images=[("ref.png", b"reference", "image/png")],
+            reference_images=[(b"reference", "/tmp/ref.png")],
             image_config={"aspect_ratio": "3:4", "image_size": "2K"},
             base_url="https://gemini.example/v1beta",
         )
@@ -1072,6 +1072,107 @@ def test_gemini_image_gateway_uses_native_generate_content_json(monkeypatch):
         "imageSize": "2K",
         "aspectRatio": "3:4",
     }
+
+
+def test_gemini_grid_generation_uses_native_generate_content(monkeypatch, tmp_path):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    real_client = httpx.AsyncClient
+    posted = []
+
+    def handle_request(request):
+        posted.append(request.url.path)
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "inlineData": {
+                                        "mimeType": "image/png",
+                                        "data": base64.b64encode(b"grid-image").decode(),
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+    generator = nanobanana_grid.NanoBananaGridGenerator(
+        api_key="gemini-key",
+        config={
+            "provider": "newapi",
+            "gateway_protocol": "gemini",
+            "gateway_native_base_url": "https://gemini.example/v1beta",
+            "api_key": "gemini-key",
+            "model": "gemini-2.5-flash-image",
+            "rows": 1,
+            "cols": 1,
+            "batch_size": 1,
+            "total_panels": 1,
+            "mode": "1x1",
+        },
+    )
+
+    result = run_async(
+        generator.generate_grid(
+            beats=[{"beat_number": 1, "visual_description": "a tree", "narration": ""}],
+            character_map={},
+            style="",
+                output_path=str(tmp_path / "gemini-grid.png"),
+                rows=1,
+                cols=1,
+                sketch=True,
+                beat_start_index=0,
+                total_episode_beats=1,
+                sketch_dir=str(tmp_path),
+                mode_key="1x1_2-3_sketch",
+            )
+    )
+
+    assert result.success is True
+    assert posted == ["/v1beta/models/gemini-2.5-flash-image:generateContent"]
+    assert (tmp_path / "gemini-grid.png").exists()
+
+
+def test_gemini_grid_request_helper_uses_native_protocol(monkeypatch):
+    from novelvideo.generators import nanobanana_grid
+
+    captured = {}
+
+    async def fake_native(**kwargs):
+        captured.update(kwargs)
+        return b"grid", "", ""
+
+    monkeypatch.setattr(nanobanana_grid, "_call_gemini_image_api", fake_native)
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_gemini_grid_image_api(
+            api_key="gemini-key",
+            model="gemini-2.5-flash-image",
+            prompt="grid prompt",
+            reference_images=[(b"ref", "/tmp/reference.jpg")],
+            image_size="2K",
+            aspect_ratio="3:4",
+            base_url="https://gemini.example/v1beta",
+        )
+    )
+
+    assert image_bytes == b"grid"
+    assert error == ""
+    assert captured["base_url"] == "https://gemini.example/v1beta"
+    assert captured["reference_images"] == [(b"ref", "/tmp/reference.jpg")]
 
 
 def test_newapi_image_edit_rejects_unknown_reference_format_before_upload(monkeypatch):

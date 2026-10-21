@@ -1381,7 +1381,7 @@ def _image_provider_config(
             "gateway_source": gateway.source,
             "gateway_protocol": gateway.protocol,
             "gateway_native_base_url": gateway.native_base_url,
-            "image_edit_reference_format": (
+            "image_edit_reference_format": gateway.image_edit_reference_format or (
                 "images" if gateway.source == "sub2api" else "dc-media"
             ),
         }
