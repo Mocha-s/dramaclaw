@@ -21,6 +21,7 @@ import math
 import os
 import re
 import time
+from urllib.parse import quote
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -285,6 +286,148 @@ def _newapi_request_id_from_headers(headers: Any) -> str:
 
 
 NEWAPI_IMAGE_HTTP_TIMEOUT_SECONDS = 1800.0
+
+
+async def _call_gemini_image_api(
+    *,
+    api_key: str,
+    model: str,
+    prompt: str,
+    reference_images: list[bytes | tuple[bytes, str] | tuple[str, bytes, str]] | None = None,
+    image_config: dict | None = None,
+    base_url: str | None = None,
+) -> tuple[bytes | None, str, str]:
+    """Call Gemini's native generateContent image contract once."""
+    import httpx
+
+    if not api_key:
+        return None, "", "Gemini API key is missing"
+    image_config = image_config or {}
+    image_size = normalize_image_size(
+        str(image_config.get("image_size") or "1K"), "newapi"
+    )
+    quality = str(image_config.get("quality") or "").strip()
+    parts: list[dict[str, object]] = [{"text": prompt}]
+    for image_ref in reference_images or []:
+        mime_type = "image/png"
+        image_data = _reference_image_bytes(image_ref)
+        if isinstance(image_ref, tuple) and len(image_ref) == 3:
+            mime_type = str(image_ref[2] or mime_type)
+        elif isinstance(image_ref, tuple) and len(image_ref) == 2:
+            mime_type = str(image_ref[1] or mime_type)
+        parts.append(
+            {
+                "inlineData": {
+                    "mimeType": mime_type,
+                    "data": base64.b64encode(image_data).decode("ascii"),
+                }
+            }
+        )
+    payload = {
+        "contents": [{"role": "user", "parts": parts}],
+        "generationConfig": {
+            "responseModalities": ["TEXT", "IMAGE"],
+            "imageConfig": {
+                "imageSize": str(image_config.get("image_size") or "1K"),
+                "aspectRatio": str(image_config.get("aspect_ratio") or "1:1"),
+            },
+        },
+    }
+    endpoint = (base_url or "").rstrip("/")
+    model_path = str(model or "").removeprefix("models/").strip()
+    url = f"{endpoint}/models/{quote(model_path, safe='')}:generateContent"
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    }
+    reservation_id = ""
+
+    async def _refund(source: str, error: str, *, request_id: str = "") -> None:
+        try:
+            await get_usage_meter().refund_model_call_credit_reservation(
+                reservation_id,
+                metadata={"source": source, "error": error[:200], "request_id": request_id},
+            )
+        except Exception:
+            pass
+
+    async def _confirm(*, request_id: str = "", response_id: str = "") -> None:
+        try:
+            if not reservation_id:
+                await get_usage_meter().mark_current_paid_execution_attempt(
+                    status="completed",
+                    provider_request_id=request_id,
+                    provider_response_id=response_id,
+                )
+                return
+            await get_usage_meter().bump_model_call(
+                user_id=None,
+                model=model,
+                provider_request_id=request_id,
+                credit_reservation_id=reservation_id,
+                metadata={"response_id": response_id} if response_id else None,
+            )
+        except Exception:
+            pass
+
+    try:
+        reservation_id = await get_usage_meter().reserve_current_model_call_credit(
+            model=model,
+            billing_kind="image",
+            billing_params=_image_credit_billing_params(
+                image_size=image_size,
+                quality=quality,
+            ),
+            metadata={"source": "sub2api_gemini_image_api"},
+        )
+        await update_current_model_call_log(
+            request_payload={
+                "model": model,
+                "reference_image_count": len(reference_images or []),
+                "generation_config": payload["generationConfig"],
+                "prompt_chars": len(prompt or ""),
+            }
+        )
+        async with httpx.AsyncClient(
+            timeout=NEWAPI_IMAGE_HTTP_TIMEOUT_SECONDS,
+            follow_redirects=True,
+        ) as client:
+            response = await client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        request_id = _newapi_request_id_from_headers(response.headers)
+        await _mark_paid_image_attempt_accepted(provider_request_id=request_id)
+        result = response.json()
+        await update_current_model_call_log(response_payload={"keys": sorted(result.keys())})
+        response_id = str(result.get("responseId") or result.get("response_id") or "")
+        text_parts: list[str] = []
+        for candidate in result.get("candidates") or []:
+            content = candidate.get("content") if isinstance(candidate, dict) else None
+            for part in (content or {}).get("parts") or []:
+                if not isinstance(part, dict):
+                    continue
+                text = part.get("text")
+                if isinstance(text, str) and text:
+                    text_parts.append(text)
+                inline = part.get("inlineData") or part.get("inline_data")
+                if isinstance(inline, dict) and inline.get("data"):
+                    image_bytes = base64.b64decode(inline["data"])
+                    await _confirm(request_id=request_id, response_id=response_id)
+                    return image_bytes, " ".join(text_parts), ""
+        await _refund("sub2api_gemini_image_api", "missing_image_payload", request_id=request_id)
+        return None, " ".join(text_parts), "Gemini response contained no image data"
+    except httpx.HTTPStatusError as exc:
+        request_id = _newapi_request_id_from_headers(exc.response.headers)
+        await _refund(
+            "sub2api_gemini_image_api",
+            f"http_{exc.response.status_code}",
+            request_id=request_id,
+        )
+        return None, "", f"HTTP {exc.response.status_code}: {(exc.response.text or '')[:280]}"
+    except Exception as exc:
+        await _refund("sub2api_gemini_image_api", type(exc).__name__)
+        if is_fatal_billing_error(exc):
+            raise
+        return None, "", f"Gemini request failed: {type(exc).__name__}: {exc}"
 
 
 def _newapi_safe_header_summary(headers: Any) -> dict[str, str]:
@@ -3071,6 +3214,24 @@ async def _generate_image(
             raise ValueError(
                 f"OpenAI edit image generation failed: {error_detail or 'empty image'}"
             )
+    elif generator.provider == "newapi" and generator.newapi_protocol == "gemini":
+        ref_bytes = [(Path(path).read_bytes(), path) for path in ref_paths]
+        image_bytes, _text, error_detail = await _call_gemini_image_api(
+            api_key=generator.api_key,
+            model=generator.model,
+            prompt=prompt,
+            reference_images=ref_bytes or None,
+            image_config={
+                "aspect_ratio": aspect_ratio,
+                "image_size": image_size,
+                "quality": quality or generator.openai_image_quality,
+            },
+            base_url=generator.gateway_native_base_url or generator.base_url,
+        )
+        if not image_bytes:
+            raise ValueError(
+                f"Gemini image generation failed: {error_detail or 'empty image'}"
+            )
     elif generator.provider == "newapi":
         ref_bytes = [(Path(path).read_bytes(), path) for path in ref_paths]
         trace: dict[str, str] = {}
@@ -4418,6 +4579,10 @@ class NanoBananaGridGenerator:
         self.default_image_size = config.get("image_size", "1K")
         self.newapi_request_schema = config.get("newapi_request_schema") or {}
         self.newapi_model_params = config.get("newapi_model_params") or {}
+        self.newapi_protocol = str(config.get("gateway_protocol") or "openai").strip().lower()
+        self.gateway_native_base_url = str(
+            config.get("gateway_native_base_url") or ""
+        ).strip().rstrip("/")
         self.newapi_image_edit_reference_format = str(
             config.get("image_edit_reference_format") or "dc-media"
         ).strip().lower()

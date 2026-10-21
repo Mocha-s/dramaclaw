@@ -1147,6 +1147,42 @@ def test_image_generation_config_uses_sub2api_protocol_but_keeps_newapi_default(
     assert newapi["image_edit_reference_format"] == "dc-media"
 
 
+def test_gemini_sub2api_gateway_uses_native_v1beta_protocol(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "gemini-image",
+                "name": "Gemini image",
+                "protocol": "gemini",
+                "baseUrl": "https://gemini.example/v1beta",
+                "apiKey": "gemini-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "gemini-2.5-flash-image",
+                        "upstreamModel": "gemini-2.5-flash-image",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    effective = get_effective_newapi_config(
+        capability="image", model="gemini-2.5-flash-image"
+    )
+    assert effective.protocol == "gemini"
+    assert effective.base_url == "https://gemini.example/v1"
+    assert effective.native_base_url == "https://gemini.example/v1beta"
+
+    image_config = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gemini-2.5-flash-image"
+    )
+    assert image_config["gateway_protocol"] == "gemini"
+    assert image_config["gateway_native_base_url"] == "https://gemini.example/v1beta"
+
+
 def test_sub2api_unmatched_text_model_reports_missing_mapping(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     save_sub2api_groups(

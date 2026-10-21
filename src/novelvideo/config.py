@@ -1379,6 +1379,8 @@ def _image_provider_config(
             "model": gateway.model or selected_model,
             "base_url": gateway.base_url,
             "gateway_source": gateway.source,
+            "gateway_protocol": gateway.protocol,
+            "gateway_native_base_url": gateway.native_base_url,
             "image_edit_reference_format": (
                 "images" if gateway.source == "sub2api" else "dc-media"
             ),
@@ -1434,6 +1436,10 @@ def get_grid_generation_config(
         "model": provider_config["model"],
         "base_url": provider_config.get("base_url", ""),
         "gateway_source": provider_config.get("gateway_source", ""),
+        "gateway_protocol": provider_config.get("gateway_protocol", ""),
+        "gateway_native_base_url": provider_config.get(
+            "gateway_native_base_url", ""
+        ),
         "image_edit_reference_format": provider_config.get(
             "image_edit_reference_format", "dc-media"
         ),

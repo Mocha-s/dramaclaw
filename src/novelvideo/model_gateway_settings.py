@@ -93,6 +93,7 @@ class EffectiveNewApiConfig:
     api_key: str
     protocol: str = "openai"
     model: str = ""
+    native_base_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -1469,6 +1470,11 @@ def get_ce_newapi_config_for_mode(
             api_key=group[0]["apiKey"],
             protocol=group[0]["protocol"],
             model=group[1],
+            native_base_url=(
+                normalize_sub2api_base_url(str(group[0].get("baseUrl") or ""))
+                if str(group[0].get("protocol") or "").strip().lower() == "gemini"
+                else ""
+            ),
         )
     if mode == MODE_CUSTOM:
         return EffectiveNewApiConfig(

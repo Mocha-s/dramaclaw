@@ -1005,6 +1005,75 @@ def test_newapi_image_edit_supports_multipart_image_files_without_relay(
     assert b'name="prompt"' in body and b"edit prompt" in body
 
 
+def test_gemini_image_gateway_uses_native_generate_content_json(monkeypatch):
+    import json
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append((str(request.url), dict(request.headers), json.loads(request.content)))
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {"text": "done"},
+                                {
+                                    "inlineData": {
+                                        "mimeType": "image/png",
+                                        "data": base64.b64encode(b"gemini-image").decode(),
+                                    }
+                                },
+                            ]
+                        }
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, text, error = run_async(
+        nanobanana_grid._call_gemini_image_api(
+            api_key="gemini-key",
+            model="gemini-2.5-flash-image",
+            prompt="make a poster",
+            reference_images=[("ref.png", b"reference", "image/png")],
+            image_config={"aspect_ratio": "3:4", "image_size": "2K"},
+            base_url="https://gemini.example/v1beta",
+        )
+    )
+
+    assert image_bytes == b"gemini-image"
+    assert text == "done"
+    assert error == ""
+    assert len(posted) == 1
+    url, headers, payload = posted[0]
+    assert url == (
+        "https://gemini.example/v1beta/models/"
+        "gemini-2.5-flash-image:generateContent"
+    )
+    assert headers["x-goog-api-key"] == "gemini-key"
+    assert payload["contents"][0]["parts"][0] == {"text": "make a poster"}
+    assert payload["contents"][0]["parts"][1]["inlineData"]["mimeType"] == "image/png"
+    assert payload["generationConfig"]["responseModalities"] == ["TEXT", "IMAGE"]
+    assert payload["generationConfig"]["imageConfig"] == {
+        "imageSize": "2K",
+        "aspectRatio": "3:4",
+    }
+
+
 def test_newapi_image_edit_rejects_unknown_reference_format_before_upload(monkeypatch):
     from novelvideo.generators import nanobanana_grid
 

@@ -14,8 +14,35 @@ After startup, open `http://localhost:8080` and go to **Settings → Models & Ch
 | Official | Use the models provided by RelayClaw | DC Key only |
 | Custom | Route every model through your NewAPI configuration | NewAPI initialization, providers, feature models, embedding, and media models |
 | Local + Official Hybrid | Keep official models while adding Local ComfyUI video models or overriding official models with matching IDs | Official DC Key, Local NewAPI, ComfyUI URL, and workflows |
+| Sub2API | Route capabilities through separately configured OpenAI/Gemini-compatible account groups | Base URL, capability, model mapping, and API Key per group |
 
 Enable the intended mode after configuring it. New jobs read the latest mode, key, and mappings. Jobs already running do not switch gateways midway.
+
+### Sub2API image and video request formats
+
+Sub2API model mappings expose per-model protocol selectors. Image edits default to
+the verified `images: [{"image_url": "..."}]` JSON shape; choose `input_reference`
+or multipart `image` only when that upstream model's documentation requires it.
+NewAPI/custom/official routes keep DramaClaw's existing `image: [url]` JSON
+format unless the deployment explicitly overrides it.
+
+Video models default to the modern `POST /videos`, `GET /videos/{id}`, and
+`GET /videos/{id}/content` lifecycle. Select the legacy
+`/video/generations` endpoint for gateways that require it. Modern requests send
+an `Idempotency-Key`; if the completed task has no direct result URL, DramaClaw
+downloads the authenticated content endpoint. The server does not retry a
+generation with another format after an upstream error, avoiding duplicate
+billable jobs.
+
+For a Sub2API group whose protocol is **Gemini**, image models use Gemini's
+native `POST /v1beta/models/{model}:generateContent` contract instead of the
+OpenAI-compatible image endpoint. Prompts and references are sent in
+`contents[].parts[]`; local reference images become `inlineData`, and
+`generationConfig.imageConfig` carries `imageSize` and `aspectRatio`. Gemini
+video models are not switched to this image contract.
+
+Model capabilities are enforced by the catalog. For example,
+`sd17-seedance-2.5-2` is limited to 30 reference images, 10–30 seconds, and 720p.
 
 ## Agent model
 
