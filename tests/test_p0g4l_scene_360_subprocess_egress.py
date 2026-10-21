@@ -602,12 +602,17 @@ def test_child_passes_the_injected_credential_as_an_explicit_override(
 
     monkeypatch.setattr("novelvideo.config.get_newapi_runtime_credentials", spy)
 
-    api_key, base_url = scene_360_builder._resolve_newapi_credentials()
+    api_key, base_url, model = scene_360_builder._resolve_newapi_credentials()
 
     assert seen == [
-        {"api_key_override": GATEWAY_KEY, "base_url_override": GATEWAY_BASE_URL}
+        {
+            "api_key_override": GATEWAY_KEY,
+            "base_url_override": GATEWAY_BASE_URL,
+            "capability": "image",
+            "model": "",
+        }
     ]
-    assert (api_key, base_url) == (GATEWAY_KEY, GATEWAY_BASE_URL)
+    assert (api_key, base_url, model) == (GATEWAY_KEY, GATEWAY_BASE_URL, "")
 
 
 def test_child_without_org_mode_keeps_the_platform_resolution(
@@ -619,19 +624,20 @@ def test_child_without_org_mode_keeps_the_platform_resolution(
 
     monkeypatch.delenv("ST_ORG_EGRESS_MODE", raising=False)
 
-    seen: list[dict[str, object]] = []
-
-    def spy(**kwargs):
-        seen.append(kwargs)
-        return "platform-key", "https://platform.invalid/v1"
-
-    monkeypatch.setattr("novelvideo.config.get_newapi_runtime_credentials", spy)
+    monkeypatch.setattr(
+        "novelvideo.config.get_effective_newapi_gateway_config",
+        lambda **_kwargs: SimpleNamespace(
+            api_key="platform-key",
+            base_url="https://platform.invalid/v1",
+            model="",
+        ),
+    )
 
     assert scene_360_builder._resolve_newapi_credentials() == (
         "platform-key",
         "https://platform.invalid/v1",
+        "",
     )
-    assert seen == [{}]
 
 
 # --- 参数穿透：只加形参不接实参就是假守卫（M6-P32）---------------------------------

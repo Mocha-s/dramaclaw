@@ -10,7 +10,6 @@ development/test. EE keeps failing closed: the gate is the edition, never
 
 import base64
 import json
-import os
 import stat
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -187,11 +186,14 @@ def test_unwritable_state_dir_still_boots_ce(ce_env, monkeypatch):
     unwritable = ce_env / "ro"
     unwritable.mkdir()
     monkeypatch.setenv("NOVELVIDEO_STATE_DIR", str(unwritable))
-    os.chmod(unwritable, 0o500)
-    try:
-        config = _load_local()
-    finally:
-        os.chmod(unwritable, 0o700)
+
+    from novelvideo.task_backend import signing
+
+    def refuse_persistence(*_args, **_kwargs):
+        raise OSError("read-only state directory")
+
+    monkeypatch.setattr(signing, "_persist_local_keyring", refuse_persistence)
+    config = _load_local()
 
     assert config.active_key_id in config.keyring
     assert len(config.keyring[config.active_key_id]) >= 32
