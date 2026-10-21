@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -19,6 +20,8 @@ from novelvideo.model_gateway_settings import (
     CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
     MODE_OFFICIAL,
     MODE_HYBRID,
+    MODE_SUB2API,
+    SUB2API_PROTOCOLS,
     build_media_relay_status,
     build_model_gateway_status,
     get_model_gateway_settings,
@@ -33,6 +36,8 @@ from novelvideo.model_gateway_settings import (
     save_official_newapi_key,
     save_relayclaw_brainclaw_key,
     save_custom_newapi_gateway,
+    save_sub2api_groups,
+    get_sub2api_groups,
     save_newapi_database_config,
     save_newapi_embedding_model_config,
     save_newapi_media_model_mappings,
@@ -172,6 +177,16 @@ def require_ce_gateway_management() -> None:
     require_provisioner_enabled()
 
 
+def require_ce_gateway_settings_management() -> None:
+    """Allow external gateway settings when the local NewAPI provisioner is off."""
+    try:
+        require_legacy_local_service_operation()
+    except ServiceOperationExcluded as exc:
+        raise PermissionError(exc.code) from None
+    if not is_ce_effective():
+        raise ServiceControlEgressDenied()
+
+
 class OfficialGatewayBody(BaseModel):
     new_api_api_key: str = Field(alias="newApiApiKey")
 
@@ -183,6 +198,17 @@ class OfficialMediaCatalogPreferencesBody(BaseModel):
 class BrainClawGatewayBody(BaseModel):
     new_api_base_url: str | None = Field(default=None, alias="newApiBaseUrl")
     new_api_api_key: str | None = Field(default=None, alias="newApiApiKey")
+
+
+class Sub2ApiGatewayBody(BaseModel):
+    groups: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class Sub2ApiModelsBody(BaseModel):
+    id: str = ""
+    protocol: str
+    base_url: str = Field(alias="baseUrl")
+    api_key: str | None = Field(default=None, alias="apiKey")
 
 
 class CustomLlmModeBody(BaseModel):
@@ -642,6 +668,165 @@ async def enable_custom_gateway() -> dict[str, Any]:
     }
 
 
+@router.post("/sub2api/config")
+async def save_sub2api_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any]:
+    try:
+        require_ce_gateway_settings_management()
+    except PermissionError as exc:
+        raise _permission_error(exc) from exc
+    if not body.groups:
+        save_sub2api_groups([], activate=False)
+        runtime = _refresh_runtime_after_gateway_write()
+        return {
+            "ok": True,
+            "data": build_model_gateway_status(
+                official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+                official_api_key=app_config.NEWAPI_API_KEY,
+            ),
+            "runtime": runtime,
+        }
+    existing = {group["id"]: group for group in get_sub2api_groups()}
+    groups: list[dict[str, Any]] = []
+    for submitted in body.groups:
+        group = dict(submitted)
+        protocol = str(group.get("protocol") or "").strip().lower()
+        if protocol not in SUB2API_PROTOCOLS:
+            raise HTTPException(status_code=400, detail="protocol must be openai or gemini")
+        base_url = str(group.get("baseUrl") or "").strip().rstrip("/")
+        parsed_base_url = urlsplit(base_url)
+        if parsed_base_url.scheme not in {"http", "https"} or not parsed_base_url.netloc:
+            raise HTTPException(status_code=400, detail="each group requires an HTTP(S) Base URL")
+        group_id = str(group.get("id") or "").strip()
+        previous = existing.get(group_id)
+        api_key = normalize_api_key(group.get("apiKey"))
+        if not api_key and previous:
+            if base_url != str(previous.get("baseUrl") or "").rstrip("/"):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"API Key is required when changing the Base URL for {group_id}",
+                )
+            api_key = str(previous.get("apiKey") or "")
+        if not api_key:
+            raise HTTPException(status_code=400, detail=f"API Key is required for {group_id or 'new group'}")
+        group["apiKey"] = api_key
+        groups.append(group)
+    try:
+        save_sub2api_groups(groups, activate=False)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    runtime = _refresh_runtime_after_gateway_write()
+    return {
+        "ok": True,
+        "data": build_model_gateway_status(
+            official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+            official_api_key=app_config.NEWAPI_API_KEY,
+        ),
+        "runtime": runtime,
+    }
+
+
+@router.post("/sub2api/models")
+async def fetch_sub2api_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
+    try:
+        require_ce_gateway_settings_management()
+    except PermissionError as exc:
+        raise _permission_error(exc) from exc
+    protocol = body.protocol.strip().lower()
+    if protocol not in SUB2API_PROTOCOLS:
+        raise HTTPException(status_code=400, detail="protocol must be openai or gemini")
+    base_url = str(body.base_url or "").strip().rstrip("/")
+    parsed_base_url = urlsplit(base_url)
+    if parsed_base_url.scheme not in {"http", "https"} or not parsed_base_url.netloc:
+        raise HTTPException(status_code=400, detail="Base URL must use HTTP or HTTPS")
+    existing = next(
+        (group for group in get_sub2api_groups() if group["id"] == body.id.strip()),
+        None,
+    )
+    api_key = normalize_api_key(body.api_key)
+    if not api_key and existing and existing["baseUrl"].rstrip("/") == base_url:
+        api_key = str(existing.get("apiKey") or "")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API Key is required to fetch models")
+
+    endpoint = base_url if base_url.endswith("/models") else f"{base_url}/models"
+    headers = (
+        {"Authorization": f"Bearer {api_key}"}
+        if protocol == "openai"
+        else {"x-goog-api-key": api_key}
+    )
+    params: dict[str, str | int] = {"pageSize": 1000} if protocol == "gemini" else {"limit": 1000}
+    models: list[str] = []
+    seen: set[str] = set()
+    try:
+        with httpx.Client(
+            trust_env=False,
+            timeout=httpx.Timeout(20.0),
+            follow_redirects=False,
+        ) as client:
+            for _page in range(10):
+                response = client.get(endpoint, headers=headers, params=params)
+                if response.status_code >= 400:
+                    raise HTTPException(status_code=502, detail="Sub2API rejected model discovery")
+                try:
+                    payload = response.json()
+                except ValueError:
+                    raise HTTPException(status_code=502, detail="Sub2API returned an invalid model list") from None
+                raw_models = payload.get("data") if protocol == "openai" else payload.get("models")
+                if not isinstance(raw_models, list):
+                    raise HTTPException(status_code=502, detail="Sub2API returned an invalid model list")
+                for item in raw_models:
+                    if not isinstance(item, dict):
+                        continue
+                    model = str(
+                        item.get("id")
+                        if protocol == "openai"
+                        else item.get("baseModelId") or item.get("name") or ""
+                    ).strip()
+                    if model.startswith("models/"):
+                        model = model.removeprefix("models/")
+                    if (
+                        not model
+                        or len(model) > 255
+                        or model in seen
+                        or any(char.isspace() or ord(char) < 32 or ord(char) == 127 for char in model)
+                    ):
+                        continue
+                    seen.add(model)
+                    models.append(model)
+                if protocol != "gemini" or not payload.get("nextPageToken"):
+                    break
+                params = {"pageSize": 1000, "pageToken": str(payload["nextPageToken"])}
+    except HTTPException:
+        raise
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Could not reach Sub2API model discovery") from None
+    return {"ok": True, "data": {"models": models}}
+
+
+@router.post("/sub2api/enable")
+async def enable_sub2api_gateway() -> dict[str, Any]:
+    try:
+        require_ce_gateway_settings_management()
+    except PermissionError as exc:
+        raise _permission_error(exc) from exc
+    status = build_model_gateway_status(
+        official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+        official_api_key=app_config.NEWAPI_API_KEY,
+    )
+    if not status["sub2api"]["configured"]:
+        raise HTTPException(status_code=400, detail="At least one Sub2API account group is required")
+    set_model_gateway_mode(MODE_SUB2API)
+    runtime = _refresh_runtime_after_gateway_write()
+    return {
+        "ok": True,
+        "data": build_model_gateway_status(
+            official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+            official_api_key=app_config.NEWAPI_API_KEY,
+        ),
+        "runtime": runtime,
+    }
+
+
 @router.post("/hybrid/enable")
 async def enable_hybrid_gateway() -> dict[str, Any]:
     try:
@@ -694,7 +879,7 @@ async def save_official_gateway_config(body: OfficialGatewayBody) -> dict[str, A
 async def save_agent_gateway_config(body: AgentLlmConfigBody) -> dict[str, Any]:
     """Save the CE Agent route independently from media gateway selection."""
     try:
-        require_ce_gateway_management()
+        require_ce_gateway_settings_management()
     except PermissionError as exc:
         raise _permission_error(exc) from exc
     if body.mode not in {AGENT_LLM_MODE_INHERIT, AGENT_LLM_MODE_THIRD_PARTY}:

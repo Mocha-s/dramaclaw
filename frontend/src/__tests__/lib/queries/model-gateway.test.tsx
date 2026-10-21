@@ -26,6 +26,8 @@ import {
   useCheckOfficialMediaCatalog,
   useOfficialMediaCatalogWatcher,
   useSaveProviderChannels,
+  useSaveSub2ApiConfig,
+  useEnableSub2Api,
 } from "@/lib/queries/model-gateway";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -301,6 +303,76 @@ describe("provider channel persistence", () => {
       providerChannels: [],
       mediaModels: {},
       embeddingModel: undefined,
+    });
+  });
+});
+
+describe("Sub2API capability credentials", () => {
+  it("saves the shared endpoint and five capability keys", async () => {
+    let requestBody: unknown;
+    server.use(
+      http.post(
+        "http://localhost:3000/api/v1/model-gateway/sub2api/config",
+        async ({ request }) => {
+          requestBody = await request.json();
+          return HttpResponse.json({ ok: true, data: {} });
+        },
+      ),
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result } = renderHook(
+      () => ({ save: useSaveSub2ApiConfig(), enable: useEnableSub2Api() }),
+      { wrapper: wrapper(queryClient) },
+    );
+
+    await act(async () => {
+      await result.current.save.mutateAsync({
+        groups: [
+          {
+            id: "openai-main",
+            name: "OpenAI main",
+            protocol: "openai",
+            baseUrl: "https://sub2api.example/v1",
+            apiKey: "sk-openai",
+            capabilities: ["text", "image"],
+            modelMappings: [{ requestPattern: "DC-*", upstreamModel: "gpt-4o" }],
+          },
+          {
+            id: "gemini-embedding",
+            name: "Gemini embedding",
+            protocol: "gemini",
+            baseUrl: "https://sub2api.example/v1beta",
+            apiKey: "sk-gemini",
+            capabilities: ["embedding"],
+            modelMappings: [{ requestPattern: "DC-cognee-embedding", upstreamModel: "gemini-embedding-001" }],
+          },
+        ],
+      });
+    });
+
+    expect(requestBody).toEqual({
+      groups: [
+        {
+          id: "openai-main",
+          name: "OpenAI main",
+          protocol: "openai",
+          baseUrl: "https://sub2api.example/v1",
+          apiKey: "sk-openai",
+          capabilities: ["text", "image"],
+          modelMappings: [{ requestPattern: "DC-*", upstreamModel: "gpt-4o" }],
+        },
+        {
+          id: "gemini-embedding",
+          name: "Gemini embedding",
+          protocol: "gemini",
+          baseUrl: "https://sub2api.example/v1beta",
+          apiKey: "sk-gemini",
+          capabilities: ["embedding"],
+          modelMappings: [{ requestPattern: "DC-cognee-embedding", upstreamModel: "gemini-embedding-001" }],
+        },
+      ],
     });
   });
 });

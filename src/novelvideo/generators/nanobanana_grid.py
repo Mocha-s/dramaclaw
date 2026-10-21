@@ -3743,7 +3743,10 @@ async def _call_newapi_image_api(
     else:
         from novelvideo.config import get_effective_newapi_gateway_config
 
-        endpoint = get_effective_newapi_gateway_config().base_url.rstrip("/")
+        endpoint = get_effective_newapi_gateway_config(
+            capability="image",
+            model=model,
+        ).base_url.rstrip("/")
     request_context = _newapi_safe_request_context(
         endpoint=endpoint,
         request_path=request_path,

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { confirmDialog } from "@/components/confirm-dialog-host";
@@ -63,10 +63,13 @@ import {
   useEnableOfficial,
   useEnableCustom,
   useEnableHybrid,
+  useEnableSub2Api,
   useEnableBrainClaw,
   useSaveAgentLlmConfig,
   useSaveOfficialConfig,
   useSaveBrainClawConfig,
+  useSaveSub2ApiConfig,
+  useFetchSub2ApiModels,
   useSetCustomLlmMode,
   useInitCustomNewApi,
   useSaveCustomChannel,
@@ -87,6 +90,8 @@ import {
   type SavedEmbeddingModelConfig,
   type SavedMediaModelConfig,
   type SavedProviderChannelConfig,
+  type Sub2ApiCapability,
+  type Sub2ApiAccountGroup,
 } from "@/lib/queries/model-gateway";
 import {
   useSettingsStore,
@@ -266,7 +271,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   );
 }
 
-const GATEWAY_MODES: GatewayMode[] = ["official", "custom", "hybrid"];
+const GATEWAY_MODES: GatewayMode[] = ["official", "custom", "hybrid", "sub2api"];
 
 const DEFAULT_CUSTOM_NEWAPI_URL = "http://127.0.0.1:3000";
 
@@ -352,6 +357,7 @@ function ModelConfigSection({ open }: { open: boolean }) {
   const enableOfficialMode = useEnableOfficial();
   const enableCustomMode = useEnableCustom();
   const enableHybridMode = useEnableHybrid();
+  const enableSub2Api = useEnableSub2Api();
   const modelGatewayMissing = config
     ? !config.effective.configured || !config.llmEffective.configured
     : false;
@@ -416,11 +422,14 @@ function ModelConfigSection({ open }: { open: boolean }) {
       ? Boolean(config?.official?.configured)
       : mode === "custom"
         ? Boolean(config?.custom?.configured)
-        : Boolean(config?.official?.configured && config?.custom?.configured);
+        : mode === "hybrid"
+          ? Boolean(config?.official?.configured && config?.custom?.configured)
+          : Boolean(config?.sub2api?.configured);
   const activatingMode =
     enableOfficialMode.isPending ||
     enableCustomMode.isPending ||
-    enableHybridMode.isPending;
+    enableHybridMode.isPending ||
+    enableSub2Api.isPending;
 
   const handleActivateMode = async () => {
     const mutation =
@@ -428,7 +437,9 @@ function ModelConfigSection({ open }: { open: boolean }) {
         ? enableOfficialMode
         : mode === "custom"
           ? enableCustomMode
-          : enableHybridMode;
+          : mode === "hybrid"
+            ? enableHybridMode
+            : enableSub2Api;
     try {
       const response = await mutation.mutateAsync();
       if (!response.ok) {
@@ -662,7 +673,315 @@ function ModelConfigSection({ open }: { open: boolean }) {
           ) : null}
         </>
       ) : null}
+      {mode === "sub2api" ? (
+        <Sub2ApiGatewayPanel config={config} loading={loading} />
+      ) : null}
     </section>
+  );
+}
+
+const SUB2API_CAPABILITIES: readonly Sub2ApiCapability[] = ["text", "embedding", "image", "video", "audio"];
+
+type Sub2ApiGroupDraft = Sub2ApiAccountGroup & {
+  apiKey: string;
+};
+
+function newSub2ApiGroup(): Sub2ApiGroupDraft {
+  return {
+    id: globalThis.crypto?.randomUUID?.() ?? `sub2api-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: "",
+    protocol: "openai",
+    baseUrl: "",
+    apiKey: "",
+    apiKeyPreview: "",
+    capabilities: ["text"],
+    modelMappings: [],
+  };
+}
+
+function Sub2ApiGatewayPanel({
+  config,
+  loading,
+}: {
+  config: ModelGatewayConfig | undefined;
+  loading: boolean;
+}) {
+  const { t } = useTranslation();
+  const saveConfig = useSaveSub2ApiConfig();
+  const fetchModels = useFetchSub2ApiModels();
+  const saved = config?.sub2api;
+  const [groups, setGroups] = useState<Sub2ApiGroupDraft[]>([]);
+  const [modelsByGroup, setModelsByGroup] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    setGroups(
+      (saved?.groups ?? []).map((group) => ({ ...group, apiKey: "" })),
+    );
+    setModelsByGroup({});
+  }, [saved?.groups]);
+
+  const canSave = groups.length === 0 || groups.every((group) => {
+    const previous = saved?.groups.find((candidate) => candidate.id === group.id);
+    const endpointChanged = previous && previous.baseUrl !== group.baseUrl.trim().replace(/\/+$/, "");
+    return Boolean(
+      group.name.trim() &&
+      group.baseUrl.trim() &&
+      group.capabilities.length > 0 &&
+      group.modelMappings.length > 0 && group.modelMappings.every((mapping) => mapping.requestPattern.trim() && mapping.upstreamModel.trim()) &&
+      (group.apiKey.trim() || (previous?.apiKeyPreview && !endpointChanged)),
+    );
+  });
+
+  const handleSave = async () => {
+    try {
+      const response = await saveConfig.mutateAsync({
+        groups: groups.map((group) => ({
+          id: group.id,
+          name: group.name.trim(),
+          protocol: group.protocol,
+          baseUrl: group.baseUrl.trim().replace(/\/+$/, ""),
+          capabilities: group.capabilities,
+          modelMappings: group.modelMappings.map((mapping) => ({
+            requestPattern: mapping.requestPattern.trim(),
+            upstreamModel: mapping.upstreamModel.trim(),
+          })),
+          ...(group.apiKey.trim() ? { apiKey: group.apiKey.trim() } : {}),
+        })),
+      });
+      if (!response.ok) {
+        toast.error(
+          getResponseErrorMessage(response, t("settings.modelConfig.requestFailed")),
+        );
+        return;
+      }
+      toast.success(t("settings.modelConfig.sub2api.saved"));
+    } catch (error) {
+      toast.error(
+        await getRequestErrorMessage(error, t("settings.modelConfig.requestFailed")),
+      );
+    }
+  };
+
+  return (
+    <div className="mt-4 space-y-3">
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {t("settings.modelConfig.sub2api.description")}
+      </p>
+      <div className="space-y-3">
+        {groups.map((group) => (
+          <Sub2ApiGroupCard
+            key={group.id}
+            group={group}
+            onChange={(next) => setGroups((current) => current.map((item) => item.id === next.id ? next : item))}
+            onRemove={() => setGroups((current) => current.filter((item) => item.id !== group.id))}
+            availableModels={modelsByGroup[group.id] ?? []}
+            fetchPending={fetchModels.isPending}
+            onFetchModels={async () => {
+              try {
+                const response = await fetchModels.mutateAsync({
+                  id: group.id,
+                  protocol: group.protocol,
+                  baseUrl: group.baseUrl,
+                  ...(group.apiKey ? { apiKey: group.apiKey } : {}),
+                });
+                if (!response.ok) {
+                  toast.error(getResponseErrorMessage(response, t("settings.modelConfig.sub2api.fetchFailed")));
+                  return;
+                }
+                setModelsByGroup((current) => ({ ...current, [group.id]: response.data.models }));
+              } catch (error) {
+                toast.error(await getRequestErrorMessage(error, t("settings.modelConfig.sub2api.fetchFailed")));
+              }
+            }}
+          />
+        ))}
+        <Button type="button" variant="outline" size="sm" onClick={() => setGroups((current) => [...current, newSub2ApiGroup()])}>
+          <Plus className="size-3.5" />
+          {t("settings.modelConfig.sub2api.addGroup")}
+        </Button>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          {t("settings.modelConfig.sub2api.keyHint")}
+        </p>
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleSave}
+            disabled={loading || saveConfig.isPending || !canSave}
+            title={
+              canSave
+                ? t("settings.modelConfig.sub2api.save")
+                : t("settings.modelConfig.sub2api.missingFields")
+            }
+          >
+            {saveConfig.isPending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : null}
+            {t("settings.modelConfig.sub2api.save")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Sub2ApiGroupCard({
+  group,
+  onChange,
+  onRemove,
+  availableModels,
+  fetchPending,
+  onFetchModels,
+}: {
+  group: Sub2ApiGroupDraft;
+  onChange: (group: Sub2ApiGroupDraft) => void;
+  onRemove: () => void;
+  availableModels: string[];
+  fetchPending: boolean;
+  onFetchModels: () => void;
+}) {
+  const { t } = useTranslation();
+  const modelsId = useId();
+  const [modelSearch, setModelSearch] = useState("");
+  const filteredModels = availableModels.filter((model) =>
+    model.toLowerCase().includes(modelSearch.trim().toLowerCase()),
+  );
+  return (
+    <fieldset className="space-y-3 rounded-md border border-border/70 p-3">
+      <legend className="px-1 text-xs font-medium text-foreground">
+        {group.name || t("settings.modelConfig.sub2api.newGroup")}
+      </legend>
+      <div className="flex justify-end">
+        <Button type="button" size="sm" variant="ghost" onClick={onRemove} aria-label={t("settings.modelConfig.sub2api.removeGroup")}>
+          <Trash2 className="size-3.5" />
+          {t("settings.modelConfig.sub2api.removeGroup")}
+        </Button>
+      </div>
+      <FieldRow
+        label={t("settings.modelConfig.sub2api.groupName")}
+        name={`sub2api-${group.id}-name`}
+        value={group.name}
+        onChange={(name) => onChange({ ...group, name })}
+        placeholder="openai-main"
+      />
+      <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+        <Label htmlFor={`${modelsId}-protocol`} className="text-[11px] text-muted-foreground uppercase">{t("settings.modelConfig.sub2api.protocol")}</Label>
+        <select
+          id={`${modelsId}-protocol`}
+          className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm"
+          value={group.protocol}
+          onChange={(event) => onChange({ ...group, protocol: event.target.value as "openai" | "gemini" })}
+        >
+          <option value="openai">OpenAI</option>
+          <option value="gemini">Gemini</option>
+        </select>
+      </div>
+      <FieldRow
+        label={t("settings.modelConfig.sub2api.baseUrl")}
+        name={`sub2api-${group.id}-base-url`}
+        value={group.baseUrl}
+        onChange={(baseUrl) => onChange({ ...group, baseUrl })}
+        placeholder="https://sub2api.example/v1"
+      />
+      <FieldRow
+        secret
+        label={t("settings.modelConfig.sub2api.apiKey")}
+        name={`sub2api-${group.id}-key`}
+        value={group.apiKey}
+        onChange={(apiKey) => onChange({ ...group, apiKey })}
+        savedPreview={group.apiKeyPreview}
+        placeholder={t("settings.modelConfig.sub2api.keyPlaceholder")}
+      />
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-medium text-muted-foreground">{t("settings.modelConfig.sub2api.capabilitiesLabel")}</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {SUB2API_CAPABILITIES.map((capability) => (
+            <label key={capability} className="inline-flex items-center gap-1.5 text-xs text-foreground">
+              <input
+                type="checkbox"
+                checked={group.capabilities.includes(capability)}
+                onChange={(event) => onChange({
+                  ...group,
+                  capabilities: event.target.checked
+                    ? [...group.capabilities, capability]
+                    : group.capabilities.filter((item) => item !== capability),
+                })}
+              />
+              {t(`settings.modelConfig.sub2api.capabilities.${capability}`)}
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={modelsId} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.sub2api.models")}</Label>
+        <div className="flex gap-2">
+          <Input
+            value={modelSearch}
+            onChange={(event) => setModelSearch(event.target.value)}
+            placeholder={t("settings.modelConfig.sub2api.modelSearch")}
+            aria-label={t("settings.modelConfig.sub2api.modelSearch")}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onFetchModels}
+            disabled={fetchPending || !group.baseUrl.trim()}
+          >
+            {fetchPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
+            {t("settings.modelConfig.sub2api.fetchModels")}
+          </Button>
+        </div>
+        {availableModels.length > 0 ? (
+          <div
+            className="max-h-36 space-y-1 overflow-auto rounded-md border border-border/70 p-2"
+            aria-label={t("settings.modelConfig.sub2api.availableModels")}
+          >
+            {filteredModels.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t("settings.modelConfig.sub2api.noModels")}</p>
+            ) : filteredModels.map((model) => (
+              <label key={model} className="flex items-center gap-2 text-xs text-foreground">
+                <input
+                  type="checkbox"
+                  checked={group.modelMappings.some((mapping) => mapping.upstreamModel === model)}
+                  onChange={(event) => onChange({
+                    ...group,
+                    modelMappings: event.target.checked
+                      ? [...group.modelMappings, { requestPattern: "", upstreamModel: model }]
+                      : group.modelMappings.filter((mapping) => mapping.upstreamModel !== model),
+                  })}
+                />
+                <span className="font-mono">{model}</span>
+              </label>
+            ))}
+          </div>
+        ) : null}
+        <div className="space-y-2" id={modelsId}>
+          {group.modelMappings.map((mapping, index) => (
+            <div key={`${mapping.upstreamModel}-${index}`} className="grid grid-cols-2 gap-2">
+              <Input
+                aria-label={t("settings.modelConfig.sub2api.requestModel")}
+                value={mapping.requestPattern}
+                onChange={(event) => onChange({
+                  ...group,
+                  modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index ? { ...item, requestPattern: event.target.value } : item),
+                })}
+                placeholder="DC-codex-agent-LLM"
+              />
+              <Input
+                aria-label={t("settings.modelConfig.sub2api.upstreamModel")}
+                value={mapping.upstreamModel}
+                onChange={(event) => onChange({
+                  ...group,
+                  modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index ? { ...item, upstreamModel: event.target.value } : item),
+                })}
+              />
+            </div>
+          ))}
+        </div>
+        <p id={`${modelsId}-hint`} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.sub2api.modelsHint")}</p>
+      </div>
+    </fieldset>
   );
 }
 
@@ -6343,6 +6662,7 @@ function FieldRow({
   savedPreview?: string;
 }) {
   const { t } = useTranslation();
+  const inputId = useId();
   const [revealed, setRevealed] = useState(false);
   useEffect(() => {
     if (!value) setRevealed(false);
@@ -6350,11 +6670,12 @@ function FieldRow({
   const hasSavedSecret = Boolean(savedPreview && !value);
   return (
     <div className="grid grid-cols-[120px_1fr] items-center gap-3">
-      <Label className="justify-start text-[11px] font-normal tracking-wide text-muted-foreground uppercase">
+      <Label htmlFor={inputId} className="justify-start text-[11px] font-normal tracking-wide text-muted-foreground uppercase">
         {label}
       </Label>
       <div className="relative">
         <Input
+          id={inputId}
           name={name}
           autoComplete={autoComplete ?? (secret ? "new-password" : undefined)}
           type={secret && !revealed ? "password" : "text"}

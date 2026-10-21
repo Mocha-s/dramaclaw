@@ -203,9 +203,10 @@ async def generate_prop_reference(
     if provider == "newapi":
         from novelvideo.config import get_effective_newapi_gateway_config
 
-        gateway = get_effective_newapi_gateway_config()
-        api_key = gateway.api_key
         model = selected_model or resolve_prop_reference_image_model()
+        gateway = get_effective_newapi_gateway_config(capability="image", model=model)
+        api_key = gateway.api_key
+        model = gateway.model or model
         base_url = gateway.base_url
     else:
         api_key = config.get("api_key")

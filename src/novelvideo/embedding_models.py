@@ -10,6 +10,7 @@ from typing import Iterator
 from novelvideo.model_gateway_settings import (
     MODE_CUSTOM,
     MODE_OFFICIAL,
+    MODE_SUB2API,
     get_ce_newapi_config_for_mode,
     get_effective_newapi_config,
     get_newapi_embedding_model_config,
@@ -44,7 +45,7 @@ def active_gateway_uses_custom_embedding() -> bool:
 
     if not is_ce_effective():
         return False
-    return get_effective_newapi_config().mode == MODE_CUSTOM
+    return get_effective_newapi_config().mode in {MODE_CUSTOM, MODE_SUB2API}
 
 
 def embedding_model_for_new_project() -> str:
@@ -123,11 +124,12 @@ def embedding_model_spec(
             project_dimensions = int(
                 saved.get("dimension") or COGNEE_EMBEDDING_DIMENSIONS
             )
+        active_mode = get_effective_newapi_config().mode
         return EmbeddingModelSpec(
             internal_model=clean_model,
             dimensions=project_dimensions,
             send_dimensions=True,
-            gateway=MODE_CUSTOM,
+            gateway=MODE_SUB2API if active_mode == MODE_SUB2API else MODE_CUSTOM,
         )
     raise RuntimeError(f"Unsupported embedding model: {clean_model or '<empty>'}")
 
@@ -136,12 +138,29 @@ def embedding_gateway_credentials(spec: EmbeddingModelSpec) -> tuple[str, str]:
     """Resolve credentials for the gateway permanently implied by a model spec."""
 
     if is_ce_effective():
-        gateway = get_ce_newapi_config_for_mode(spec.gateway)
+        gateway = (
+            get_effective_newapi_config(
+                capability="embedding",
+                model=spec.internal_model,
+            )
+            if spec.gateway == MODE_SUB2API
+            else get_ce_newapi_config_for_mode(spec.gateway)
+        )
         return gateway.api_key, gateway.base_url
     if spec.gateway != MODE_OFFICIAL:
         raise RuntimeError("Custom embedding gateway is only available in CE")
     gateway = get_effective_newapi_config(official_base_url=OFFICIAL_NEWAPI_BASE_URL)
     return gateway.api_key, gateway.base_url
+
+
+def embedding_gateway_model(spec: EmbeddingModelSpec) -> str:
+    if is_ce_effective() and spec.gateway == MODE_SUB2API:
+        gateway = get_effective_newapi_config(
+            capability="embedding",
+            model=spec.internal_model,
+        )
+        return gateway.model or spec.internal_model
+    return spec.internal_model
 
 
 def current_embedding_model_spec() -> EmbeddingModelSpec | None:

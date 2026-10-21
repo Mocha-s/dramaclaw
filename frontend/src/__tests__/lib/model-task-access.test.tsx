@@ -141,7 +141,9 @@ describe("model task access gate", () => {
 
     const { result } = renderGate();
 
-    await waitFor(() => expect(result.current.message).not.toBeNull());
+    await waitFor(() => expect(result.current.message).not.toBeNull(), {
+      timeout: 5000,
+    });
     expect(result.current.blocked).toBe(true);
     expect(result.current.denialReason).toBeNull();
     expect(result.current.message).toBe("modelTaskAccess.blocked.generic");

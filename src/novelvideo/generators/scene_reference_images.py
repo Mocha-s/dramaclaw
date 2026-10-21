@@ -689,9 +689,13 @@ async def generate_scene_reference_image(
         if organization_egress is None:
             from novelvideo.config import get_effective_newapi_gateway_config
 
-            gateway = get_effective_newapi_gateway_config()
+            gateway = get_effective_newapi_gateway_config(
+                capability="image",
+                model=selected_model,
+            )
             api_key = gateway.api_key
             base_url = gateway.base_url
+            selected_model = gateway.model or selected_model
         else:
             api_key = organization_egress.credential.api_key
             base_url = organization_egress.credential.base_url

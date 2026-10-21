@@ -72,9 +72,10 @@ async def test_scene_reference_newapi_uses_normalized_gateway_base_url(monkeypat
     monkeypatch.setattr(
         config,
         "get_effective_newapi_gateway_config",
-        lambda: SimpleNamespace(
+        lambda **_kwargs: SimpleNamespace(
             api_key="platform-key",
             base_url="https://relayclaw.cdnfg.com/v1",
+            model="",
         ),
     )
     monkeypatch.setattr(

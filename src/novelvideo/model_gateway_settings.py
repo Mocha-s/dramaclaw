@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from novelvideo.official_defaults import (
     DEFAULT_COGNEE_EMBEDDING_DIM,
@@ -36,7 +37,21 @@ from novelvideo.sqlite_pragmas import configure_sqlite_connection
 MODE_OFFICIAL = "official"
 MODE_CUSTOM = "custom"
 MODE_HYBRID = "hybrid"
-VALID_MODES = {MODE_OFFICIAL, MODE_CUSTOM, MODE_HYBRID}
+MODE_SUB2API = "sub2api"
+VALID_MODES = {MODE_OFFICIAL, MODE_CUSTOM, MODE_HYBRID, MODE_SUB2API}
+CAPABILITY_TEXT = "text"
+CAPABILITY_EMBEDDING = "embedding"
+CAPABILITY_IMAGE = "image"
+CAPABILITY_VIDEO = "video"
+CAPABILITY_AUDIO = "audio"
+SUB2API_CAPABILITIES = (
+    CAPABILITY_TEXT,
+    CAPABILITY_EMBEDDING,
+    CAPABILITY_IMAGE,
+    CAPABILITY_VIDEO,
+    CAPABILITY_AUDIO,
+)
+SUB2API_PROTOCOLS = {"openai", "gemini"}
 CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW = "relayclaw_brainclaw"
 CUSTOM_LLM_MODE_ADVANCED = "advanced"
 VALID_CUSTOM_LLM_MODES = {
@@ -69,6 +84,8 @@ class EffectiveNewApiConfig:
     source: str
     base_url: str
     api_key: str
+    protocol: str = "openai"
+    model: str = ""
 
 
 @dataclass(frozen=True)
@@ -133,6 +150,192 @@ def normalize_gateway_mode(value: str | None) -> str:
     return mode if mode in VALID_MODES else MODE_OFFICIAL
 
 
+def normalize_capability(value: str | None) -> str:
+    capability = str(value or CAPABILITY_TEXT).strip().lower()
+    if capability not in SUB2API_CAPABILITIES:
+        raise ValueError(f"unsupported model capability: {capability}")
+    return capability
+
+
+def _normalize_sub2api_groups(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not isinstance(groups, list):
+        raise ValueError("Sub2API groups must be a list")
+    normalized: list[dict[str, Any]] = []
+    ids: set[str] = set()
+    names: set[str] = set()
+    for group in groups:
+        if not isinstance(group, dict):
+            raise ValueError("each Sub2API group must be an object")
+        group_id = str(group.get("id") or "").strip()
+        name = str(group.get("name") or "").strip()
+        protocol = str(group.get("protocol") or "").strip().lower()
+        base_url = normalize_sub2api_base_url(str(group.get("baseUrl") or ""))
+        api_key = normalize_api_key(str(group.get("apiKey") or ""))
+        raw_capabilities = group.get("capabilities", [])
+        raw_models = group.get("models", [])
+        raw_mappings = group.get("modelMappings")
+        if not isinstance(raw_capabilities, list) or not isinstance(raw_models, list):
+            raise ValueError("Sub2API capabilities and models must be lists")
+        capabilities = sorted({normalize_capability(value) for value in raw_capabilities})
+        if raw_mappings is None:
+            mappings = [
+                {"requestPattern": str(value or "").strip(), "upstreamModel": str(value or "").strip()}
+                for value in raw_models
+            ]
+        elif isinstance(raw_mappings, list):
+            mappings = [
+                {
+                    "requestPattern": str(item.get("requestPattern") or "").strip(),
+                    "upstreamModel": str(item.get("upstreamModel") or "").strip(),
+                }
+                for item in raw_mappings
+                if isinstance(item, dict)
+            ]
+        else:
+            raise ValueError("Sub2API modelMappings must be a list")
+        mappings = list({(item["requestPattern"], item["upstreamModel"]): item for item in mappings if item["requestPattern"] and item["upstreamModel"]}.values())
+        if not group_id or not name or not base_url or not api_key:
+            raise ValueError("Sub2API groups require id, name, baseUrl, and apiKey")
+        if protocol not in SUB2API_PROTOCOLS:
+            raise ValueError("unsupported Sub2API protocol")
+        parsed_base_url = urlsplit(base_url)
+        if parsed_base_url.scheme not in {"http", "https"} or not parsed_base_url.netloc:
+            raise ValueError("Sub2API Base URL must use HTTP or HTTPS")
+        if not capabilities or not mappings:
+            raise ValueError("Sub2API groups require capabilities and models")
+        if group_id in ids or name.casefold() in names:
+            raise ValueError("Sub2API group ids and names must be unique")
+        if any("*" in item["requestPattern"] and not item["requestPattern"].endswith("*") for item in mappings):
+            raise ValueError("Sub2API model patterns only support a trailing *")
+        ids.add(group_id)
+        names.add(name.casefold())
+        normalized.append(
+            {
+                "id": group_id,
+                "name": name,
+                "protocol": protocol,
+                "baseUrl": base_url,
+                "apiKey": api_key,
+                "capabilities": capabilities,
+                "modelMappings": mappings,
+            }
+        )
+    return normalized
+
+
+def save_sub2api_groups(groups: list[dict[str, Any]], *, activate: bool = False) -> None:
+    normalized = _normalize_sub2api_groups(groups)
+    values = {
+        "sub2api_groups": json.dumps(
+            normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ),
+        "sub2api_base_url": "",
+        **{f"sub2api_api_key_{capability}": "" for capability in SUB2API_CAPABILITIES},
+    }
+    if activate:
+        values["model_gateway_mode"] = MODE_SUB2API
+    _write_many(values)
+
+
+def get_sub2api_groups(*, masked: bool = False) -> list[dict[str, Any]]:
+    raw = get_model_gateway_settings().get("sub2api_groups", "")
+    try:
+        groups = json.loads(raw) if raw else []
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(groups, list):
+        return []
+    if not groups:
+        # Migrate settings written by the first Sub2API version in memory.
+        settings = get_model_gateway_settings()
+        legacy_url = normalize_sub2api_base_url(settings.get("sub2api_base_url", ""))
+        groups = [
+            {
+                "id": capability,
+                "name": capability.title(),
+                "protocol": "openai",
+                "baseUrl": legacy_url,
+                "apiKey": settings.get(f"sub2api_api_key_{capability}", ""),
+                "capabilities": [capability],
+                "models": ["*"],
+            }
+            for capability in SUB2API_CAPABILITIES
+            if settings.get(f"sub2api_api_key_{capability}")
+        ]
+    result: list[dict[str, Any]] = []
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        item = dict(group)
+        if masked:
+            item["apiKeyPreview"] = mask_secret(str(item.pop("apiKey", "")))
+        result.append(item)
+    return result
+
+
+def _resolve_sub2api_group(
+    *, capability: str, model: str
+) -> dict[str, Any] | None:
+    capability = normalize_capability(capability)
+    wanted_model = str(model or "").strip()
+    matches: list[tuple[int, dict[str, Any], str]] = []
+    for group in get_sub2api_groups():
+        if capability not in group.get("capabilities", []):
+            continue
+        mappings = group.get("modelMappings") or [
+            {"requestPattern": model, "upstreamModel": model}
+            for model in group.get("models", [])
+        ]
+        for mapping in mappings:
+            pattern = str(mapping.get("requestPattern") or "").strip()
+            upstream_model = str(mapping.get("upstreamModel") or "").strip()
+            if not pattern or not upstream_model:
+                continue
+            if pattern == "*":
+                matches.append((0, group, wanted_model if upstream_model == "*" else upstream_model))
+            elif pattern.endswith("*") and wanted_model.startswith(pattern[:-1]):
+                matches.append(
+                    (
+                        len(pattern) - 1,
+                        group,
+                        wanted_model if upstream_model == "*" else upstream_model,
+                    )
+                )
+            elif pattern == wanted_model:
+                matches.append(
+                    (10**9, group, wanted_model if upstream_model == "*" else upstream_model)
+                )
+    if not matches and not wanted_model:
+        defaults = [
+            (group, str(mapping.get("upstreamModel") or ""))
+            for group in get_sub2api_groups()
+            if capability in group.get("capabilities", [])
+            for mapping in (group.get("modelMappings") or [])
+            if mapping.get("requestPattern") == "*"
+        ]
+        if not defaults:
+            candidates = [
+                (group, mapping)
+                for group in get_sub2api_groups()
+                if capability in group.get("capabilities", [])
+                for mapping in (group.get("modelMappings") or [])
+            ]
+            if len(candidates) == 1:
+                return candidates[0][0], str(candidates[0][1].get("upstreamModel") or "")
+        return defaults[0] if len(defaults) == 1 else None
+    if not matches:
+        return None
+    best_score = max(score for score, _group, _model in matches)
+    best_matches = [
+        (group, upstream_model)
+        for score, group, upstream_model in matches
+        if score == best_score
+    ]
+    if len(best_matches) != 1:
+        return None
+    return best_matches[0]
+
+
 def normalize_custom_llm_mode(value: str | None) -> str:
     mode = str(value or "").strip().lower()
     return mode if mode in VALID_CUSTOM_LLM_MODES else CUSTOM_LLM_MODE_ADVANCED
@@ -150,6 +353,21 @@ def normalize_relay_base_url(value: str | None) -> str:
     if base.endswith("/v1"):
         return base
     return f"{base}/v1"
+
+
+def normalize_sub2api_base_url(value: str | None) -> str:
+    """Preserve Sub2API version paths such as /v1, /api/v3, and /v1beta."""
+    return str(value or "").strip().rstrip("/")
+
+
+def _sub2api_openai_compat_base_url(group: dict[str, Any]) -> str:
+    base_url = normalize_sub2api_base_url(str(group.get("baseUrl") or ""))
+    protocol = str(group.get("protocol") or "").strip().lower()
+    if protocol == "gemini" and base_url.endswith("/v1beta"):
+        base_url = base_url[: -len("/v1beta")]
+    if base_url.endswith(("/v1", "/v3", "/api/v1", "/api/v3")):
+        return base_url
+    return f"{base_url}/v1"
 
 
 def _now_iso() -> str:
@@ -324,6 +542,28 @@ def save_custom_newapi_gateway(
     if activate:
         values["model_gateway_mode"] = MODE_CUSTOM
     _write_many(values)
+
+
+def save_sub2api_gateway(
+    *,
+    base_url: str,
+    keys: dict[str, str],
+    activate: bool = False,
+) -> None:
+    groups = [
+        {
+            "id": capability,
+            "name": capability.title(),
+            "protocol": "openai",
+            "baseUrl": normalize_sub2api_base_url(base_url),
+            "apiKey": keys.get(capability, ""),
+            "capabilities": [capability],
+            "models": ["*"],
+        }
+        for capability in SUB2API_CAPABILITIES
+        if normalize_api_key(keys.get(capability, ""))
+    ]
+    save_sub2api_groups(groups, activate=activate)
 
 
 def save_newapi_database_config(
@@ -945,6 +1185,47 @@ def get_ce_media_model_catalog(
     )
 
 
+def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
+    capability = str(media_type or "").strip().lower()
+    if capability not in {CAPABILITY_IMAGE, CAPABILITY_VIDEO}:
+        return []
+    catalog: list[dict[str, Any]] = []
+    for group in get_sub2api_groups(masked=True):
+        if capability not in group.get("capabilities", []):
+            continue
+        for mapping in group.get("modelMappings", []):
+            request_model = str(mapping.get("requestPattern") or "").strip()
+            upstream_model = str(mapping.get("upstreamModel") or "").strip()
+            if not request_model or request_model.endswith("*") or not upstream_model:
+                continue
+            api_model = request_model if capability == CAPABILITY_IMAGE else f"newapi_{request_model}"
+            catalog.append(
+                {
+                    "catalogId": request_model,
+                    "catalog_id": request_model,
+                    "id": request_model,
+                    "providerId": "newapi",
+                    "provider": "newapi",
+                    "apiModel": api_model,
+                    "api_model": api_model,
+                    "gatewayModel": upstream_model,
+                    "gateway_model": upstream_model,
+                    "upstreamModel": upstream_model,
+                    "upstream_model": upstream_model,
+                    "label": f"{group['name']} · {request_model}",
+                    "mediaType": capability,
+                    "sortOrder": 100,
+                    "request": {
+                        "endpoint": "images/generations"
+                        if capability == CAPABILITY_IMAGE
+                        else "video/generations",
+                        "parameters": [],
+                    },
+                }
+            )
+    return catalog
+
+
 def get_newapi_embedding_model_config() -> dict[str, Any]:
     settings = get_model_gateway_settings()
     return _decode_embedding_model_config(settings.get("custom_newapi_embedding_model"))
@@ -1057,6 +1338,8 @@ def get_effective_newapi_config(
     explicit_config: EffectiveNewApiConfig | None = None,
     official_base_url: str | None = None,
     official_api_key: str | None = None,
+    capability: str = CAPABILITY_TEXT,
+    model: str = "",
 ) -> EffectiveNewApiConfig:
     if explicit_config is not None:
         if type(explicit_config) is not EffectiveNewApiConfig:
@@ -1078,12 +1361,18 @@ def get_effective_newapi_config(
             ),
         )
 
+    capability = normalize_capability(capability)
     settings = get_model_gateway_settings()
     mode = normalize_gateway_mode(settings.get("model_gateway_mode"))
-    return get_ce_newapi_config_for_mode(mode)
+    return get_ce_newapi_config_for_mode(mode, capability=capability, model=model)
 
 
-def get_ce_newapi_config_for_mode(mode: str) -> EffectiveNewApiConfig:
+def get_ce_newapi_config_for_mode(
+    mode: str,
+    *,
+    capability: str = CAPABILITY_TEXT,
+    model: str = "",
+) -> EffectiveNewApiConfig:
     """Return CE credentials for one gateway without changing the active mode.
 
     Embedding projects can remain bound to the gateway that created their vector
@@ -1095,6 +1384,24 @@ def get_ce_newapi_config_for_mode(mode: str) -> EffectiveNewApiConfig:
 
     settings = get_model_gateway_settings()
     mode = normalize_gateway_mode(mode)
+    capability = normalize_capability(capability)
+    if mode == MODE_SUB2API:
+        group = _resolve_sub2api_group(capability=capability, model=model)
+        if group is None:
+            return EffectiveNewApiConfig(
+                mode=MODE_SUB2API,
+                source="sub2api",
+                base_url="",
+                api_key="",
+            )
+        return EffectiveNewApiConfig(
+            mode=MODE_SUB2API,
+            source="sub2api",
+            base_url=_sub2api_openai_compat_base_url(group[0]),
+            api_key=group[0]["apiKey"],
+            protocol=group[0]["protocol"],
+            model=group[1],
+        )
     if mode == MODE_CUSTOM:
         return EffectiveNewApiConfig(
             mode=MODE_CUSTOM,
@@ -1124,7 +1431,7 @@ def _is_official_relay_url(base_url: str) -> bool:
     )
 
 
-def get_effective_llm_config() -> EffectiveLlmConfig:
+def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
     """Resolve LLM independently from media and embedding gateways."""
     if not _uses_ce_gateway_settings():
         base_url = normalize_relay_base_url(
@@ -1152,6 +1459,30 @@ def get_effective_llm_config() -> EffectiveLlmConfig:
             api_key=normalize_api_key(settings.get("official_newapi_api_key", "")),
             model="brainclaw",
             is_brainclaw=True,
+        )
+    if gateway_mode == MODE_SUB2API:
+        backend = (
+            os.environ.get("DRAMACLAW_CHAT_BACKEND")
+            or os.environ.get("SUPERTALE_CHAT_BACKEND")
+            or "codex"
+        ).strip().lower()
+        selected_model = str(model or "").strip() or (
+            str(os.environ.get("HERMES_MODEL", "DC-hermes-LLM") or "DC-hermes-LLM").strip()
+            if backend == "hermes"
+            else str(os.environ.get("CODEX_MODEL", "DC-codex-agent-LLM") or "").strip()
+        )
+        gateway = get_ce_newapi_config_for_mode(
+            MODE_SUB2API,
+            capability=CAPABILITY_TEXT,
+            model=selected_model,
+        )
+        return EffectiveLlmConfig(
+            mode=MODE_SUB2API,
+            source=MODE_SUB2API,
+            base_url=gateway.base_url,
+            api_key=gateway.api_key,
+            model=gateway.model,
+            is_brainclaw=False,
         )
     if custom_llm_mode == CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW:
         brainclaw_base_url = normalize_relay_base_url(
@@ -1436,6 +1767,9 @@ def build_model_gateway_status(
         if uses_ce_settings
         else ""
     )
+    sub2api_groups = get_sub2api_groups(masked=True) if uses_ce_settings else []
+    sub2api_configured = bool(sub2api_groups)
+    sub2api_text_configured = any(CAPABILITY_TEXT in group.get("capabilities", []) for group in sub2api_groups)
     effective = get_effective_newapi_config(
         official_base_url=official_base_url,
         official_api_key=official_api_key,
@@ -1465,14 +1799,22 @@ def build_model_gateway_status(
             "source": effective.source,
             "baseUrl": effective.base_url,
             "apiKeyPreview": mask_secret(effective.api_key),
-            "configured": bool(effective.base_url and effective.api_key),
+            "configured": (
+                sub2api_configured
+                if effective.mode == MODE_SUB2API
+                else bool(effective.base_url and effective.api_key)
+            ),
         },
         "llmEffective": {
             "mode": effective_llm.mode,
             "source": effective_llm.source,
             "baseUrl": effective_llm.base_url,
             "apiKeyPreview": mask_secret(effective_llm.api_key),
-            "configured": bool(effective_llm.base_url and effective_llm.api_key),
+            "configured": (
+                sub2api_text_configured
+                if effective_llm.mode == MODE_SUB2API
+                else bool(effective_llm.base_url and effective_llm.api_key)
+            ),
             "model": effective_llm.model,
             "brainclaw": effective_llm.is_brainclaw,
         },
@@ -1515,6 +1857,10 @@ def build_model_gateway_status(
             "adminBaseUrl": settings.get("custom_newapi_admin_base_url", ""),
             "tokenName": settings.get("custom_newapi_token_name", ""),
             "tokenId": settings.get("custom_newapi_token_id", ""),
+        },
+        "sub2api": {
+            "groups": sub2api_groups,
+            "configured": sub2api_configured,
         },
     }
 

@@ -7613,7 +7613,8 @@
       "modes": {
         "official": "Official",
         "custom": "Custom",
-        "hybrid": "Local + Official Hybrid"
+        "hybrid": "Local + Official Hybrid",
+        "sub2api": "Sub2API"
       },
       "fields": {
         "baseUrl": "New API URL",
@@ -7654,6 +7655,39 @@
         "enabled": "BrainClaw selected; it applies while Custom mode is active.",
         "missingEndpoint": "Enter the BrainClaw NewAPI URL.",
         "advancedEnabled": "Advanced custom LLM is enabled."
+      },
+      "sub2api": {
+        "description": "Add any number of OpenAI/Gemini account groups, then choose each group's capabilities and model match rules. Requests select one group by capability and model name.",
+        "newGroup": "New account group",
+        "addGroup": "Add account group",
+        "removeGroup": "Remove group",
+        "groupName": "Group name",
+        "protocol": "Protocol",
+        "baseUrl": "Base URL",
+        "apiKey": "API Key",
+        "capabilitiesLabel": "Capabilities",
+        "models": "Model match rules",
+        "requestModel": "DramaClaw model pattern",
+        "upstreamModel": "Upstream model",
+        "modelsPlaceholder": "One per line, e.g. gpt-5 or gemini-embedding-*",
+        "modelsHint": "Map DramaClaw request models (for example DC-freezone-text-writer-LLM) to the selected Sub2API upstream model. Request rules may end with *; exact matches win.",
+        "modelSearch": "Filter models",
+        "fetchModels": "Fetch models",
+        "availableModels": "Available models",
+        "noModels": "No matching models",
+        "fetchFailed": "Could not fetch models. Check the URL, protocol, and API key, or enter model names manually.",
+        "keyPlaceholder": "Enter API Key",
+        "keyHint": "Each group may serve multiple capabilities, and multiple groups may serve the same capability.",
+        "save": "Save Sub2API settings",
+        "saved": "Sub2API account groups saved. Use the button above to activate them.",
+        "missingFields": "Complete each group's name, Base URL, key, capabilities, and model rules.",
+        "capabilities": {
+          "text": "Text / Vision",
+          "embedding": "Embedding",
+          "image": "Image",
+          "video": "Video",
+          "audio": "Audio"
+        }
       },
       "agent": {
         "title": "Agent model",

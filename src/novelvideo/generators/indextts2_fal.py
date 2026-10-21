@@ -140,6 +140,7 @@ class IndexTTS2FalClient:
         self.provider = (
             (provider if provider is not None else INDEXTTS2_PROVIDER).strip().lower()
         )
+        resolved_gateway_model = ""
         if self.provider not in {"newapi", "fal"}:
             self.provider = "newapi"
         if self.provider == "newapi":
@@ -147,10 +148,16 @@ class IndexTTS2FalClient:
                 self.api_key = ""
                 self.endpoint = ""
             else:
-                gateway = get_effective_newapi_gateway_config()
+                gateway = get_effective_newapi_gateway_config(
+                    capability="audio",
+                    model=model or INDEXTTS2_NEWAPI_MODEL,
+                )
                 self.api_key = api_key if api_key is not None else gateway.api_key
                 self.endpoint = endpoint or gateway.base_url
+                resolved_gateway_model = gateway.model
             self.model = model or INDEXTTS2_NEWAPI_MODEL
+            if resolved_gateway_model:
+                self.model = resolved_gateway_model
         else:
             if organization_mode:
                 self.api_key = ""

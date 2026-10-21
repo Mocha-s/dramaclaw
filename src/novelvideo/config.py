@@ -392,12 +392,22 @@ def get_newapi_text_pydantic_model(
     from novelvideo.brainclaw_contract import brainclaw_profile_headers
     from novelvideo.model_gateway_settings import get_effective_llm_config
 
-    llm_config = get_effective_llm_config()
     model_name = get_effective_newapi_text_model_name(
         model_env,
         default_model,
         model_name_override=model_name_override,
     )
+    request_model_name = model_name
+    llm_config = get_effective_llm_config(model=request_model_name)
+    if llm_config.mode == "sub2api" and (
+        not llm_config.api_key or not llm_config.base_url
+    ):
+        raise ValueError(
+            "No Sub2API text group matches DramaClaw model "
+            f"'{request_model_name}'. Add a mapping from this request model to an upstream model."
+        )
+    if llm_config.mode == "sub2api" and llm_config.model:
+        model_name = llm_config.model
     timeout_seconds = (
         float(timeout_seconds_override)
         if timeout_seconds_override is not None
@@ -429,16 +439,32 @@ def get_newapi_text_pydantic_model(
             default_headers=default_headers,
             delegate_factory=_newapi_text_openai_model,
             platform_credential_factory=lambda: get_newapi_runtime_credentials(
-                api_key_override=llm_config.api_key,
-                base_url_override=llm_config.base_url,
+                capability="text",
+                model=request_model_name,
+                **(
+                    {}
+                    if llm_config.mode == "sub2api"
+                    else {
+                        "api_key_override": llm_config.api_key,
+                        "base_url_override": llm_config.base_url,
+                    }
+                ),
                 env_api_key="MODEL_API_KEY",
                 env_base_url="MODEL_BASE_URL",
             ),
         )
 
     api_key, base_url = get_newapi_runtime_credentials(
-        api_key_override=llm_config.api_key,
-        base_url_override=llm_config.base_url,
+        capability="text",
+        model=request_model_name,
+        **(
+            {}
+            if llm_config.mode == "sub2api"
+            else {
+                "api_key_override": llm_config.api_key,
+                "base_url_override": llm_config.base_url,
+            }
+        ),
         env_api_key="MODEL_API_KEY",
         env_base_url="MODEL_BASE_URL",
     )
@@ -604,13 +630,17 @@ NEWAPI_BASE_URL = os.environ.get("NEWAPI_BASE_URL", "")
 NEWAPI_API_KEY = os.environ.get("NEWAPI_API_KEY", "")
 
 
-def get_effective_newapi_gateway_config():
+def get_effective_newapi_gateway_config(
+    *, capability: str = "text", model: str = ""
+):
     """Return the selected NewAPI runtime gateway credentials."""
     from novelvideo.model_gateway_settings import get_effective_newapi_config
 
     return get_effective_newapi_config(
         official_base_url=OFFICIAL_NEWAPI_BASE_URL,
         official_api_key=NEWAPI_API_KEY,
+        capability=capability,
+        model=model,
     )
 
 
@@ -618,6 +648,8 @@ def get_newapi_runtime_credentials(
     *,
     api_key_override: str | None = None,
     base_url_override: str | None = None,
+    capability: str = "text",
+    model: str = "",
     env_api_key: str = "NEWAPI_API_KEY",
     env_base_url: str = "NEWAPI_BASE_URL",
 ) -> tuple[str, str]:
@@ -628,7 +660,10 @@ def get_newapi_runtime_credentials(
     backed. Explicit per-call overrides remain available for isolated tools.
     """
 
-    gateway = get_effective_newapi_gateway_config()
+    gateway = get_effective_newapi_gateway_config(
+        capability=capability,
+        model=model,
+    )
     environment_backed = gateway.source == "environment"
     api_key = (
         str(api_key_override or "").strip()
@@ -1321,11 +1356,15 @@ def _image_provider_config(
             "model": model or OPENAI_IMAGE_MODEL,
         }
     if provider == "newapi":
-        gateway = get_effective_newapi_gateway_config()
+        selected_model = model or NEWAPI_IMAGE_MODEL
+        gateway = get_effective_newapi_gateway_config(
+            capability="image",
+            model=selected_model,
+        )
         return {
             "provider": provider,
             "api_key": gateway.api_key,
-            "model": model or NEWAPI_IMAGE_MODEL,
+            "model": gateway.model or selected_model,
             "base_url": gateway.base_url,
         }
 

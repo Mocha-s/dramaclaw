@@ -7613,7 +7613,8 @@
       "modes": {
         "official": "官方",
         "custom": "自定义",
-        "hybrid": "本地 + 官方混合"
+        "hybrid": "本地 + 官方混合",
+        "sub2api": "Sub2API"
       },
       "fields": {
         "baseUrl": "New API 地址",
@@ -7654,6 +7655,39 @@
         "enabled": "已选用虾驿 BrainClaw，自定义模式下生效。",
         "missingEndpoint": "请填写 BrainClaw NewAPI 地址。",
         "advancedEnabled": "已切换为高级自定义 LLM。"
+      },
+      "sub2api": {
+        "description": "添加任意数量的 OpenAI / Gemini 账号组，并为每组选择能力和模型匹配规则。请求按能力与模型名选择唯一账号组。",
+        "newGroup": "新账号组",
+        "addGroup": "添加账号组",
+        "removeGroup": "删除账号组",
+        "groupName": "账号组名称",
+        "protocol": "协议",
+        "baseUrl": "Base URL",
+        "apiKey": "API Key",
+        "capabilitiesLabel": "支持能力",
+        "models": "模型匹配规则",
+        "requestModel": "DramaClaw 模型规则",
+        "upstreamModel": "上游模型",
+        "modelsPlaceholder": "每行一条，例如：gpt-5 或 gemini-embedding-*",
+        "modelsHint": "左侧填写 DramaClaw 请求模型名（例如 DC-freezone-text-writer-LLM），右侧选择 Sub2API 上游模型；请求规则可用末尾 *，精确匹配优先。",
+        "modelSearch": "筛选模型",
+        "fetchModels": "拉取模型列表",
+        "availableModels": "可用模型列表",
+        "noModels": "没有匹配的模型",
+        "fetchFailed": "拉取模型失败，请检查地址、协议和 API Key，或手动填写模型名。",
+        "keyPlaceholder": "输入 API Key",
+        "keyHint": "每个账号组可服务多个能力；同一能力可以配置多个账号组。",
+        "save": "保存 Sub2API 配置",
+        "saved": "Sub2API 账号组已保存。请点击上方按钮启用。",
+        "missingFields": "请完成每个账号组的名称、Base URL、Key、能力和模型规则。",
+        "capabilities": {
+          "text": "文本 / 视觉",
+          "embedding": "Embedding",
+          "image": "图片",
+          "video": "视频",
+          "audio": "音频"
+        }
       },
       "agent": {
         "title": "Agent 模型",

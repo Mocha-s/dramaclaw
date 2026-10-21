@@ -327,11 +327,11 @@ def _get_endpoint_env(provider: str, primary_key: str, fallback_key: str) -> str
     return ""
 
 
-def _effective_newapi_gateway() -> tuple[str, str]:
+def _effective_newapi_gateway(*, capability: str = "text") -> tuple[str, str]:
     try:
         from novelvideo.config import get_newapi_runtime_credentials
 
-        return get_newapi_runtime_credentials()
+        return get_newapi_runtime_credentials(capability=capability)
     except Exception:
         if uses_local_ce_runtime():
             # CE credentials are never allowed to fall back to deployment env.
@@ -676,6 +676,7 @@ def _project_embedding_request_kwargs(
     """Apply the current project's immutable model and gateway to LiteLLM kwargs."""
 
     spec = require_current_embedding_model_spec()
+    from novelvideo.embedding_models import embedding_gateway_model
     from novelvideo.model_gateway_runtime import current_model_gateway_context
 
     context = current_model_gateway_context()
@@ -691,7 +692,9 @@ def _project_embedding_request_kwargs(
 
     routed = dict(kwargs)
     routed["custom_llm_provider"] = "openai"
-    routed["model"] = _normalize_embedding_model("newapi", spec.internal_model)
+    routed["model"] = _normalize_embedding_model(
+        "newapi", embedding_gateway_model(spec)
+    )
     routed["api_key"] = api_key
     routed["api_base"] = base_url
     if spec.send_dimensions:
@@ -1236,10 +1239,10 @@ def _apply_embedding_env(llm_provider: str, api_key: str) -> tuple[str, str, str
         ):
             embedding_api_key = os.getenv("OPENROUTER_API_KEY", "")
         elif _uses_newapi_gateway(raw_embedding_provider):
-            embedding_api_key = _effective_newapi_gateway()[0]
+            embedding_api_key = _effective_newapi_gateway(capability="embedding")[0]
         else:
             embedding_api_key = (
-                _effective_newapi_gateway()[0]
+                _effective_newapi_gateway(capability="embedding")[0]
                 or os.getenv("EMBEDDING_API_KEY", "")
                 or os.getenv("OPENAI_API_KEY", "")
             )

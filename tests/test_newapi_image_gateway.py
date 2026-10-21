@@ -44,7 +44,11 @@ def _patch_scene_newapi_gateway(
     monkeypatch.setattr(
         config,
         "get_effective_newapi_gateway_config",
-        lambda: SimpleNamespace(api_key=api_key, base_url=base_url),
+        lambda **_kwargs: SimpleNamespace(
+            api_key=api_key,
+            base_url=base_url,
+            model="",
+        ),
     )
 
 

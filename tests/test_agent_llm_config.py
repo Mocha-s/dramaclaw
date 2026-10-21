@@ -20,6 +20,7 @@ from novelvideo.model_gateway_settings import (
     save_agent_llm_config,
     save_custom_newapi_gateway,
     save_official_newapi_key,
+    save_sub2api_groups,
     set_model_gateway_mode,
 )
 
@@ -167,6 +168,38 @@ def test_agent_config_api_masks_secret_and_requires_key_for_new_host(
     assert response.json()["detail"] == "apiKey is required"
 
 
+def test_agent_config_api_does_not_require_local_newapi_provisioner(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "false")
+    monkeypatch.setattr(
+        model_gateway,
+        "refresh_model_gateway_runtime",
+        lambda: {"refreshed": True},
+    )
+    monkeypatch.setattr(
+        model_gateway,
+        "restart_shared_codex_runtime_when_idle",
+        lambda: "stopped",
+    )
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/agent/config",
+        json={
+            "mode": "third_party",
+            "baseUrl": "https://agent.example",
+            "apiKey": "sk-agent-secret",
+            "model": "vendor-agent-model",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "sk-agent-secret" not in response.text
+
+
 def test_inherited_agent_route_rotates_when_gateway_mode_changes(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -201,6 +234,39 @@ def test_inherited_agent_route_rotates_when_gateway_mode_changes(
     assert response.json()["data"]["mode"] == "custom"
     assert response.json()["runtime"]["codexAppServer"] == "stopped"
     assert rotations == [True]
+
+
+def test_hermes_default_model_resolves_sub2api_group_without_env_override(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("DRAMACLAW_CHAT_BACKEND", "hermes")
+    monkeypatch.delenv("HERMES_MODEL", raising=False)
+    save_sub2api_groups(
+        [
+            {
+                "id": "hermes-text",
+                "name": "Hermes text",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-hermes",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "DC-hermes-LLM",
+                        "upstreamModel": "gpt-6.1-sol",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    agent_gateway = get_effective_agent_llm_config()
+
+    assert agent_gateway.api_key == "sk-hermes"
+    assert agent_gateway.base_url == "https://sub2api.example/v1"
+    assert agent_gateway.model == "gpt-6.1-sol"
 
 
 def test_codex_rotation_stops_owner_recorded_by_another_worker(
