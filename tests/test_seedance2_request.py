@@ -625,6 +625,180 @@ async def test_newapi_seedance2_generator_preserves_config_resolution_and_scene_
     assert "seconds" not in payload
 
 
+@pytest.mark.parametrize(
+    ("poll_result", "uses_content_endpoint"),
+    [
+        ({"id": "video-task-1", "status": "completed"}, True),
+        (
+            {
+                "id": "video-task-1",
+                "status": "completed",
+                "url": "https://cdn.example/modern.mp4",
+            },
+            False,
+        ),
+    ],
+)
+async def test_newapi_modern_video_protocol_uses_videos_and_authenticated_content(
+    tmp_path, monkeypatch, poll_result, uses_content_endpoint
+):
+    from pathlib import Path
+
+    from novelvideo.generators import video_generator as video_module
+    from novelvideo.generators.video_generator import NewApiVideoGenerator, VideoGenStatus
+    from novelvideo.ports.video_delivery import VideoDeliveryReceipt
+
+    captured: dict[str, object] = {}
+    generator = NewApiVideoGenerator(
+        api_key="test-key",
+        endpoint="https://gateway.example/v1",
+        model="sd17-seedance-2.5-2",
+        request_schema={"endpoint": "videos", "parameters": []},
+    )
+
+    async def fake_reserve(*_args, **_kwargs):
+        return "reservation-modern"
+
+    async def fake_confirm(*_args, **_kwargs):
+        return None
+
+    async def fake_refund(*_args, **_kwargs):
+        return None
+
+    async def fake_post_json(url, payload, *, headers=None):
+        captured["submit_url"] = url
+        captured["submit_payload"] = payload
+        captured["submit_headers"] = headers
+        return {"id": "video-task-1"}
+
+    async def fake_get_json(url, *, headers=None):
+        captured["poll_url"] = url
+        return poll_result
+
+    async def fake_download_content(url, output_path, *, headers=None):
+        captured["content_url"] = url
+        captured["content_headers"] = headers
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"modern-video")
+        return VideoDeliveryReceipt(
+            method="download",
+            size=len(b"modern-video"),
+            sha256="a" * 64,
+        )
+
+    async def fake_download_video(url, output_path):
+        captured["direct_result_url"] = url
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_bytes(b"modern-video")
+        return b"modern-video"
+
+    monkeypatch.setattr(video_module, "_reserve_video_model_call", fake_reserve)
+    monkeypatch.setattr(video_module, "_confirm_video_model_call", fake_confirm)
+    monkeypatch.setattr(video_module, "_refund_video_model_call", fake_refund)
+    monkeypatch.setattr(video_module, "get_video_result_delivery", lambda: None)
+    monkeypatch.setattr(generator, "_post_json", fake_post_json)
+    monkeypatch.setattr(generator, "_get_json", fake_get_json)
+    monkeypatch.setattr(generator, "_download_video_content", fake_download_content)
+    monkeypatch.setattr(generator, "_download_video", fake_download_video)
+
+    result = await generator.generate(
+        image_path="https://media.example/first.png",
+        prompt="A quiet movement through the scene.",
+        output_path=str(tmp_path / "modern.mp4"),
+        duration=12,
+        aspect_ratio="9:16",
+        gen_mode="first_frame",
+        poll_interval=0,
+        max_polls=1,
+    )
+
+    assert result.status == VideoGenStatus.DONE
+    assert captured["submit_url"] == "https://gateway.example/v1/videos"
+    assert captured["poll_url"] == "https://gateway.example/v1/videos/video-task-1"
+    request_payload = captured["submit_payload"]
+    assert request_payload["images"] == ["https://media.example/first.png"]
+    assert request_payload["duration"] == 12
+    assert request_payload["resolution"] == "720p"
+    assert request_payload["aspect_ratio"] == "9:16"
+    assert "metadata" not in request_payload
+    assert "response_format" not in request_payload
+    headers = captured["submit_headers"]
+    assert isinstance(headers, dict)
+    assert headers["Idempotency-Key"]
+    if uses_content_endpoint:
+        assert captured["content_url"] == (
+            "https://gateway.example/v1/videos/video-task-1/content"
+        )
+        assert captured["content_headers"]["Authorization"] == "Bearer test-key"
+    else:
+        assert captured["direct_result_url"] == "https://cdn.example/modern.mp4"
+    assert (tmp_path / "modern.mp4").read_bytes() == b"modern-video"
+
+
+async def test_modern_video_content_download_streams_with_request_scoped_headers(
+    tmp_path, monkeypatch
+):
+    import hashlib
+
+    import aiohttp
+
+    from novelvideo.generators.video_generator import NewApiVideoGenerator
+
+    captured: dict[str, object] = {}
+
+    class FakeContent:
+        async def iter_chunked(self, _size):
+            yield b"video-"
+            yield b"bytes"
+
+    class FakeResponse:
+        status = 200
+        content = FakeContent()
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+    class FakeSession:
+        def __init__(self, *, timeout):
+            captured["timeout"] = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        def get(self, url, *, headers):
+            captured["url"] = url
+            captured["headers"] = headers
+            return FakeResponse()
+
+    monkeypatch.setattr(aiohttp, "ClientSession", FakeSession)
+    generator = NewApiVideoGenerator(
+        api_key="process-key",
+        endpoint="https://gateway.example/v1",
+        model="sd17-seedance-2.5-2",
+        request_schema={"endpoint": "videos", "parameters": []},
+    )
+    output = tmp_path / "content.mp4"
+
+    receipt = await generator._download_video_content(
+        "https://gateway.example/v1/videos/task-1/content",
+        str(output),
+        headers={"Authorization": "Bearer request-scoped-key"},
+    )
+
+    assert captured["url"] == "https://gateway.example/v1/videos/task-1/content"
+    assert captured["headers"] == {"Authorization": "Bearer request-scoped-key"}
+    assert output.read_bytes() == b"video-bytes"
+    assert receipt.size == len(b"video-bytes")
+    assert receipt.sha256 == hashlib.sha256(b"video-bytes").hexdigest()
+
+
 async def test_newapi_video_generator_handles_wrapped_failure_status(
     tmp_path, monkeypatch
 ):
