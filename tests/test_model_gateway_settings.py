@@ -4445,6 +4445,137 @@ def test_media_relay_config_route_persists_and_masks_cloudinary_keys(
     assert "cloudinary-api-secret" not in response.text
 
 
+def test_media_relay_config_route_persists_minio_and_masks_root_credentials(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "true")
+
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    client = TestClient(app)
+
+    response = client.post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "minio",
+            "ttlSeconds": 900,
+            "endpoint": "media-minio",
+            "publicEndpoint": "https://media.example.com",
+            "port": 9000,
+            "useSSL": False,
+            "bucket": "staging",
+            "accessKeyId": "minio-root-user",
+            "accessKeySecret": "minio-root-secret",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["provider"] == "minio"
+    assert data["minioEndpoint"] == "media-minio"
+    assert data["minioPublicEndpoint"] == "https://media.example.com"
+    assert data["minioPort"] == 9000
+    assert data["minioBucket"] == "staging"
+    assert data["minioAccessKeyPreview"] == "mini...user"
+    assert data["minioSecretKeyPreview"] == "mini...cret"
+    assert data["configured"] is True
+    assert "minio-root-user" not in response.text
+    assert "minio-root-secret" not in response.text
+
+
+def test_media_relay_config_rejects_non_https_minio_public_endpoint(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "true")
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "minio",
+            "endpoint": "media-minio",
+            "publicEndpoint": "http://media.example.com",
+            "bucket": "staging",
+            "accessKeyId": "minio-user",
+            "accessKeySecret": "minio-secret",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "publicEndpoint must be an HTTPS origin" in response.json()["detail"]
+
+
+def test_media_relay_config_rejects_minio_ttl_over_seven_days(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "true")
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "minio",
+            "ttlSeconds": 7 * 24 * 60 * 60 + 1,
+            "endpoint": "media-minio",
+            "publicEndpoint": "https://media.example.com",
+            "bucket": "staging",
+            "accessKeyId": "minio-user",
+            "accessKeySecret": "minio-secret",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "TTL must not exceed 7 days" in response.json()["detail"]
+
+
+def test_media_relay_switching_provider_preserves_inactive_credentials(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "true")
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    client = TestClient(app)
+
+    minio = client.post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "minio",
+            "endpoint": "media-minio",
+            "publicEndpoint": "https://media.example.com",
+            "bucket": "staging",
+            "accessKeyId": "minio-access",
+            "accessKeySecret": "minio-secret",
+        },
+    )
+    assert minio.status_code == 200
+
+    oss = client.post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "aliyun_oss",
+            "endpoint": "oss.example.com",
+            "bucket": "oss-bucket",
+            "accessKeyId": "oss-access",
+            "accessKeySecret": "oss-secret",
+        },
+    )
+
+    assert oss.status_code == 200
+    data = oss.json()["data"]
+    assert data["endpoint"] == "oss.example.com"
+    assert data["bucket"] == "oss-bucket"
+    assert data["minioEndpoint"] == "media-minio"
+    assert data["minioBucket"] == "staging"
+    assert data["minioAccessKeyPreview"] == "mini...cess"
+    assert data["minioSecretKeyPreview"] == "mini...cret"
+
+
 def test_media_relay_config_route_supports_partial_credential_updates(
     monkeypatch, tmp_path
 ):

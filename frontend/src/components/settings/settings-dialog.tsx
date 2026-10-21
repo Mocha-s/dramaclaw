@@ -98,6 +98,7 @@ import {
   FEATURE_MODEL_PROVIDERS,
   type AliyunOssStorageConfig,
   type CloudinaryStorageConfig,
+  type MinioStorageConfig,
   type EmbeddingModelEntry,
   type FeatureModelEntry,
   type FeatureModelSettings,
@@ -116,6 +117,7 @@ interface SettingsDialogProps {
 const MEDIA_STORAGE_PROVIDERS: MediaStorageProvider[] = [
   "aliyun_oss",
   "cloudinary",
+  "minio",
 ];
 
 // Codex 本地桥接暂时隐藏（保留组件代码，后端就绪后改回 true 即可恢复）。
@@ -6301,16 +6303,21 @@ function MediaStorageSection() {
   const updateAliyunOss = useSettingsStore(
     (s) => s.updateAliyunOssStorageConfig,
   );
+  const minio = useSettingsStore((s) => s.mediaStorage.minio);
+  const updateMinio = useSettingsStore((s) => s.updateMinioStorageConfig);
   const saveMediaRelay = useSaveMediaRelayConfig();
 
   const { provider, cloudinary, aliyunOss } = mediaStorage;
   const [ttlSeconds, setTtlSeconds] = useState("1800");
+  const [minioAccessKey, setMinioAccessKey] = useState("");
+  const [minioSecretKey, setMinioSecretKey] = useState("");
   const mediaRelayKey = JSON.stringify(mediaRelay ?? {});
   useEffect(() => {
     if (!mediaRelay) return;
     if (
       mediaRelay.provider === "aliyun_oss" ||
-      mediaRelay.provider === "cloudinary"
+      mediaRelay.provider === "cloudinary" ||
+      mediaRelay.provider === "minio"
     ) {
       setProvider(mediaRelay.provider as MediaStorageProvider);
     }
@@ -6321,6 +6328,15 @@ function MediaStorageSection() {
         ...(mediaRelay.configured
           ? { accessKeyId: "", accessKeySecret: "" }
           : {}),
+      });
+    }
+    if (mediaRelay.minioEndpoint || mediaRelay.minioPublicEndpoint) {
+      updateMinio({
+        endpoint: mediaRelay.minioEndpoint || minio.endpoint,
+        publicEndpoint: mediaRelay.minioPublicEndpoint || minio.publicEndpoint,
+        bucket: mediaRelay.minioBucket || minio.bucket,
+        port: mediaRelay.minioPort ? String(mediaRelay.minioPort) : minio.port,
+        useSSL: mediaRelay.minioUseSSL ?? minio.useSSL,
       });
     }
     if (mediaRelay.cloudName || mediaRelay.apiFolder) {
@@ -6369,7 +6385,23 @@ function MediaStorageSection() {
                 ? { apiSecret: cloudinary.apiSecret.trim() }
                 : {}),
             }
-          : {
+          : provider === "minio"
+            ? {
+                provider: "minio",
+                ttlSeconds: Math.trunc(ttl),
+                endpoint: minio.endpoint.trim(),
+                publicEndpoint: minio.publicEndpoint.trim(),
+                port: Number(minio.port.trim() || "9000"),
+                useSSL: minio.useSSL,
+                bucket: minio.bucket.trim(),
+                ...(minioAccessKey.trim()
+                  ? { accessKeyId: minioAccessKey.trim() }
+                  : {}),
+                ...(minioSecretKey.trim()
+                  ? { accessKeySecret: minioSecretKey.trim() }
+                  : {}),
+              }
+            : {
               provider: "aliyun_oss",
               ttlSeconds: Math.trunc(ttl),
               endpoint: aliyunOss.endpoint.trim(),
@@ -6388,19 +6420,28 @@ function MediaStorageSection() {
       }
       if (provider === "cloudinary") {
         updateCloudinary({ apiKey: "", apiSecret: "" });
+      } else if (provider === "minio") {
+        setMinioAccessKey("");
+        setMinioSecretKey("");
       } else {
         updateAliyunOss({ accessKeyId: "", accessKeySecret: "" });
       }
       toast.success(
         provider === "cloudinary"
           ? t("settings.mediaStorage.cloudinarySaveSuccess")
+          : provider === "minio"
+            ? t("settings.mediaStorage.minioSaveSuccess")
           : t("settings.mediaStorage.saveSuccess"),
       );
     } catch (error) {
       toast.error(
         await getRequestErrorMessage(
           error,
-          t("settings.mediaStorage.saveFailed"),
+          t(
+            provider === "minio"
+              ? "settings.mediaStorage.minioSaveFailed"
+              : "settings.mediaStorage.saveFailed",
+          ),
         ),
       );
     }
@@ -6428,7 +6469,9 @@ function MediaStorageSection() {
           {t("settings.mediaStorage.currentPlan")}:{" "}
           {configuredProvider === "cloudinary"
             ? t("settings.mediaStorage.providerCloudinary")
-            : t("settings.mediaStorage.providerAliyunOss")}
+            : configuredProvider === "minio"
+              ? t("settings.mediaStorage.providerMinio")
+              : t("settings.mediaStorage.providerAliyunOss")}
         </span>
       </div>
 
@@ -6476,7 +6519,9 @@ function MediaStorageSection() {
               <TabsTrigger key={p} value={p}>
                 {p === "aliyun_oss"
                   ? t("settings.mediaStorage.providerAliyunOss")
-                  : t("settings.mediaStorage.providerCloudinary")}
+                  : p === "minio"
+                    ? t("settings.mediaStorage.providerMinio")
+                    : t("settings.mediaStorage.providerCloudinary")}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -6490,6 +6535,19 @@ function MediaStorageSection() {
             onChange={updateCloudinary}
             apiKeyPreview={mediaRelay?.cloudinaryApiKeyPreview ?? ""}
             apiSecretPreview={mediaRelay?.cloudinaryApiSecretPreview ?? ""}
+          />
+        ) : provider === "minio" ? (
+          <MinioFields
+            config={minio}
+            onChange={updateMinio}
+            ttlSeconds={ttlSeconds}
+            onTtlSecondsChange={setTtlSeconds}
+            accessKey={minioAccessKey}
+            onAccessKeyChange={setMinioAccessKey}
+            secretKey={minioSecretKey}
+            onSecretKeyChange={setMinioSecretKey}
+            accessKeyPreview={mediaRelay?.minioAccessKeyPreview ?? ""}
+            secretKeyPreview={mediaRelay?.minioSecretKeyPreview ?? ""}
           />
         ) : (
           <AliyunOssFields
@@ -6535,7 +6593,9 @@ function MediaStorageSection() {
           ) : null}
           {provider === "cloudinary"
             ? t("settings.mediaStorage.saveCloudinary")
-            : t("settings.mediaStorage.save")}
+            : provider === "minio"
+              ? t("settings.mediaStorage.saveMinio")
+              : t("settings.mediaStorage.save")}
         </Button>
       </div>
     </section>
@@ -6584,6 +6644,91 @@ function CloudinaryFields({
         value={config.apiFolder}
         onChange={(v) => onChange({ apiFolder: v })}
       />
+    </>
+  );
+}
+
+function MinioFields({
+  config,
+  onChange,
+  ttlSeconds,
+  onTtlSecondsChange,
+  accessKey,
+  onAccessKeyChange,
+  secretKey,
+  onSecretKeyChange,
+  accessKeyPreview,
+  secretKeyPreview,
+}: {
+  config: MinioStorageConfig;
+  onChange: (patch: Partial<MinioStorageConfig>) => void;
+  ttlSeconds: string;
+  onTtlSecondsChange: (value: string) => void;
+  accessKey: string;
+  onAccessKeyChange: (value: string) => void;
+  secretKey: string;
+  onSecretKeyChange: (value: string) => void;
+  accessKeyPreview: string;
+  secretKeyPreview: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <FieldRow
+        label={t("settings.mediaStorage.fields.minioEndpoint")}
+        value={config.endpoint}
+        onChange={(v) => onChange({ endpoint: v })}
+      />
+      <FieldRow
+        label={t("settings.mediaStorage.fields.minioPublicEndpoint")}
+        value={config.publicEndpoint}
+        onChange={(v) => onChange({ publicEndpoint: v })}
+      />
+      <FieldRow
+        label={t("settings.mediaStorage.fields.minioPort")}
+        value={config.port}
+        onChange={(v) => onChange({ port: v })}
+      />
+      <FieldRow
+        label={t("settings.mediaStorage.fields.bucket")}
+        value={config.bucket}
+        onChange={(v) => onChange({ bucket: v })}
+      />
+      <FieldRow
+        secret
+        name="minio-access-key"
+        label={t("settings.mediaStorage.fields.accessKeyId")}
+        value={accessKey}
+        onChange={onAccessKeyChange}
+        placeholder={accessKeyPreview || undefined}
+        savedPreview={accessKeyPreview}
+      />
+      <FieldRow
+        secret
+        name="minio-secret-key"
+        label={t("settings.mediaStorage.fields.accessKeySecret")}
+        value={secretKey}
+        onChange={onSecretKeyChange}
+        placeholder={secretKeyPreview || undefined}
+        savedPreview={secretKeyPreview}
+      />
+      <label className="ml-[132px] flex items-center gap-2 text-xs text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={config.useSSL}
+          onChange={(event) => onChange({ useSSL: event.target.checked })}
+          className="size-3.5 accent-primary"
+        />
+        {t("settings.mediaStorage.fields.minioUseSSL")}
+      </label>
+      <FieldRow
+        label={t("settings.mediaStorage.fields.ttlSeconds")}
+        value={ttlSeconds}
+        onChange={onTtlSecondsChange}
+      />
+      <p className="ml-[132px] text-[11px] text-muted-foreground">
+        {t("settings.mediaStorage.minioHint")}
+      </p>
     </>
   );
 }

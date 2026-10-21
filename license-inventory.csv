@@ -906,6 +906,7 @@ frontend/src/__tests__/stores/region-store.test.ts,Elastic-2.0,2026 SuperTale co
 frontend/src/__tests__/stores/save-status-store.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/stores/seen-pool-store.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/stores/settings-store-feature-model-config.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+frontend/src/__tests__/stores/settings-store.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/stores/store-resets.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/task-center/backward-compat.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/task-center/derivations.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation

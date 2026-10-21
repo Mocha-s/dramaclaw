@@ -121,6 +121,12 @@ def test_compose_pins_env_file_long_syntax_ports_and_volumes() -> None:
     assert set(compose["volumes"]) == {"ce-data", "newapi-data"}
 
 
+def test_minio_is_external_and_not_deployed_by_drama_claw_compose() -> None:
+    compose = _compose()
+    assert "media-minio" not in compose["services"]
+    assert "media-minio-data" not in compose["volumes"]
+
+
 def test_source_file_extends_release_and_builds_all_three() -> None:
     source = yaml.safe_load((REPOSITORY_ROOT / SOURCE_FILE).read_text())
 

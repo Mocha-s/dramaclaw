@@ -40,13 +40,39 @@ class FakeBucket:
         return f"https://relay.test/{key}?signed=1"
 
 
+class FakeMinioClient:
+    instances: list["FakeMinioClient"] = []
+
+    def __init__(self, endpoint: str, access_key: str, secret_key: str, *, secure: bool):
+        self.endpoint = endpoint
+        self.access_key = access_key
+        self.secret_key = secret_key
+        self.secure = secure
+        self.puts: list[tuple[str, str, bytes, int, str | None]] = []
+        self.presigns: list[tuple[str, str, object]] = []
+        FakeMinioClient.instances.append(self)
+
+    def put_object(self, bucket, key, body, length, content_type=None):
+        self.puts.append((bucket, key, body.read(), length, content_type))
+
+    def presigned_get_object(self, bucket, key, expires):
+        self.presigns.append((bucket, key, expires))
+        scheme = "https" if self.secure else "http"
+        return f"{scheme}://{self.endpoint}/{bucket}/{key}?signed=1"
+
+
 @pytest.fixture(autouse=True)
 def fake_oss2(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("ST_EDITION", "ce")
     monkeypatch.delenv("ST_CONTROL_PLANE_DSN", raising=False)
     FakeBucket.instances.clear()
+    FakeMinioClient.instances.clear()
     fake_module = types.SimpleNamespace(Auth=FakeAuth, Bucket=FakeBucket)
     monkeypatch.setitem(sys.modules, "oss2", fake_module)
+    minio_module = types.ModuleType("minio")
+    minio_module.__path__ = []
+    minio_module.Minio = FakeMinioClient
+    monkeypatch.setitem(sys.modules, "minio", minio_module)
 
 
 def test_aliyun_oss_relay_uploads_under_relay_prefix_and_signs_get_url() -> None:
@@ -79,6 +105,90 @@ def test_aliyun_oss_relay_requires_credentials() -> None:
         )
 
     assert "OSS_RELAY_AK" in str(exc_info.value)
+
+
+def test_minio_relay_uploads_with_internal_client_and_public_presign_client() -> None:
+    relay = media_relay.MinioRelay(
+        endpoint="media-minio",
+        public_endpoint="https://media.example.com",
+        port=9000,
+        bucket_name="staging",
+        access_key_id="minio-ak",
+        access_key_secret="minio-sk",
+        use_ssl=False,
+    )
+
+    url = relay.upload_bytes(b"image-bytes", ext="png", ttl=900)
+
+    internal, public = FakeMinioClient.instances
+    bucket, key, body, length, content_type = internal.puts[0]
+    assert internal.endpoint == "media-minio:9000"
+    assert internal.secure is False
+    assert (bucket, body, length, content_type) == ("staging", b"image-bytes", 11, "image/png")
+    assert re.match(r"^relay/\d{8}/[0-9a-f]{32}\.png$", key)
+    assert public.endpoint == "media.example.com"
+    assert public.secure is True
+    assert len(public.presigns) == 1
+    assert public.presigns[0][:2] == ("staging", key)
+    assert public.presigns[0][2].total_seconds() == 900
+    assert url == f"https://media.example.com/staging/{key}?signed=1"
+
+
+def test_minio_relay_rejects_non_https_public_endpoint() -> None:
+    with pytest.raises(media_relay.MediaRelayConfigError, match="HTTPS"):
+        media_relay.MinioRelay(
+            endpoint="media-minio",
+            public_endpoint="http://media.example.com",
+            bucket_name="staging",
+            access_key_id="minio-ak",
+            access_key_secret="minio-sk",
+        )
+
+
+def test_get_media_relay_uses_saved_minio_config(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setattr(config, "MEDIA_RELAY_PROVIDER", "aliyun_oss")
+    monkeypatch.setattr(config, "MEDIA_RELAY_TTL_SECONDS", 1800)
+    monkeypatch.setattr(config, "MINIO_RELAY_ENDPOINT", "")
+    monkeypatch.setattr(config, "MINIO_RELAY_PUBLIC_ENDPOINT", "")
+    monkeypatch.setattr(config, "MINIO_RELAY_PORT", 9000)
+    monkeypatch.setattr(config, "MINIO_RELAY_USE_SSL", False)
+    monkeypatch.setattr(config, "MINIO_RELAY_BUCKET", "")
+    monkeypatch.setattr(config, "MINIO_RELAY_ACCESS_KEY", "")
+    monkeypatch.setattr(config, "MINIO_RELAY_SECRET_KEY", "")
+
+    save_media_relay_config(
+        provider="minio",
+        ttl_seconds=600,
+        minio_endpoint="media-minio",
+        minio_public_endpoint="https://media.example.com",
+        minio_port=9000,
+        minio_bucket="relay-bucket",
+        minio_access_key="saved-access",
+        minio_secret_key="saved-secret",
+    )
+
+    relay = media_relay.get_media_relay()
+
+    assert isinstance(relay, media_relay.MinioRelay)
+    internal, public = FakeMinioClient.instances
+    assert internal.endpoint == "media-minio:9000"
+    assert internal.access_key == "saved-access"
+    assert internal.secret_key == "saved-secret"
+    assert public.endpoint == "media.example.com"
+
+
+def test_minio_relay_rejects_ttl_over_seven_days() -> None:
+    relay = media_relay.MinioRelay(
+        endpoint="media-minio",
+        public_endpoint="https://media.example.com",
+        bucket_name="staging",
+        access_key_id="minio-ak",
+        access_key_secret="minio-sk",
+    )
+
+    with pytest.raises(ValueError, match="must be between 1 second and 7 days"):
+        relay.upload_bytes(b"image", ttl=7 * 24 * 60 * 60 + 1)
 
 
 def test_media_relay_ttl_seconds_applies_floor_without_shortening_config(monkeypatch) -> None:
