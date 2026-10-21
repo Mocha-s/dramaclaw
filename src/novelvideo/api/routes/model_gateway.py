@@ -59,6 +59,7 @@ from novelvideo.service_operation_gate import (
 )
 from novelvideo.shared.runtime_env import is_ce_effective
 from novelvideo.media_model_request_schema import validate_media_model_catalog_config
+from novelvideo.storage.media_relay import MINIO_MAX_PRESIGNED_TTL_SECONDS
 from novelvideo.newapi_provisioner import (
     build_channel_payload,
     build_provisioner_status,
@@ -233,6 +234,9 @@ class MediaRelayConfigBody(BaseModel):
     cloudinary_api_key: str | None = Field(default=None, alias="apiKey")
     cloudinary_api_secret: str | None = Field(default=None, alias="apiSecret")
     cloudinary_folder: str | None = Field(default=None, alias="apiFolder")
+    public_endpoint: str | None = Field(default=None, alias="publicEndpoint")
+    port: int | None = None
+    use_ssl: bool | None = Field(default=None, alias="useSSL")
 
 
 class NewApiDatabaseBody(BaseModel):
@@ -537,6 +541,13 @@ def _media_relay_status() -> dict[str, Any]:
         env_cloudinary_api_key=app_config.CLOUDINARY_RELAY_API_KEY,
         env_cloudinary_api_secret=app_config.CLOUDINARY_RELAY_API_SECRET,
         env_cloudinary_folder=app_config.CLOUDINARY_RELAY_FOLDER,
+        env_minio_endpoint=app_config.MINIO_RELAY_ENDPOINT,
+        env_minio_public_endpoint=app_config.MINIO_RELAY_PUBLIC_ENDPOINT,
+        env_minio_port=app_config.MINIO_RELAY_PORT,
+        env_minio_use_ssl=app_config.MINIO_RELAY_USE_SSL,
+        env_minio_bucket=app_config.MINIO_RELAY_BUCKET,
+        env_minio_access_key=app_config.MINIO_RELAY_ACCESS_KEY,
+        env_minio_secret_key=app_config.MINIO_RELAY_SECRET_KEY,
     )
 
 
@@ -1033,10 +1044,15 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
     except PermissionError as exc:
         raise _permission_error(exc) from exc
     provider = body.provider.strip().lower()
-    if provider not in {"aliyun_oss", "cloudinary"}:
+    if provider not in {"aliyun_oss", "cloudinary", "minio"}:
         raise HTTPException(status_code=400, detail="unsupported media relay provider")
     if body.ttl_seconds <= 0:
         raise HTTPException(status_code=400, detail="ttlSeconds must be positive")
+    if provider == "minio" and body.ttl_seconds > MINIO_MAX_PRESIGNED_TTL_SECONDS:
+        raise HTTPException(
+            status_code=400,
+            detail="MinIO presigned URL TTL must not exceed 7 days",
+        )
     current = get_effective_media_relay_config(
         env_provider=app_config.MEDIA_RELAY_PROVIDER,
         env_ttl_seconds=app_config.MEDIA_RELAY_TTL_SECONDS,
@@ -1048,6 +1064,13 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
         env_cloudinary_api_key=app_config.CLOUDINARY_RELAY_API_KEY,
         env_cloudinary_api_secret=app_config.CLOUDINARY_RELAY_API_SECRET,
         env_cloudinary_folder=app_config.CLOUDINARY_RELAY_FOLDER,
+        env_minio_endpoint=app_config.MINIO_RELAY_ENDPOINT,
+        env_minio_public_endpoint=app_config.MINIO_RELAY_PUBLIC_ENDPOINT,
+        env_minio_port=app_config.MINIO_RELAY_PORT,
+        env_minio_use_ssl=app_config.MINIO_RELAY_USE_SSL,
+        env_minio_bucket=app_config.MINIO_RELAY_BUCKET,
+        env_minio_access_key=app_config.MINIO_RELAY_ACCESS_KEY,
+        env_minio_secret_key=app_config.MINIO_RELAY_SECRET_KEY,
     )
 
     def merge_field(value: str | None, saved: str, *, secret: bool = False) -> str:
@@ -1058,11 +1081,25 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
             return saved
         return normalized
 
-    endpoint = merge_field(body.endpoint, current.endpoint)
-    bucket = merge_field(body.bucket, current.bucket)
-    access_key_id = merge_field(body.access_key_id, current.access_key_id, secret=True)
-    access_key_secret = merge_field(
-        body.access_key_secret, current.access_key_secret, secret=True
+    endpoint = (
+        merge_field(body.endpoint, current.endpoint)
+        if provider == "aliyun_oss"
+        else current.endpoint
+    )
+    bucket = (
+        merge_field(body.bucket, current.bucket)
+        if provider == "aliyun_oss"
+        else current.bucket
+    )
+    access_key_id = (
+        merge_field(body.access_key_id, current.access_key_id, secret=True)
+        if provider == "aliyun_oss"
+        else current.access_key_id
+    )
+    access_key_secret = (
+        merge_field(body.access_key_secret, current.access_key_secret, secret=True)
+        if provider == "aliyun_oss"
+        else current.access_key_secret
     )
     cloud_name = merge_field(body.cloud_name, current.cloud_name)
     cloudinary_api_key = merge_field(
@@ -1074,19 +1111,102 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
     cloudinary_folder = merge_field(
         body.cloudinary_folder, current.cloudinary_folder
     ).strip("/")
+    minio_endpoint = (
+        merge_field(body.endpoint, current.minio_endpoint)
+        if provider == "minio"
+        else current.minio_endpoint
+    )
+    minio_public_endpoint = (
+        merge_field(body.public_endpoint, current.minio_public_endpoint).rstrip("/")
+        if provider == "minio"
+        else current.minio_public_endpoint
+    )
+    minio_port = (
+        body.port if body.port is not None else current.minio_port
+    ) if provider == "minio" else current.minio_port
+    minio_use_ssl = (
+        body.use_ssl if body.use_ssl is not None else current.minio_use_ssl
+    ) if provider == "minio" else current.minio_use_ssl
+    minio_bucket = (
+        merge_field(body.bucket, current.minio_bucket)
+        if provider == "minio"
+        else current.minio_bucket
+    )
+    minio_access_key = (
+        merge_field(body.access_key_id, current.minio_access_key, secret=True)
+        if provider == "minio"
+        else current.minio_access_key
+    )
+    minio_secret_key = (
+        merge_field(body.access_key_secret, current.minio_secret_key, secret=True)
+        if provider == "minio"
+        else current.minio_secret_key
+    )
     if provider == "cloudinary":
         required = {
             "cloudName": cloud_name,
             "apiKey": cloudinary_api_key,
             "apiSecret": cloudinary_api_secret,
         }
-    else:
+    elif provider == "aliyun_oss":
         required = {
             "endpoint": endpoint,
             "bucket": bucket,
             "accessKeyId": access_key_id,
             "accessKeySecret": access_key_secret,
         }
+    else:
+        required = {
+            "endpoint": minio_endpoint,
+            "publicEndpoint": minio_public_endpoint,
+            "bucket": minio_bucket,
+            "accessKeyId": minio_access_key,
+            "accessKeySecret": minio_secret_key,
+        }
+        if not 1 <= int(minio_port) <= 65535:
+            raise HTTPException(status_code=400, detail="port must be between 1 and 65535")
+        parsed_internal_endpoint = urlsplit(
+            minio_endpoint if "://" in minio_endpoint else f"//{minio_endpoint}"
+        )
+        try:
+            internal_port = parsed_internal_endpoint.port
+        except ValueError:
+            internal_port = -1
+        if (
+            not parsed_internal_endpoint.hostname
+            or parsed_internal_endpoint.scheme not in {"", "http", "https"}
+            or parsed_internal_endpoint.username is not None
+            or parsed_internal_endpoint.password is not None
+            or parsed_internal_endpoint.path not in {"", "/"}
+            or parsed_internal_endpoint.query
+            or parsed_internal_endpoint.fragment
+            or internal_port == -1
+            or (internal_port is not None and not 1 <= internal_port <= 65535)
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="endpoint must be a host or HTTP(S) origin without a path",
+            )
+        parsed_public_endpoint = urlsplit(minio_public_endpoint)
+        try:
+            public_port = parsed_public_endpoint.port
+        except ValueError:
+            public_port = -1
+        if (
+            parsed_public_endpoint.scheme != "https"
+            or not parsed_public_endpoint.hostname
+            or parsed_public_endpoint.username is not None
+            or parsed_public_endpoint.password is not None
+            or parsed_public_endpoint.path not in {"", "/"}
+            or parsed_public_endpoint.query
+            or parsed_public_endpoint.fragment
+            or public_port == -1
+            or (public_port is not None and not 1 <= public_port <= 65535)
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="publicEndpoint must be an HTTPS origin without a path",
+            )
     missing = [name for name, value in required.items() if not value]
     if missing:
         raise HTTPException(
@@ -1103,6 +1223,13 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
         cloudinary_api_key=cloudinary_api_key,
         cloudinary_api_secret=cloudinary_api_secret,
         cloudinary_folder=cloudinary_folder,
+        minio_endpoint=minio_endpoint,
+        minio_public_endpoint=minio_public_endpoint,
+        minio_port=int(minio_port),
+        minio_use_ssl=bool(minio_use_ssl),
+        minio_bucket=minio_bucket,
+        minio_access_key=minio_access_key,
+        minio_secret_key=minio_secret_key,
     )
     return {"ok": True, "data": _media_relay_status()}
 

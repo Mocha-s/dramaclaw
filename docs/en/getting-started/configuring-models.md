@@ -260,6 +260,14 @@ Provide a Bucket and an AccessKey with read/write permission for that Bucket. A 
 | AccessKey Secret | `OSS_RELAY_SK` | Matching SK |
 | TTL | `MEDIA_RELAY_TTL_SECONDS` | Default: 1800 seconds |
 
+### Self-hosted MinIO
+
+In **Settings → Media Storage**, select MinIO and provide the S3 endpoint reachable
+by the API container, bucket and credentials, plus the public HTTPS endpoint
+reachable by the upstream model. The internal and public endpoints may use the
+same reverse proxy or separate internal/public addresses. Credentials stay
+server-side and are never returned to the browser.
+
 The Bucket does not need public-read access. DramaClaw generates temporary signed URLs for upstream access.
 
 ### Cloudinary

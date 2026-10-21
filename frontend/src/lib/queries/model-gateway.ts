@@ -148,6 +148,13 @@ export interface MediaRelayConfig {
   cloudinaryApiKeyPreview?: string;
   cloudinaryApiSecretPreview?: string;
   apiFolder?: string;
+  minioEndpoint?: string;
+  minioPublicEndpoint?: string;
+  minioPort?: number;
+  minioUseSSL?: boolean;
+  minioBucket?: string;
+  minioAccessKeyPreview?: string;
+  minioSecretKeyPreview?: string;
   configured: boolean;
 }
 
@@ -314,7 +321,7 @@ export interface SaveEmbeddingModelInput {
 }
 
 export interface SaveMediaRelayConfigInput {
-  provider: "aliyun_oss" | "cloudinary";
+  provider: "aliyun_oss" | "cloudinary" | "minio";
   ttlSeconds: number;
   endpoint?: string;
   bucket?: string;
@@ -324,6 +331,9 @@ export interface SaveMediaRelayConfigInput {
   apiKey?: string;
   apiSecret?: string;
   apiFolder?: string;
+  publicEndpoint?: string;
+  port?: number;
+  useSSL?: boolean;
 }
 
 export interface SaveCustomChannelsBatchInput {

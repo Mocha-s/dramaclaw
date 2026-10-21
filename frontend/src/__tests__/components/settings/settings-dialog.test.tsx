@@ -15,6 +15,7 @@ const modelGatewayMocks = vi.hoisted(() => ({
   saveSub2Api: vi.fn(),
   fetchSub2ApiModels: vi.fn(),
   setCustomLlmMode: vi.fn(),
+  saveMediaRelay: vi.fn(),
 }));
 const freezoneAgentConfigMocks = vi.hoisted(() => ({
   delete: vi.fn(),
@@ -100,7 +101,7 @@ vi.mock("@/lib/queries/model-gateway", () => ({
   useSaveEmbeddingModel: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveMediaModels: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveProviderChannels: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useSaveMediaRelayConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
+   useSaveMediaRelayConfig: () => ({ mutateAsync: modelGatewayMocks.saveMediaRelay, isPending: false }),
   useSyncProviderChannel: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useChannelModels: () => ({
     data: undefined,
@@ -406,6 +407,7 @@ beforeEach(() => {
   modelGatewayMocks.saveSub2Api.mockReset();
   modelGatewayMocks.fetchSub2ApiModels.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockReset();
+  modelGatewayMocks.saveMediaRelay.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockResolvedValue({ ok: true });
   freezoneAgentConfigMocks.delete.mockReset();
   freezoneAgentConfigMocks.exportBundle.mockReset();
@@ -434,6 +436,59 @@ describe("SettingsDialog pages", () => {
     );
     expect(screen.getByText("选择模型网关渠道")).toBeInTheDocument();
     expect(screen.getByText("Agent 模型")).toBeInTheDocument();
+  });
+
+  it("saves an external MinIO media relay without persisting its credentials in the browser store", async () => {
+    modelGatewayMocks.saveMediaRelay.mockResolvedValue({ ok: true, data: {} });
+    renderSettingsDialog();
+
+    fireEvent.click(screen.getByRole("button", { name: /媒体存储/ }));
+    fireEvent.click(
+      screen.getByRole("tab", { name: "settings.mediaStorage.providerMinio" }),
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.minioEndpoint"),
+      { target: { value: "minio.internal.example:9000" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.minioPublicEndpoint"),
+      { target: { value: "https://media.example.com" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.bucket"),
+      { target: { value: "relay" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.accessKeyId"),
+      { target: { value: "minio-access" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.accessKeySecret"),
+      { target: { value: "minio-secret" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "settings.mediaStorage.saveMinio" }),
+    );
+
+    await waitFor(() =>
+      expect(modelGatewayMocks.saveMediaRelay).toHaveBeenCalledWith({
+        provider: "minio",
+        ttlSeconds: 1800,
+        endpoint: "minio.internal.example:9000",
+        publicEndpoint: "https://media.example.com",
+        port: 9000,
+        useSSL: false,
+        bucket: "relay",
+        accessKeyId: "minio-access",
+        accessKeySecret: "minio-secret",
+      }),
+    );
+
+    const persisted = JSON.parse(
+      window.localStorage.getItem("settings-storage") ?? "{}",
+    ) as { state?: { mediaStorage?: Record<string, unknown> } };
+    expect(persisted.state?.mediaStorage?.minio).not.toHaveProperty("accessKey");
+    expect(persisted.state?.mediaStorage?.minio).not.toHaveProperty("secretKey");
   });
 
   it("lets users create partial OpenAI and Gemini groups", async () => {

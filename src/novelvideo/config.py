@@ -796,6 +796,18 @@ CLOUDINARY_RELAY_CLOUD_NAME = os.environ.get("CLOUDINARY_RELAY_CLOUD_NAME", "")
 CLOUDINARY_RELAY_API_KEY = os.environ.get("CLOUDINARY_RELAY_API_KEY", "")
 CLOUDINARY_RELAY_API_SECRET = os.environ.get("CLOUDINARY_RELAY_API_SECRET", "")
 CLOUDINARY_RELAY_FOLDER = os.environ.get("CLOUDINARY_RELAY_FOLDER", "")
+MINIO_RELAY_ENDPOINT = os.environ.get("MINIO_RELAY_ENDPOINT", "")
+MINIO_RELAY_PUBLIC_ENDPOINT = os.environ.get("MINIO_RELAY_PUBLIC_ENDPOINT", "")
+MINIO_RELAY_PORT = int(os.environ.get("MINIO_RELAY_PORT", "9000"))
+MINIO_RELAY_USE_SSL = os.environ.get("MINIO_RELAY_USE_SSL", "0").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+MINIO_RELAY_BUCKET = os.environ.get("MINIO_RELAY_BUCKET", "")
+MINIO_RELAY_ACCESS_KEY = os.environ.get("MINIO_RELAY_ACCESS_KEY", "")
+MINIO_RELAY_SECRET_KEY = os.environ.get("MINIO_RELAY_SECRET_KEY", "")
 
 
 def get_style_labels() -> dict[str, str]:

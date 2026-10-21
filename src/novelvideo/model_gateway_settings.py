@@ -111,6 +111,13 @@ class EffectiveMediaRelayConfig:
     cloudinary_api_key: str = ""
     cloudinary_api_secret: str = ""
     cloudinary_folder: str = ""
+    minio_endpoint: str = ""
+    minio_public_endpoint: str = ""
+    minio_port: int = 9000
+    minio_use_ssl: bool = False
+    minio_bucket: str = ""
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
 
 
 @dataclass(frozen=True)
@@ -1308,6 +1315,13 @@ def save_media_relay_config(
     cloudinary_api_key: str = "",
     cloudinary_api_secret: str = "",
     cloudinary_folder: str = "",
+    minio_endpoint: str = "",
+    minio_public_endpoint: str = "",
+    minio_port: int = 9000,
+    minio_use_ssl: bool = False,
+    minio_bucket: str = "",
+    minio_access_key: str = "",
+    minio_secret_key: str = "",
 ) -> None:
     _write_many(
         {
@@ -1321,6 +1335,15 @@ def save_media_relay_config(
             "cloudinary_relay_api_key": str(cloudinary_api_key or "").strip(),
             "cloudinary_relay_api_secret": str(cloudinary_api_secret or "").strip(),
             "cloudinary_relay_folder": str(cloudinary_folder or "").strip().strip("/"),
+            "minio_relay_endpoint": str(minio_endpoint or "").strip(),
+            "minio_relay_public_endpoint": str(minio_public_endpoint or "")
+            .strip()
+            .rstrip("/"),
+            "minio_relay_port": str(int(minio_port)),
+            "minio_relay_use_ssl": "1" if minio_use_ssl else "0",
+            "minio_relay_bucket": str(minio_bucket or "").strip(),
+            "minio_relay_access_key": str(minio_access_key or "").strip(),
+            "minio_relay_secret_key": str(minio_secret_key or "").strip(),
         }
     )
 
@@ -1571,6 +1594,13 @@ def get_effective_media_relay_config(
     env_cloudinary_api_key: str | None = None,
     env_cloudinary_api_secret: str | None = None,
     env_cloudinary_folder: str | None = None,
+    env_minio_endpoint: str | None = None,
+    env_minio_public_endpoint: str | None = None,
+    env_minio_port: int | str | None = None,
+    env_minio_use_ssl: bool | str | None = None,
+    env_minio_bucket: str | None = None,
+    env_minio_access_key: str | None = None,
+    env_minio_secret_key: str | None = None,
 ) -> EffectiveMediaRelayConfig:
     if explicit_config is not None:
         if type(explicit_config) is not EffectiveMediaRelayConfig:
@@ -1590,6 +1620,13 @@ def get_effective_media_relay_config(
     db_cloudinary_folder = (
         str(settings.get("cloudinary_relay_folder", "")).strip().strip("/")
     )
+    db_minio_endpoint = str(settings.get("minio_relay_endpoint", "")).strip()
+    db_minio_public_endpoint = (
+        str(settings.get("minio_relay_public_endpoint", "")).strip().rstrip("/")
+    )
+    db_minio_bucket = str(settings.get("minio_relay_bucket", "")).strip()
+    db_minio_access_key = str(settings.get("minio_relay_access_key", "")).strip()
+    db_minio_secret_key = str(settings.get("minio_relay_secret_key", "")).strip()
     has_db_config = any(
         [
             db_provider,
@@ -1601,6 +1638,11 @@ def get_effective_media_relay_config(
             db_cloudinary_api_key,
             db_cloudinary_api_secret,
             db_cloudinary_folder,
+            db_minio_endpoint,
+            db_minio_public_endpoint,
+            db_minio_bucket,
+            db_minio_access_key,
+            db_minio_secret_key,
         ]
     )
     if has_db_config:
@@ -1616,6 +1658,13 @@ def get_effective_media_relay_config(
             cloudinary_api_key=db_cloudinary_api_key,
             cloudinary_api_secret=db_cloudinary_api_secret,
             cloudinary_folder=db_cloudinary_folder,
+            minio_endpoint=db_minio_endpoint,
+            minio_public_endpoint=db_minio_public_endpoint,
+            minio_port=_int_setting(settings.get("minio_relay_port"), 9000),
+            minio_use_ssl=_bool_setting(settings.get("minio_relay_use_ssl"), False),
+            minio_bucket=db_minio_bucket,
+            minio_access_key=db_minio_access_key,
+            minio_secret_key=db_minio_secret_key,
         )
 
     raw_ttl = (
@@ -1657,6 +1706,36 @@ def get_effective_media_relay_config(
         )
         .strip()
         .strip("/"),
+        minio_endpoint=str(
+            env_minio_endpoint or os.environ.get("MINIO_RELAY_ENDPOINT", "")
+        ).strip(),
+        minio_public_endpoint=str(
+            env_minio_public_endpoint
+            or os.environ.get("MINIO_RELAY_PUBLIC_ENDPOINT", "")
+        ).strip().rstrip("/"),
+        minio_port=_int_setting(
+            str(
+                env_minio_port
+                if env_minio_port is not None
+                else os.environ.get("MINIO_RELAY_PORT", "9000")
+            ),
+            9000,
+        ),
+        minio_use_ssl=_bool_setting(
+            env_minio_use_ssl
+            if env_minio_use_ssl is not None
+            else os.environ.get("MINIO_RELAY_USE_SSL"),
+            False,
+        ),
+        minio_bucket=str(
+            env_minio_bucket or os.environ.get("MINIO_RELAY_BUCKET", "")
+        ).strip(),
+        minio_access_key=str(
+            env_minio_access_key or os.environ.get("MINIO_RELAY_ACCESS_KEY", "")
+        ).strip(),
+        minio_secret_key=str(
+            env_minio_secret_key or os.environ.get("MINIO_RELAY_SECRET_KEY", "")
+        ).strip(),
     )
 
 
@@ -1926,6 +2005,13 @@ def build_media_relay_status(
     env_cloudinary_api_key: str | None = None,
     env_cloudinary_api_secret: str | None = None,
     env_cloudinary_folder: str | None = None,
+    env_minio_endpoint: str | None = None,
+    env_minio_public_endpoint: str | None = None,
+    env_minio_port: int | str | None = None,
+    env_minio_use_ssl: bool | str | None = None,
+    env_minio_bucket: str | None = None,
+    env_minio_access_key: str | None = None,
+    env_minio_secret_key: str | None = None,
 ) -> dict[str, Any]:
     effective = get_effective_media_relay_config(
         env_provider=env_provider,
@@ -1938,6 +2024,13 @@ def build_media_relay_status(
         env_cloudinary_api_key=env_cloudinary_api_key,
         env_cloudinary_api_secret=env_cloudinary_api_secret,
         env_cloudinary_folder=env_cloudinary_folder,
+        env_minio_endpoint=env_minio_endpoint,
+        env_minio_public_endpoint=env_minio_public_endpoint,
+        env_minio_port=env_minio_port,
+        env_minio_use_ssl=env_minio_use_ssl,
+        env_minio_bucket=env_minio_bucket,
+        env_minio_access_key=env_minio_access_key,
+        env_minio_secret_key=env_minio_secret_key,
     )
     aliyun_configured = bool(
         effective.endpoint
@@ -1949,6 +2042,27 @@ def build_media_relay_status(
         effective.cloud_name
         and effective.cloudinary_api_key
         and effective.cloudinary_api_secret
+    )
+    minio_public_url = urlsplit(effective.minio_public_endpoint)
+    try:
+        minio_public_port_valid = minio_public_url.port is None or 1 <= minio_public_url.port <= 65535
+    except ValueError:
+        minio_public_port_valid = False
+    minio_configured = bool(
+        effective.minio_endpoint
+        and effective.minio_public_endpoint
+        and minio_public_url.scheme == "https"
+        and minio_public_url.hostname
+        and minio_public_url.username is None
+        and minio_public_url.password is None
+        and minio_public_url.path in {"", "/"}
+        and not minio_public_url.query
+        and not minio_public_url.fragment
+        and minio_public_port_valid
+        and effective.minio_bucket
+        and effective.minio_access_key
+        and effective.minio_secret_key
+        and 1 <= effective.minio_port <= 65535
     )
     return {
         "source": effective.source,
@@ -1962,9 +2076,18 @@ def build_media_relay_status(
         "cloudinaryApiKeyPreview": mask_secret(effective.cloudinary_api_key),
         "cloudinaryApiSecretPreview": mask_secret(effective.cloudinary_api_secret),
         "apiFolder": effective.cloudinary_folder,
+        "minioEndpoint": effective.minio_endpoint,
+        "minioPublicEndpoint": effective.minio_public_endpoint,
+        "minioPort": effective.minio_port,
+        "minioUseSSL": effective.minio_use_ssl,
+        "minioBucket": effective.minio_bucket,
+        "minioAccessKeyPreview": mask_secret(effective.minio_access_key),
+        "minioSecretKeyPreview": mask_secret(effective.minio_secret_key),
         "configured": (
             cloudinary_configured
             if effective.provider == "cloudinary"
+            else minio_configured
+            if effective.provider == "minio"
             else aliyun_configured
         ),
     }

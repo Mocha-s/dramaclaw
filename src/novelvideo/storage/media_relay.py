@@ -11,7 +11,7 @@ import logging
 import re
 import mimetypes
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 AI_REFERENCE_JPEG_QUALITY = 95
 IMAGE_TRANSFORM_AI_REFERENCE_JPEG = "ai_reference_jpeg"
+_MINIO_RELAY_LIFECYCLE_ID = "dramaclaw-media-relay-seven-days"
+MINIO_MAX_PRESIGNED_TTL_SECONDS = 7 * 24 * 60 * 60
 
 
 class ServiceEgressDenied(RuntimeError):
@@ -182,6 +184,141 @@ class AliyunOSSRelay:
         )
 
 
+def _minio_endpoint(value: str, *, port: int, secure: bool) -> tuple[str, bool]:
+    raw = str(value or "").strip().rstrip("/")
+    if not raw:
+        raise MediaRelayConfigError("MINIO_RELAY_ENDPOINT is required")
+    parsed = urlparse(raw if "://" in raw else f"//{raw}")
+    try:
+        parsed_port = parsed.port
+    except ValueError:
+        raise MediaRelayConfigError("MinIO relay endpoint has an invalid port") from None
+    if (
+        not parsed.hostname
+        or parsed.scheme not in {"", "http", "https"}
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.path not in {"", "/"}
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise MediaRelayConfigError("MINIO relay endpoint must be a host or URL without a path")
+    selected_port = parsed_port or int(port)
+    if not 1 <= selected_port <= 65535:
+        raise MediaRelayConfigError("MINIO_RELAY_PORT must be between 1 and 65535")
+    selected_secure = parsed.scheme == "https" if parsed.scheme else secure
+    default_port = 443 if selected_secure else 80
+    endpoint = (
+        parsed.hostname
+        if selected_port == default_port
+        else f"{parsed.hostname}:{selected_port}"
+    )
+    return endpoint, selected_secure
+
+
+class MinioRelay:
+    """Upload to internal MinIO and presign through its public HTTPS endpoint."""
+
+    def __init__(
+        self,
+        *,
+        endpoint: str,
+        public_endpoint: str,
+        port: int = 9000,
+        bucket_name: str,
+        access_key_id: str,
+        access_key_secret: str,
+        use_ssl: bool = False,
+    ) -> None:
+        missing = [
+            name
+            for name, value in {
+                "MINIO_RELAY_ENDPOINT": endpoint,
+                "MINIO_RELAY_PUBLIC_ENDPOINT": public_endpoint,
+                "MINIO_RELAY_BUCKET": bucket_name,
+                "MINIO_RELAY_ACCESS_KEY": access_key_id,
+                "MINIO_RELAY_SECRET_KEY": access_key_secret,
+            }.items()
+            if not str(value or "").strip()
+        ]
+        if missing:
+            raise MediaRelayConfigError(
+                "MinIO media relay config missing: " + ", ".join(missing)
+            )
+        try:
+            from minio import Minio
+        except ImportError as exc:
+            raise MediaRelayConfigError(
+                "minio is not installed; install project dependencies before using media relay"
+            ) from exc
+
+        internal_endpoint, internal_secure = _minio_endpoint(
+            endpoint, port=port, secure=use_ssl
+        )
+        if urlparse(public_endpoint.strip()).scheme != "https":
+            raise MediaRelayConfigError(
+                "MINIO_RELAY_PUBLIC_ENDPOINT must use HTTPS"
+            )
+        public_endpoint_value, public_secure = _minio_endpoint(
+            public_endpoint, port=443, secure=True
+        )
+        self._bucket_name = bucket_name.strip()
+        self._client = Minio(
+            internal_endpoint,
+            access_key=access_key_id.strip(),
+            secret_key=access_key_secret.strip(),
+            secure=internal_secure,
+        )
+        self._public_client = Minio(
+            public_endpoint_value,
+            access_key=access_key_id.strip(),
+            secret_key=access_key_secret.strip(),
+            secure=public_secure,
+        )
+
+    def upload_bytes(
+        self,
+        data: bytes,
+        *,
+        ext: str = "png",
+        ttl: int = 1800,
+        resource_type: str = "image",
+        object_key: str | None = None,
+    ) -> str:
+        if not data:
+            raise ValueError("cannot relay empty media bytes")
+        if not 1 <= int(ttl) <= MINIO_MAX_PRESIGNED_TTL_SECONDS:
+            raise ValueError(
+                "MinIO presigned URL TTL must be between 1 second and 7 days"
+            )
+        ext = _normalize_ext(ext)
+        key = object_key or (
+            f"relay/{datetime.now(timezone.utc):%Y%m%d}/{uuid.uuid4().hex}.{ext}"
+        )
+        if not _is_safe_object_key(key):
+            raise ServiceEgressDenied("object-key")
+        self._client.put_object(
+            self._bucket_name,
+            key,
+            io.BytesIO(data),
+            len(data),
+            content_type=mimetypes.types_map.get(f".{ext}", "application/octet-stream"),
+        )
+        return self._public_client.presigned_get_object(
+            self._bucket_name,
+            key,
+            expires=timedelta(seconds=int(ttl)),
+        )
+
+    def upload_file(self, path: str | Path, *, ttl: int = 1800) -> str:
+        file_path = Path(path)
+        return self.upload_bytes(
+            file_path.read_bytes(),
+            ext=file_path.suffix.lstrip(".") or "png",
+            ttl=ttl,
+        )
+
+
 class CloudinaryRelay:
     """Upload transient bytes to Cloudinary and return its secure delivery URL."""
 
@@ -277,7 +414,7 @@ class CloudinaryRelay:
         )
 
 
-def get_media_relay() -> AliyunOSSRelay | CloudinaryRelay:
+def get_media_relay() -> AliyunOSSRelay | CloudinaryRelay | MinioRelay:
     """Build the configured media relay.
 
     The relay is intentionally not cached so tests can monkeypatch config and
@@ -297,6 +434,13 @@ def get_media_relay() -> AliyunOSSRelay | CloudinaryRelay:
         env_cloudinary_api_key=getattr(config, "CLOUDINARY_RELAY_API_KEY", ""),
         env_cloudinary_api_secret=getattr(config, "CLOUDINARY_RELAY_API_SECRET", ""),
         env_cloudinary_folder=getattr(config, "CLOUDINARY_RELAY_FOLDER", ""),
+        env_minio_endpoint=getattr(config, "MINIO_RELAY_ENDPOINT", ""),
+        env_minio_public_endpoint=getattr(config, "MINIO_RELAY_PUBLIC_ENDPOINT", ""),
+        env_minio_port=getattr(config, "MINIO_RELAY_PORT", 9000),
+        env_minio_use_ssl=getattr(config, "MINIO_RELAY_USE_SSL", False),
+        env_minio_bucket=getattr(config, "MINIO_RELAY_BUCKET", ""),
+        env_minio_access_key=getattr(config, "MINIO_RELAY_ACCESS_KEY", ""),
+        env_minio_secret_key=getattr(config, "MINIO_RELAY_SECRET_KEY", ""),
     )
     provider = relay_config.provider
     if provider == "cloudinary":
@@ -305,6 +449,16 @@ def get_media_relay() -> AliyunOSSRelay | CloudinaryRelay:
             api_key=relay_config.cloudinary_api_key,
             api_secret=relay_config.cloudinary_api_secret,
             folder=relay_config.cloudinary_folder,
+        )
+    if provider == "minio":
+        return MinioRelay(
+            endpoint=relay_config.minio_endpoint,
+            public_endpoint=relay_config.minio_public_endpoint,
+            port=relay_config.minio_port,
+            bucket_name=relay_config.minio_bucket,
+            access_key_id=relay_config.minio_access_key,
+            access_key_secret=relay_config.minio_secret_key,
+            use_ssl=relay_config.minio_use_ssl,
         )
     if provider != "aliyun_oss":
         raise MediaRelayConfigError(
@@ -334,6 +488,13 @@ def _default_media_relay_ttl_seconds() -> int:
         env_cloudinary_api_key=getattr(config, "CLOUDINARY_RELAY_API_KEY", ""),
         env_cloudinary_api_secret=getattr(config, "CLOUDINARY_RELAY_API_SECRET", ""),
         env_cloudinary_folder=getattr(config, "CLOUDINARY_RELAY_FOLDER", ""),
+        env_minio_endpoint=getattr(config, "MINIO_RELAY_ENDPOINT", ""),
+        env_minio_public_endpoint=getattr(config, "MINIO_RELAY_PUBLIC_ENDPOINT", ""),
+        env_minio_port=getattr(config, "MINIO_RELAY_PORT", 9000),
+        env_minio_use_ssl=getattr(config, "MINIO_RELAY_USE_SSL", False),
+        env_minio_bucket=getattr(config, "MINIO_RELAY_BUCKET", ""),
+        env_minio_access_key=getattr(config, "MINIO_RELAY_ACCESS_KEY", ""),
+        env_minio_secret_key=getattr(config, "MINIO_RELAY_SECRET_KEY", ""),
     ).ttl_seconds
 
 

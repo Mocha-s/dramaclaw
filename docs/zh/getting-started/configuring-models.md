@@ -260,6 +260,10 @@ ComfyUI 渠道存在时，MiniMax H3 模板按钮会保留在该渠道的 **Comf
 | AccessKey Secret | `OSS_RELAY_SK` | 对应 SK |
 | 有效期 | `MEDIA_RELAY_TTL_SECONDS` | 默认 1800 秒 |
 
+### 自部署 MinIO
+
+在「设置 → 媒体存储」选择 MinIO，填写 API 容器可访问的 S3 `Endpoint`、bucket 和凭据，以及上游模型可访问的公网 HTTPS `Public Endpoint`。两种 endpoint 可经由同一个反向代理，也可分别使用内网地址和公网地址。凭据仅保存在服务端，不返回给浏览器。
+
 Bucket 无需公开读；DramaClaw 使用临时签名 URL 授权上游读取。
 
 ### Cloudinary
