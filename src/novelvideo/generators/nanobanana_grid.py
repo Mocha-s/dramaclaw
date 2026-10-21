@@ -307,7 +307,11 @@ def _newapi_safe_request_context(
     payload: dict[str, object],
     prompt: str,
 ) -> dict[str, object]:
-    reference_images = payload.get("image") or payload.get("images")
+    reference_images = (
+        payload.get("image")
+        or payload.get("images")
+        or payload.get("input_reference")
+    )
     reference_image_count = len(reference_images) if isinstance(reference_images, list) else 0
     raw_metadata = payload.get("metadata")
     metadata = raw_metadata if isinstance(raw_metadata, dict) else {}
@@ -3082,6 +3086,17 @@ async def _generate_image(
                 "quality": quality or generator.openai_image_quality,
                 "request_schema": generator.newapi_request_schema,
                 "model_params": generator.newapi_model_params,
+                **(
+                    {
+                        "reference_image_format": (
+                            generator.newapi_request_schema.get("referenceFormat")
+                            or os.environ.get("NEWAPI_IMAGE_EDIT_REFERENCE_FORMAT")
+                            or generator.newapi_image_edit_reference_format
+                        )
+                    }
+                    if ref_bytes
+                    else {}
+                ),
             },
             base_url=generator.base_url,
             trace=trace,
@@ -3628,8 +3643,14 @@ async def _call_newapi_image_api(
         or os.environ.get("NEWAPI_IMAGE_EDIT_REFERENCE_FORMAT")
         or "dc-media"
     ).strip().lower()
-    if reference_images and reference_image_format not in {"dc-media", "images"}:
-        return None, "", "Unsupported reference image format; use dc-media or images"
+    supported_reference_formats = {
+        "dc-media",
+        "images",
+        "input_reference",
+        "multipart",
+    }
+    if reference_images and reference_image_format not in supported_reference_formats:
+        return None, "", "Unsupported reference image format"
     aspect_ratio = str(image_config.get("aspect_ratio") or "1:1").strip().lower() or "1:1"
     image_size = normalize_image_size(str(image_config.get("image_size") or "1K"), "newapi")
     request_schema = image_config.get("request_schema") or {}
@@ -3684,7 +3705,34 @@ async def _call_newapi_image_api(
     if input_fidelity and reference_images:
         payload["input_fidelity"] = input_fidelity
 
-    if reference_images:
+    multipart_files: list[tuple[str, tuple[str, bytes, str]]] = []
+    if reference_images and reference_image_format == "multipart":
+        for index, image_ref in enumerate(reference_images):
+            filename = f"reference_{index + 1}.png"
+            image_content_type = "image/png"
+            image_data = _reference_image_bytes(image_ref)
+            if isinstance(image_ref, tuple):
+                if len(image_ref) == 3:
+                    filename, image_data, image_content_type = (
+                        str(image_ref[0]),
+                        bytes(image_ref[1]),
+                        str(image_ref[2]),
+                    )
+                elif len(image_ref) == 2:
+                    image_data, image_content_type = (
+                        bytes(image_ref[0]),
+                        str(image_ref[1]),
+                    )
+                    extension = "jpg" if image_content_type == "image/jpeg" else "png"
+                    filename = f"reference_{index + 1}.{extension}"
+            multipart_files.append(
+                ("image", (filename, image_data, image_content_type))
+            )
+        # Keep only a non-sensitive marker for usage logs; the actual files are
+        # passed separately to HTTPX and are never JSON-serialized.
+        payload["image"] = ["<multipart-image>"] * len(multipart_files)
+
+    if reference_images and reference_image_format != "multipart":
         try:
             relay_helper = _relay_reference_images_for_newapi
             if relay_helper is _ORIGINAL_RELAY_REFERENCE_IMAGES_FOR_NEWAPI:
@@ -3694,10 +3742,14 @@ async def _call_newapi_image_api(
                 )
             else:
                 relayed_images = await relay_helper(reference_images)
-            # DC-Media uses image: [URL]; Cockpit's JSON edit parser accepts
-            # images: [{image_url: URL}]. Select explicitly per deployment.
+            # Keep each JSON edit dialect explicit; never retry a billable edit
+            # with another shape after an upstream response.
             if reference_image_format == "images":
                 payload["images"] = [{"image_url": url} for url in relayed_images]
+            elif reference_image_format == "input_reference":
+                payload["input_reference"] = [
+                    {"image_url": url} for url in relayed_images
+                ]
             else:
                 payload["image"] = relayed_images
         except Exception as exc:
@@ -3755,10 +3807,9 @@ async def _call_newapi_image_api(
         prompt=prompt,
     )
     logger.info("DramaClawAPI image request: %s", request_context)
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {api_key}"}
+    if not multipart_files:
+        headers["Content-Type"] = "application/json"
 
     async def _reserve(source: str) -> str:
         return await get_usage_meter().reserve_current_model_call_credit(
@@ -3844,10 +3895,24 @@ async def _call_newapi_image_api(
             follow_redirects=True,
         ) as client:
             logger.info("DramaClawAPI image POST start: %s", request_context.get("endpoint"))
+            request_kwargs: dict[str, object] = {
+                "headers": headers,
+            }
+            if multipart_files:
+                form_fields = {
+                    key: json.dumps(value, ensure_ascii=False)
+                    if isinstance(value, (dict, list))
+                    else str(value)
+                    for key, value in payload.items()
+                    if key != "image"
+                }
+                request_kwargs["data"] = form_fields
+                request_kwargs["files"] = multipart_files
+            else:
+                request_kwargs["json"] = payload
             response = await client.post(
                 f"{endpoint}{request_path}",
-                headers=headers,
-                json=payload,
+                **request_kwargs,
             )
             logger.info(
                 "DramaClawAPI image POST response: status=%s bytes=%s",
@@ -4353,6 +4418,9 @@ class NanoBananaGridGenerator:
         self.default_image_size = config.get("image_size", "1K")
         self.newapi_request_schema = config.get("newapi_request_schema") or {}
         self.newapi_model_params = config.get("newapi_model_params") or {}
+        self.newapi_image_edit_reference_format = str(
+            config.get("image_edit_reference_format") or "dc-media"
+        ).strip().lower()
         self.mode = config.get("mode", "3x3")
         self.rows = config["rows"]
         self.cols = config["cols"]

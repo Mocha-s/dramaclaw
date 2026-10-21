@@ -895,6 +895,116 @@ def test_newapi_image_edit_supports_cockpit_reference_format(
     assert "https://relay.test" not in str(context)
 
 
+@pytest.mark.parametrize(
+    ("reference_format", "expected_key"),
+    [("input_reference", "input_reference"), ("images", "images")],
+)
+def test_newapi_image_edit_supports_json_reference_protocols(
+    monkeypatch, reference_format, expected_key
+):
+    import json
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append((request.url.path, request.headers.get("content-type"), json.loads(request.content)))
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+    monkeypatch.setattr(
+        nanobanana_grid,
+        "upload_image_bytes",
+        lambda data, **_kwargs: f"https://relay.test/{data.decode()}.png",
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2.5",
+            prompt="edit",
+            reference_images=[b"ref-a", b"ref-b"],
+            image_config={"reference_image_format": reference_format},
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert image_bytes == b"edited"
+    assert error == ""
+    assert len(posted) == 1
+    path, content_type, payload = posted[0]
+    assert path == "/v1/images/edits"
+    assert content_type == "application/json"
+    assert payload[expected_key] == [
+        {"image_url": "https://relay.test/ref-a.png"},
+        {"image_url": "https://relay.test/ref-b.png"},
+    ]
+
+
+def test_newapi_image_edit_supports_multipart_image_files_without_relay(
+    monkeypatch,
+):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append((request.headers.get("content-type"), request.content))
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+    monkeypatch.setattr(
+        nanobanana_grid,
+        "upload_image_bytes",
+        lambda *_args, **_kwargs: pytest.fail("multipart must not relay uploads"),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2.5",
+            prompt="edit prompt",
+            reference_images=[
+                ("first.jpg", b"jpeg-bytes", "image/jpeg"),
+                ("second.png", b"png-bytes", "image/png"),
+            ],
+            image_config={"reference_image_format": "multipart", "quality": "medium"},
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert image_bytes == b"edited"
+    assert error == ""
+    assert len(posted) == 1
+    content_type, body = posted[0]
+    assert content_type.startswith("multipart/form-data; boundary=")
+    assert b'name="image"; filename="first.jpg"' in body
+    assert b'name="image"; filename="second.png"' in body
+    assert b'name="prompt"' in body and b"edit prompt" in body
+
+
 def test_newapi_image_edit_rejects_unknown_reference_format_before_upload(monkeypatch):
     from novelvideo.generators import nanobanana_grid
 
