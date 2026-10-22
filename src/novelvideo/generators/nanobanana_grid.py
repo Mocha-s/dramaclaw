@@ -3969,11 +3969,14 @@ async def _call_newapi_image_api(
             return None, "", f"media relay upload failed: {exc}"
     if reference_images:
         configured_endpoint = str(request_schema.get("endpoint") or "").strip()
-        if configured_endpoint == "images/generations":
+        if (
+            reference_image_format != "multipart"
+            and configured_endpoint == "images/generations"
+        ):
             request_path = "/images/generations"
         else:
-            # Legacy catalog entries without a request schema use the edit route
-            # whenever reference images are present.
+            # Multipart image-edit requests use /edits even when their catalog
+            # endpoint describes text-to-image generation.
             request_path = "/images/edits"
     else:
         request_path = "/images/generations"

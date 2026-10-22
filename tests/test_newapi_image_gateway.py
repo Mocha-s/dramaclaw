@@ -1118,6 +1118,51 @@ def test_newapi_image_edit_multipart_uses_singular_image_for_one_reference(monke
     assert b'name="image[]"' not in posted[0]
 
 
+def test_newapi_multipart_reference_schema_routes_to_image_edits(monkeypatch):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append((request.url.path, request.content))
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2.5",
+            prompt="edit prompt",
+            reference_images=[("reference.png", b"png-bytes", "image/png")],
+            image_config={
+                "reference_image_format": "multipart",
+                "request_schema": {
+                    "endpoint": "images/generations",
+                    "referenceFormat": "multipart",
+                    "parameters": [],
+                },
+            },
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert image_bytes == b"edited"
+    assert error == ""
+    assert posted[0][0] == "/v1/images/edits"
+
+
 def test_gemini_image_gateway_uses_native_generate_content_json(monkeypatch):
     import json
     import httpx
