@@ -952,6 +952,61 @@ def test_newapi_image_edit_supports_json_reference_protocols(
     ]
 
 
+def test_newapi_image_reference_request_uses_catalog_endpoint(monkeypatch):
+    """A catalog can route reference-image requests through generations."""
+    import json
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append((request.url.path, json.loads(request.content)))
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"generated-image").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+    monkeypatch.setattr(
+        nanobanana_grid,
+        "upload_image_bytes",
+        lambda data, **_kwargs: f"https://relay.test/{data.decode()}.png",
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2",
+            prompt="four-panel story",
+            reference_images=[b"source"],
+            image_config={
+                "aspect_ratio": "1:1",
+                "image_size": "1K",
+                "request_schema": {
+                    "endpoint": "images/generations",
+                    "referenceFormat": "images",
+                    "parameters": [],
+                },
+            },
+            base_url="http://newapi.test/v1",
+        )
+    )
+
+    assert image_bytes == b"generated-image"
+    assert error == ""
+    assert posted[0][0] == "/v1/images/generations"
+    assert posted[0][1]["images"] == [{"image_url": "https://relay.test/source.png"}]
+    assert "image" not in posted[0][1]
+
+
 def test_newapi_image_edit_supports_multipart_image_files_without_relay(
     monkeypatch,
 ):
