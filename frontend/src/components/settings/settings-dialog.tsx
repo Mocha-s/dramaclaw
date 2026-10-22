@@ -69,6 +69,7 @@ import {
   useSaveOfficialConfig,
   useSaveBrainClawConfig,
   useSaveSub2ApiConfig,
+  useFetchSub2ApiModels,
   useSetCustomLlmMode,
   useInitCustomNewApi,
   useSaveCustomChannel,
@@ -90,12 +91,16 @@ import {
   type SavedMediaModelConfig,
   type SavedProviderChannelConfig,
   type Sub2ApiCapability,
+  type Sub2ApiAccountGroup,
+  type Sub2ApiImageEditFormat,
+  type Sub2ApiVideoEndpoint,
 } from "@/lib/queries/model-gateway";
 import {
   useSettingsStore,
   FEATURE_MODEL_PROVIDERS,
   type AliyunOssStorageConfig,
   type CloudinaryStorageConfig,
+  type MinioStorageConfig,
   type EmbeddingModelEntry,
   type FeatureModelEntry,
   type FeatureModelSettings,
@@ -114,6 +119,7 @@ interface SettingsDialogProps {
 const MEDIA_STORAGE_PROVIDERS: MediaStorageProvider[] = [
   "aliyun_oss",
   "cloudinary",
+  "minio",
 ];
 
 // Codex 本地桥接暂时隐藏（保留组件代码，后端就绪后改回 true 即可恢复）。
@@ -678,13 +684,24 @@ function ModelConfigSection({ open }: { open: boolean }) {
   );
 }
 
-const SUB2API_CAPABILITIES: readonly Sub2ApiCapability[] = [
-  "text",
-  "embedding",
-  "image",
-  "video",
-  "audio",
-];
+const SUB2API_CAPABILITIES: readonly Sub2ApiCapability[] = ["text", "embedding", "image", "video", "audio"];
+
+type Sub2ApiGroupDraft = Sub2ApiAccountGroup & {
+  apiKey: string;
+};
+
+function newSub2ApiGroup(): Sub2ApiGroupDraft {
+  return {
+    id: globalThis.crypto?.randomUUID?.() ?? `sub2api-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: "",
+    protocol: "openai",
+    baseUrl: "",
+    apiKey: "",
+    apiKeyPreview: "",
+    capabilities: ["text"],
+    modelMappings: [],
+  };
+}
 
 function Sub2ApiGatewayPanel({
   config,
@@ -695,30 +712,51 @@ function Sub2ApiGatewayPanel({
 }) {
   const { t } = useTranslation();
   const saveConfig = useSaveSub2ApiConfig();
+  const fetchModels = useFetchSub2ApiModels();
   const saved = config?.sub2api;
-  const [baseUrl, setBaseUrl] = useState(saved?.baseUrl ?? "");
-  const [keys, setKeys] = useState<Partial<Record<Sub2ApiCapability, string>>>({});
-  const endpointChanged = Boolean(
-    saved?.baseUrl &&
-      baseUrl.trim().replace(/\/+$/, "") !== saved.baseUrl.replace(/\/+$/, ""),
-  );
-  const allKeysPresent = SUB2API_CAPABILITIES.every(
-    (capability) =>
-      Boolean(keys[capability]?.trim()) ||
-      (!endpointChanged && Boolean(saved?.keys[capability]?.configured)),
-  );
-  const canSave = Boolean(baseUrl.trim() && allKeysPresent);
+  const [groups, setGroups] = useState<Sub2ApiGroupDraft[]>([]);
+  const [modelsByGroup, setModelsByGroup] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
-    setBaseUrl(saved?.baseUrl ?? "");
-    setKeys({});
-  }, [saved?.baseUrl, saved?.configured]);
+    setGroups(
+      (saved?.groups ?? []).map((group) => ({ ...group, apiKey: "" })),
+    );
+    setModelsByGroup({});
+  }, [saved?.groups]);
+
+  const canSave = groups.length === 0 || groups.every((group) => {
+    const previous = saved?.groups.find((candidate) => candidate.id === group.id);
+    const endpointChanged = previous && previous.baseUrl !== group.baseUrl.trim().replace(/\/+$/, "");
+    return Boolean(
+      group.name.trim() &&
+      group.baseUrl.trim() &&
+      group.capabilities.length > 0 &&
+      group.modelMappings.length > 0 && group.modelMappings.every((mapping) => mapping.requestPattern.trim() && mapping.upstreamModel.trim()) &&
+      (group.apiKey.trim() || (previous?.apiKeyPreview && !endpointChanged)),
+    );
+  });
 
   const handleSave = async () => {
     try {
       const response = await saveConfig.mutateAsync({
-        baseUrl: baseUrl.trim(),
-        keys,
+        groups: groups.map((group) => ({
+          id: group.id,
+          name: group.name.trim(),
+          protocol: group.protocol,
+          baseUrl: group.baseUrl.trim().replace(/\/+$/, ""),
+          capabilities: group.capabilities,
+          modelMappings: group.modelMappings.map((mapping) => ({
+            requestPattern: mapping.requestPattern.trim(),
+            upstreamModel: mapping.upstreamModel.trim(),
+            ...(group.capabilities.includes("image")
+              ? { imageEditFormat: mapping.imageEditFormat ?? "images" }
+              : {}),
+            ...(group.capabilities.includes("video")
+              ? { videoEndpoint: mapping.videoEndpoint ?? "videos" }
+              : {}),
+          })),
+          ...(group.apiKey.trim() ? { apiKey: group.apiKey.trim() } : {}),
+        })),
       });
       if (!response.ok) {
         toast.error(
@@ -726,7 +764,6 @@ function Sub2ApiGatewayPanel({
         );
         return;
       }
-      setKeys({});
       toast.success(t("settings.modelConfig.sub2api.saved"));
     } catch (error) {
       toast.error(
@@ -740,30 +777,38 @@ function Sub2ApiGatewayPanel({
       <p className="text-xs leading-relaxed text-muted-foreground">
         {t("settings.modelConfig.sub2api.description")}
       </p>
-      <div className="space-y-3 rounded-md border border-border/70 p-3">
-        <FieldRow
-          label={t("settings.modelConfig.sub2api.baseUrl")}
-          name="sub2api-base-url"
-          value={baseUrl}
-          onChange={setBaseUrl}
-          placeholder="https://sub2api.example/v1"
-        />
-        <div className="space-y-2.5 border-t border-border/70 pt-3">
-          {SUB2API_CAPABILITIES.map((capability) => (
-            <FieldRow
-              key={capability}
-              secret
-              name={`sub2api-${capability}-key`}
-              label={t(`settings.modelConfig.sub2api.capabilities.${capability}`)}
-              value={keys[capability] ?? ""}
-              onChange={(value) =>
-                setKeys((current) => ({ ...current, [capability]: value }))
+      <div className="space-y-3">
+        {groups.map((group) => (
+          <Sub2ApiGroupCard
+            key={group.id}
+            group={group}
+            onChange={(next) => setGroups((current) => current.map((item) => item.id === next.id ? next : item))}
+            onRemove={() => setGroups((current) => current.filter((item) => item.id !== group.id))}
+            availableModels={modelsByGroup[group.id] ?? []}
+            fetchPending={fetchModels.isPending}
+            onFetchModels={async () => {
+              try {
+                const response = await fetchModels.mutateAsync({
+                  id: group.id,
+                  protocol: group.protocol,
+                  baseUrl: group.baseUrl,
+                  ...(group.apiKey ? { apiKey: group.apiKey } : {}),
+                });
+                if (!response.ok) {
+                  toast.error(getResponseErrorMessage(response, t("settings.modelConfig.sub2api.fetchFailed")));
+                  return;
+                }
+                setModelsByGroup((current) => ({ ...current, [group.id]: response.data.models }));
+              } catch (error) {
+                toast.error(await getRequestErrorMessage(error, t("settings.modelConfig.sub2api.fetchFailed")));
               }
-              savedPreview={saved?.keys[capability]?.apiKeyPreview}
-              placeholder={t("settings.modelConfig.sub2api.keyPlaceholder")}
-            />
-          ))}
-        </div>
+            }}
+          />
+        ))}
+        <Button type="button" variant="outline" size="sm" onClick={() => setGroups((current) => [...current, newSub2ApiGroup()])}>
+          <Plus className="size-3.5" />
+          {t("settings.modelConfig.sub2api.addGroup")}
+        </Button>
         <p className="text-[11px] leading-relaxed text-muted-foreground">
           {t("settings.modelConfig.sub2api.keyHint")}
         </p>
@@ -787,6 +832,218 @@ function Sub2ApiGatewayPanel({
         </div>
       </div>
     </div>
+  );
+}
+
+function Sub2ApiGroupCard({
+  group,
+  onChange,
+  onRemove,
+  availableModels,
+  fetchPending,
+  onFetchModels,
+}: {
+  group: Sub2ApiGroupDraft;
+  onChange: (group: Sub2ApiGroupDraft) => void;
+  onRemove: () => void;
+  availableModels: string[];
+  fetchPending: boolean;
+  onFetchModels: () => void;
+}) {
+  const { t } = useTranslation();
+  const modelsId = useId();
+  const [modelSearch, setModelSearch] = useState("");
+  const filteredModels = availableModels.filter((model) =>
+    model.toLowerCase().includes(modelSearch.trim().toLowerCase()),
+  );
+  return (
+    <fieldset className="space-y-3 rounded-md border border-border/70 p-3">
+      <legend className="px-1 text-xs font-medium text-foreground">
+        {group.name || t("settings.modelConfig.sub2api.newGroup")}
+      </legend>
+      <div className="flex justify-end">
+        <Button type="button" size="sm" variant="ghost" onClick={onRemove} aria-label={t("settings.modelConfig.sub2api.removeGroup")}>
+          <Trash2 className="size-3.5" />
+          {t("settings.modelConfig.sub2api.removeGroup")}
+        </Button>
+      </div>
+      <FieldRow
+        label={t("settings.modelConfig.sub2api.groupName")}
+        name={`sub2api-${group.id}-name`}
+        value={group.name}
+        onChange={(name) => onChange({ ...group, name })}
+        placeholder="openai-main"
+      />
+      <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+        <Label htmlFor={`${modelsId}-protocol`} className="text-[11px] text-muted-foreground uppercase">{t("settings.modelConfig.sub2api.protocol")}</Label>
+        <select
+          id={`${modelsId}-protocol`}
+          className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm"
+          value={group.protocol}
+          onChange={(event) => onChange({ ...group, protocol: event.target.value as "openai" | "gemini" })}
+        >
+          <option value="openai">OpenAI</option>
+          <option value="gemini">Gemini</option>
+        </select>
+      </div>
+      <FieldRow
+        label={t("settings.modelConfig.sub2api.baseUrl")}
+        name={`sub2api-${group.id}-base-url`}
+        value={group.baseUrl}
+        onChange={(baseUrl) => onChange({ ...group, baseUrl })}
+        placeholder="https://sub2api.example/v1"
+      />
+      <FieldRow
+        secret
+        label={t("settings.modelConfig.sub2api.apiKey")}
+        name={`sub2api-${group.id}-key`}
+        value={group.apiKey}
+        onChange={(apiKey) => onChange({ ...group, apiKey })}
+        savedPreview={group.apiKeyPreview}
+        placeholder={t("settings.modelConfig.sub2api.keyPlaceholder")}
+      />
+      <div className="space-y-1.5">
+        <p className="text-[11px] font-medium text-muted-foreground">{t("settings.modelConfig.sub2api.capabilitiesLabel")}</p>
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {SUB2API_CAPABILITIES.map((capability) => (
+            <label key={capability} className="inline-flex items-center gap-1.5 text-xs text-foreground">
+              <input
+                type="checkbox"
+                checked={group.capabilities.includes(capability)}
+                onChange={(event) => onChange({
+                  ...group,
+                  capabilities: event.target.checked
+                    ? [...group.capabilities, capability]
+                    : group.capabilities.filter((item) => item !== capability),
+                })}
+              />
+              {t(`settings.modelConfig.sub2api.capabilities.${capability}`)}
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={modelsId} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.sub2api.models")}</Label>
+        <div className="flex gap-2">
+          <Input
+            value={modelSearch}
+            onChange={(event) => setModelSearch(event.target.value)}
+            placeholder={t("settings.modelConfig.sub2api.modelSearch")}
+            aria-label={t("settings.modelConfig.sub2api.modelSearch")}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onFetchModels}
+            disabled={fetchPending || !group.baseUrl.trim()}
+          >
+            {fetchPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
+            {t("settings.modelConfig.sub2api.fetchModels")}
+          </Button>
+        </div>
+        {availableModels.length > 0 ? (
+          <div
+            className="max-h-36 space-y-1 overflow-auto rounded-md border border-border/70 p-2"
+            aria-label={t("settings.modelConfig.sub2api.availableModels")}
+          >
+            {filteredModels.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t("settings.modelConfig.sub2api.noModels")}</p>
+            ) : filteredModels.map((model) => (
+              <label key={model} className="flex items-center gap-2 text-xs text-foreground">
+                <input
+                  type="checkbox"
+                  checked={group.modelMappings.some((mapping) => mapping.upstreamModel === model)}
+                  onChange={(event) => onChange({
+                    ...group,
+                    modelMappings: event.target.checked
+                      ? [
+                          ...group.modelMappings,
+                          {
+                            requestPattern: "",
+                            upstreamModel: model,
+                            imageEditFormat: "images",
+                            videoEndpoint: "videos",
+                          },
+                        ]
+                      : group.modelMappings.filter((mapping) => mapping.upstreamModel !== model),
+                  })}
+                />
+                <span className="font-mono">{model}</span>
+              </label>
+            ))}
+          </div>
+        ) : null}
+        <div className="space-y-2" id={modelsId}>
+          {group.modelMappings.map((mapping, index) => (
+            <div key={`${mapping.upstreamModel}-${index}`} className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  aria-label={t("settings.modelConfig.sub2api.requestModel")}
+                  value={mapping.requestPattern}
+                  onChange={(event) => onChange({
+                    ...group,
+                    modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index ? { ...item, requestPattern: event.target.value } : item),
+                  })}
+                  placeholder="DC-codex-agent-LLM"
+                />
+                <Input
+                  aria-label={t("settings.modelConfig.sub2api.upstreamModel")}
+                  value={mapping.upstreamModel}
+                  onChange={(event) => onChange({
+                    ...group,
+                    modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index ? { ...item, upstreamModel: event.target.value } : item),
+                  })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {group.capabilities.includes("image") ? (
+                  <label className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{t("settings.modelConfig.sub2api.imageEditFormat")}</span>
+                    <select
+                      aria-label={t("settings.modelConfig.sub2api.imageEditFormat")}
+                      className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm text-foreground"
+                      value={mapping.imageEditFormat ?? "images"}
+                      onChange={(event) => onChange({
+                        ...group,
+                        modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
+                          ? { ...item, imageEditFormat: event.target.value as Sub2ApiImageEditFormat }
+                          : item),
+                      })}
+                    >
+                      <option value="images">{t("settings.modelConfig.sub2api.imageEditFormats.images")}</option>
+                      <option value="input_reference">{t("settings.modelConfig.sub2api.imageEditFormats.input_reference")}</option>
+                      <option value="multipart">{t("settings.modelConfig.sub2api.imageEditFormats.multipart")}</option>
+                      <option value="dc-media">{t("settings.modelConfig.sub2api.imageEditFormats.dc-media")}</option>
+                    </select>
+                  </label>
+                ) : <span />}
+                {group.capabilities.includes("video") ? (
+                  <label className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{t("settings.modelConfig.sub2api.videoEndpoint")}</span>
+                    <select
+                      aria-label={t("settings.modelConfig.sub2api.videoEndpoint")}
+                      className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm text-foreground"
+                      value={mapping.videoEndpoint ?? "videos"}
+                      onChange={(event) => onChange({
+                        ...group,
+                        modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
+                          ? { ...item, videoEndpoint: event.target.value as Sub2ApiVideoEndpoint }
+                          : item),
+                      })}
+                    >
+                      <option value="videos">{t("settings.modelConfig.sub2api.videoEndpoints.videos")}</option>
+                      <option value="video/generations">{t("settings.modelConfig.sub2api.videoEndpoints.legacy")}</option>
+                    </select>
+                  </label>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p id={`${modelsId}-hint`} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.sub2api.modelsHint")}</p>
+      </div>
+    </fieldset>
   );
 }
 
@@ -6106,16 +6363,21 @@ function MediaStorageSection() {
   const updateAliyunOss = useSettingsStore(
     (s) => s.updateAliyunOssStorageConfig,
   );
+  const minio = useSettingsStore((s) => s.mediaStorage.minio);
+  const updateMinio = useSettingsStore((s) => s.updateMinioStorageConfig);
   const saveMediaRelay = useSaveMediaRelayConfig();
 
   const { provider, cloudinary, aliyunOss } = mediaStorage;
   const [ttlSeconds, setTtlSeconds] = useState("1800");
+  const [minioAccessKey, setMinioAccessKey] = useState("");
+  const [minioSecretKey, setMinioSecretKey] = useState("");
   const mediaRelayKey = JSON.stringify(mediaRelay ?? {});
   useEffect(() => {
     if (!mediaRelay) return;
     if (
       mediaRelay.provider === "aliyun_oss" ||
-      mediaRelay.provider === "cloudinary"
+      mediaRelay.provider === "cloudinary" ||
+      mediaRelay.provider === "minio"
     ) {
       setProvider(mediaRelay.provider as MediaStorageProvider);
     }
@@ -6126,6 +6388,15 @@ function MediaStorageSection() {
         ...(mediaRelay.configured
           ? { accessKeyId: "", accessKeySecret: "" }
           : {}),
+      });
+    }
+    if (mediaRelay.minioEndpoint || mediaRelay.minioPublicEndpoint) {
+      updateMinio({
+        endpoint: mediaRelay.minioEndpoint || minio.endpoint,
+        publicEndpoint: mediaRelay.minioPublicEndpoint || minio.publicEndpoint,
+        bucket: mediaRelay.minioBucket || minio.bucket,
+        port: mediaRelay.minioPort ? String(mediaRelay.minioPort) : minio.port,
+        useSSL: mediaRelay.minioUseSSL ?? minio.useSSL,
       });
     }
     if (mediaRelay.cloudName || mediaRelay.apiFolder) {
@@ -6174,7 +6445,23 @@ function MediaStorageSection() {
                 ? { apiSecret: cloudinary.apiSecret.trim() }
                 : {}),
             }
-          : {
+          : provider === "minio"
+            ? {
+                provider: "minio",
+                ttlSeconds: Math.trunc(ttl),
+                endpoint: minio.endpoint.trim(),
+                publicEndpoint: minio.publicEndpoint.trim(),
+                port: Number(minio.port.trim() || "9000"),
+                useSSL: minio.useSSL,
+                bucket: minio.bucket.trim(),
+                ...(minioAccessKey.trim()
+                  ? { accessKeyId: minioAccessKey.trim() }
+                  : {}),
+                ...(minioSecretKey.trim()
+                  ? { accessKeySecret: minioSecretKey.trim() }
+                  : {}),
+              }
+            : {
               provider: "aliyun_oss",
               ttlSeconds: Math.trunc(ttl),
               endpoint: aliyunOss.endpoint.trim(),
@@ -6193,19 +6480,28 @@ function MediaStorageSection() {
       }
       if (provider === "cloudinary") {
         updateCloudinary({ apiKey: "", apiSecret: "" });
+      } else if (provider === "minio") {
+        setMinioAccessKey("");
+        setMinioSecretKey("");
       } else {
         updateAliyunOss({ accessKeyId: "", accessKeySecret: "" });
       }
       toast.success(
         provider === "cloudinary"
           ? t("settings.mediaStorage.cloudinarySaveSuccess")
+          : provider === "minio"
+            ? t("settings.mediaStorage.minioSaveSuccess")
           : t("settings.mediaStorage.saveSuccess"),
       );
     } catch (error) {
       toast.error(
         await getRequestErrorMessage(
           error,
-          t("settings.mediaStorage.saveFailed"),
+          t(
+            provider === "minio"
+              ? "settings.mediaStorage.minioSaveFailed"
+              : "settings.mediaStorage.saveFailed",
+          ),
         ),
       );
     }
@@ -6233,7 +6529,9 @@ function MediaStorageSection() {
           {t("settings.mediaStorage.currentPlan")}:{" "}
           {configuredProvider === "cloudinary"
             ? t("settings.mediaStorage.providerCloudinary")
-            : t("settings.mediaStorage.providerAliyunOss")}
+            : configuredProvider === "minio"
+              ? t("settings.mediaStorage.providerMinio")
+              : t("settings.mediaStorage.providerAliyunOss")}
         </span>
       </div>
 
@@ -6281,7 +6579,9 @@ function MediaStorageSection() {
               <TabsTrigger key={p} value={p}>
                 {p === "aliyun_oss"
                   ? t("settings.mediaStorage.providerAliyunOss")
-                  : t("settings.mediaStorage.providerCloudinary")}
+                  : p === "minio"
+                    ? t("settings.mediaStorage.providerMinio")
+                    : t("settings.mediaStorage.providerCloudinary")}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -6295,6 +6595,19 @@ function MediaStorageSection() {
             onChange={updateCloudinary}
             apiKeyPreview={mediaRelay?.cloudinaryApiKeyPreview ?? ""}
             apiSecretPreview={mediaRelay?.cloudinaryApiSecretPreview ?? ""}
+          />
+        ) : provider === "minio" ? (
+          <MinioFields
+            config={minio}
+            onChange={updateMinio}
+            ttlSeconds={ttlSeconds}
+            onTtlSecondsChange={setTtlSeconds}
+            accessKey={minioAccessKey}
+            onAccessKeyChange={setMinioAccessKey}
+            secretKey={minioSecretKey}
+            onSecretKeyChange={setMinioSecretKey}
+            accessKeyPreview={mediaRelay?.minioAccessKeyPreview ?? ""}
+            secretKeyPreview={mediaRelay?.minioSecretKeyPreview ?? ""}
           />
         ) : (
           <AliyunOssFields
@@ -6340,7 +6653,9 @@ function MediaStorageSection() {
           ) : null}
           {provider === "cloudinary"
             ? t("settings.mediaStorage.saveCloudinary")
-            : t("settings.mediaStorage.save")}
+            : provider === "minio"
+              ? t("settings.mediaStorage.saveMinio")
+              : t("settings.mediaStorage.save")}
         </Button>
       </div>
     </section>
@@ -6389,6 +6704,91 @@ function CloudinaryFields({
         value={config.apiFolder}
         onChange={(v) => onChange({ apiFolder: v })}
       />
+    </>
+  );
+}
+
+function MinioFields({
+  config,
+  onChange,
+  ttlSeconds,
+  onTtlSecondsChange,
+  accessKey,
+  onAccessKeyChange,
+  secretKey,
+  onSecretKeyChange,
+  accessKeyPreview,
+  secretKeyPreview,
+}: {
+  config: MinioStorageConfig;
+  onChange: (patch: Partial<MinioStorageConfig>) => void;
+  ttlSeconds: string;
+  onTtlSecondsChange: (value: string) => void;
+  accessKey: string;
+  onAccessKeyChange: (value: string) => void;
+  secretKey: string;
+  onSecretKeyChange: (value: string) => void;
+  accessKeyPreview: string;
+  secretKeyPreview: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <FieldRow
+        label={t("settings.mediaStorage.fields.minioEndpoint")}
+        value={config.endpoint}
+        onChange={(v) => onChange({ endpoint: v })}
+      />
+      <FieldRow
+        label={t("settings.mediaStorage.fields.minioPublicEndpoint")}
+        value={config.publicEndpoint}
+        onChange={(v) => onChange({ publicEndpoint: v })}
+      />
+      <FieldRow
+        label={t("settings.mediaStorage.fields.minioPort")}
+        value={config.port}
+        onChange={(v) => onChange({ port: v })}
+      />
+      <FieldRow
+        label={t("settings.mediaStorage.fields.bucket")}
+        value={config.bucket}
+        onChange={(v) => onChange({ bucket: v })}
+      />
+      <FieldRow
+        secret
+        name="minio-access-key"
+        label={t("settings.mediaStorage.fields.accessKeyId")}
+        value={accessKey}
+        onChange={onAccessKeyChange}
+        placeholder={accessKeyPreview || undefined}
+        savedPreview={accessKeyPreview}
+      />
+      <FieldRow
+        secret
+        name="minio-secret-key"
+        label={t("settings.mediaStorage.fields.accessKeySecret")}
+        value={secretKey}
+        onChange={onSecretKeyChange}
+        placeholder={secretKeyPreview || undefined}
+        savedPreview={secretKeyPreview}
+      />
+      <label className="ml-[132px] flex items-center gap-2 text-xs text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={config.useSSL}
+          onChange={(event) => onChange({ useSSL: event.target.checked })}
+          className="size-3.5 accent-primary"
+        />
+        {t("settings.mediaStorage.fields.minioUseSSL")}
+      </label>
+      <FieldRow
+        label={t("settings.mediaStorage.fields.ttlSeconds")}
+        value={ttlSeconds}
+        onChange={onTtlSecondsChange}
+      />
+      <p className="ml-[132px] text-[11px] text-muted-foreground">
+        {t("settings.mediaStorage.minioHint")}
+      </p>
     </>
   );
 }

@@ -202,7 +202,11 @@ async def test_scene_360_accepts_copied_file_without_image_bytes(monkeypatch, tm
     monkeypatch.setattr(
         scene_360_builder,
         "_resolve_newapi_credentials",
-        lambda: ("test-token", "https://gateway.example/v1"),
+        lambda **_kwargs: (
+            "test-token",
+            "https://gateway.example/v1",
+            "test-image-model",
+        ),
     )
     monkeypatch.setattr(scene_360_builder, "_call_newapi_image_api", copied_image)
     monkeypatch.setattr(scene_360_builder, "make_contact_sheet", lambda *args: None)

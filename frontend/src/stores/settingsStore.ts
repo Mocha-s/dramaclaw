@@ -21,7 +21,7 @@ export type CanvasEdgeRoutingMode = 'spline' | 'orthogonal' | 'smartOrthogonal';
 export type ProviderApiKeys = Record<string, string>;
 export const DEFAULT_GRSAI_NANO_BANANA_PRO_MODEL = 'nano-banana-pro';
 
-export type MediaStorageProvider = 'aliyun_oss' | 'cloudinary';
+export type MediaStorageProvider = 'aliyun_oss' | 'cloudinary' | 'minio';
 
 export type FeatureModelProvider = string;
 
@@ -167,11 +167,20 @@ export interface AliyunOssStorageConfig {
   materialsRoot: string;
 }
 
+export interface MinioStorageConfig {
+  endpoint: string;
+  publicEndpoint: string;
+  port: string;
+  useSSL: boolean;
+  bucket: string;
+}
+
 export interface MediaStorageSettings {
   provider: MediaStorageProvider;
   fullyManagedUpload: boolean;
   cloudinary: CloudinaryStorageConfig;
   aliyunOss: AliyunOssStorageConfig;
+  minio: MinioStorageConfig;
 }
 
 export const DEFAULT_MEDIA_STORAGE_SETTINGS: MediaStorageSettings = {
@@ -192,7 +201,36 @@ export const DEFAULT_MEDIA_STORAGE_SETTINGS: MediaStorageSettings = {
     apiFolder: '',
     materialsRoot: 'canvas-materials/',
   },
+  minio: {
+    endpoint: '',
+    publicEndpoint: '',
+    port: '9000',
+    useSSL: false,
+    bucket: '',
+  },
 };
+
+function normalizeMediaStorageSettings(value: unknown): MediaStorageSettings {
+  const stored = value && typeof value === "object"
+    ? value as Partial<MediaStorageSettings>
+    : {};
+  return {
+    ...DEFAULT_MEDIA_STORAGE_SETTINGS,
+    ...stored,
+    cloudinary: {
+      ...DEFAULT_MEDIA_STORAGE_SETTINGS.cloudinary,
+      ...stored.cloudinary,
+    },
+    aliyunOss: {
+      ...DEFAULT_MEDIA_STORAGE_SETTINGS.aliyunOss,
+      ...stored.aliyunOss,
+    },
+    minio: {
+      ...DEFAULT_MEDIA_STORAGE_SETTINGS.minio,
+      ...stored.minio,
+    },
+  };
+}
 
 interface SettingsState {
   isHydrated: boolean;
@@ -270,6 +308,7 @@ interface SettingsState {
   setMediaStorageFullyManagedUpload: (enabled: boolean) => void;
   updateCloudinaryStorageConfig: (patch: Partial<CloudinaryStorageConfig>) => void;
   updateAliyunOssStorageConfig: (patch: Partial<AliyunOssStorageConfig>) => void;
+  updateMinioStorageConfig: (patch: Partial<MinioStorageConfig>) => void;
   setProviderApiKey: (providerId: string, key: string) => void;
   setGrsaiNanoBananaProModel: (model: string) => void;
   setHideProviderGuidePopover: (hide: boolean) => void;
@@ -900,6 +939,13 @@ export const useSettingsStore = create<SettingsState>()(
             aliyunOss: { ...state.mediaStorage.aliyunOss, ...patch },
           },
         })),
+      updateMinioStorageConfig: (patch) =>
+        set((state) => ({
+          mediaStorage: {
+            ...state.mediaStorage,
+            minio: { ...state.mediaStorage.minio, ...patch },
+          },
+        })),
       setProviderApiKey: (providerId, key) =>
         set((state) => ({
           apiKeys: {
@@ -946,7 +992,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-storage',
-      version: 18,
+      version: 19,
       // Quota-safe persistence: on a QuotaExceededError, prune stale freezone
       // canvas keys (via the registered reclaimer) and retry once instead of
       // letting the whole store fail to hydrate/persist.
@@ -1008,6 +1054,7 @@ export const useSettingsStore = create<SettingsState>()(
           preferDiscountedPrice?: boolean;
           grsaiCreditTierId?: GrsaiCreditTierId | string;
           featureModelConfig?: Partial<FeatureModelSettings>;
+          mediaStorage?: Partial<MediaStorageSettings>;
         };
 
         const migratedApiKeys = normalizeApiKeys(state.apiKeys);
@@ -1041,6 +1088,7 @@ export const useSettingsStore = create<SettingsState>()(
             featureModelConfig: prepareFeatureModelSettingsForPersistence(
               state.featureModelConfig
             ),
+            mediaStorage: normalizeMediaStorageSettings(state.mediaStorage),
           };
         }
 
@@ -1071,6 +1119,7 @@ export const useSettingsStore = create<SettingsState>()(
           featureModelConfig: prepareFeatureModelSettingsForPersistence(
             state.featureModelConfig
           ),
+          mediaStorage: normalizeMediaStorageSettings(state.mediaStorage),
         };
       },
     }

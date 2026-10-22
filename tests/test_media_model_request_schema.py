@@ -66,6 +66,16 @@ def test_normalizes_catalog_resolutions_without_case_duplicates():
     assert config["resolutionOptions"] == ["1K", "2k", "4K", "4k", "2048x1376"]
 
 
+def test_media_request_schema_accepts_modern_video_endpoint_and_image_reference_format():
+    schema = {
+        "endpoint": "videos",
+        "referenceFormat": "images",
+        "parameters": [],
+    }
+
+    assert validate_media_request_schema(schema) is schema
+
+
 @pytest.mark.parametrize(
     ("media_type", "raw_ratio", "expected_ratio"),
     [("image", "adaptive", "auto"), ("video", "adaptive", "auto")],

@@ -39,15 +39,34 @@ export type Sub2ApiCapability =
   | "video"
   | "audio";
 
-export interface Sub2ApiCapabilityConfig {
+export type Sub2ApiImageEditFormat =
+  | "dc-media"
+  | "images"
+  | "input_reference"
+  | "multipart";
+
+export type Sub2ApiVideoEndpoint = "videos" | "video/generations";
+
+export interface Sub2ApiModelMapping {
+  requestPattern: string;
+  upstreamModel: string;
+  imageEditFormat?: Sub2ApiImageEditFormat;
+  videoEndpoint?: Sub2ApiVideoEndpoint;
+}
+
+export interface Sub2ApiAccountGroup {
+  id: string;
+  name: string;
+  protocol: "openai" | "gemini";
+  baseUrl: string;
   apiKeyPreview: string;
-  configured: boolean;
+  capabilities: Sub2ApiCapability[];
+  modelMappings: Sub2ApiModelMapping[];
 }
 
 export interface Sub2ApiGatewayConfig {
-  baseUrl: string;
   configured: boolean;
-  keys: Record<Sub2ApiCapability, Sub2ApiCapabilityConfig>;
+  groups: Sub2ApiAccountGroup[];
 }
 
 export interface EffectiveGatewayConfig {
@@ -144,6 +163,13 @@ export interface MediaRelayConfig {
   cloudinaryApiKeyPreview?: string;
   cloudinaryApiSecretPreview?: string;
   apiFolder?: string;
+  minioEndpoint?: string;
+  minioPublicEndpoint?: string;
+  minioPort?: number;
+  minioUseSSL?: boolean;
+  minioBucket?: string;
+  minioAccessKeyPreview?: string;
+  minioSecretKeyPreview?: string;
   configured: boolean;
 }
 
@@ -185,8 +211,18 @@ export interface SaveBrainClawConfigInput {
 }
 
 export interface SaveSub2ApiConfigInput {
+  groups: Array<Omit<Sub2ApiAccountGroup, "apiKeyPreview"> & { apiKey?: string }>;
+}
+
+export interface FetchSub2ApiModelsInput {
+  id?: string;
+  protocol: "openai" | "gemini";
   baseUrl: string;
-  keys: Partial<Record<Sub2ApiCapability, string>>;
+  apiKey?: string;
+}
+
+export interface FetchSub2ApiModelsResult {
+  models: string[];
 }
 
 export interface SaveAgentLlmConfigInput {
@@ -300,7 +336,7 @@ export interface SaveEmbeddingModelInput {
 }
 
 export interface SaveMediaRelayConfigInput {
-  provider: "aliyun_oss" | "cloudinary";
+  provider: "aliyun_oss" | "cloudinary" | "minio";
   ttlSeconds: number;
   endpoint?: string;
   bucket?: string;
@@ -310,6 +346,9 @@ export interface SaveMediaRelayConfigInput {
   apiKey?: string;
   apiSecret?: string;
   apiFolder?: string;
+  publicEndpoint?: string;
+  port?: number;
+  useSSL?: boolean;
 }
 
 export interface SaveCustomChannelsBatchInput {
@@ -547,6 +586,19 @@ export function useEnableSub2Api() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.modelGateway() });
     },
+  });
+}
+
+export function useFetchSub2ApiModels() {
+  return useMutation({
+    mutationFn: (input: FetchSub2ApiModelsInput) =>
+      api
+        .post("api/v1/model-gateway/sub2api/models", {
+          json: input,
+          timeout: 30_000,
+          throwHttpErrors: false,
+        })
+        .json<OkResponse<FetchSub2ApiModelsResult> | ErrorResponse>(),
   });
 }
 

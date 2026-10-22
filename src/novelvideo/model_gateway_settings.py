@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from novelvideo.official_defaults import (
     DEFAULT_COGNEE_EMBEDDING_DIM,
@@ -50,6 +51,14 @@ SUB2API_CAPABILITIES = (
     CAPABILITY_VIDEO,
     CAPABILITY_AUDIO,
 )
+SUB2API_PROTOCOLS = {"openai", "gemini"}
+SUB2API_IMAGE_EDIT_FORMATS = {
+    "dc-media",
+    "images",
+    "input_reference",
+    "multipart",
+}
+SUB2API_VIDEO_ENDPOINTS = {"videos", "video/generations"}
 CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW = "relayclaw_brainclaw"
 CUSTOM_LLM_MODE_ADVANCED = "advanced"
 VALID_CUSTOM_LLM_MODES = {
@@ -82,6 +91,10 @@ class EffectiveNewApiConfig:
     source: str
     base_url: str
     api_key: str
+    protocol: str = "openai"
+    model: str = ""
+    native_base_url: str = ""
+    image_edit_reference_format: str = ""
 
 
 @dataclass(frozen=True)
@@ -107,6 +120,13 @@ class EffectiveMediaRelayConfig:
     cloudinary_api_key: str = ""
     cloudinary_api_secret: str = ""
     cloudinary_folder: str = ""
+    minio_endpoint: str = ""
+    minio_public_endpoint: str = ""
+    minio_port: int = 9000
+    minio_use_ssl: bool = False
+    minio_bucket: str = ""
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
 
 
 @dataclass(frozen=True)
@@ -153,6 +173,231 @@ def normalize_capability(value: str | None) -> str:
     return capability
 
 
+def _normalize_sub2api_groups(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not isinstance(groups, list):
+        raise ValueError("Sub2API groups must be a list")
+    normalized: list[dict[str, Any]] = []
+    ids: set[str] = set()
+    names: set[str] = set()
+    for group in groups:
+        if not isinstance(group, dict):
+            raise ValueError("each Sub2API group must be an object")
+        group_id = str(group.get("id") or "").strip()
+        name = str(group.get("name") or "").strip()
+        protocol = str(group.get("protocol") or "").strip().lower()
+        base_url = normalize_sub2api_base_url(str(group.get("baseUrl") or ""))
+        api_key = normalize_api_key(str(group.get("apiKey") or ""))
+        raw_capabilities = group.get("capabilities", [])
+        raw_models = group.get("models", [])
+        raw_mappings = group.get("modelMappings")
+        if not isinstance(raw_capabilities, list) or not isinstance(raw_models, list):
+            raise ValueError("Sub2API capabilities and models must be lists")
+        capabilities = sorted({normalize_capability(value) for value in raw_capabilities})
+        if raw_mappings is None:
+            mappings = [
+                {"requestPattern": str(value or "").strip(), "upstreamModel": str(value or "").strip()}
+                for value in raw_models
+            ]
+        elif isinstance(raw_mappings, list):
+            mappings = []
+            for item in raw_mappings:
+                if not isinstance(item, dict):
+                    continue
+                mapping = {
+                    "requestPattern": str(item.get("requestPattern") or "").strip(),
+                    "upstreamModel": str(item.get("upstreamModel") or "").strip(),
+                }
+                image_edit_format = str(item.get("imageEditFormat") or "").strip().lower()
+                if image_edit_format:
+                    if image_edit_format not in SUB2API_IMAGE_EDIT_FORMATS:
+                        raise ValueError(
+                            "unsupported Sub2API image edit format: "
+                            + image_edit_format
+                        )
+                    mapping["imageEditFormat"] = image_edit_format
+                video_endpoint = str(item.get("videoEndpoint") or "").strip().strip("/").lower()
+                if video_endpoint:
+                    if video_endpoint not in SUB2API_VIDEO_ENDPOINTS:
+                        raise ValueError(
+                            "unsupported Sub2API video endpoint: " + video_endpoint
+                        )
+                    mapping["videoEndpoint"] = video_endpoint
+                mappings.append(mapping)
+        else:
+            raise ValueError("Sub2API modelMappings must be a list")
+        mappings = list({(item["requestPattern"], item["upstreamModel"]): item for item in mappings if item["requestPattern"] and item["upstreamModel"]}.values())
+        if not group_id or not name or not base_url or not api_key:
+            raise ValueError("Sub2API groups require id, name, baseUrl, and apiKey")
+        if protocol not in SUB2API_PROTOCOLS:
+            raise ValueError("unsupported Sub2API protocol")
+        parsed_base_url = urlsplit(base_url)
+        if parsed_base_url.scheme not in {"http", "https"} or not parsed_base_url.netloc:
+            raise ValueError("Sub2API Base URL must use HTTP or HTTPS")
+        if not capabilities or not mappings:
+            raise ValueError("Sub2API groups require capabilities and models")
+        if group_id in ids or name.casefold() in names:
+            raise ValueError("Sub2API group ids and names must be unique")
+        if any("*" in item["requestPattern"] and not item["requestPattern"].endswith("*") for item in mappings):
+            raise ValueError("Sub2API model patterns only support a trailing *")
+        ids.add(group_id)
+        names.add(name.casefold())
+        normalized.append(
+            {
+                "id": group_id,
+                "name": name,
+                "protocol": protocol,
+                "baseUrl": base_url,
+                "apiKey": api_key,
+                "capabilities": capabilities,
+                "modelMappings": mappings,
+            }
+        )
+    return normalized
+
+
+def save_sub2api_groups(groups: list[dict[str, Any]], *, activate: bool = False) -> None:
+    normalized = _normalize_sub2api_groups(groups)
+    values = {
+        "sub2api_groups": json.dumps(
+            normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ),
+        "sub2api_base_url": "",
+        **{f"sub2api_api_key_{capability}": "" for capability in SUB2API_CAPABILITIES},
+    }
+    if activate:
+        values["model_gateway_mode"] = MODE_SUB2API
+    _write_many(values)
+
+
+def get_sub2api_groups(*, masked: bool = False) -> list[dict[str, Any]]:
+    raw = get_model_gateway_settings().get("sub2api_groups", "")
+    try:
+        groups = json.loads(raw) if raw else []
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(groups, list):
+        return []
+    if not groups:
+        # Migrate settings written by the first Sub2API version in memory.
+        settings = get_model_gateway_settings()
+        legacy_url = normalize_sub2api_base_url(settings.get("sub2api_base_url", ""))
+        groups = [
+            {
+                "id": capability,
+                "name": capability.title(),
+                "protocol": "openai",
+                "baseUrl": legacy_url,
+                "apiKey": settings.get(f"sub2api_api_key_{capability}", ""),
+                "capabilities": [capability],
+                "models": ["*"],
+            }
+            for capability in SUB2API_CAPABILITIES
+            if settings.get(f"sub2api_api_key_{capability}")
+        ]
+    result: list[dict[str, Any]] = []
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        item = dict(group)
+        if masked:
+            item["apiKeyPreview"] = mask_secret(str(item.pop("apiKey", "")))
+        result.append(item)
+    return result
+
+
+def _resolve_sub2api_group(
+    *, capability: str, model: str
+) -> dict[str, Any] | None:
+    capability = normalize_capability(capability)
+    wanted_model = str(model or "").strip()
+    matches: list[tuple[int, dict[str, Any], str]] = []
+    for group in get_sub2api_groups():
+        if capability not in group.get("capabilities", []):
+            continue
+        mappings = group.get("modelMappings") or [
+            {"requestPattern": model, "upstreamModel": model}
+            for model in group.get("models", [])
+        ]
+        for mapping in mappings:
+            pattern = str(mapping.get("requestPattern") or "").strip()
+            upstream_model = str(mapping.get("upstreamModel") or "").strip()
+            if not pattern or not upstream_model:
+                continue
+            if pattern == "*":
+                matches.append((0, group, wanted_model if upstream_model == "*" else upstream_model))
+            elif pattern.endswith("*") and wanted_model.startswith(pattern[:-1]):
+                matches.append(
+                    (
+                        len(pattern) - 1,
+                        group,
+                        wanted_model if upstream_model == "*" else upstream_model,
+                    )
+                )
+            elif pattern == wanted_model:
+                matches.append(
+                    (10**9, group, wanted_model if upstream_model == "*" else upstream_model)
+                )
+    if not matches and not wanted_model:
+        defaults = [
+            (group, str(mapping.get("upstreamModel") or ""))
+            for group in get_sub2api_groups()
+            if capability in group.get("capabilities", [])
+            for mapping in (group.get("modelMappings") or [])
+            if mapping.get("requestPattern") == "*"
+        ]
+        if not defaults:
+            candidates = [
+                (group, mapping)
+                for group in get_sub2api_groups()
+                if capability in group.get("capabilities", [])
+                for mapping in (group.get("modelMappings") or [])
+            ]
+            if len(candidates) == 1:
+                return (
+                    candidates[0][0],
+                    str(candidates[0][1].get("upstreamModel") or ""),
+                    dict(candidates[0][1]),
+                )
+        if len(defaults) == 1:
+            return defaults[0][0], defaults[0][1], {
+                "requestPattern": "*",
+                "upstreamModel": defaults[0][1],
+            }
+        return None
+    if not matches:
+        return None
+    best_score = max(score for score, _group, _model in matches)
+    best_matches = [
+        (group, upstream_model)
+        for score, group, upstream_model in matches
+        if score == best_score
+    ]
+    if len(best_matches) != 1:
+        return None
+    selected_group, selected_model = best_matches[0]
+    selected_mapping = next(
+        (
+            mapping
+            for mapping in (
+                selected_group.get("modelMappings")
+                or [
+                    {"requestPattern": value, "upstreamModel": value}
+                    for value in selected_group.get("models", [])
+                ]
+            )
+            if str(mapping.get("requestPattern") or "").strip() == wanted_model
+            or (
+                str(mapping.get("requestPattern") or "").strip().endswith("*")
+                and wanted_model.startswith(
+                    str(mapping.get("requestPattern") or "").strip()[:-1]
+                )
+            )
+        ),
+        {},
+    )
+    return selected_group, selected_model, dict(selected_mapping)
+
+
 def normalize_custom_llm_mode(value: str | None) -> str:
     mode = str(value or "").strip().lower()
     return mode if mode in VALID_CUSTOM_LLM_MODES else CUSTOM_LLM_MODE_ADVANCED
@@ -170,6 +415,21 @@ def normalize_relay_base_url(value: str | None) -> str:
     if base.endswith("/v1"):
         return base
     return f"{base}/v1"
+
+
+def normalize_sub2api_base_url(value: str | None) -> str:
+    """Preserve Sub2API version paths such as /v1, /api/v3, and /v1beta."""
+    return str(value or "").strip().rstrip("/")
+
+
+def _sub2api_openai_compat_base_url(group: dict[str, Any]) -> str:
+    base_url = normalize_sub2api_base_url(str(group.get("baseUrl") or ""))
+    protocol = str(group.get("protocol") or "").strip().lower()
+    if protocol == "gemini" and base_url.endswith("/v1beta"):
+        base_url = base_url[: -len("/v1beta")]
+    if base_url.endswith(("/v1", "/v3", "/api/v1", "/api/v3")):
+        return base_url
+    return f"{base_url}/v1"
 
 
 def _now_iso() -> str:
@@ -352,17 +612,20 @@ def save_sub2api_gateway(
     keys: dict[str, str],
     activate: bool = False,
 ) -> None:
-    normalized_keys = {
-        f"sub2api_api_key_{capability}": normalize_api_key(keys.get(capability, ""))
+    groups = [
+        {
+            "id": capability,
+            "name": capability.title(),
+            "protocol": "openai",
+            "baseUrl": normalize_sub2api_base_url(base_url),
+            "apiKey": keys.get(capability, ""),
+            "capabilities": [capability],
+            "models": ["*"],
+        }
         for capability in SUB2API_CAPABILITIES
-    }
-    values = {
-        "sub2api_base_url": normalize_relay_base_url(base_url),
-        **normalized_keys,
-    }
-    if activate:
-        values["model_gateway_mode"] = MODE_SUB2API
-    _write_many(values)
+        if normalize_api_key(keys.get(capability, ""))
+    ]
+    save_sub2api_groups(groups, activate=activate)
 
 
 def save_newapi_database_config(
@@ -984,6 +1247,69 @@ def get_ce_media_model_catalog(
     )
 
 
+def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
+    capability = str(media_type or "").strip().lower()
+    if capability not in {CAPABILITY_IMAGE, CAPABILITY_VIDEO}:
+        return []
+    catalog: list[dict[str, Any]] = []
+    for group in get_sub2api_groups(masked=True):
+        if capability not in group.get("capabilities", []):
+            continue
+        for mapping in group.get("modelMappings", []):
+            request_model = str(mapping.get("requestPattern") or "").strip()
+            upstream_model = str(mapping.get("upstreamModel") or "").strip()
+            if not request_model or request_model.endswith("*") or not upstream_model:
+                continue
+            api_model = request_model if capability == CAPABILITY_IMAGE else f"newapi_{request_model}"
+            if capability == CAPABILITY_IMAGE:
+                request = {
+                    "endpoint": "images/generations",
+                    "referenceFormat": mapping.get("imageEditFormat") or "images",
+                    "parameters": [],
+                }
+            else:
+                request = {
+                    "endpoint": mapping.get("videoEndpoint") or "videos",
+                    "parameters": [],
+                }
+            catalog_entry: dict[str, Any] = {
+                    "catalogId": request_model,
+                    "catalog_id": request_model,
+                    "id": request_model,
+                    "providerId": "newapi",
+                    "provider": "newapi",
+                    "apiModel": api_model,
+                    "api_model": api_model,
+                    "gatewayModel": upstream_model,
+                    "gateway_model": upstream_model,
+                    "upstreamModel": upstream_model,
+                    "upstream_model": upstream_model,
+                    "label": f"{group['name']} · {request_model}",
+                    "mediaType": capability,
+                    "sortOrder": 100,
+                    "request": request,
+                }
+            if capability == CAPABILITY_IMAGE and (
+                "gpt-image-2" in request_model.lower()
+                or "gpt-image-2" in upstream_model.lower()
+            ):
+                catalog_entry["referenceImageMax"] = 9
+            if capability == CAPABILITY_VIDEO and (
+                request_model.lower() == "sd17-seedance-2.5-2"
+                or upstream_model.lower() == "sd17-seedance-2.5-2"
+            ):
+                catalog_entry.update(
+                    {
+                        "referenceImageMax": 30,
+                        "minDuration": 10,
+                        "maxDuration": 30,
+                        "resolutionOptions": ["720p"],
+                    }
+                )
+            catalog.append(catalog_entry)
+    return catalog
+
+
 def get_newapi_embedding_model_config() -> dict[str, Any]:
     settings = get_model_gateway_settings()
     return _decode_embedding_model_config(settings.get("custom_newapi_embedding_model"))
@@ -1066,6 +1392,13 @@ def save_media_relay_config(
     cloudinary_api_key: str = "",
     cloudinary_api_secret: str = "",
     cloudinary_folder: str = "",
+    minio_endpoint: str = "",
+    minio_public_endpoint: str = "",
+    minio_port: int = 9000,
+    minio_use_ssl: bool = False,
+    minio_bucket: str = "",
+    minio_access_key: str = "",
+    minio_secret_key: str = "",
 ) -> None:
     _write_many(
         {
@@ -1079,6 +1412,15 @@ def save_media_relay_config(
             "cloudinary_relay_api_key": str(cloudinary_api_key or "").strip(),
             "cloudinary_relay_api_secret": str(cloudinary_api_secret or "").strip(),
             "cloudinary_relay_folder": str(cloudinary_folder or "").strip().strip("/"),
+            "minio_relay_endpoint": str(minio_endpoint or "").strip(),
+            "minio_relay_public_endpoint": str(minio_public_endpoint or "")
+            .strip()
+            .rstrip("/"),
+            "minio_relay_port": str(int(minio_port)),
+            "minio_relay_use_ssl": "1" if minio_use_ssl else "0",
+            "minio_relay_bucket": str(minio_bucket or "").strip(),
+            "minio_relay_access_key": str(minio_access_key or "").strip(),
+            "minio_relay_secret_key": str(minio_secret_key or "").strip(),
         }
     )
 
@@ -1097,6 +1439,7 @@ def get_effective_newapi_config(
     official_base_url: str | None = None,
     official_api_key: str | None = None,
     capability: str = CAPABILITY_TEXT,
+    model: str = "",
 ) -> EffectiveNewApiConfig:
     if explicit_config is not None:
         if type(explicit_config) is not EffectiveNewApiConfig:
@@ -1121,13 +1464,14 @@ def get_effective_newapi_config(
     capability = normalize_capability(capability)
     settings = get_model_gateway_settings()
     mode = normalize_gateway_mode(settings.get("model_gateway_mode"))
-    return get_ce_newapi_config_for_mode(mode, capability=capability)
+    return get_ce_newapi_config_for_mode(mode, capability=capability, model=model)
 
 
 def get_ce_newapi_config_for_mode(
     mode: str,
     *,
     capability: str = CAPABILITY_TEXT,
+    model: str = "",
 ) -> EffectiveNewApiConfig:
     """Return CE credentials for one gateway without changing the active mode.
 
@@ -1142,11 +1486,8 @@ def get_ce_newapi_config_for_mode(
     mode = normalize_gateway_mode(mode)
     capability = normalize_capability(capability)
     if mode == MODE_SUB2API:
-        base_url = normalize_relay_base_url(settings.get("sub2api_base_url", ""))
-        api_key = normalize_api_key(
-            settings.get(f"sub2api_api_key_{capability}", "")
-        )
-        if not base_url or not api_key:
+        group = _resolve_sub2api_group(capability=capability, model=model)
+        if group is None:
             return EffectiveNewApiConfig(
                 mode=MODE_SUB2API,
                 source="sub2api",
@@ -1156,8 +1497,16 @@ def get_ce_newapi_config_for_mode(
         return EffectiveNewApiConfig(
             mode=MODE_SUB2API,
             source="sub2api",
-            base_url=base_url,
-            api_key=api_key,
+            base_url=_sub2api_openai_compat_base_url(group[0]),
+            api_key=group[0]["apiKey"],
+            protocol=group[0]["protocol"],
+            model=group[1],
+            native_base_url=(
+                normalize_sub2api_base_url(str(group[0].get("baseUrl") or ""))
+                if str(group[0].get("protocol") or "").strip().lower() == "gemini"
+                else ""
+            ),
+            image_edit_reference_format=str(group[2].get("imageEditFormat") or "images"),
         )
     if mode == MODE_CUSTOM:
         return EffectiveNewApiConfig(
@@ -1188,7 +1537,7 @@ def _is_official_relay_url(base_url: str) -> bool:
     )
 
 
-def get_effective_llm_config() -> EffectiveLlmConfig:
+def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
     """Resolve LLM independently from media and embedding gateways."""
     if not _uses_ce_gateway_settings():
         base_url = normalize_relay_base_url(
@@ -1218,16 +1567,27 @@ def get_effective_llm_config() -> EffectiveLlmConfig:
             is_brainclaw=True,
         )
     if gateway_mode == MODE_SUB2API:
+        backend = (
+            os.environ.get("DRAMACLAW_CHAT_BACKEND")
+            or os.environ.get("SUPERTALE_CHAT_BACKEND")
+            or "codex"
+        ).strip().lower()
+        selected_model = str(model or "").strip() or (
+            str(os.environ.get("HERMES_MODEL", "DC-hermes-LLM") or "DC-hermes-LLM").strip()
+            if backend == "hermes"
+            else str(os.environ.get("CODEX_MODEL", "DC-codex-agent-LLM") or "").strip()
+        )
         gateway = get_ce_newapi_config_for_mode(
             MODE_SUB2API,
             capability=CAPABILITY_TEXT,
+            model=selected_model,
         )
         return EffectiveLlmConfig(
             mode=MODE_SUB2API,
             source=MODE_SUB2API,
             base_url=gateway.base_url,
             api_key=gateway.api_key,
-            model="",
+            model=gateway.model,
             is_brainclaw=False,
         )
     if custom_llm_mode == CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW:
@@ -1317,6 +1677,13 @@ def get_effective_media_relay_config(
     env_cloudinary_api_key: str | None = None,
     env_cloudinary_api_secret: str | None = None,
     env_cloudinary_folder: str | None = None,
+    env_minio_endpoint: str | None = None,
+    env_minio_public_endpoint: str | None = None,
+    env_minio_port: int | str | None = None,
+    env_minio_use_ssl: bool | str | None = None,
+    env_minio_bucket: str | None = None,
+    env_minio_access_key: str | None = None,
+    env_minio_secret_key: str | None = None,
 ) -> EffectiveMediaRelayConfig:
     if explicit_config is not None:
         if type(explicit_config) is not EffectiveMediaRelayConfig:
@@ -1336,6 +1703,13 @@ def get_effective_media_relay_config(
     db_cloudinary_folder = (
         str(settings.get("cloudinary_relay_folder", "")).strip().strip("/")
     )
+    db_minio_endpoint = str(settings.get("minio_relay_endpoint", "")).strip()
+    db_minio_public_endpoint = (
+        str(settings.get("minio_relay_public_endpoint", "")).strip().rstrip("/")
+    )
+    db_minio_bucket = str(settings.get("minio_relay_bucket", "")).strip()
+    db_minio_access_key = str(settings.get("minio_relay_access_key", "")).strip()
+    db_minio_secret_key = str(settings.get("minio_relay_secret_key", "")).strip()
     has_db_config = any(
         [
             db_provider,
@@ -1347,6 +1721,11 @@ def get_effective_media_relay_config(
             db_cloudinary_api_key,
             db_cloudinary_api_secret,
             db_cloudinary_folder,
+            db_minio_endpoint,
+            db_minio_public_endpoint,
+            db_minio_bucket,
+            db_minio_access_key,
+            db_minio_secret_key,
         ]
     )
     if has_db_config:
@@ -1362,6 +1741,13 @@ def get_effective_media_relay_config(
             cloudinary_api_key=db_cloudinary_api_key,
             cloudinary_api_secret=db_cloudinary_api_secret,
             cloudinary_folder=db_cloudinary_folder,
+            minio_endpoint=db_minio_endpoint,
+            minio_public_endpoint=db_minio_public_endpoint,
+            minio_port=_int_setting(settings.get("minio_relay_port"), 9000),
+            minio_use_ssl=_bool_setting(settings.get("minio_relay_use_ssl"), False),
+            minio_bucket=db_minio_bucket,
+            minio_access_key=db_minio_access_key,
+            minio_secret_key=db_minio_secret_key,
         )
 
     raw_ttl = (
@@ -1403,6 +1789,36 @@ def get_effective_media_relay_config(
         )
         .strip()
         .strip("/"),
+        minio_endpoint=str(
+            env_minio_endpoint or os.environ.get("MINIO_RELAY_ENDPOINT", "")
+        ).strip(),
+        minio_public_endpoint=str(
+            env_minio_public_endpoint
+            or os.environ.get("MINIO_RELAY_PUBLIC_ENDPOINT", "")
+        ).strip().rstrip("/"),
+        minio_port=_int_setting(
+            str(
+                env_minio_port
+                if env_minio_port is not None
+                else os.environ.get("MINIO_RELAY_PORT", "9000")
+            ),
+            9000,
+        ),
+        minio_use_ssl=_bool_setting(
+            env_minio_use_ssl
+            if env_minio_use_ssl is not None
+            else os.environ.get("MINIO_RELAY_USE_SSL"),
+            False,
+        ),
+        minio_bucket=str(
+            env_minio_bucket or os.environ.get("MINIO_RELAY_BUCKET", "")
+        ).strip(),
+        minio_access_key=str(
+            env_minio_access_key or os.environ.get("MINIO_RELAY_ACCESS_KEY", "")
+        ).strip(),
+        minio_secret_key=str(
+            env_minio_secret_key or os.environ.get("MINIO_RELAY_SECRET_KEY", "")
+        ).strip(),
     )
 
 
@@ -1513,19 +1929,9 @@ def build_model_gateway_status(
         if uses_ce_settings
         else ""
     )
-    sub2api_base_url = (
-        normalize_relay_base_url(settings.get("sub2api_base_url", ""))
-        if uses_ce_settings
-        else ""
-    )
-    sub2api_keys = {
-        capability: (
-            normalize_api_key(settings.get(f"sub2api_api_key_{capability}", ""))
-            if uses_ce_settings
-            else ""
-        )
-        for capability in SUB2API_CAPABILITIES
-    }
+    sub2api_groups = get_sub2api_groups(masked=True) if uses_ce_settings else []
+    sub2api_configured = bool(sub2api_groups)
+    sub2api_text_configured = any(CAPABILITY_TEXT in group.get("capabilities", []) for group in sub2api_groups)
     effective = get_effective_newapi_config(
         official_base_url=official_base_url,
         official_api_key=official_api_key,
@@ -1555,14 +1961,22 @@ def build_model_gateway_status(
             "source": effective.source,
             "baseUrl": effective.base_url,
             "apiKeyPreview": mask_secret(effective.api_key),
-            "configured": bool(effective.base_url and effective.api_key),
+            "configured": (
+                sub2api_configured
+                if effective.mode == MODE_SUB2API
+                else bool(effective.base_url and effective.api_key)
+            ),
         },
         "llmEffective": {
             "mode": effective_llm.mode,
             "source": effective_llm.source,
             "baseUrl": effective_llm.base_url,
             "apiKeyPreview": mask_secret(effective_llm.api_key),
-            "configured": bool(effective_llm.base_url and effective_llm.api_key),
+            "configured": (
+                sub2api_text_configured
+                if effective_llm.mode == MODE_SUB2API
+                else bool(effective_llm.base_url and effective_llm.api_key)
+            ),
             "model": effective_llm.model,
             "brainclaw": effective_llm.is_brainclaw,
         },
@@ -1607,18 +2021,8 @@ def build_model_gateway_status(
             "tokenId": settings.get("custom_newapi_token_id", ""),
         },
         "sub2api": {
-            "baseUrl": sub2api_base_url,
-            "keys": {
-                capability: {
-                    "apiKeyPreview": mask_secret(api_key),
-                    "configured": bool(sub2api_base_url and api_key),
-                }
-                for capability, api_key in sub2api_keys.items()
-            },
-            "configured": bool(
-                sub2api_base_url
-                and all(sub2api_keys[capability] for capability in SUB2API_CAPABILITIES)
-            ),
+            "groups": sub2api_groups,
+            "configured": sub2api_configured,
         },
     }
 
@@ -1684,6 +2088,13 @@ def build_media_relay_status(
     env_cloudinary_api_key: str | None = None,
     env_cloudinary_api_secret: str | None = None,
     env_cloudinary_folder: str | None = None,
+    env_minio_endpoint: str | None = None,
+    env_minio_public_endpoint: str | None = None,
+    env_minio_port: int | str | None = None,
+    env_minio_use_ssl: bool | str | None = None,
+    env_minio_bucket: str | None = None,
+    env_minio_access_key: str | None = None,
+    env_minio_secret_key: str | None = None,
 ) -> dict[str, Any]:
     effective = get_effective_media_relay_config(
         env_provider=env_provider,
@@ -1696,6 +2107,13 @@ def build_media_relay_status(
         env_cloudinary_api_key=env_cloudinary_api_key,
         env_cloudinary_api_secret=env_cloudinary_api_secret,
         env_cloudinary_folder=env_cloudinary_folder,
+        env_minio_endpoint=env_minio_endpoint,
+        env_minio_public_endpoint=env_minio_public_endpoint,
+        env_minio_port=env_minio_port,
+        env_minio_use_ssl=env_minio_use_ssl,
+        env_minio_bucket=env_minio_bucket,
+        env_minio_access_key=env_minio_access_key,
+        env_minio_secret_key=env_minio_secret_key,
     )
     aliyun_configured = bool(
         effective.endpoint
@@ -1707,6 +2125,27 @@ def build_media_relay_status(
         effective.cloud_name
         and effective.cloudinary_api_key
         and effective.cloudinary_api_secret
+    )
+    minio_public_url = urlsplit(effective.minio_public_endpoint)
+    try:
+        minio_public_port_valid = minio_public_url.port is None or 1 <= minio_public_url.port <= 65535
+    except ValueError:
+        minio_public_port_valid = False
+    minio_configured = bool(
+        effective.minio_endpoint
+        and effective.minio_public_endpoint
+        and minio_public_url.scheme == "https"
+        and minio_public_url.hostname
+        and minio_public_url.username is None
+        and minio_public_url.password is None
+        and minio_public_url.path in {"", "/"}
+        and not minio_public_url.query
+        and not minio_public_url.fragment
+        and minio_public_port_valid
+        and effective.minio_bucket
+        and effective.minio_access_key
+        and effective.minio_secret_key
+        and 1 <= effective.minio_port <= 65535
     )
     return {
         "source": effective.source,
@@ -1720,9 +2159,18 @@ def build_media_relay_status(
         "cloudinaryApiKeyPreview": mask_secret(effective.cloudinary_api_key),
         "cloudinaryApiSecretPreview": mask_secret(effective.cloudinary_api_secret),
         "apiFolder": effective.cloudinary_folder,
+        "minioEndpoint": effective.minio_endpoint,
+        "minioPublicEndpoint": effective.minio_public_endpoint,
+        "minioPort": effective.minio_port,
+        "minioUseSSL": effective.minio_use_ssl,
+        "minioBucket": effective.minio_bucket,
+        "minioAccessKeyPreview": mask_secret(effective.minio_access_key),
+        "minioSecretKeyPreview": mask_secret(effective.minio_secret_key),
         "configured": (
             cloudinary_configured
             if effective.provider == "cloudinary"
+            else minio_configured
+            if effective.provider == "minio"
             else aliyun_configured
         ),
     }

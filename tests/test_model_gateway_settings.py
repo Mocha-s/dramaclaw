@@ -6,6 +6,7 @@ import json
 import os
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -49,6 +50,7 @@ from novelvideo.model_gateway_settings import (
     save_official_newapi_key,
     save_custom_newapi_gateway,
     save_sub2api_gateway,
+    save_sub2api_groups,
     save_newapi_embedding_model_config,
     save_newapi_media_model_mappings,
     save_media_relay_config,
@@ -869,20 +871,50 @@ def test_sub2api_routes_save_masks_keys_and_enable_without_local_provisioner(
     app = FastAPI()
     app.include_router(model_gateway.router)
     client = TestClient(app)
-    capabilities = ("text", "embedding", "image", "video", "audio")
-    keys = {capability: f"sk-{capability}-secret" for capability in capabilities}
+    groups = [
+        {
+            "id": "openai-main",
+            "name": "OpenAI main",
+            "protocol": "openai",
+            "baseUrl": "https://sub2api.example/v1",
+            "apiKey": "sk-openai-secret",
+            "capabilities": ["text", "image"],
+            "models": ["gpt-*"] ,
+        },
+        {
+            "id": "gemini-embedding",
+            "name": "Gemini embedding",
+            "protocol": "gemini",
+            "baseUrl": "https://sub2api.example/v1beta",
+            "apiKey": "sk-gemini-secret",
+            "capabilities": ["embedding"],
+            "models": ["gemini-embedding-*"] ,
+        },
+    ]
 
     saved = client.post(
         "/model-gateway/sub2api/config",
-        json={"baseUrl": "https://sub2api.example/v1", "keys": keys},
+        json={"groups": groups},
     )
 
     assert saved.status_code == 200
-    assert "sk-image-secret" not in saved.text
-    assert saved.json()["data"]["sub2api"]["keys"]["image"]["configured"] is True
+    assert "sk-openai-secret" not in saved.text
+    assert saved.json()["data"]["sub2api"]["configured"] is True
+    assert len(saved.json()["data"]["sub2api"]["groups"]) == 2
     enabled = client.post("/model-gateway/sub2api/enable")
     assert enabled.status_code == 200
     assert enabled.json()["data"]["mode"] == MODE_SUB2API
+
+    updated = client.post(
+        "/model-gateway/sub2api/config",
+        json={"groups": [{**groups[0], "apiKey": ""}]},
+    )
+    assert updated.status_code == 200
+    assert get_effective_newapi_config(capability="image", model="gpt-4o").api_key == "sk-openai-secret"
+
+    cleared = client.post("/model-gateway/sub2api/config", json={"groups": []})
+    assert cleared.status_code == 200
+    assert cleared.json()["data"]["sub2api"]["groups"] == []
 
 
 def test_sub2api_rejects_endpoint_change_without_all_new_keys(monkeypatch, tmp_path):
@@ -900,12 +932,44 @@ def test_sub2api_rejects_endpoint_change_without_all_new_keys(monkeypatch, tmp_p
 
     response = TestClient(app).post(
         "/model-gateway/sub2api/config",
-        json={"baseUrl": "https://new-sub2api.example/v1", "keys": {"text": "sk-new"}},
+        json={
+            "groups": [
+                {
+                    "id": "text",
+                    "name": "Text",
+                    "protocol": "openai",
+                    "baseUrl": "https://new-sub2api.example/v1",
+                    "capabilities": ["text"],
+                    "models": ["*"] ,
+                }
+            ]
+        },
     )
 
     assert response.status_code == 400
-    assert "all capability API keys are required" in response.json()["detail"]
+    assert "API Key is required when changing the Base URL" in response.json()["detail"]
     assert get_effective_newapi_config().base_url == "https://old-sub2api.example/v1"
+
+
+def test_sub2api_rejects_non_http_base_url(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/sub2api/config",
+        json={"groups": [{
+            "id": "text",
+            "name": "Text",
+            "protocol": "openai",
+            "baseUrl": "file:///tmp/sub2api",
+            "apiKey": "sk-text",
+            "capabilities": ["text"],
+            "models": ["*"] ,
+        }]},
+    )
+
+    assert response.status_code == 400
 
 
 def test_sub2api_uses_a_distinct_key_for_each_capability(monkeypatch, tmp_path):
@@ -941,6 +1005,243 @@ def test_sub2api_missing_capability_key_fails_closed(monkeypatch, tmp_path):
     assert get_effective_newapi_config(capability=CAPABILITY_IMAGE).api_key == ""
 
 
+def test_sub2api_text_client_sends_mapped_upstream_model(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "openai-text",
+                "name": "OpenAI text",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-openai",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "DC-codex-agent-LLM",
+                        "upstreamModel": "gpt-5.2",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+    monkeypatch.setattr(config, "_get_newapi_text_model_profile", lambda _model: None)
+    monkeypatch.setattr(config, "_newapi_text_openai_model", lambda model_name, **_kwargs: model_name)
+
+    model = config.get_newapi_text_pydantic_model(
+        "CODEX_MODEL",
+        model_name_override="DC-codex-agent-LLM",
+    )
+
+    assert model == "gpt-5.2"
+
+
+def test_sub2api_media_mapping_preserves_protocol_metadata(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "media",
+                "name": "Media gateway",
+                "protocol": "openai",
+                "baseUrl": "https://media.example/v1",
+                "apiKey": "sk-media",
+                "capabilities": ["image", "video"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "gpt-image-2.5",
+                        "upstreamModel": "gpt-image-2.5",
+                        "imageEditFormat": "input_reference",
+                        "videoEndpoint": "video/generations",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    group = model_gateway_settings.get_sub2api_groups()[0]
+    assert group["modelMappings"][0]["imageEditFormat"] == "input_reference"
+    assert group["modelMappings"][0]["videoEndpoint"] == "video/generations"
+
+
+def test_sub2api_media_catalog_defaults_to_verified_protocols_and_sd17_limits(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "media",
+                "name": "Media gateway",
+                "protocol": "openai",
+                "baseUrl": "https://media.example/v1",
+                "apiKey": "sk-media",
+                "capabilities": ["image", "video"],
+                "modelMappings": [
+                    {"requestPattern": "gpt-image-2.5", "upstreamModel": "gpt-image-2.5"},
+                    {
+                        "requestPattern": "sd17-seedance-2.5-2",
+                        "upstreamModel": "sd17-seedance-2.5-2",
+                    },
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image = next(
+        item
+        for item in model_gateway_settings.get_sub2api_media_model_catalog("image")
+        if item["id"] == "gpt-image-2.5"
+    )
+    video = next(
+        item
+        for item in model_gateway_settings.get_sub2api_media_model_catalog("video")
+        if item["id"] == "sd17-seedance-2.5-2"
+    )
+
+    assert image["request"]["referenceFormat"] == "images"
+    assert video["request"]["endpoint"] == "videos"
+    assert video["referenceImageMax"] == 30
+    assert video["minDuration"] == 10
+    assert video["maxDuration"] == 30
+    assert video["resolutionOptions"] == ["720p"]
+
+
+def test_image_generation_config_uses_sub2api_protocol_but_keeps_newapi_default(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "image",
+                "name": "Image",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-image",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {"requestPattern": "gpt-image-2.5", "upstreamModel": "gpt-image-2.5"}
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    sub2api = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gpt-image-2.5"
+    )
+    assert sub2api["image_edit_reference_format"] == "images"
+
+    save_custom_newapi_gateway(
+        base_url="https://custom-newapi.example/v1",
+        api_key="sk-newapi",
+        activate=True,
+    )
+    newapi = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gpt-image-2.5"
+    )
+    assert newapi["image_edit_reference_format"] == "dc-media"
+
+
+def test_gemini_sub2api_gateway_uses_native_v1beta_protocol(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "gemini-image",
+                "name": "Gemini image",
+                "protocol": "gemini",
+                "baseUrl": "https://gemini.example/v1beta",
+                "apiKey": "gemini-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "gemini-2.5-flash-image",
+                        "upstreamModel": "gemini-2.5-flash-image",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    effective = get_effective_newapi_config(
+        capability="image", model="gemini-2.5-flash-image"
+    )
+    assert effective.protocol == "gemini"
+    assert effective.base_url == "https://gemini.example/v1"
+    assert effective.native_base_url == "https://gemini.example/v1beta"
+
+    image_config = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gemini-2.5-flash-image"
+    )
+    assert image_config["gateway_protocol"] == "gemini"
+    assert image_config["gateway_native_base_url"] == "https://gemini.example/v1beta"
+
+
+def test_sub2api_effective_image_gateway_preserves_mapping_protocol_override(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "image",
+                "name": "Image",
+                "protocol": "openai",
+                "baseUrl": "https://image.example/v1",
+                "apiKey": "image-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "image-custom",
+                        "upstreamModel": "image-custom-upstream",
+                        "imageEditFormat": "multipart",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image_config = config.get_grid_generation_config(
+        provider_override="newapi", model_override="image-custom"
+    )
+    assert image_config["image_edit_reference_format"] == "multipart"
+
+
+def test_sub2api_unmatched_text_model_reports_missing_mapping(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "openai-text",
+                "name": "OpenAI text",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-openai",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {"requestPattern": "g6", "upstreamModel": "gpt-6-sol"}
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    with pytest.raises(ValueError, match="No Sub2API text group matches DramaClaw model") as exc:
+        config.get_newapi_text_pydantic_model(
+            "FREEZONE_TEXT_WRITER_MODEL",
+            model_name_override="DC-freezone-text-writer-LLM",
+        )
+
+    assert "DC-freezone-text-writer-LLM" in str(exc.value)
+
+
 def test_sub2api_status_masks_each_capability_key(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     save_sub2api_gateway(
@@ -958,9 +1259,225 @@ def test_sub2api_status_masks_each_capability_key(monkeypatch, tmp_path):
     status = build_model_gateway_status()
 
     assert status["mode"] == MODE_SUB2API
-    assert status["sub2api"]["baseUrl"] == "https://sub2api.example/v1"
-    assert status["sub2api"]["keys"][CAPABILITY_IMAGE]["apiKeyPreview"] == "sk-i...cret"
+    assert status["sub2api"]["groups"][0]["apiKeyPreview"] == "sk-t...cret"
     assert "sk-image-secret" not in json.dumps(status)
+
+
+def test_sub2api_supports_partial_user_defined_groups_and_model_matching(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "openai-main",
+                "name": "OpenAI main",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-openai-secret",
+                "capabilities": ["text", "image"],
+                "modelMappings": [
+                    {"requestPattern": "DC-codex-agent-LLM", "upstreamModel": "gpt-5.2"},
+                    {"requestPattern": "DC-image-*", "upstreamModel": "gpt-4o"},
+                ],
+            },
+            {
+                "id": "gemini-embedding",
+                "name": "Gemini embedding",
+                "protocol": "gemini",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-gemini-secret",
+                "capabilities": ["embedding"],
+                "modelMappings": [
+                    {"requestPattern": "DC-cognee-embedding", "upstreamModel": "gemini-embedding-001"}
+                ],
+            },
+        ],
+        activate=True,
+    )
+
+    openai = get_effective_newapi_config(capability="text", model="DC-codex-agent-LLM")
+    assert openai.api_key == "sk-openai-secret"
+    assert openai.model == "gpt-5.2"
+    embedding = get_effective_newapi_config(
+        capability="embedding", model="DC-cognee-embedding"
+    )
+    assert embedding.api_key == "sk-gemini-secret"
+    assert embedding.model == "gemini-embedding-001"
+    assert get_effective_newapi_config(capability="video", model="seedance-2").base_url == ""
+
+
+@pytest.mark.parametrize(
+    ("protocol", "base_url", "upstream_body", "expected_models", "expected_header"),
+    [
+        (
+            "openai",
+            "https://openai.sub2api.test/v1",
+            {"data": [{"id": "gpt-5"}, {"id": "gpt-4o"}]},
+            ["gpt-5", "gpt-4o"],
+            "Authorization",
+        ),
+        (
+            "gemini",
+            "https://gemini.sub2api.test/v1beta",
+            {"models": [{"name": "models/gemini-3-flash", "baseModelId": "gemini-3-flash"}]},
+            ["gemini-3-flash"],
+            "x-goog-api-key",
+        ),
+    ],
+)
+def test_sub2api_model_discovery_uses_protocol_auth_and_normalizes_models(
+    monkeypatch, tmp_path, protocol, base_url, upstream_body, expected_models, expected_header
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    requests: list[dict[str, Any]] = []
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, url, *, headers, params):
+            requests.append({"url": url, "headers": headers, "params": params})
+            return Response(200, json=upstream_body)
+
+    monkeypatch.setattr(model_gateway.httpx, "Client", FakeClient)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/sub2api/models",
+        json={
+            "id": "group-1",
+            "protocol": protocol,
+            "baseUrl": base_url,
+            "apiKey": "sk-group-secret",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["models"] == expected_models
+    assert "sk-group-secret" not in response.text
+    request = requests[0]
+    if expected_header == "Authorization":
+        assert request["headers"][expected_header] == "Bearer sk-group-secret"
+    else:
+        assert request["headers"][expected_header] == "sk-group-secret"
+
+
+def test_sub2api_model_discovery_hides_upstream_error_body(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, *_args, **_kwargs):
+            return Response(401, text="invalid key sk-sensitive-secret")
+
+    monkeypatch.setattr(model_gateway.httpx, "Client", FakeClient)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/sub2api/models",
+        json={
+            "id": "group-1",
+            "protocol": "openai",
+            "baseUrl": "https://sub2api.test/v1",
+            "apiKey": "sk-sensitive-secret",
+        },
+    )
+
+    assert response.status_code == 502
+    assert "sk-sensitive-secret" not in response.text
+    assert "invalid key" not in response.text
+
+
+def test_sub2api_exact_model_match_beats_prefix_and_ambiguous_matches_fail_closed(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "prefix",
+                "name": "Prefix",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-prefix",
+                "capabilities": ["text"],
+                "modelMappings": [{"requestPattern": "DC-*", "upstreamModel": "gpt-4o-mini"}],
+            },
+            {
+                "id": "exact",
+                "name": "Exact",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-exact",
+                "capabilities": ["text"],
+                "modelMappings": [{"requestPattern": "DC-codex-agent-LLM", "upstreamModel": "gpt-5"}],
+            },
+        ],
+        activate=True,
+    )
+    exact = get_effective_newapi_config(capability="text", model="DC-codex-agent-LLM")
+    assert exact.api_key == "sk-exact"
+    assert exact.model == "gpt-5"
+
+    save_sub2api_groups(
+        [
+            {
+                "id": "a",
+                "name": "A",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-a",
+                "capabilities": ["text"],
+                "modelMappings": [{"requestPattern": "DC-*", "upstreamModel": "claude-sonnet"}],
+            },
+            {
+                "id": "b",
+                "name": "B",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-b",
+                "capabilities": ["text"],
+                "modelMappings": [{"requestPattern": "DC-*", "upstreamModel": "claude-opus"}],
+            },
+        ],
+        activate=True,
+    )
+    assert get_effective_newapi_config(capability="text", model="DC-codex-agent-LLM").api_key == ""
+
+    save_sub2api_groups(
+        [
+            {
+                "id": "one-group-two-models",
+                "name": "One group, ambiguous default",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-one-group",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {"requestPattern": "DC-*", "upstreamModel": "gpt-4o"},
+                    {"requestPattern": "DC-*", "upstreamModel": "gpt-5"},
+                ],
+            }
+        ],
+        activate=True,
+    )
+    assert get_effective_newapi_config(capability="text", model="DC-codex-agent-LLM").api_key == ""
 
 
 def test_model_gateway_official_database_key_overrides_env(monkeypatch, tmp_path):
@@ -4103,6 +4620,137 @@ def test_media_relay_config_route_persists_and_masks_cloudinary_keys(
     assert data["configured"] is True
     assert "cloudinary-api-key-secret" not in response.text
     assert "cloudinary-api-secret" not in response.text
+
+
+def test_media_relay_config_route_persists_minio_and_masks_root_credentials(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "true")
+
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    client = TestClient(app)
+
+    response = client.post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "minio",
+            "ttlSeconds": 900,
+            "endpoint": "media-minio",
+            "publicEndpoint": "https://media.example.com",
+            "port": 9000,
+            "useSSL": False,
+            "bucket": "staging",
+            "accessKeyId": "minio-root-user",
+            "accessKeySecret": "minio-root-secret",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["provider"] == "minio"
+    assert data["minioEndpoint"] == "media-minio"
+    assert data["minioPublicEndpoint"] == "https://media.example.com"
+    assert data["minioPort"] == 9000
+    assert data["minioBucket"] == "staging"
+    assert data["minioAccessKeyPreview"] == "mini...user"
+    assert data["minioSecretKeyPreview"] == "mini...cret"
+    assert data["configured"] is True
+    assert "minio-root-user" not in response.text
+    assert "minio-root-secret" not in response.text
+
+
+def test_media_relay_config_rejects_non_https_minio_public_endpoint(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "true")
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "minio",
+            "endpoint": "media-minio",
+            "publicEndpoint": "http://media.example.com",
+            "bucket": "staging",
+            "accessKeyId": "minio-user",
+            "accessKeySecret": "minio-secret",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "publicEndpoint must be an HTTPS origin" in response.json()["detail"]
+
+
+def test_media_relay_config_rejects_minio_ttl_over_seven_days(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "true")
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "minio",
+            "ttlSeconds": 7 * 24 * 60 * 60 + 1,
+            "endpoint": "media-minio",
+            "publicEndpoint": "https://media.example.com",
+            "bucket": "staging",
+            "accessKeyId": "minio-user",
+            "accessKeySecret": "minio-secret",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "TTL must not exceed 7 days" in response.json()["detail"]
+
+
+def test_media_relay_switching_provider_preserves_inactive_credentials(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "true")
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    client = TestClient(app)
+
+    minio = client.post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "minio",
+            "endpoint": "media-minio",
+            "publicEndpoint": "https://media.example.com",
+            "bucket": "staging",
+            "accessKeyId": "minio-access",
+            "accessKeySecret": "minio-secret",
+        },
+    )
+    assert minio.status_code == 200
+
+    oss = client.post(
+        "/model-gateway/media-relay/config",
+        json={
+            "provider": "aliyun_oss",
+            "endpoint": "oss.example.com",
+            "bucket": "oss-bucket",
+            "accessKeyId": "oss-access",
+            "accessKeySecret": "oss-secret",
+        },
+    )
+
+    assert oss.status_code == 200
+    data = oss.json()["data"]
+    assert data["endpoint"] == "oss.example.com"
+    assert data["bucket"] == "oss-bucket"
+    assert data["minioEndpoint"] == "media-minio"
+    assert data["minioBucket"] == "staging"
+    assert data["minioAccessKeyPreview"] == "mini...cess"
+    assert data["minioSecretKeyPreview"] == "mini...cret"
 
 
 def test_media_relay_config_route_supports_partial_credential_updates(

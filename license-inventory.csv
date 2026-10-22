@@ -906,6 +906,7 @@ frontend/src/__tests__/stores/region-store.test.ts,Elastic-2.0,2026 SuperTale co
 frontend/src/__tests__/stores/save-status-store.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/stores/seen-pool-store.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/stores/settings-store-feature-model-config.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+frontend/src/__tests__/stores/settings-store.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/stores/store-resets.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/task-center/backward-compat.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/task-center/derivations.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
@@ -2971,3 +2972,5 @@ tests/test_workspace_holds_no_gateway_key.py,Elastic-2.0,2026 SuperTale contribu
 tests/test_wysiwyg_consistency.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_wysiwyg_neo4j.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 uv.lock,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+frontend/src/__tests__/features/canvas/selected-node-overlay-template-model.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+frontend/src/__tests__/features/canvas/use-freezone-image-models-ready.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation

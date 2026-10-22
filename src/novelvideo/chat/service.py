@@ -1937,9 +1937,12 @@ def _codex_model() -> str:
         from novelvideo.model_gateway_settings import (
             AGENT_LLM_MODE_THIRD_PARTY,
             CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
+            MODE_SUB2API,
         )
 
         gateway = get_effective_agent_llm_config()
+        if gateway.mode == MODE_SUB2API:
+            return gateway.model or _DEFAULT_CODEX_MODEL
         if gateway.mode == AGENT_LLM_MODE_THIRD_PARTY:
             return gateway.model or _DEFAULT_CODEX_MODEL
         if gateway.mode == CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW:

@@ -51,6 +51,7 @@ dependencies = [
     "celery>=5.4.0",
     "pypinyin>=0.55.0",
     "oss2>=2.19.1",
+    "minio>=7.2.15",
     "gunicorn>=21.2.0",
     "uvicorn[standard]>=0.27.0",
     "sse-starlette>=3.3.0",

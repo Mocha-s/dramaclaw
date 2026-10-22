@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "sonner";
 
@@ -12,7 +12,10 @@ const modelGatewayMocks = vi.hoisted(() => ({
   config: undefined as Record<string, unknown> | undefined,
   saveAgent: vi.fn(),
   saveBrainClaw: vi.fn(),
+  saveSub2Api: vi.fn(),
+  fetchSub2ApiModels: vi.fn(),
   setCustomLlmMode: vi.fn(),
+  saveMediaRelay: vi.fn(),
 }));
 const freezoneAgentConfigMocks = vi.hoisted(() => ({
   delete: vi.fn(),
@@ -83,7 +86,11 @@ vi.mock("@/lib/queries/model-gateway", () => ({
     mutateAsync: modelGatewayMocks.saveBrainClaw,
     isPending: false,
   }),
-  useSaveSub2ApiConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useSaveSub2ApiConfig: () => ({
+    mutateAsync: modelGatewayMocks.saveSub2Api,
+    isPending: false,
+  }),
+  useFetchSub2ApiModels: () => ({ mutateAsync: modelGatewayMocks.fetchSub2ApiModels, isPending: false }),
   useSetCustomLlmMode: () => ({
     mutateAsync: modelGatewayMocks.setCustomLlmMode,
     isPending: false,
@@ -94,7 +101,7 @@ vi.mock("@/lib/queries/model-gateway", () => ({
   useSaveEmbeddingModel: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveMediaModels: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveProviderChannels: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useSaveMediaRelayConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
+   useSaveMediaRelayConfig: () => ({ mutateAsync: modelGatewayMocks.saveMediaRelay, isPending: false }),
   useSyncProviderChannel: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useChannelModels: () => ({
     data: undefined,
@@ -142,6 +149,45 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.gatewayNotConfiguredImpact": "模型网关未配置",
         "settings.modelConfig.modes.official": "官方渠道",
         "settings.modelConfig.modes.custom": "自定义 NewAPI",
+        "settings.modelConfig.modes.hybrid": "本地 + 官方混合",
+        "settings.modelConfig.modes.sub2api": "Sub2API",
+        "settings.modelConfig.sub2api.description": "Sub2API 配置",
+        "settings.modelConfig.sub2api.newGroup": "新账号组",
+        "settings.modelConfig.sub2api.addGroup": "添加账号组",
+        "settings.modelConfig.sub2api.removeGroup": "删除账号组",
+        "settings.modelConfig.sub2api.groupName": "账号组名称",
+        "settings.modelConfig.sub2api.protocol": "协议",
+        "settings.modelConfig.sub2api.apiKey": "API Key",
+        "settings.modelConfig.sub2api.capabilitiesLabel": "支持能力",
+        "settings.modelConfig.sub2api.models": "模型匹配规则",
+        "settings.modelConfig.sub2api.requestModel": "DramaClaw 模型规则",
+        "settings.modelConfig.sub2api.upstreamModel": "上游模型",
+        "settings.modelConfig.sub2api.imageEditFormat": "图片编辑协议",
+        "settings.modelConfig.sub2api.imageEditFormats.dc-media": "项目协议",
+        "settings.modelConfig.sub2api.imageEditFormats.images": "Images JSON",
+        "settings.modelConfig.sub2api.imageEditFormats.input_reference": "Input reference",
+        "settings.modelConfig.sub2api.imageEditFormats.multipart": "Multipart",
+        "settings.modelConfig.sub2api.videoEndpoint": "视频任务接口",
+        "settings.modelConfig.sub2api.videoEndpoints.videos": "现代 /videos",
+        "settings.modelConfig.sub2api.videoEndpoints.legacy": "旧版 /video/generations",
+        "settings.modelConfig.sub2api.modelsPlaceholder": "每行一条",
+        "settings.modelConfig.sub2api.modelsHint": "匹配模型",
+        "settings.modelConfig.sub2api.fetchModels": "拉取模型列表",
+        "settings.modelConfig.sub2api.modelSearch": "筛选模型",
+        "settings.modelConfig.sub2api.availableModels": "可用模型列表",
+        "settings.modelConfig.sub2api.noModels": "没有匹配模型",
+        "settings.modelConfig.sub2api.fetchFailed": "拉取模型失败",
+        "settings.modelConfig.sub2api.baseUrl": "Sub2API 地址",
+        "settings.modelConfig.sub2api.keyPlaceholder": "输入 API Key",
+        "settings.modelConfig.sub2api.keyHint": "能力组 Key",
+        "settings.modelConfig.sub2api.save": "保存 Sub2API 配置",
+        "settings.modelConfig.sub2api.saved": "Sub2API 配置已保存",
+        "settings.modelConfig.sub2api.missingFields": "请填写完整配置",
+        "settings.modelConfig.sub2api.capabilities.text": "文本 / 视觉",
+        "settings.modelConfig.sub2api.capabilities.embedding": "Embedding",
+        "settings.modelConfig.sub2api.capabilities.image": "图片",
+        "settings.modelConfig.sub2api.capabilities.video": "视频",
+        "settings.modelConfig.sub2api.capabilities.audio": "音频",
         "settings.modelConfig.official.description": "官方渠道说明",
         "settings.modelConfig.official.registerLink": "注册",
         "settings.modelConfig.official.save": "保存并启用",
@@ -366,7 +412,10 @@ beforeEach(() => {
   modelGatewayMocks.config = undefined;
   modelGatewayMocks.saveAgent.mockReset();
   modelGatewayMocks.saveBrainClaw.mockReset();
+  modelGatewayMocks.saveSub2Api.mockReset();
+  modelGatewayMocks.fetchSub2ApiModels.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockReset();
+  modelGatewayMocks.saveMediaRelay.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockResolvedValue({ ok: true });
   freezoneAgentConfigMocks.delete.mockReset();
   freezoneAgentConfigMocks.exportBundle.mockReset();
@@ -395,6 +444,200 @@ describe("SettingsDialog pages", () => {
     );
     expect(screen.getByText("选择模型网关渠道")).toBeInTheDocument();
     expect(screen.getByText("Agent 模型")).toBeInTheDocument();
+  });
+
+  it("saves an external MinIO media relay without persisting its credentials in the browser store", async () => {
+    modelGatewayMocks.saveMediaRelay.mockResolvedValue({ ok: true, data: {} });
+    renderSettingsDialog();
+
+    fireEvent.click(screen.getByRole("button", { name: /媒体存储/ }));
+    fireEvent.click(
+      screen.getByRole("tab", { name: "settings.mediaStorage.providerMinio" }),
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.minioEndpoint"),
+      { target: { value: "minio.internal.example:9000" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.minioPublicEndpoint"),
+      { target: { value: "https://media.example.com" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.bucket"),
+      { target: { value: "relay" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.accessKeyId"),
+      { target: { value: "minio-access" } },
+    );
+    fireEvent.change(
+      screen.getByLabelText("settings.mediaStorage.fields.accessKeySecret"),
+      { target: { value: "minio-secret" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "settings.mediaStorage.saveMinio" }),
+    );
+
+    await waitFor(() =>
+      expect(modelGatewayMocks.saveMediaRelay).toHaveBeenCalledWith({
+        provider: "minio",
+        ttlSeconds: 1800,
+        endpoint: "minio.internal.example:9000",
+        publicEndpoint: "https://media.example.com",
+        port: 9000,
+        useSSL: false,
+        bucket: "relay",
+        accessKeyId: "minio-access",
+        accessKeySecret: "minio-secret",
+      }),
+    );
+
+    const persisted = JSON.parse(
+      window.localStorage.getItem("settings-storage") ?? "{}",
+    ) as { state?: { mediaStorage?: Record<string, unknown> } };
+    expect(persisted.state?.mediaStorage?.minio).not.toHaveProperty("accessKey");
+    expect(persisted.state?.mediaStorage?.minio).not.toHaveProperty("secretKey");
+  });
+
+  it("lets users create partial OpenAI and Gemini groups", async () => {
+    modelGatewayMocks.config = {
+      mode: "official",
+      effective: { source: "official", baseUrl: "", apiKeyPreview: "", configured: false },
+      llmEffective: { mode: "official", source: "official", baseUrl: "", apiKeyPreview: "", configured: false, model: "", brainclaw: true },
+      agent: { mode: "inherit", baseUrl: "", apiKeyPreview: "", configured: false, model: "" },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: false, adminBaseUrl: "", tokenName: "", tokenId: "" },
+      sub2api: {
+        configured: false,
+        groups: [],
+      },
+    };
+    modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
+
+    renderSettingsDialog();
+    fireEvent.click(screen.getByRole("tab", { name: "Sub2API" }));
+    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
+    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
+    const [openaiGroup, geminiGroup] = screen.getAllByRole("group").map((element) => within(element));
+
+    fireEvent.change(openaiGroup.getByLabelText("账号组名称"), { target: { value: "OpenAI main" } });
+    fireEvent.change(openaiGroup.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1" } });
+    fireEvent.change(openaiGroup.getByLabelText("API Key"), { target: { value: "sk-openai" } });
+    modelGatewayMocks.fetchSub2ApiModels
+      .mockResolvedValueOnce({ ok: true, data: { models: ["gpt-5", "gpt-4o"] } })
+      .mockResolvedValueOnce({ ok: true, data: { models: ["gemini-embedding-001"] } });
+    fireEvent.click(openaiGroup.getByRole("button", { name: "拉取模型列表" }));
+    await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(1));
+    fireEvent.change(openaiGroup.getByLabelText("筛选模型"), { target: { value: "gpt-5" } });
+    fireEvent.click(openaiGroup.getByLabelText("gpt-5"));
+    fireEvent.change(openaiGroup.getByLabelText("DramaClaw 模型规则"), { target: { value: "DC-codex-agent-LLM" } });
+    fireEvent.click(openaiGroup.getByLabelText("文本 / 视觉"));
+    fireEvent.click(openaiGroup.getByLabelText("图片"));
+
+    fireEvent.change(geminiGroup.getByLabelText("账号组名称"), { target: { value: "Gemini embedding" } });
+    fireEvent.change(geminiGroup.getByLabelText("协议"), { target: { value: "gemini" } });
+    fireEvent.change(geminiGroup.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1beta" } });
+    fireEvent.change(geminiGroup.getByLabelText("API Key"), { target: { value: "sk-gemini" } });
+    fireEvent.click(geminiGroup.getByRole("button", { name: "拉取模型列表" }));
+    await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(2));
+    fireEvent.click(geminiGroup.getByLabelText("文本 / 视觉"));
+    fireEvent.click(geminiGroup.getByLabelText("Embedding"));
+    fireEvent.click(geminiGroup.getByLabelText("gemini-embedding-001"));
+    fireEvent.change(geminiGroup.getByLabelText("DramaClaw 模型规则"), { target: { value: "DC-cognee-embedding" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存 Sub2API 配置" }));
+
+    await waitFor(() => {
+      expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
+        groups: [
+          {
+            id: expect.any(String),
+            name: "OpenAI main",
+            protocol: "openai",
+            baseUrl: "https://sub2api.example/v1",
+            apiKey: "sk-openai",
+            capabilities: ["image"],
+            modelMappings: [{
+              requestPattern: "DC-codex-agent-LLM",
+              upstreamModel: "gpt-5",
+              imageEditFormat: "images",
+            }],
+          },
+          {
+            id: expect.any(String),
+            name: "Gemini embedding",
+            protocol: "gemini",
+            baseUrl: "https://sub2api.example/v1beta",
+            apiKey: "sk-gemini",
+            capabilities: ["embedding"],
+            modelMappings: [{ requestPattern: "DC-cognee-embedding", upstreamModel: "gemini-embedding-001" }],
+          },
+        ],
+      });
+    });
+  });
+
+  it("saves per-model image and video protocol overrides for Sub2API", async () => {
+    modelGatewayMocks.config = {
+      mode: "official",
+      effective: { source: "official", baseUrl: "", apiKeyPreview: "", configured: false },
+      llmEffective: { mode: "official", source: "official", baseUrl: "", apiKeyPreview: "", configured: false, model: "", brainclaw: true },
+      agent: { mode: "inherit", baseUrl: "", apiKeyPreview: "", configured: false, model: "" },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: false, adminBaseUrl: "", tokenName: "", tokenId: "" },
+      sub2api: { configured: false, groups: [] },
+    };
+    modelGatewayMocks.fetchSub2ApiModels.mockResolvedValue({
+      ok: true,
+      data: { models: ["gpt-image-2.5", "sd17-seedance-2.5-2"] },
+    });
+    modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
+
+    renderSettingsDialog();
+    fireEvent.click(screen.getByRole("tab", { name: "Sub2API" }));
+    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
+    const group = within(screen.getByRole("group"));
+    fireEvent.change(group.getByLabelText("账号组名称"), { target: { value: "media" } });
+    fireEvent.change(group.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1" } });
+    fireEvent.change(group.getByLabelText("API Key"), { target: { value: "sk-media" } });
+    fireEvent.click(group.getByLabelText("文本 / 视觉"));
+    fireEvent.click(group.getByLabelText("图片"));
+    fireEvent.click(group.getByLabelText("视频"));
+    fireEvent.click(group.getByRole("button", { name: "拉取模型列表" }));
+    await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(1));
+    fireEvent.click(group.getByLabelText("gpt-image-2.5"));
+    fireEvent.click(group.getByLabelText("sd17-seedance-2.5-2"));
+    const imageFormats = group.getAllByLabelText("图片编辑协议");
+    const videoEndpoints = group.getAllByLabelText("视频任务接口");
+    fireEvent.change(imageFormats[0], { target: { value: "multipart" } });
+    fireEvent.change(videoEndpoints[1], { target: { value: "video/generations" } });
+    fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[0], { target: { value: "gpt-image-2.5" } });
+    fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[1], { target: { value: "sd17-seedance-2.5-2" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存 Sub2API 配置" }));
+
+    await waitFor(() =>
+      expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
+        groups: [
+          expect.objectContaining({
+            name: "media",
+            capabilities: ["image", "video"],
+            modelMappings: [
+              expect.objectContaining({
+                requestPattern: "gpt-image-2.5",
+                upstreamModel: "gpt-image-2.5",
+                imageEditFormat: "multipart",
+                videoEndpoint: "videos",
+              }),
+              expect.objectContaining({
+                requestPattern: "sd17-seedance-2.5-2",
+                upstreamModel: "sd17-seedance-2.5-2",
+                imageEditFormat: "images",
+                videoEndpoint: "video/generations",
+              }),
+            ],
+          }),
+        ],
+      }),
+    );
   });
 
   it("saves an independent third-party Agent model", async () => {

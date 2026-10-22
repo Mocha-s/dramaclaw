@@ -170,7 +170,7 @@ def test_newapi_cognee_env_maps_to_openai_compatible_gateway(monkeypatch):
     monkeypatch.setattr(
         cognee_config,
         "_effective_newapi_gateway",
-        lambda: ("newapi-token", "http://127.0.0.1:3000/v1"),
+        lambda **_kwargs: ("newapi-token", "http://127.0.0.1:3000/v1"),
     )
     monkeypatch.delenv("COGNEE_LLM_ENDPOINT", raising=False)
     monkeypatch.delenv("COGNEE_EMBEDDING_ENDPOINT", raising=False)
@@ -219,7 +219,7 @@ def test_cognee_legacy_gateway_is_independent_from_brainclaw_selector(monkeypatc
     monkeypatch.setattr(
         cognee_config,
         "_effective_newapi_gateway",
-        lambda: ("cognee-key", "https://cognee-gateway.example/v1"),
+        lambda **_kwargs: ("cognee-key", "https://cognee-gateway.example/v1"),
     )
     monkeypatch.delenv("COGNEE_LLM_ENDPOINT", raising=False)
     monkeypatch.delenv("LLM_ENDPOINT", raising=False)

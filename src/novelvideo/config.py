@@ -392,12 +392,22 @@ def get_newapi_text_pydantic_model(
     from novelvideo.brainclaw_contract import brainclaw_profile_headers
     from novelvideo.model_gateway_settings import get_effective_llm_config
 
-    llm_config = get_effective_llm_config()
     model_name = get_effective_newapi_text_model_name(
         model_env,
         default_model,
         model_name_override=model_name_override,
     )
+    request_model_name = model_name
+    llm_config = get_effective_llm_config(model=request_model_name)
+    if llm_config.mode == "sub2api" and (
+        not llm_config.api_key or not llm_config.base_url
+    ):
+        raise ValueError(
+            "No Sub2API text group matches DramaClaw model "
+            f"'{request_model_name}'. Add a mapping from this request model to an upstream model."
+        )
+    if llm_config.mode == "sub2api" and llm_config.model:
+        model_name = llm_config.model
     timeout_seconds = (
         float(timeout_seconds_override)
         if timeout_seconds_override is not None
@@ -429,16 +439,32 @@ def get_newapi_text_pydantic_model(
             default_headers=default_headers,
             delegate_factory=_newapi_text_openai_model,
             platform_credential_factory=lambda: get_newapi_runtime_credentials(
-                api_key_override=llm_config.api_key,
-                base_url_override=llm_config.base_url,
+                capability="text",
+                model=request_model_name,
+                **(
+                    {}
+                    if llm_config.mode == "sub2api"
+                    else {
+                        "api_key_override": llm_config.api_key,
+                        "base_url_override": llm_config.base_url,
+                    }
+                ),
                 env_api_key="MODEL_API_KEY",
                 env_base_url="MODEL_BASE_URL",
             ),
         )
 
     api_key, base_url = get_newapi_runtime_credentials(
-        api_key_override=llm_config.api_key,
-        base_url_override=llm_config.base_url,
+        capability="text",
+        model=request_model_name,
+        **(
+            {}
+            if llm_config.mode == "sub2api"
+            else {
+                "api_key_override": llm_config.api_key,
+                "base_url_override": llm_config.base_url,
+            }
+        ),
         env_api_key="MODEL_API_KEY",
         env_base_url="MODEL_BASE_URL",
     )
@@ -604,7 +630,9 @@ NEWAPI_BASE_URL = os.environ.get("NEWAPI_BASE_URL", "")
 NEWAPI_API_KEY = os.environ.get("NEWAPI_API_KEY", "")
 
 
-def get_effective_newapi_gateway_config(*, capability: str = "text"):
+def get_effective_newapi_gateway_config(
+    *, capability: str = "text", model: str = ""
+):
     """Return the selected NewAPI runtime gateway credentials."""
     from novelvideo.model_gateway_settings import get_effective_newapi_config
 
@@ -612,6 +640,7 @@ def get_effective_newapi_gateway_config(*, capability: str = "text"):
         official_base_url=OFFICIAL_NEWAPI_BASE_URL,
         official_api_key=NEWAPI_API_KEY,
         capability=capability,
+        model=model,
     )
 
 
@@ -620,6 +649,7 @@ def get_newapi_runtime_credentials(
     api_key_override: str | None = None,
     base_url_override: str | None = None,
     capability: str = "text",
+    model: str = "",
     env_api_key: str = "NEWAPI_API_KEY",
     env_base_url: str = "NEWAPI_BASE_URL",
 ) -> tuple[str, str]:
@@ -630,7 +660,10 @@ def get_newapi_runtime_credentials(
     backed. Explicit per-call overrides remain available for isolated tools.
     """
 
-    gateway = get_effective_newapi_gateway_config(capability=capability)
+    gateway = get_effective_newapi_gateway_config(
+        capability=capability,
+        model=model,
+    )
     environment_backed = gateway.source == "environment"
     api_key = (
         str(api_key_override or "").strip()
@@ -763,6 +796,18 @@ CLOUDINARY_RELAY_CLOUD_NAME = os.environ.get("CLOUDINARY_RELAY_CLOUD_NAME", "")
 CLOUDINARY_RELAY_API_KEY = os.environ.get("CLOUDINARY_RELAY_API_KEY", "")
 CLOUDINARY_RELAY_API_SECRET = os.environ.get("CLOUDINARY_RELAY_API_SECRET", "")
 CLOUDINARY_RELAY_FOLDER = os.environ.get("CLOUDINARY_RELAY_FOLDER", "")
+MINIO_RELAY_ENDPOINT = os.environ.get("MINIO_RELAY_ENDPOINT", "")
+MINIO_RELAY_PUBLIC_ENDPOINT = os.environ.get("MINIO_RELAY_PUBLIC_ENDPOINT", "")
+MINIO_RELAY_PORT = int(os.environ.get("MINIO_RELAY_PORT", "9000"))
+MINIO_RELAY_USE_SSL = os.environ.get("MINIO_RELAY_USE_SSL", "0").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+MINIO_RELAY_BUCKET = os.environ.get("MINIO_RELAY_BUCKET", "")
+MINIO_RELAY_ACCESS_KEY = os.environ.get("MINIO_RELAY_ACCESS_KEY", "")
+MINIO_RELAY_SECRET_KEY = os.environ.get("MINIO_RELAY_SECRET_KEY", "")
 
 
 def get_style_labels() -> dict[str, str]:
@@ -1323,12 +1368,22 @@ def _image_provider_config(
             "model": model or OPENAI_IMAGE_MODEL,
         }
     if provider == "newapi":
-        gateway = get_effective_newapi_gateway_config(capability="image")
+        selected_model = model or NEWAPI_IMAGE_MODEL
+        gateway = get_effective_newapi_gateway_config(
+            capability="image",
+            model=selected_model,
+        )
         return {
             "provider": provider,
             "api_key": gateway.api_key,
-            "model": model or NEWAPI_IMAGE_MODEL,
+            "model": gateway.model or selected_model,
             "base_url": gateway.base_url,
+            "gateway_source": gateway.source,
+            "gateway_protocol": gateway.protocol,
+            "gateway_native_base_url": gateway.native_base_url,
+            "image_edit_reference_format": gateway.image_edit_reference_format or (
+                "images" if gateway.source == "sub2api" else "dc-media"
+            ),
         }
 
     return {
@@ -1380,6 +1435,14 @@ def get_grid_generation_config(
         "api_key": provider_config["api_key"],
         "model": provider_config["model"],
         "base_url": provider_config.get("base_url", ""),
+        "gateway_source": provider_config.get("gateway_source", ""),
+        "gateway_protocol": provider_config.get("gateway_protocol", ""),
+        "gateway_native_base_url": provider_config.get(
+            "gateway_native_base_url", ""
+        ),
+        "image_edit_reference_format": provider_config.get(
+            "image_edit_reference_format", "dc-media"
+        ),
         "openai_image_quality": OPENAI_IMAGE_QUALITY,
         "openai_sketch_image_quality": OPENAI_SKETCH_IMAGE_QUALITY,
         "huimeng_image_quality": os.environ.get("HUIMENG_IMAGE_QUALITY", "medium"),
