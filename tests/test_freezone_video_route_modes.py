@@ -237,6 +237,58 @@ async def test_omni_video_without_continuation_stays_all_reference(
 
 
 @pytest.mark.asyncio
+async def test_omni_video_treats_missing_supported_modes_as_unknown(
+    monkeypatch, tmp_path: Path
+) -> None:
+    capabilities = _catalog("all_reference")
+    capabilities.pop("supportedModes")
+    captured = await _install_route_fakes(monkeypatch, tmp_path, capabilities)
+
+    async def resolve_unknown_video_backend(_model, *, requester_user_id):
+        assert requester_user_id == "user-1"
+        return "newapi_future-model-with-reference-support"
+
+    monkeypatch.setattr(
+        freezone_routes,
+        "_resolve_catalog_video_backend",
+        resolve_unknown_video_backend,
+    )
+
+    await freezone_routes.freezone_video_omni_gen(
+        "project",
+        FreezoneVideoOmniGenRequest(
+            prompt="参考这张图片生成新镜头",
+            references=[{"type": "image", "url": "https://example.com/hero.png"}],
+            model="catalog-video",
+        ),
+        {"username": "admin"},
+    )
+
+    assert captured["start"]["gen_mode"] == "all_reference"
+
+
+@pytest.mark.asyncio
+async def test_omni_video_still_rejects_explicitly_unsupported_catalog_mode(
+    monkeypatch, tmp_path: Path
+) -> None:
+    capabilities = _catalog("text_to_video", "first_frame")
+    await _install_route_fakes(monkeypatch, tmp_path, capabilities)
+
+    with pytest.raises(HTTPException, match="does not support omni reference mode"):
+        await freezone_routes.freezone_video_omni_gen(
+            "project",
+            FreezoneVideoOmniGenRequest(
+                prompt="animate the reference",
+                references=[
+                    {"type": "image", "url": "https://example.com/hero.png"}
+                ],
+                model="catalog-video",
+            ),
+            {"username": "admin"},
+        )
+
+
+@pytest.mark.asyncio
 async def test_omni_video_continuation_requires_a_video_reference(
     monkeypatch, tmp_path: Path
 ) -> None:
