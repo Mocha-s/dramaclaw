@@ -5039,8 +5039,12 @@ async def test_template_edit_takes_provider_model_and_identity_from_the_catalog(
 
     async def fake_resolve_catalog_request(*_args, **_kwargs):
         return (
-            {},
-            {},
+            {
+                "endpoint": "images/generations",
+                "referenceFormat": "images",
+                "parameters": [],
+            },
+            {"quality": "high"},
             {
                 "catalogId": "cat-grid",
                 "id": "cat-grid",
@@ -5072,6 +5076,8 @@ async def test_template_edit_takes_provider_model_and_identity_from_the_catalog(
     assert captured["model"] == "google/gemini-2.5-flash-image-preview"
     assert captured["catalog_id"] == "cat-grid"
     assert captured["billing"]["catalog_id"] == "cat-grid"
+    assert captured["request_schema"]["endpoint"] == "images/generations"
+    assert captured["model_params"] == {"quality": "high"}
 
 
 @pytest.mark.asyncio

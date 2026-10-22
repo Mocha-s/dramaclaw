@@ -16,6 +16,7 @@ import {
   EXPORT_RESULT_NODE_DEFAULT_WIDTH,
   EXPORT_RESULT_NODE_LAYOUT_HEIGHT,
 } from '@/features/canvas/domain/canvasNodes';
+import { waitForFreezoneImageModels } from '@/features/canvas/hooks/useFreezoneImageModels';
 import { readUrl } from '@/lib/url-params';
 import { useCanvasStore } from '@/stores/canvasStore';
 
@@ -268,7 +269,7 @@ function resolveScene360AspectRatio(data: Record<string, unknown>): FreezoneScen
     : DEFAULT_FREEZONE_SCENE_360_ASPECT_RATIO;
 }
 
-function submitOp(
+async function submitOp(
   project: string,
   opKey: AssetBoardImageOpKey,
   sourceUrl: string,
@@ -276,10 +277,20 @@ function submitOp(
   data: Record<string, unknown>,
 ): Promise<FreezoneJobRef> {
   if (isGridOpKey(opKey)) {
+    const imageCatalog = await waitForFreezoneImageModels(project);
+    if (imageCatalog.isFallback) {
+      throw new Error('图片模型目录加载失败，请检查连接后重试');
+    }
+    const selectedModel = imageCatalog.models[0];
+    if (!selectedModel) {
+      throw new Error('图片模型目录没有可用模型，无法提交宫格模板');
+    }
     return submitFreezoneTemplateEdit(project, {
       sourceUrl,
       mode: GRID_ACTION_MODE_MAP[opKey],
       prompt,
+      model: selectedModel.apiModel,
+      ...(selectedModel.catalogId ? { catalogId: selectedModel.catalogId } : {}),
     });
   }
   // 宫格之外只剩全景（多角度/打光已从功能表撤下，见 AssetBoardImageOpKey）。

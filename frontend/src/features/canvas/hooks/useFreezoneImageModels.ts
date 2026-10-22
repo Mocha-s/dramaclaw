@@ -127,6 +127,38 @@ export function getFreezoneImageModelsSnapshot(
   return states.get(project) ?? getNoProjectState();
 }
 
+/**
+ * Read the project's image catalog after its first load settles.
+ *
+ * Synchronous snapshot consumers may receive the hardcoded fallback while the
+ * request is still in flight. Submission paths that must use the active model
+ * catalog should await this function instead of accidentally sending a stale
+ * fallback model.
+ */
+export function waitForFreezoneImageModels(
+  projectOverride?: string | null,
+): Promise<UseFreezoneImageModelsResult> {
+  const project =
+    projectOverride !== undefined ? projectOverride : readUrl().project;
+  if (!project) return Promise.resolve(getNoProjectState());
+
+  ensureLoaded(project);
+  const current = states.get(project);
+  if (current && !current.isLoading) return Promise.resolve(current);
+
+  return new Promise((resolve) => {
+    let unsubscribe = () => {};
+    const resolveWhenLoaded = () => {
+      const next = states.get(project);
+      if (!next || next.isLoading) return;
+      unsubscribe();
+      resolve(next);
+    };
+    unsubscribe = subscribe(project, resolveWhenLoaded);
+    resolveWhenLoaded();
+  });
+}
+
 function refreshKnownImageModelCatalogs() {
   const projects = new Set(states.keys());
   const currentProject = readUrl().project;

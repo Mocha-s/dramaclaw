@@ -2972,3 +2972,5 @@ tests/test_workspace_holds_no_gateway_key.py,Elastic-2.0,2026 SuperTale contribu
 tests/test_wysiwyg_consistency.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_wysiwyg_neo4j.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 uv.lock,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+frontend/src/__tests__/features/canvas/selected-node-overlay-template-model.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+frontend/src/__tests__/features/canvas/use-freezone-image-models-ready.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
