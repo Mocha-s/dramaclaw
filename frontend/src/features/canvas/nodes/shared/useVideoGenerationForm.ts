@@ -1162,11 +1162,22 @@ export function useVideoGenerationForm(
 
   // Restore catalog modes using their capabilities and connected inputs.
   useEffect(() => {
-    if (videoModelsLoading || isHappyHorseModel || !selectedVideoModel?.supportedModes?.length) return;
+    if (videoModelsLoading || isHappyHorseModel || !selectedVideoModel) return;
     const counts = {
       ...upstreamTypeCounts,
       hasOtherReference: Boolean(data.referenceFileUrl || data.referenceLink?.trim()),
     };
+    // An explicit allReference selection with connected media is allowed to
+    // reach an upstream whose catalog omits supportedModes; the backend applies
+    // the same unknown-capability policy. Only repair stale allReference state
+    // when no media is present, where it cannot produce a valid request.
+    if (
+      genMode === "allReference" &&
+      !selectedVideoModel.supportedModes?.length &&
+      (counts.images > 0 || counts.videos > 0 || counts.audios > 0 || counts.hasOtherReference)
+    ) {
+      return;
+    }
     const compatibleMode = videoModeForModel(genMode, selectedVideoModel, counts);
     const target = videoNoUpstreamResetMode(compatibleMode, counts, selectedVideoModel)
       ?? compatibleMode;

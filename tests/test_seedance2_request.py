@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 
@@ -698,12 +700,19 @@ async def test_newapi_modern_video_protocol_uses_videos_and_authenticated_conten
     monkeypatch.setattr(video_module, "_refund_video_model_call", fake_refund)
     monkeypatch.setattr(video_module, "get_video_result_delivery", lambda: None)
     monkeypatch.setattr(generator, "_post_multipart", fake_post_multipart)
+    monkeypatch.setattr(
+        generator,
+        "_relay_frame_input",
+        lambda _path: asyncio.sleep(0, result="https://media.example/first.png"),
+    )
     monkeypatch.setattr(generator, "_get_json", fake_get_json)
     monkeypatch.setattr(generator, "_download_video_content", fake_download_content)
     monkeypatch.setattr(generator, "_download_video", fake_download_video)
 
+    source_image = tmp_path / "first.png"
+    source_image.write_bytes(b"actual-reference-image")
     result = await generator.generate(
-        image_path="https://media.example/first.png",
+        image_path=str(source_image),
         prompt="A quiet movement through the scene.",
         output_path=str(tmp_path / "modern.mp4"),
         duration=12,
@@ -717,7 +726,14 @@ async def test_newapi_modern_video_protocol_uses_videos_and_authenticated_conten
     assert captured["submit_url"] == "https://gateway.example/v1/videos"
     assert captured["poll_url"] == "https://gateway.example/v1/videos/video-task-1"
     request_fields = captured["submit_fields"]
-    assert ("images", "https://media.example/first.png") in request_fields
+    uploaded_image_fields = [
+        value
+        for name, value in request_fields
+        if name == "images" and hasattr(value, "content")
+    ]
+    assert len(uploaded_image_fields) == 1
+    assert uploaded_image_fields[0].content == b"actual-reference-image"
+    assert uploaded_image_fields[0].filename == "first.png"
     assert ("seconds", "12") in request_fields
     assert ("size", "720x1280") in request_fields
     assert ("resolution_name", "720p") in request_fields
@@ -797,11 +813,47 @@ def test_newapi_modern_video_frames_use_named_and_repeated_image_fields():
     assert fields.count(("images", "https://media.example/last.png")) == 1
 
 
+async def test_newapi_modern_video_uploads_local_omni_image_as_file_part(tmp_path):
+    from novelvideo.generators.video_generator import NewApiVideoGenerator, ShotReference
+
+    image = tmp_path / "reference.png"
+    image.write_bytes(b"local-reference-image")
+    generator = NewApiVideoGenerator(
+        api_key="test-key",
+        endpoint="https://gateway.example/v1",
+        model="seedance2.0-900-3",
+        request_schema={"endpoint": "videos", "parameters": []},
+    )
+
+    uploads = await generator._modern_video_multipart_uploads(
+        requested_mode="allReference",
+        image_path=None,
+        last_frame_path=None,
+        references=[ShotReference("image", str(image), "reference")],
+    )
+    fields = NewApiVideoGenerator._modern_video_form_fields(
+        {
+            "model": "seedance2.0-900-3",
+            "prompt": "animate the reference",
+            "duration": 6,
+            "images": ["https://relay.example/reference.png"],
+        },
+        requested_mode="allReference",
+        multipart_uploads=uploads,
+    )
+
+    assert uploads["images"][0].content == b"local-reference-image"
+    assert uploads["images"][0].filename == "reference.png"
+    assert uploads["images"][0].content_type == "image/png"
+    assert ("images", uploads["images"][0]) in fields
+
+
 async def test_newapi_modern_video_submit_uses_multipart_without_json_content_type(
     monkeypatch,
 ):
     import aiohttp
 
+    from novelvideo.generators import video_generator as video_module
     from novelvideo.generators.video_generator import NewApiVideoGenerator
 
     captured: dict[str, object] = {}
@@ -832,6 +884,7 @@ async def test_newapi_modern_video_submit_uses_multipart_without_json_content_ty
         def post(self, url, *, data, headers):
             captured["url"] = url
             captured["data"] = data
+            captured["writer"] = data()
             captured["headers"] = headers
             return FakeResponse()
 
@@ -845,7 +898,16 @@ async def test_newapi_modern_video_submit_uses_multipart_without_json_content_ty
 
     result = await generator._post_multipart(
         "https://gateway.example/v1/videos",
-        [("model", "video-model"), ("prompt", "move slowly")],
+        [
+            ("model", "video-model"),
+            ("prompt", "move slowly"),
+            (
+                "images",
+                video_module._ModernVideoUpload(
+                    b"reference-bytes", "reference.png", "image/png"
+                ),
+            ),
+        ],
         headers={
             "Authorization": "Bearer request-key",
             "Content-Type": "application/json",
@@ -856,8 +918,14 @@ async def test_newapi_modern_video_submit_uses_multipart_without_json_content_ty
     form = captured["data"]
     assert isinstance(form, aiohttp.FormData)
     assert form._is_multipart
-    writer = form()
+    writer = captured["writer"]
     assert writer.headers["Content-Type"].startswith("multipart/form-data; boundary=")
+    file_payload, _, _ = captured["writer"]._parts[-1]
+    assert file_payload._value == b"reference-bytes"
+    assert file_payload.headers["Content-Disposition"] == (
+        'form-data; name="images"; filename="reference.png"'
+    )
+    assert file_payload.headers["Content-Type"] == "image/png"
     assert captured["url"] == "https://gateway.example/v1/videos"
     assert captured["headers"] == {
         "Authorization": "Bearer request-key",

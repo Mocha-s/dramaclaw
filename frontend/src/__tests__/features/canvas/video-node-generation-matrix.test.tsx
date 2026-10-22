@@ -249,6 +249,17 @@ beforeEach(() => {
 });
 
 describe("video-only catalog mode state", () => {
+  it("resets stale all-reference mode when a model catalog omits supported modes and no media is connected", async () => {
+    useCanvasStore.setState({
+      nodes: [videoNode({ model: MODEL_SD2, genMode: "allReference" })],
+      edges: [],
+    });
+
+    const { result } = renderHook(() => useVideoGenerationForm("vid-1"));
+
+    await waitFor(() => expect(result.current.formProps.genMode).toBe("textToVideo"));
+  });
+
   it("preserves explicitly selected edit mode on models also supporting all-reference", async () => {
     useCanvasStore.setState({
       nodes: [videoNode({ model: "seedance-edit", genMode: "videoEdit", prompt: "" }), upstreamVideoNode("source", "/static/source.mp4")],

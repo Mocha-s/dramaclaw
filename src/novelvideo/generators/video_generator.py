@@ -9,6 +9,7 @@ import ipaddress
 import json
 import logging
 import math
+import mimetypes
 import os
 import random
 import re
@@ -88,6 +89,13 @@ _VIDEO_EGRESS_ERROR_MESSAGES = {
 # 「出片时长跟随输入视频」的厂商哨兵值（Seedance 视频编辑要求 duration 必须是 -1，
 # 配套 ratio=adaptive）。不是我们发明的魔法数，见 `_follows_source_video_output`。
 SOURCE_FOLLOWING_DURATION = -1
+
+
+@dataclass(frozen=True)
+class _ModernVideoUpload:
+    content: bytes
+    filename: str
+    content_type: str
 
 
 class VideoEgressError(RuntimeError):
@@ -2732,8 +2740,12 @@ class NewApiVideoGenerator(VideoGeneratorBase):
 
     @classmethod
     def _modern_video_form_fields(
-        cls, payload: dict[str, object], *, requested_mode: str = ""
-    ) -> list[tuple[str, str]]:
+        cls,
+        payload: dict[str, object],
+        *,
+        requested_mode: str = "",
+        multipart_uploads: dict[str, list[_ModernVideoUpload | None]] | None = None,
+    ) -> list[tuple[str, str | _ModernVideoUpload]]:
         """Serialize a modern `/videos` request like the verified web client.
 
         The gateway's modern video route is multipart even when references are
@@ -2748,7 +2760,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                 return str(int(value))
             return str(value)
 
-        fields: list[tuple[str, str]] = []
+        fields: list[tuple[str, str | _ModernVideoUpload]] = []
         for key in ("model", "prompt"):
             value = payload.get(key)
             if value is not None:
@@ -2817,16 +2829,126 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         )
         fields.append(("mode", mode))
 
+        uploads = multipart_uploads or {}
+
+        def media_part(upload_field: str, index: int, fallback: str) -> str | _ModernVideoUpload:
+            field_uploads = uploads.get(upload_field, [])
+            if index < len(field_uploads) and field_uploads[index] is not None:
+                return field_uploads[index]
+            return fallback
+
+        image_field_index = 0
         if mode == "frames" and image_values:
-            fields.extend((("first_frame", image_values[0]), ("images", image_values[0])))
+            first_image = media_part("images", image_field_index, image_values[0])
+            fields.extend((("first_frame", first_image), ("images", first_image)))
+            image_field_index += 1
             if len(image_values) > 1:
-                fields.extend((("last_frame", image_values[1]), ("images", image_values[1])))
-            fields.extend(("images", value) for value in image_values[2:])
+                last_image = media_part("images", image_field_index, image_values[1])
+                fields.extend((("last_frame", last_image), ("images", last_image)))
+                image_field_index += 1
+            fields.extend(
+                ("images", media_part("images", index, value))
+                for index, value in enumerate(image_values[2:], start=image_field_index)
+            )
         else:
-            fields.extend(("images", value) for value in image_values)
-        fields.extend(("video[]", value) for value in video_values)
-        fields.extend(("audio[]", value) for value in audio_values)
+            fields.extend(
+                ("images", media_part("images", index, value))
+                for index, value in enumerate(image_values)
+            )
+        fields.extend(
+            ("video[]", media_part("video[]", index, value))
+            for index, value in enumerate(video_values)
+        )
+        fields.extend(
+            ("audio[]", media_part("audio[]", index, value))
+            for index, value in enumerate(audio_values)
+        )
         return fields
+
+    @staticmethod
+    async def _read_modern_video_media(
+        source: str, *, default_filename: str
+    ) -> _ModernVideoUpload | None:
+        """Read a reference as bytes for the verified multipart video contract."""
+
+        value = str(source or "").strip()
+        if value.startswith("data:"):
+            import base64
+
+            header, separator, encoded = value.partition(",")
+            if not separator or ";base64" not in header.lower():
+                raise ValueError("unsupported data URL video reference")
+            data = base64.b64decode(encoded, validate=True)
+            content_type = header[5:].split(";", 1)[0] or "application/octet-stream"
+            return _ModernVideoUpload(data, default_filename, content_type)
+
+        if value.startswith(("http://", "https://")):
+            # Public URLs remain URL-valued form fields. Never introduce an
+            # unguarded server-side fetch of a caller-controlled URL here.
+            return None
+
+        path = Path(value)
+        data = await asyncio.to_thread(path.read_bytes)
+        filename = path.name or default_filename
+        content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+        return _ModernVideoUpload(data, filename, content_type)
+
+    async def _modern_video_multipart_uploads(
+        self,
+        *,
+        requested_mode: str,
+        image_path: str | None,
+        last_frame_path: str | None,
+        references: list["ShotReference"] | None,
+    ) -> dict[str, list[_ModernVideoUpload | None]]:
+        """Build file parts matching Infinite Canvas's `/videos` request."""
+
+        uploads: dict[str, list[_ModernVideoUpload | None]] = {
+            "images": [],
+            "video[]": [],
+            "audio[]": [],
+        }
+
+        normalized_mode = str(requested_mode or "").strip()
+        if normalized_mode in {"first_frame", "firstFrame", "imageToVideo"}:
+            if image_path:
+                upload = await self._read_modern_video_media(
+                    image_path, default_filename="first.png"
+                )
+                uploads["images"].append(upload)
+            return uploads
+        if normalized_mode in {"first_last_frame", "firstLastFrame"}:
+            for source, fallback in (
+                (image_path, "first.png"),
+                (last_frame_path, "last.png"),
+            ):
+                if source:
+                    upload = await self._read_modern_video_media(
+                        source, default_filename=fallback
+                    )
+                    uploads["images"].append(upload)
+            return uploads
+
+        for reference in references or []:
+            source = str(getattr(reference, "path", "") or "").strip()
+            reference_type = str(getattr(reference, "type", "image") or "image").lower()
+            if not source or reference_type not in {"image", "video", "audio"}:
+                continue
+            field_name = {
+                "image": "images",
+                "video": "video[]",
+                "audio": "audio[]",
+            }[reference_type]
+            fallback = {
+                "image": "reference.png",
+                "video": "reference.mp4",
+                "audio": "reference.mp3",
+            }[reference_type]
+            upload = await self._read_modern_video_media(
+                source, default_filename=fallback
+            )
+            uploads[field_name].append(upload)
+        return uploads
 
     @staticmethod
     def _modern_video_dimensions(
@@ -2856,7 +2978,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
     async def _post_multipart(
         self,
         url: str,
-        fields: list[tuple[str, str]],
+        fields: list[tuple[str, str | _ModernVideoUpload]],
         *,
         headers: dict[str, str] | None = None,
     ) -> dict:
@@ -2864,7 +2986,15 @@ class NewApiVideoGenerator(VideoGeneratorBase):
 
         form = aiohttp.FormData(default_to_multipart=True)
         for name, value in fields:
-            form.add_field(name, value)
+            if isinstance(value, _ModernVideoUpload):
+                form.add_field(
+                    name,
+                    value.content,
+                    filename=value.filename,
+                    content_type=value.content_type,
+                )
+            else:
+                form.add_field(name, value)
         request_headers = {
             key: value
             for key, value in (headers or self.headers).items()
@@ -3784,10 +3914,18 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             if is_modern_video_endpoint:
                 submit_headers["Idempotency-Key"] = str(uuid.uuid4())
             if is_modern_video_endpoint:
+                multipart_uploads = await self._modern_video_multipart_uploads(
+                    requested_mode=requested_mode,
+                    image_path=image_path,
+                    last_frame_path=last_frame_path,
+                    references=kwargs.get("references"),
+                )
                 submitted = await self._post_multipart(
                     f"{request_base_url}{submit_endpoint}",
                     self._modern_video_form_fields(
-                        payload, requested_mode=requested_mode
+                        payload,
+                        requested_mode=requested_mode,
+                        multipart_uploads=multipart_uploads,
                     ),
                     headers=submit_headers,
                 )
