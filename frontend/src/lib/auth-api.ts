@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
 import { regionAbortController } from "@/lib/region-abort";
+import { generateClientId } from "@/lib/client-id";
 
 type ApiEnvelope<T> = { ok: boolean; data: T };
 
@@ -47,7 +48,7 @@ async function authError(response: Response, fallback: string): Promise<AuthApiE
 }
 
 export function newAuthIdempotencyKey(): string {
-  return `web:${crypto.randomUUID()}`;
+  return `web:${generateClientId()}`;
 }
 
 export async function bindAccountPhone(

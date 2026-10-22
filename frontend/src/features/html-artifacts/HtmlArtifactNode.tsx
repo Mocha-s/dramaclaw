@@ -18,6 +18,7 @@ import { canvasNodeFrameClass, CANVAS_NODE_INPUT_SURFACE_CLASS, CANVAS_NODE_INPU
 import { buildHtmlPreview } from './preview';
 import { NODE_REFERENCE_MEDIA_CHIP_CLASS, NODE_REFERENCE_MEDIA_DETACH_CLASS, NODE_GENERATE_BUTTON_BASE_CLASS, NODE_GENERATE_BUTTON_ENABLED_CLASS, NODE_GENERATE_BUTTON_DISABLED_CLASS } from '@/features/canvas/ui/nodeControlStyles';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { generateClientId } from '@/lib/client-id';
 import { executeWorkflowHtmlNode, attachSavedArtifact } from '@/features/canvas/application/workflowHtmlRuntime';
 import { subscribeNodeAction, publishNodeActionAccepted, publishNodeActionSuccess, publishNodeActionError } from '@/features/canvas/application/nodeActionResult';
 import { useUpstreamNodes } from '@/features/canvas/application/useUpstreamGraph';
@@ -174,7 +175,7 @@ export const HtmlArtifactNode=memo(function HtmlArtifactNode({id,data,selected}:
     } catch (err) {setError(err instanceof Error ? err.message : String(err));}
     finally {setIsUploading(false);if(uploadInput.current) uploadInput.current.value='';}
   };
-  const thumbnailChannel=useMemo(()=>crypto.randomUUID(),[html,artifactId,version]);
+  const thumbnailChannel=useMemo(()=>generateClientId(),[html,artifactId,version]);
   const srcDoc=useMemo(()=>buildHtmlPreview(html,thumbnailChannel,false,false,media,true),[html,thumbnailChannel,media]);
   return <div className={`group relative w-96 overflow-visible rounded-[var(--node-radius)] border ${!html ? (selected ? CANVAS_NODE_INPUT_BODY_SELECTED_FRAME_CLASS : CANVAS_NODE_INPUT_BODY_FRAME_CLASS) : canvasNodeFrameClass({selected})}`} onDoubleClick={open}>
     {selected && !artifactId && <>

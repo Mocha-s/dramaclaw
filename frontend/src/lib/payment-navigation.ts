@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
+import { generateClientId } from "@/lib/client-id";
 
 export const CHECKOUT_DRAFT_KEY = "dramaclaw-checkout-draft";
 export const CHECKOUT_RETURN_KEY = "dramaclaw-checkout-return";
@@ -30,7 +31,7 @@ export function paymentIdempotencyKey(prefix: string, fingerprint: string): stri
   } catch {
     // Invalid session state is replaced below.
   }
-  const idempotencyKey = `${prefix}-${crypto.randomUUID()}`;
+  const idempotencyKey = `${prefix}-${generateClientId()}`;
   sessionStorage.setItem(
     PAYMENT_ATTEMPT_KEY,
     JSON.stringify({ fingerprint, idempotencyKey } satisfies PaymentAttempt),

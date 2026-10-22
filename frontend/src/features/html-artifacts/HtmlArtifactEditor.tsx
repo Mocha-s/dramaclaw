@@ -7,6 +7,7 @@ import { ArrowLeft, Code2, Download, Eye, MousePointer2, Save } from 'lucide-rea
 import { setActiveHtmlArtifact, announceHtmlArtifact, exportHtmlArtifact, HTML_ARTIFACT_REFERENCE_EVENT, HTML_ARTIFACT_UPDATED_EVENT, listHtmlVersions, readHtmlArtifact, readHtmlPreview, saveHtmlArtifact, type HtmlArtifact, type HtmlVersion } from './api';
 import { buildHtmlPreview, isHtmlSelectionMessage } from './preview';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { generateClientId } from '@/lib/client-id';
 
 type Props = { projectId:string; artifactId:string; version?:number; nodeId?:string; onClose:()=>void };
 export function HtmlArtifactEditor({projectId,artifactId,version,nodeId,onClose}:Props) {
@@ -37,7 +38,7 @@ export function HtmlArtifactEditor({projectId,artifactId,version,nodeId,onClose}
     if(artifact) keepHtmlDraft(projectId,artifactId,dirty?{html,title,version:artifact.version,baseVersion:baseVersion.current}:null);
   },[artifact,dirty,html,title,projectId,artifactId]);
   const dirtyRef=useRef(dirty); dirtyRef.current=dirty;
-  const token=useMemo(()=>crypto.randomUUID(),[artifact?.version,selecting,preview]);
+  const token=useMemo(()=>generateClientId(),[artifact?.version,selecting,preview]);
   const srcDoc=useMemo(()=>buildHtmlPreview(preview,token,selecting,interactive,media),[preview,token,selecting,interactive,media]);
   const reference=(selection?:{selector:string;text:string})=>{
     if (!artifact) return;

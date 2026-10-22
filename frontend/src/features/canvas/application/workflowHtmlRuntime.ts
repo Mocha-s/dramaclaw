@@ -1,6 +1,7 @@
 import { buildHtmlReferences } from '@/features/html-artifacts/references';
 import { upstreamNodesInEdgeOrder } from '../nodes/referenceOrdering';
 import { useCanvasStore } from "@/stores/canvasStore";
+import { generateClientId } from "@/lib/client-id";
 import { captureFreezoneCanvasScope } from "@/features/freezone/canvasSyncRuntime";
 import {
   createHtmlArtifact,
@@ -247,7 +248,7 @@ async function generateHtmlRecipeText(
     if (existing.projectId !== projectId) throw new Error('Recipe operation belongs to another project');
     return generateWorkflowText(input);
   }
-  const attemptId = `html-recipe:${crypto.randomUUID()}`;
+  const attemptId = `html-recipe:${generateClientId()}`;
   const operation = await admitFreezoneRecipeResult(projectId, canvasId, input.nodeId, recipeId, attemptId);
   const operationId = operation.operation_id;
   if (!operationId) throw new Error('Recipe admission did not return an operation');
