@@ -3623,8 +3623,10 @@ async def _call_newapi_image_api(
         return None, "", "DramaClawAPI API key is missing"
 
     image_config = image_config or {}
+    request_schema = image_config.get("request_schema") or {}
     reference_image_format = str(
         image_config.get("reference_image_format")
+        or request_schema.get("referenceFormat")
         or os.environ.get("NEWAPI_IMAGE_EDIT_REFERENCE_FORMAT")
         or "dc-media"
     ).strip().lower()
@@ -3632,7 +3634,6 @@ async def _call_newapi_image_api(
         return None, "", "Unsupported reference image format; use dc-media or images"
     aspect_ratio = str(image_config.get("aspect_ratio") or "1:1").strip().lower() or "1:1"
     image_size = normalize_image_size(str(image_config.get("image_size") or "1K"), "newapi")
-    request_schema = image_config.get("request_schema") or {}
     from novelvideo.media_model_request_schema import normalize_media_resolution_value
 
     resolution = normalize_media_resolution_value(image_size)
@@ -3722,7 +3723,13 @@ async def _call_newapi_image_api(
                 )
                 return None, "", f"media relay upload failed ({code})"
             return None, "", f"media relay upload failed: {exc}"
-        request_path = "/images/edits"
+        configured_endpoint = str(request_schema.get("endpoint") or "").strip()
+        if configured_endpoint == "images/generations":
+            request_path = "/images/generations"
+        else:
+            # Legacy catalog entries without a request schema use the edit route
+            # whenever reference images are present.
+            request_path = "/images/edits"
     else:
         request_path = "/images/generations"
 

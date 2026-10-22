@@ -7034,7 +7034,7 @@ async def freezone_template_edit(
     # 与 /freezone/edit 同一口径：EE 里目录是权威的，模型和目录身份都要在目录里
     # 对得上才放行。原来这条路由直接采信 body —— 客户端可以随便报一个便宜的
     # catalog_id 配一个贵的 model，报价按前者、执行按后者。
-    _schema, _params, catalog_entry = await _resolve_catalog_request(
+    request_schema, model_params, catalog_entry = await _resolve_catalog_request(
         "image",
         body.catalog_id or body.model,
         None,
@@ -7069,6 +7069,8 @@ async def freezone_template_edit(
         # 后端按旧的 image_selection 规则扣费，两边价格对不上。
         # 身份以目录条目为准，不采信 body —— 它直接决定按哪条目录规则扣费。
         catalog_id=_catalog_entry_id(catalog_entry) or body.catalog_id or None,
+        model_params=model_params,
+        request_schema=request_schema,
         billing_feature_key="freezone.image_grid",
         billing_operation=body.mode,
     )

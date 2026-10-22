@@ -62,7 +62,10 @@ import { EraseOverlay } from './EraseOverlay';
 import { Scene360Overlay } from './Scene360Overlay';
 import { UpscaleEditorOverlay } from './UpscaleEditorOverlay';
 import { VideoUpscaleEditorOverlay } from './VideoUpscaleEditorOverlay';
-import { getFreezoneImageModelsSnapshot } from '@/features/canvas/hooks/useFreezoneImageModels';
+import {
+  getFreezoneImageModelsSnapshot,
+  waitForFreezoneImageModels,
+} from '@/features/canvas/hooks/useFreezoneImageModels';
 import {
   DEFAULT_SHARED_MODEL_ID,
   DEFAULT_UPSCALE_MODEL_ID,
@@ -927,10 +930,20 @@ export const SelectedNodeOverlay = memo(() => {
 
       void (async () => {
         try {
+          const imageCatalog = await waitForFreezoneImageModels(project);
+          if (imageCatalog.isFallback) {
+            throw new Error('图片模型目录加载失败，请检查连接后重试');
+          }
+          const selectedModel = imageCatalog.models[0];
+          if (!selectedModel) {
+            throw new Error('图片模型目录没有可用模型，无法提交宫格模板');
+          }
           const ref = await submitFreezoneTemplateEdit(project, {
             sourceUrl: imageSource.split('?')[0],
             mode: runAction.mode,
             prompt: label,
+            model: selectedModel.apiModel,
+            ...(selectedModel.catalogId ? { catalogId: selectedModel.catalogId } : {}),
           });
           useCanvasStore.getState().updateNodeData(nextNodeId, generationTaskDescriptor(ref));
           const completed = await awaitTaskCompletion(ref.task_key, project);

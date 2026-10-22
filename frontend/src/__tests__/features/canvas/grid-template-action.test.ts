@@ -12,6 +12,7 @@ const submitFreezoneTemplateEdit = vi.hoisted(() => vi.fn());
 const fetchFreezoneJobResult = vi.hoisted(() => vi.fn());
 const awaitTaskCompletion = vi.hoisted(() => vi.fn());
 const readUrl = vi.hoisted(() => vi.fn());
+const waitForFreezoneImageModels = vi.hoisted(() => vi.fn());
 
 vi.mock('@/api/ops', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -26,6 +27,9 @@ vi.mock('@/lib/url-params', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   readUrl,
 }));
+vi.mock('@/features/canvas/hooks/useFreezoneImageModels', () => ({
+  waitForFreezoneImageModels,
+}));
 
 import {
   runAssetBoardImageOp,
@@ -33,6 +37,13 @@ import {
 } from '@/features/canvas/application/assetBoardImageOps';
 
 const JOB_REF = { task_key: 'tk-1', task_type: 'freezone_template_edit', job_id: 'job-1' };
+const CATALOG_MODEL = {
+  catalogId: 'catalog-lingshan',
+  id: 'LingShan-G2',
+  providerId: 'newapi' as const,
+  apiModel: 'LingShan-G2',
+  label: 'LingShan-G2',
+};
 
 function seedSourceNode() {
   const nodes: CanvasNode[] = [
@@ -61,6 +72,12 @@ describe('工作流 · 宫格功能（点功能建节点 → ↑ 才提交）', 
     submitFreezoneTemplateEdit.mockReset();
     fetchFreezoneJobResult.mockReset();
     awaitTaskCompletion.mockReset();
+    waitForFreezoneImageModels.mockResolvedValue({
+      models: [CATALOG_MODEL],
+      isLoading: false,
+      isFallback: false,
+      error: null,
+    });
     seedSourceNode();
   });
 
@@ -96,6 +113,8 @@ describe('工作流 · 宫格功能（点功能建节点 → ↑ 才提交）', 
       mode: 'scene_setting_sheet',
       // 提示词留空 → 用功能名兜底。
       prompt: '场景设定图',
+      model: CATALOG_MODEL.apiModel,
+      catalogId: CATALOG_MODEL.catalogId,
     });
     expect(awaitTaskCompletion).toHaveBeenCalledWith('tk-1', 'proj-1');
     // output_url 已有 → 不再兜底查 job result。
@@ -110,6 +129,38 @@ describe('工作流 · 宫格功能（点功能建节点 → ↑ 才提交）', 
     });
     // 不再额外建结果节点：源图 + 功能节点，就两个。
     expect(state.nodes).toHaveLength(2);
+  });
+
+  it('图片目录为空时不回退到过期默认模型提交', async () => {
+    waitForFreezoneImageModels.mockResolvedValue({
+      models: [],
+      isLoading: false,
+      isFallback: false,
+      error: null,
+    });
+
+    const nextNodeId = spawnAssetBoardImageOpNode('img-1', '/static/a.png', 'plotFourGrid');
+    await runAssetBoardImageOp(nextNodeId as string);
+
+    expect(submitFreezoneTemplateEdit).not.toHaveBeenCalled();
+    expect(useCanvasStore.getState().nodes.find((node) => node.id === nextNodeId)?.data)
+      .toMatchObject({ generationError: '图片模型目录没有可用模型，无法提交宫格模板' });
+  });
+
+  it('图片目录加载失败时不把兜底模型当成当前目录模型提交', async () => {
+    waitForFreezoneImageModels.mockResolvedValue({
+      models: [{ ...CATALOG_MODEL, id: 'newapi_gpt_image2', apiModel: 'newapi_gpt_image2' }],
+      isLoading: false,
+      isFallback: true,
+      error: new Error('catalog unavailable'),
+    });
+
+    const nextNodeId = spawnAssetBoardImageOpNode('img-1', '/static/a.png', 'plotFourGrid');
+    await runAssetBoardImageOp(nextNodeId as string);
+
+    expect(submitFreezoneTemplateEdit).not.toHaveBeenCalled();
+    expect(useCanvasStore.getState().nodes.find((node) => node.id === nextNodeId)?.data)
+      .toMatchObject({ generationError: '图片模型目录加载失败，请检查连接后重试' });
   });
 
   it('工具条下拉挂的是「建功能节点」而不是确认浮条', () => {
