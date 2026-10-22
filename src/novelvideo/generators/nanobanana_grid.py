@@ -21,6 +21,7 @@ import math
 import os
 import re
 import time
+from urllib.parse import quote
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -287,6 +288,177 @@ def _newapi_request_id_from_headers(headers: Any) -> str:
 NEWAPI_IMAGE_HTTP_TIMEOUT_SECONDS = 1800.0
 
 
+async def _call_gemini_image_api(
+    *,
+    api_key: str,
+    model: str,
+    prompt: str,
+    reference_images: list[bytes | tuple[bytes, str] | tuple[str, bytes, str]] | None = None,
+    image_config: dict | None = None,
+    base_url: str | None = None,
+) -> tuple[bytes | None, str, str]:
+    """Call Gemini's native generateContent image contract once."""
+    import httpx
+
+    if not api_key:
+        return None, "", "Gemini API key is missing"
+    image_config = image_config or {}
+    image_size = normalize_image_size(
+        str(image_config.get("image_size") or "1K"), "newapi"
+    )
+    quality = str(image_config.get("quality") or "").strip()
+    parts: list[dict[str, object]] = [{"text": prompt}]
+    for image_ref in reference_images or []:
+        mime_type = "image/png"
+        image_data = _reference_image_bytes(image_ref)
+        if isinstance(image_ref, tuple) and len(image_ref) == 3:
+            mime_type = str(image_ref[2] or mime_type)
+        elif isinstance(image_ref, tuple) and len(image_ref) == 2:
+            declared_type = str(image_ref[1] or "").strip().lower()
+            if declared_type.startswith("image/"):
+                mime_type = declared_type
+            else:
+                mime_type = {
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".webp": "image/webp",
+                }.get(Path(declared_type).suffix.lower(), mime_type)
+        parts.append(
+            {
+                "inlineData": {
+                    "mimeType": mime_type,
+                    "data": base64.b64encode(image_data).decode("ascii"),
+                }
+            }
+        )
+    payload = {
+        "contents": [{"role": "user", "parts": parts}],
+        "generationConfig": {
+            "responseModalities": ["TEXT", "IMAGE"],
+            "imageConfig": {
+                "imageSize": str(image_config.get("image_size") or "1K"),
+                "aspectRatio": str(image_config.get("aspect_ratio") or "1:1"),
+            },
+        },
+    }
+    endpoint = (base_url or "").rstrip("/")
+    model_path = str(model or "").removeprefix("models/").strip()
+    url = f"{endpoint}/models/{quote(model_path, safe='')}:generateContent"
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    }
+    reservation_id = ""
+
+    async def _refund(source: str, error: str, *, request_id: str = "") -> None:
+        try:
+            await get_usage_meter().refund_model_call_credit_reservation(
+                reservation_id,
+                metadata={"source": source, "error": error[:200], "request_id": request_id},
+            )
+        except Exception:
+            pass
+
+    async def _confirm(*, request_id: str = "", response_id: str = "") -> None:
+        try:
+            if not reservation_id:
+                await get_usage_meter().mark_current_paid_execution_attempt(
+                    status="completed",
+                    provider_request_id=request_id,
+                    provider_response_id=response_id,
+                )
+                return
+            await get_usage_meter().bump_model_call(
+                user_id=None,
+                model=model,
+                provider_request_id=request_id,
+                credit_reservation_id=reservation_id,
+                metadata={"response_id": response_id} if response_id else None,
+            )
+        except Exception:
+            pass
+
+    try:
+        reservation_id = await get_usage_meter().reserve_current_model_call_credit(
+            model=model,
+            billing_kind="image",
+            billing_params=_image_credit_billing_params(
+                image_size=image_size,
+                quality=quality,
+            ),
+            metadata={"source": "sub2api_gemini_image_api"},
+        )
+        await update_current_model_call_log(
+            request_payload={
+                "model": model,
+                "reference_image_count": len(reference_images or []),
+                "generation_config": payload["generationConfig"],
+                "prompt_chars": len(prompt or ""),
+            }
+        )
+        async with httpx.AsyncClient(
+            timeout=NEWAPI_IMAGE_HTTP_TIMEOUT_SECONDS,
+            follow_redirects=True,
+        ) as client:
+            response = await client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        request_id = _newapi_request_id_from_headers(response.headers)
+        await _mark_paid_image_attempt_accepted(provider_request_id=request_id)
+        result = response.json()
+        await update_current_model_call_log(response_payload={"keys": sorted(result.keys())})
+        response_id = str(result.get("responseId") or result.get("response_id") or "")
+        text_parts: list[str] = []
+        for candidate in result.get("candidates") or []:
+            content = candidate.get("content") if isinstance(candidate, dict) else None
+            for part in (content or {}).get("parts") or []:
+                if not isinstance(part, dict):
+                    continue
+                text = part.get("text")
+                if isinstance(text, str) and text:
+                    text_parts.append(text)
+                inline = part.get("inlineData") or part.get("inline_data")
+                if isinstance(inline, dict) and inline.get("data"):
+                    image_bytes = base64.b64decode(inline["data"])
+                    await _confirm(request_id=request_id, response_id=response_id)
+                    return image_bytes, " ".join(text_parts), ""
+        await _refund("sub2api_gemini_image_api", "missing_image_payload", request_id=request_id)
+        return None, " ".join(text_parts), "Gemini response contained no image data"
+    except httpx.HTTPStatusError as exc:
+        request_id = _newapi_request_id_from_headers(exc.response.headers)
+        await _refund(
+            "sub2api_gemini_image_api",
+            f"http_{exc.response.status_code}",
+            request_id=request_id,
+        )
+        return None, "", f"HTTP {exc.response.status_code}: {(exc.response.text or '')[:280]}"
+    except Exception as exc:
+        await _refund("sub2api_gemini_image_api", type(exc).__name__)
+        if is_fatal_billing_error(exc):
+            raise
+        return None, "", f"Gemini request failed: {type(exc).__name__}: {exc}"
+
+
+async def _call_gemini_grid_image_api(
+    *,
+    api_key: str,
+    model: str,
+    prompt: str,
+    reference_images: list[bytes | tuple[bytes, str] | tuple[str, bytes, str]] | None,
+    image_size: str,
+    aspect_ratio: str,
+    base_url: str,
+) -> tuple[bytes | None, str, str]:
+    """Grid-specific seam for native Gemini image generation."""
+    return await _call_gemini_image_api(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        reference_images=reference_images,
+        image_config={"image_size": image_size, "aspect_ratio": aspect_ratio},
+        base_url=base_url,
+    )
+
+
 def _newapi_safe_header_summary(headers: Any) -> dict[str, str]:
     if not headers:
         return {}
@@ -307,7 +479,11 @@ def _newapi_safe_request_context(
     payload: dict[str, object],
     prompt: str,
 ) -> dict[str, object]:
-    reference_images = payload.get("image") or payload.get("images")
+    reference_images = (
+        payload.get("image")
+        or payload.get("images")
+        or payload.get("input_reference")
+    )
     reference_image_count = len(reference_images) if isinstance(reference_images, list) else 0
     raw_metadata = payload.get("metadata")
     metadata = raw_metadata if isinstance(raw_metadata, dict) else {}
@@ -3011,6 +3187,7 @@ async def _generate_image(
                 "provider": "newapi",
                 "api_key": organization_egress.credential.api_key,
                 "base_url": organization_egress.credential.base_url,
+                "gateway_native_base_url": organization_egress.credential.base_url,
             }
         )
         effective_api_key = organization_egress.credential.api_key
@@ -3067,6 +3244,24 @@ async def _generate_image(
             raise ValueError(
                 f"OpenAI edit image generation failed: {error_detail or 'empty image'}"
             )
+    elif generator.provider == "newapi" and generator.newapi_protocol == "gemini":
+        ref_bytes = [(Path(path).read_bytes(), path) for path in ref_paths]
+        image_bytes, _text, error_detail = await _call_gemini_image_api(
+            api_key=generator.api_key,
+            model=generator.model,
+            prompt=prompt,
+            reference_images=ref_bytes or None,
+            image_config={
+                "aspect_ratio": aspect_ratio,
+                "image_size": image_size,
+                "quality": quality or generator.openai_image_quality,
+            },
+            base_url=generator.gateway_native_base_url or generator.base_url,
+        )
+        if not image_bytes:
+            raise ValueError(
+                f"Gemini image generation failed: {error_detail or 'empty image'}"
+            )
     elif generator.provider == "newapi":
         ref_bytes = [(Path(path).read_bytes(), path) for path in ref_paths]
         trace: dict[str, str] = {}
@@ -3082,6 +3277,17 @@ async def _generate_image(
                 "quality": quality or generator.openai_image_quality,
                 "request_schema": generator.newapi_request_schema,
                 "model_params": generator.newapi_model_params,
+                **(
+                    {
+                        "reference_image_format": (
+                            generator.newapi_request_schema.get("referenceFormat")
+                            or os.environ.get("NEWAPI_IMAGE_EDIT_REFERENCE_FORMAT")
+                            or generator.newapi_image_edit_reference_format
+                        )
+                    }
+                    if ref_bytes
+                    else {}
+                ),
             },
             base_url=generator.base_url,
             trace=trace,
@@ -3630,8 +3836,14 @@ async def _call_newapi_image_api(
         or os.environ.get("NEWAPI_IMAGE_EDIT_REFERENCE_FORMAT")
         or "dc-media"
     ).strip().lower()
-    if reference_images and reference_image_format not in {"dc-media", "images"}:
-        return None, "", "Unsupported reference image format; use dc-media or images"
+    supported_reference_formats = {
+        "dc-media",
+        "images",
+        "input_reference",
+        "multipart",
+    }
+    if reference_images and reference_image_format not in supported_reference_formats:
+        return None, "", "Unsupported reference image format"
     aspect_ratio = str(image_config.get("aspect_ratio") or "1:1").strip().lower() or "1:1"
     image_size = normalize_image_size(str(image_config.get("image_size") or "1K"), "newapi")
     from novelvideo.media_model_request_schema import normalize_media_resolution_value
@@ -3685,7 +3897,35 @@ async def _call_newapi_image_api(
     if input_fidelity and reference_images:
         payload["input_fidelity"] = input_fidelity
 
-    if reference_images:
+    multipart_files: list[tuple[str, tuple[str, bytes, str]]] = []
+    if reference_images and reference_image_format == "multipart":
+        for index, image_ref in enumerate(reference_images):
+            filename = f"reference_{index + 1}.png"
+            image_content_type = "image/png"
+            image_data = _reference_image_bytes(image_ref)
+            if isinstance(image_ref, tuple):
+                if len(image_ref) == 3:
+                    filename, image_data, image_content_type = (
+                        str(image_ref[0]),
+                        bytes(image_ref[1]),
+                        str(image_ref[2]),
+                    )
+                elif len(image_ref) == 2:
+                    image_data, image_content_type = (
+                        bytes(image_ref[0]),
+                        str(image_ref[1]),
+                    )
+                    extension = "jpg" if image_content_type == "image/jpeg" else "png"
+                    filename = f"reference_{index + 1}.{extension}"
+            multipart_field = "image[]" if len(reference_images) > 1 else "image"
+            multipart_files.append(
+                (multipart_field, (filename, image_data, image_content_type))
+            )
+        # Keep only a non-sensitive marker for usage logs; the actual files are
+        # passed separately to HTTPX and are never JSON-serialized.
+        payload["image"] = ["<multipart-image>"] * len(multipart_files)
+
+    if reference_images and reference_image_format != "multipart":
         try:
             relay_helper = _relay_reference_images_for_newapi
             if relay_helper is _ORIGINAL_RELAY_REFERENCE_IMAGES_FOR_NEWAPI:
@@ -3695,10 +3935,14 @@ async def _call_newapi_image_api(
                 )
             else:
                 relayed_images = await relay_helper(reference_images)
-            # DC-Media uses image: [URL]; Cockpit's JSON edit parser accepts
-            # images: [{image_url: URL}]. Select explicitly per deployment.
+            # Keep each JSON edit dialect explicit; never retry a billable edit
+            # with another shape after an upstream response.
             if reference_image_format == "images":
                 payload["images"] = [{"image_url": url} for url in relayed_images]
+            elif reference_image_format == "input_reference":
+                payload["input_reference"] = [
+                    {"image_url": url} for url in relayed_images
+                ]
             else:
                 payload["image"] = relayed_images
         except Exception as exc:
@@ -3723,6 +3967,7 @@ async def _call_newapi_image_api(
                 )
                 return None, "", f"media relay upload failed ({code})"
             return None, "", f"media relay upload failed: {exc}"
+    if reference_images:
         configured_endpoint = str(request_schema.get("endpoint") or "").strip()
         if configured_endpoint == "images/generations":
             request_path = "/images/generations"
@@ -3762,10 +4007,9 @@ async def _call_newapi_image_api(
         prompt=prompt,
     )
     logger.info("DramaClawAPI image request: %s", request_context)
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {api_key}"}
+    if not multipart_files:
+        headers["Content-Type"] = "application/json"
 
     async def _reserve(source: str) -> str:
         return await get_usage_meter().reserve_current_model_call_credit(
@@ -3851,10 +4095,50 @@ async def _call_newapi_image_api(
             follow_redirects=True,
         ) as client:
             logger.info("DramaClawAPI image POST start: %s", request_context.get("endpoint"))
+            request_kwargs: dict[str, object] = {
+                "headers": headers,
+            }
+            if multipart_files:
+                form_fields: dict[str, str] = {
+                    "model": str(model),
+                    "prompt": str(prompt),
+                    "n": str(payload.get("n") or 1),
+                }
+                if "width" in payload and "height" in payload:
+                    form_fields["size"] = f"{payload['width']}x{payload['height']}"
+                elif str(metadata.get("ratio") or "").lower() in {"auto", "adaptive"}:
+                    form_fields["size"] = "auto"
+                if payload.get("quality"):
+                    form_fields["quality"] = str(payload["quality"])
+                if payload.get("background"):
+                    form_fields["background"] = str(payload["background"])
+                if payload.get("response_format") and not str(model).lower().startswith(
+                    "gpt-image"
+                ):
+                    form_fields["response_format"] = "b64_json"
+                if payload.get("output_format"):
+                    form_fields["output_format"] = str(payload["output_format"])
+                multipart_control_fields = {
+                    "model", "prompt", "n", "size", "width", "height", "quality",
+                    "background", "response_format", "output_format", "watermark",
+                    "metadata", "image", "images", "input_reference", "input_fidelity",
+                }
+                for key, value in payload.items():
+                    if key in multipart_control_fields:
+                        continue
+                    serialized = (
+                        json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+                        if isinstance(value, (dict, list))
+                        else str(value)
+                    )
+                    form_fields[key] = serialized
+                request_kwargs["data"] = form_fields
+                request_kwargs["files"] = multipart_files
+            else:
+                request_kwargs["json"] = payload
             response = await client.post(
                 f"{endpoint}{request_path}",
-                headers=headers,
-                json=payload,
+                **request_kwargs,
             )
             logger.info(
                 "DramaClawAPI image POST response: status=%s bytes=%s",
@@ -3886,6 +4170,24 @@ async def _call_newapi_image_api(
 
             data = result.get("data") or []
             if not data:
+                response_error = result.get("error")
+                if isinstance(response_error, dict):
+                    error_message = str(response_error.get("message") or "").strip()
+                    error_type = str(response_error.get("type") or "").strip()
+                    detail = ": ".join(
+                        value for value in (error_message, error_type) if value
+                    )
+                    await _refund(
+                        reservation_id,
+                        "newapi_image_api",
+                        f"response_error:{detail or 'unknown'}",
+                        request_id=provider_request_id,
+                    )
+                    return None, "", (
+                        f"DramaClawAPI Images upstream error: {detail}"
+                        if detail
+                        else "DramaClawAPI Images upstream error"
+                    )
                 await _refund(
                     reservation_id,
                     "newapi_image_api",
@@ -4360,6 +4662,13 @@ class NanoBananaGridGenerator:
         self.default_image_size = config.get("image_size", "1K")
         self.newapi_request_schema = config.get("newapi_request_schema") or {}
         self.newapi_model_params = config.get("newapi_model_params") or {}
+        self.newapi_protocol = str(config.get("gateway_protocol") or "openai").strip().lower()
+        self.gateway_native_base_url = str(
+            config.get("gateway_native_base_url") or ""
+        ).strip().rstrip("/")
+        self.newapi_image_edit_reference_format = str(
+            config.get("image_edit_reference_format") or "dc-media"
+        ).strip().lower()
         self.mode = config.get("mode", "3x3")
         self.rows = config["rows"]
         self.cols = config["cols"]
@@ -5120,27 +5429,40 @@ class NanoBananaGridGenerator:
                     contents,
                     include_mime=True,
                 )
-                image_bytes, _text, newapi_error = await _call_newapi_image_api_with_egress(
-                    capability="image.generate.grid",
-                    api_key=self.api_key,
-                    model=self.model,
-                    prompt=prompt_text,
-                    reference_images=ref_bytes or None,
-                    image_config={
-                        "aspect_ratio": aspect_ratio,
-                        "image_size": effective_image_size,
-                        "quality": (
-                            self.openai_sketch_image_quality
-                            if sketch
-                            else self.openai_image_quality
-                        ),
-                    "request_schema": self.newapi_request_schema,
-                        "model_params": self.newapi_model_params,
-                    },
-                    base_url=self.base_url,
-                    delivery_path=output_path,
-                    delivery_state=(image_delivery_state := {}),
-                )
+                if self.newapi_protocol == "gemini":
+                    image_bytes, _text, newapi_error = await _call_gemini_grid_image_api(
+                        api_key=self.api_key,
+                        model=self.model,
+                        prompt=prompt_text,
+                        reference_images=ref_bytes or None,
+                        image_size=effective_image_size,
+                        aspect_ratio=aspect_ratio,
+                        base_url=self.gateway_native_base_url or self.base_url,
+                    )
+                    image_delivery_state = {}
+                else:
+                    image_bytes, _text, newapi_error = await _call_newapi_image_api_with_egress(
+                        capability="image.generate.grid",
+                        api_key=self.api_key,
+                        model=self.model,
+                        prompt=prompt_text,
+                        reference_images=ref_bytes or None,
+                        image_config={
+                            "aspect_ratio": aspect_ratio,
+                            "image_size": effective_image_size,
+                            "quality": (
+                                self.openai_sketch_image_quality
+                                if sketch
+                                else self.openai_image_quality
+                            ),
+                            "reference_image_format": self.newapi_image_edit_reference_format,
+                            "request_schema": self.newapi_request_schema,
+                            "model_params": self.newapi_model_params,
+                        },
+                        base_url=self.base_url,
+                        delivery_path=output_path,
+                        delivery_state=(image_delivery_state := {}),
+                    )
                 if not image_bytes:
                     message = "DramaClawAPI Images 未返回图像数据"
                     if newapi_error:

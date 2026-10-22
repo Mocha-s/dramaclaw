@@ -7669,6 +7669,18 @@
         "models": "Model match rules",
         "requestModel": "DramaClaw model pattern",
         "upstreamModel": "Upstream model",
+        "imageEditFormat": "Image edit format",
+        "imageEditFormats": {
+          "dc-media": "DramaClaw NewAPI JSON",
+          "images": "images[].image_url JSON",
+          "input_reference": "input_reference JSON",
+          "multipart": "Multipart image files"
+        },
+        "videoEndpoint": "Video task endpoint",
+        "videoEndpoints": {
+          "videos": "Modern /videos",
+          "legacy": "Legacy /video/generations"
+        },
         "modelsPlaceholder": "One per line, e.g. gpt-5 or gemini-embedding-*",
         "modelsHint": "Map DramaClaw request models (for example DC-freezone-text-writer-LLM) to the selected Sub2API upstream model. Request rules may end with *; exact matches win.",
         "modelSearch": "Filter models",

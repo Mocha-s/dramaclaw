@@ -895,6 +895,63 @@ def test_newapi_image_edit_supports_cockpit_reference_format(
     assert "https://relay.test" not in str(context)
 
 
+@pytest.mark.parametrize(
+    ("reference_format", "expected_key"),
+    [("input_reference", "input_reference"), ("images", "images")],
+)
+def test_newapi_image_edit_supports_json_reference_protocols(
+    monkeypatch, reference_format, expected_key
+):
+    import json
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append((request.url.path, request.headers.get("content-type"), json.loads(request.content)))
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+    monkeypatch.setattr(
+        nanobanana_grid,
+        "upload_image_bytes",
+        lambda data, **_kwargs: f"https://relay.test/{data.decode()}.png",
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2.5",
+            prompt="edit",
+            reference_images=[b"ref-a", b"ref-b"],
+            image_config={"reference_image_format": reference_format},
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert image_bytes == b"edited"
+    assert error == ""
+    assert len(posted) == 1
+    path, content_type, payload = posted[0]
+    assert path == "/v1/images/edits"
+    assert content_type == "application/json"
+    assert payload[expected_key] == [
+        {"image_url": "https://relay.test/ref-a.png"},
+        {"image_url": "https://relay.test/ref-b.png"},
+    ]
+
+
 def test_newapi_image_reference_request_uses_catalog_endpoint(monkeypatch):
     """A catalog can route reference-image requests through generations."""
     import json
@@ -948,6 +1005,328 @@ def test_newapi_image_reference_request_uses_catalog_endpoint(monkeypatch):
     assert posted[0][0] == "/v1/images/generations"
     assert posted[0][1]["images"] == [{"image_url": "https://relay.test/source.png"}]
     assert "image" not in posted[0][1]
+
+
+def test_newapi_image_edit_supports_multipart_image_files_without_relay(
+    monkeypatch,
+):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append((request.headers.get("content-type"), request.content))
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+    monkeypatch.setattr(
+        nanobanana_grid,
+        "upload_image_bytes",
+        lambda *_args, **_kwargs: pytest.fail("multipart must not relay uploads"),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2.5",
+            prompt="edit prompt",
+            reference_images=[
+                ("first.jpg", b"jpeg-bytes", "image/jpeg"),
+                ("second.png", b"png-bytes", "image/png"),
+            ],
+            image_config={
+                "reference_image_format": "multipart",
+                "quality": "medium",
+                "aspect_ratio": "3:4",
+                "image_size": "1K",
+            },
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert image_bytes == b"edited"
+    assert error == ""
+    assert len(posted) == 1
+    content_type, body = posted[0]
+    assert content_type.startswith("multipart/form-data; boundary=")
+    assert b'name="image[]"; filename="first.jpg"' in body
+    assert b'name="image[]"; filename="second.png"' in body
+    assert b'name="prompt"' in body and b"edit prompt" in body
+    assert b'name="model"' in body and b"gpt-image-2.5" in body
+    assert b'name="size"' in body and b"768x1024" in body
+    assert b'name="quality"' in body and b"medium" in body
+    assert b'name="n"' in body and b"\r\n\r\n1\r\n" in body
+    assert b'name="response_format"' not in body
+    assert b'name="metadata"' not in body
+    assert b'name="width"' not in body
+    assert b'name="height"' not in body
+    assert b'name="watermark"' not in body
+
+
+def test_newapi_image_edit_multipart_uses_singular_image_for_one_reference(monkeypatch):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append(request.content)
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2.5",
+            prompt="edit prompt",
+            reference_images=[("first.jpg", b"jpeg-bytes", "image/jpeg")],
+            image_config={
+                "aspect_ratio": "3:4",
+                "image_size": "1K",
+                "reference_image_format": "multipart",
+            },
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert image_bytes == b"edited"
+    assert error == ""
+    assert len(posted) == 1
+    assert b'name="image"; filename="first.jpg"' in posted[0]
+    assert b'name="image[]"' not in posted[0]
+
+
+def test_gemini_image_gateway_uses_native_generate_content_json(monkeypatch):
+    import json
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append((str(request.url), dict(request.headers), json.loads(request.content)))
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {"text": "done"},
+                                {
+                                    "inlineData": {
+                                        "mimeType": "image/png",
+                                        "data": base64.b64encode(b"gemini-image").decode(),
+                                    }
+                                },
+                            ]
+                        }
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, text, error = run_async(
+        nanobanana_grid._call_gemini_image_api(
+            api_key="gemini-key",
+            model="gemini-2.5-flash-image",
+            prompt="make a poster",
+            reference_images=[(b"reference", "/tmp/ref.png")],
+            image_config={"aspect_ratio": "3:4", "image_size": "2K"},
+            base_url="https://gemini.example/v1beta",
+        )
+    )
+
+    assert image_bytes == b"gemini-image"
+    assert text == "done"
+    assert error == ""
+    assert len(posted) == 1
+    url, headers, payload = posted[0]
+    assert url == (
+        "https://gemini.example/v1beta/models/"
+        "gemini-2.5-flash-image:generateContent"
+    )
+    assert headers["x-goog-api-key"] == "gemini-key"
+    assert payload["contents"][0]["parts"][0] == {"text": "make a poster"}
+    assert payload["contents"][0]["parts"][1]["inlineData"]["mimeType"] == "image/png"
+    assert payload["generationConfig"]["responseModalities"] == ["TEXT", "IMAGE"]
+    assert payload["generationConfig"]["imageConfig"] == {
+        "imageSize": "2K",
+        "aspectRatio": "3:4",
+    }
+
+
+def test_gemini_grid_generation_uses_native_generate_content(monkeypatch, tmp_path):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    real_client = httpx.AsyncClient
+    posted = []
+
+    def handle_request(request):
+        posted.append(request.url.path)
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "inlineData": {
+                                        "mimeType": "image/png",
+                                        "data": base64.b64encode(b"grid-image").decode(),
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+    generator = nanobanana_grid.NanoBananaGridGenerator(
+        api_key="gemini-key",
+        config={
+            "provider": "newapi",
+            "gateway_protocol": "gemini",
+            "gateway_native_base_url": "https://gemini.example/v1beta",
+            "api_key": "gemini-key",
+            "model": "gemini-2.5-flash-image",
+            "rows": 1,
+            "cols": 1,
+            "batch_size": 1,
+            "total_panels": 1,
+            "mode": "1x1",
+        },
+    )
+
+    result = run_async(
+        generator.generate_grid(
+            beats=[{"beat_number": 1, "visual_description": "a tree", "narration": ""}],
+            character_map={},
+            style="",
+                output_path=str(tmp_path / "gemini-grid.png"),
+                rows=1,
+                cols=1,
+                sketch=True,
+                beat_start_index=0,
+                total_episode_beats=1,
+                sketch_dir=str(tmp_path),
+                mode_key="1x1_2-3_sketch",
+            )
+    )
+
+    assert result.success is True
+    assert posted == ["/v1beta/models/gemini-2.5-flash-image:generateContent"]
+    assert (tmp_path / "gemini-grid.png").exists()
+
+
+def test_gemini_grid_request_helper_uses_native_protocol(monkeypatch):
+    from novelvideo.generators import nanobanana_grid
+
+    captured = {}
+
+    async def fake_native(**kwargs):
+        captured.update(kwargs)
+        return b"grid", "", ""
+
+    monkeypatch.setattr(nanobanana_grid, "_call_gemini_image_api", fake_native)
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_gemini_grid_image_api(
+            api_key="gemini-key",
+            model="gemini-2.5-flash-image",
+            prompt="grid prompt",
+            reference_images=[(b"ref", "/tmp/reference.jpg")],
+            image_size="2K",
+            aspect_ratio="3:4",
+            base_url="https://gemini.example/v1beta",
+        )
+    )
+
+    assert image_bytes == b"grid"
+    assert error == ""
+    assert captured["base_url"] == "https://gemini.example/v1beta"
+    assert captured["reference_images"] == [(b"ref", "/tmp/reference.jpg")]
+
+
+def test_newapi_image_gateway_surfaces_error_body_when_http_response_is_200(
+    monkeypatch,
+):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    real_client = httpx.AsyncClient
+
+    def handle_request(_request):
+        return httpx.Response(
+            200,
+            json={
+                "error": {
+                    "message": "No available channel for model gpt-image-2",
+                    "type": "new_api_error",
+                }
+            },
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2",
+            prompt="prompt",
+            base_url="https://gateway.example/v1",
+        )
+    )
+
+    assert image_bytes is None
+    assert "No available channel for model gpt-image-2" in error
+    assert "new_api_error" in error
 
 
 def test_newapi_image_edit_rejects_unknown_reference_format_before_upload(monkeypatch):

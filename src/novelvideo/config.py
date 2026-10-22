@@ -1378,6 +1378,12 @@ def _image_provider_config(
             "api_key": gateway.api_key,
             "model": gateway.model or selected_model,
             "base_url": gateway.base_url,
+            "gateway_source": gateway.source,
+            "gateway_protocol": gateway.protocol,
+            "gateway_native_base_url": gateway.native_base_url,
+            "image_edit_reference_format": gateway.image_edit_reference_format or (
+                "images" if gateway.source == "sub2api" else "dc-media"
+            ),
         }
 
     return {
@@ -1429,6 +1435,14 @@ def get_grid_generation_config(
         "api_key": provider_config["api_key"],
         "model": provider_config["model"],
         "base_url": provider_config.get("base_url", ""),
+        "gateway_source": provider_config.get("gateway_source", ""),
+        "gateway_protocol": provider_config.get("gateway_protocol", ""),
+        "gateway_native_base_url": provider_config.get(
+            "gateway_native_base_url", ""
+        ),
+        "image_edit_reference_format": provider_config.get(
+            "image_edit_reference_format", "dc-media"
+        ),
         "openai_image_quality": OPENAI_IMAGE_QUALITY,
         "openai_sketch_image_quality": OPENAI_SKETCH_IMAGE_QUALITY,
         "huimeng_image_quality": os.environ.get("HUIMENG_IMAGE_QUALITY", "medium"),

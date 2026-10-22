@@ -1037,6 +1037,183 @@ def test_sub2api_text_client_sends_mapped_upstream_model(monkeypatch, tmp_path):
     assert model == "gpt-5.2"
 
 
+def test_sub2api_media_mapping_preserves_protocol_metadata(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "media",
+                "name": "Media gateway",
+                "protocol": "openai",
+                "baseUrl": "https://media.example/v1",
+                "apiKey": "sk-media",
+                "capabilities": ["image", "video"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "gpt-image-2.5",
+                        "upstreamModel": "gpt-image-2.5",
+                        "imageEditFormat": "input_reference",
+                        "videoEndpoint": "video/generations",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    group = model_gateway_settings.get_sub2api_groups()[0]
+    assert group["modelMappings"][0]["imageEditFormat"] == "input_reference"
+    assert group["modelMappings"][0]["videoEndpoint"] == "video/generations"
+
+
+def test_sub2api_media_catalog_defaults_to_verified_protocols_and_sd17_limits(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "media",
+                "name": "Media gateway",
+                "protocol": "openai",
+                "baseUrl": "https://media.example/v1",
+                "apiKey": "sk-media",
+                "capabilities": ["image", "video"],
+                "modelMappings": [
+                    {"requestPattern": "gpt-image-2.5", "upstreamModel": "gpt-image-2.5"},
+                    {
+                        "requestPattern": "sd17-seedance-2.5-2",
+                        "upstreamModel": "sd17-seedance-2.5-2",
+                    },
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image = next(
+        item
+        for item in model_gateway_settings.get_sub2api_media_model_catalog("image")
+        if item["id"] == "gpt-image-2.5"
+    )
+    video = next(
+        item
+        for item in model_gateway_settings.get_sub2api_media_model_catalog("video")
+        if item["id"] == "sd17-seedance-2.5-2"
+    )
+
+    assert image["request"]["referenceFormat"] == "images"
+    assert video["request"]["endpoint"] == "videos"
+    assert video["referenceImageMax"] == 30
+    assert video["minDuration"] == 10
+    assert video["maxDuration"] == 30
+    assert video["resolutionOptions"] == ["720p"]
+
+
+def test_image_generation_config_uses_sub2api_protocol_but_keeps_newapi_default(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "image",
+                "name": "Image",
+                "protocol": "openai",
+                "baseUrl": "https://sub2api.example/v1",
+                "apiKey": "sk-image",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {"requestPattern": "gpt-image-2.5", "upstreamModel": "gpt-image-2.5"}
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    sub2api = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gpt-image-2.5"
+    )
+    assert sub2api["image_edit_reference_format"] == "images"
+
+    save_custom_newapi_gateway(
+        base_url="https://custom-newapi.example/v1",
+        api_key="sk-newapi",
+        activate=True,
+    )
+    newapi = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gpt-image-2.5"
+    )
+    assert newapi["image_edit_reference_format"] == "dc-media"
+
+
+def test_gemini_sub2api_gateway_uses_native_v1beta_protocol(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "gemini-image",
+                "name": "Gemini image",
+                "protocol": "gemini",
+                "baseUrl": "https://gemini.example/v1beta",
+                "apiKey": "gemini-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "gemini-2.5-flash-image",
+                        "upstreamModel": "gemini-2.5-flash-image",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    effective = get_effective_newapi_config(
+        capability="image", model="gemini-2.5-flash-image"
+    )
+    assert effective.protocol == "gemini"
+    assert effective.base_url == "https://gemini.example/v1"
+    assert effective.native_base_url == "https://gemini.example/v1beta"
+
+    image_config = config.get_grid_generation_config(
+        provider_override="newapi", model_override="gemini-2.5-flash-image"
+    )
+    assert image_config["gateway_protocol"] == "gemini"
+    assert image_config["gateway_native_base_url"] == "https://gemini.example/v1beta"
+
+
+def test_sub2api_effective_image_gateway_preserves_mapping_protocol_override(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "image",
+                "name": "Image",
+                "protocol": "openai",
+                "baseUrl": "https://image.example/v1",
+                "apiKey": "image-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "image-custom",
+                        "upstreamModel": "image-custom-upstream",
+                        "imageEditFormat": "multipart",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image_config = config.get_grid_generation_config(
+        provider_override="newapi", model_override="image-custom"
+    )
+    assert image_config["image_edit_reference_format"] == "multipart"
+
+
 def test_sub2api_unmatched_text_model_reports_missing_mapping(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     save_sub2api_groups(

@@ -333,8 +333,21 @@ def validate_media_request_schema(schema: object) -> dict[str, Any]:
     if not isinstance(schema, dict):
         raise MediaModelSchemaError("request schema must be an object")
     endpoint = str(schema.get("endpoint") or "").strip()
-    if endpoint not in {"images/generations", "video/generations", "audio/speech"}:
+    if endpoint not in {
+        "images/generations",
+        "video/generations",
+        "videos",
+        "audio/speech",
+    }:
         raise MediaModelSchemaError("unsupported NewAPI media endpoint")
+    reference_format = schema.get("referenceFormat")
+    if reference_format is not None and reference_format not in {
+        "dc-media",
+        "images",
+        "input_reference",
+        "multipart",
+    }:
+        raise MediaModelSchemaError("unsupported image reference format")
     parameters = schema.get("parameters") or []
     if not isinstance(parameters, list) or len(parameters) > 32:
         raise MediaModelSchemaError("parameters must be a list with at most 32 items")
@@ -435,7 +448,10 @@ def validate_media_model_catalog_config(
     expected_endpoint = (
         "images/generations" if media_type == "image" else "video/generations"
     )
-    if request_schema and request_schema.get("endpoint") != expected_endpoint:
+    allowed_endpoints = (
+        {expected_endpoint, "videos"} if media_type == "video" else {expected_endpoint}
+    )
+    if request_schema and request_schema.get("endpoint") not in allowed_endpoints:
         raise MediaModelSchemaError(
             f"{media_type} model request endpoint must be {expected_endpoint}"
         )

@@ -9536,10 +9536,11 @@ async def _resolve_catalog_request(
         return {}, {}, None
     try:
         full_schema = validate_media_request_schema(entry.get("request"))
-        expected_endpoint = (
-            "images/generations" if media_type == "image" else "video/generations"
+        expected_endpoint = "images/generations" if media_type == "image" else "video/generations"
+        allowed_endpoints = (
+            {expected_endpoint, "videos"} if media_type == "video" else {expected_endpoint}
         )
-        if full_schema and full_schema.get("endpoint") != expected_endpoint:
+        if full_schema and full_schema.get("endpoint") not in allowed_endpoints:
             raise MediaModelSchemaError(f"endpoint must be {expected_endpoint}")
         schema = media_request_schema_for_mode(full_schema, mode)
         active_keys = {

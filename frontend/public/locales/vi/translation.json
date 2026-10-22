@@ -7340,6 +7340,18 @@
         "models": "Quy tắc khớp model",
         "requestModel": "Mẫu model DramaClaw",
         "upstreamModel": "Model upstream",
+        "imageEditFormat": "Định dạng chỉnh sửa ảnh",
+        "imageEditFormats": {
+          "dc-media": "JSON DramaClaw NewAPI",
+          "images": "JSON images[].image_url",
+          "input_reference": "JSON input_reference",
+          "multipart": "Tệp ảnh multipart"
+        },
+        "videoEndpoint": "Endpoint tác vụ video",
+        "videoEndpoints": {
+          "videos": "Hiện đại /videos",
+          "legacy": "Cũ /video/generations"
+        },
         "modelsPlaceholder": "Mỗi dòng một mục, ví dụ: gpt-5 hoặc gemini-embedding-*",
         "modelsHint": "Ánh xạ model request của DramaClaw (ví dụ DC-freezone-text-writer-LLM) tới model upstream Sub2API đã chọn. Quy tắc có thể kết thúc bằng *; khớp chính xác được ưu tiên.",
         "modelSearch": "Lọc model",

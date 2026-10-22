@@ -14,8 +14,31 @@ DramaClaw CE 通过 NewAPI 兼容网关调用文本、视觉理解、Embedding�
 | 官方 | 直接使用 RelayClaw（虾驿）提供的模型 | 只需 DC Key |
 | 自定义 | 所有模型都通过自定义 NewAPI 配置 | 初始化 NewAPI、供应商渠道、业务模型、Embedding、媒体模型 |
 | 本地 + 官方混合 | 官方模型照常使用，同时新增本地 ComfyUI 视频模型，或用本地模型覆盖同名官方模型 | 官方 DC Key、本地 NewAPI、ComfyUI URL 和 Workflow |
+| Sub2API | 按能力通过独立配置的 OpenAI/Gemini 兼容账号组路由 | 每组的 Base URL、能力、模型映射和 API Key |
 
 配置完成后点击对应模式的启用按钮。更换模式、Key 或模型后，新任务会读取新配置；正在运行的任务不会中途切换。
+
+### Sub2API 图片和视频请求格式
+
+Sub2API 模型映射支持按模型选择协议。图片编辑默认使用已验证的 JSON
+格式 `images: [{"image_url": "..."}]`；只有上游模型文档明确要求时，才改用
+`input_reference` 或 multipart `image`。NewAPI/自定义/官方线路默认仍保留
+DramaClaw 项目现有的 `image: [url]` JSON 格式。
+
+视频模型默认走现代异步流程：`POST /videos`、`GET /videos/{id}`，必要时再从
+`GET /videos/{id}/content` 下载结果。若网关只支持旧接口，可在对应模型映射中
+选择 `/video/generations`。现代提交会带 `Idempotency-Key`；任务完成但没有直链时，
+DramaClaw 会使用认证信息下载 content 接口。上游报错后不会自动换格式重发，避免
+重复创建并重复计费。
+
+模型目录能力会限制参考素材、时长和分辨率。例如 `sd17-seedance-2.5-2` 最多 30 张
+参考图，时长 10–30 秒，分辨率为 720p。
+
+如果 Sub2API 账号组的协议选择为 **Gemini**，图片模型会使用 Gemini 原生的
+`POST /v1beta/models/{model}:generateContent`，不会走 OpenAI 兼容图片接口。
+提示词和参考图放在 `contents[].parts[]` 中，本地参考图编码为 `inlineData`，
+`generationConfig.imageConfig` 传递 `imageSize` 和 `aspectRatio`。Gemini 视频模型
+不会因此切换到这套图片接口。
 
 ## Agent 模型
 

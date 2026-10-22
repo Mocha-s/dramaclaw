@@ -92,6 +92,8 @@ import {
   type SavedProviderChannelConfig,
   type Sub2ApiCapability,
   type Sub2ApiAccountGroup,
+  type Sub2ApiImageEditFormat,
+  type Sub2ApiVideoEndpoint,
 } from "@/lib/queries/model-gateway";
 import {
   useSettingsStore,
@@ -746,6 +748,12 @@ function Sub2ApiGatewayPanel({
           modelMappings: group.modelMappings.map((mapping) => ({
             requestPattern: mapping.requestPattern.trim(),
             upstreamModel: mapping.upstreamModel.trim(),
+            ...(group.capabilities.includes("image")
+              ? { imageEditFormat: mapping.imageEditFormat ?? "images" }
+              : {}),
+            ...(group.capabilities.includes("video")
+              ? { videoEndpoint: mapping.videoEndpoint ?? "videos" }
+              : {}),
           })),
           ...(group.apiKey.trim() ? { apiKey: group.apiKey.trim() } : {}),
         })),
@@ -949,7 +957,15 @@ function Sub2ApiGroupCard({
                   onChange={(event) => onChange({
                     ...group,
                     modelMappings: event.target.checked
-                      ? [...group.modelMappings, { requestPattern: "", upstreamModel: model }]
+                      ? [
+                          ...group.modelMappings,
+                          {
+                            requestPattern: "",
+                            upstreamModel: model,
+                            imageEditFormat: "images",
+                            videoEndpoint: "videos",
+                          },
+                        ]
                       : group.modelMappings.filter((mapping) => mapping.upstreamModel !== model),
                   })}
                 />
@@ -960,24 +976,68 @@ function Sub2ApiGroupCard({
         ) : null}
         <div className="space-y-2" id={modelsId}>
           {group.modelMappings.map((mapping, index) => (
-            <div key={`${mapping.upstreamModel}-${index}`} className="grid grid-cols-2 gap-2">
-              <Input
-                aria-label={t("settings.modelConfig.sub2api.requestModel")}
-                value={mapping.requestPattern}
-                onChange={(event) => onChange({
-                  ...group,
-                  modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index ? { ...item, requestPattern: event.target.value } : item),
-                })}
-                placeholder="DC-codex-agent-LLM"
-              />
-              <Input
-                aria-label={t("settings.modelConfig.sub2api.upstreamModel")}
-                value={mapping.upstreamModel}
-                onChange={(event) => onChange({
-                  ...group,
-                  modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index ? { ...item, upstreamModel: event.target.value } : item),
-                })}
-              />
+            <div key={`${mapping.upstreamModel}-${index}`} className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  aria-label={t("settings.modelConfig.sub2api.requestModel")}
+                  value={mapping.requestPattern}
+                  onChange={(event) => onChange({
+                    ...group,
+                    modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index ? { ...item, requestPattern: event.target.value } : item),
+                  })}
+                  placeholder="DC-codex-agent-LLM"
+                />
+                <Input
+                  aria-label={t("settings.modelConfig.sub2api.upstreamModel")}
+                  value={mapping.upstreamModel}
+                  onChange={(event) => onChange({
+                    ...group,
+                    modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index ? { ...item, upstreamModel: event.target.value } : item),
+                  })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {group.capabilities.includes("image") ? (
+                  <label className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{t("settings.modelConfig.sub2api.imageEditFormat")}</span>
+                    <select
+                      aria-label={t("settings.modelConfig.sub2api.imageEditFormat")}
+                      className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm text-foreground"
+                      value={mapping.imageEditFormat ?? "images"}
+                      onChange={(event) => onChange({
+                        ...group,
+                        modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
+                          ? { ...item, imageEditFormat: event.target.value as Sub2ApiImageEditFormat }
+                          : item),
+                      })}
+                    >
+                      <option value="images">{t("settings.modelConfig.sub2api.imageEditFormats.images")}</option>
+                      <option value="input_reference">{t("settings.modelConfig.sub2api.imageEditFormats.input_reference")}</option>
+                      <option value="multipart">{t("settings.modelConfig.sub2api.imageEditFormats.multipart")}</option>
+                      <option value="dc-media">{t("settings.modelConfig.sub2api.imageEditFormats.dc-media")}</option>
+                    </select>
+                  </label>
+                ) : <span />}
+                {group.capabilities.includes("video") ? (
+                  <label className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{t("settings.modelConfig.sub2api.videoEndpoint")}</span>
+                    <select
+                      aria-label={t("settings.modelConfig.sub2api.videoEndpoint")}
+                      className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm text-foreground"
+                      value={mapping.videoEndpoint ?? "videos"}
+                      onChange={(event) => onChange({
+                        ...group,
+                        modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
+                          ? { ...item, videoEndpoint: event.target.value as Sub2ApiVideoEndpoint }
+                          : item),
+                      })}
+                    >
+                      <option value="videos">{t("settings.modelConfig.sub2api.videoEndpoints.videos")}</option>
+                      <option value="video/generations">{t("settings.modelConfig.sub2api.videoEndpoints.legacy")}</option>
+                    </select>
+                  </label>
+                ) : null}
+              </div>
             </div>
           ))}
         </div>

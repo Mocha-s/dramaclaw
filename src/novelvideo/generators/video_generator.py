@@ -1998,6 +1998,11 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         self.resolution = resolution or NEWAPI_VIDEO_RESOLUTION
         self.model_params = model_params or {}
         self.request_schema = request_schema or {}
+        self.video_endpoint = str(
+            self.request_schema.get("endpoint") or "video/generations"
+        ).strip().strip("/")
+        if self.video_endpoint not in {"videos", "video/generations"}:
+            self.video_endpoint = "video/generations"
         raw_generate_audio = (
             os.environ.get("NEWAPI_VIDEO_GENERATE_AUDIO", "").strip().lower()
         )
@@ -2123,6 +2128,56 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         from novelvideo.utils.media_download import download_to_path
 
         return await download_to_path(url, output_path)
+
+    async def _download_video_content(
+        self,
+        url: str,
+        output_path: str,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> VideoDeliveryReceipt:
+        """Stream an authenticated modern `/videos/{id}/content` response."""
+        import tempfile
+
+        destination = Path(output_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary_path = tempfile.mkstemp(
+            prefix=f".{destination.name}.", suffix=".part", dir=destination.parent
+        )
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with os.fdopen(fd, "wb") as stream:
+                async with aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=600)
+                ) as session:
+                    async with session.get(url, headers=headers or self.headers) as response:
+                        if response.status < 200 or response.status >= 300:
+                            raise VideoDeliveryError(
+                                f"VIDEO_DOWNLOAD_HTTP_{response.status}", retryable=True
+                            )
+                        async for chunk in response.content.iter_chunked(1024 * 1024):
+                            stream.write(chunk)
+                            digest.update(chunk)
+                            size += len(chunk)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary_path, destination)
+        except Exception as exc:
+            try:
+                os.unlink(temporary_path)
+            except FileNotFoundError:
+                pass
+            if isinstance(exc, VideoDeliveryError):
+                raise
+            if isinstance(exc, (aiohttp.ClientError, TimeoutError, OSError)):
+                raise VideoDeliveryError("VIDEO_DOWNLOAD_FAILED", retryable=True) from exc
+            raise
+        return VideoDeliveryReceipt(
+            method="download",
+            size=size,
+            sha256=digest.hexdigest(),
+        )
 
     @staticmethod
     def _archive_state(task: dict) -> tuple[str, bool] | None:
@@ -2629,6 +2684,51 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             payload["metadata"] = metadata
         else:
             payload.pop("metadata", None)
+
+    @staticmethod
+    def _modern_video_payload(payload: dict[str, object]) -> dict[str, object]:
+        """Serialize the internal media request to the modern `/videos` body."""
+        result = dict(payload)
+        metadata = result.pop("metadata", {})
+        metadata = dict(metadata) if isinstance(metadata, dict) else {}
+
+        images: list[str] = []
+        first_image = result.pop("image", None)
+        if isinstance(first_image, str) and first_image.strip():
+            images.append(first_image.strip())
+        for key in ("last_frame_image", "reference_images"):
+            value = metadata.pop(key, None)
+            values = value if isinstance(value, list) else [value]
+            images.extend(
+                str(item).strip()
+                for item in values
+                if isinstance(item, str) and item.strip()
+            )
+        videos = metadata.pop("reference_videos", [])
+        audios = metadata.pop("reference_audios", [])
+        if images:
+            result["images"] = images
+        if isinstance(videos, list) and videos:
+            result["videos"] = videos
+        if isinstance(audios, list) and audios:
+            result["audios"] = audios
+
+        resolution = metadata.pop("resolution", None)
+        if resolution:
+            result["resolution"] = resolution
+        ratio = metadata.pop("ratio", metadata.pop("aspect_ratio", None))
+        if ratio:
+            result["aspect_ratio"] = ratio
+        if "generate_audio" in metadata:
+            result["generate_audio"] = bool(metadata.pop("generate_audio"))
+
+        # Request-schema-defined model parameters and remaining documented
+        # per-model controls become top-level fields rather than legacy metadata.
+        for key, value in metadata.items():
+            result.setdefault(key, value)
+        for key in ("width", "height", "n", "response_format"):
+            result.pop(key, None)
+        return result
 
     @staticmethod
     def _task_response_data(task: dict) -> dict:
@@ -3502,6 +3602,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             )
             payload = enforce_newapi_video_duration_contract(payload)
             payload = self._apply_seedance_source_video_ratio(payload)
+            if self.video_endpoint == "videos":
+                payload = self._modern_video_payload(payload)
             reservation_id = await _reserve_video_model_call(
                 self.model,
                 source="newapi_video_generation",
@@ -3512,15 +3614,28 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                 request_payload=payload,
             )
             submit_attempted = True
+            is_modern_video_endpoint = self.video_endpoint == "videos"
+            submit_endpoint = (
+                "/videos" if is_modern_video_endpoint else "/video/generations"
+            )
+            submit_headers = dict(request_headers or self.headers)
+            if is_modern_video_endpoint:
+                submit_headers["Idempotency-Key"] = str(uuid.uuid4())
             if organization_request:
                 submitted = await self._post_json(
-                    f"{request_base_url}/video/generations",
+                    f"{request_base_url}{submit_endpoint}",
                     payload,
-                    headers=request_headers,
+                    headers=submit_headers,
+                )
+            elif is_modern_video_endpoint:
+                submitted = await self._post_json(
+                    f"{request_base_url}{submit_endpoint}",
+                    payload,
+                    headers=submit_headers,
                 )
             else:
                 submitted = await self._post_json(
-                    f"{request_base_url}/video/generations", payload
+                    f"{request_base_url}{submit_endpoint}", payload
                 )
             await update_current_model_call_log(
                 response_payload=submitted,
@@ -3600,13 +3715,23 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                         )
                     if running_authority_error is not None:
                         raise running_authority_error from None
+                    poll_path = (
+                        f"/videos/{task_id}"
+                        if is_modern_video_endpoint
+                        else f"/video/generations/{task_id}"
+                    )
                     polled = await self._get_json(
-                        f"{request_base_url}/video/generations/{task_id}",
+                        f"{request_base_url}{poll_path}",
                         headers=request_headers,
                     )
                 else:
+                    poll_path = (
+                        f"/videos/{task_id}"
+                        if is_modern_video_endpoint
+                        else f"/video/generations/{task_id}"
+                    )
                     polled = await self._get_json(
-                        f"{request_base_url}/video/generations/{task_id}"
+                        f"{request_base_url}{poll_path}"
                     )
                 task = self._task_response_data(polled)
                 status = str(task.get("status") or "").lower()
@@ -3699,30 +3824,33 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                     if archived_source is not None:
                         video_url = archived_source.url
                     if not video_url and archived_source is None:
-                        safe_missing_result_error = (
-                            "EGRESS_OPERATION_UNKNOWN"
-                            if organization_request
-                            else "No video url in DramaClawAPI result"
-                        )
-                        if organization_request:
-                            await self._mark_operation_unknown(
-                                operation_port,
-                                operation_claim,
-                                expected_version=operation_version,
-                            )
-                            operation_terminal = True
-                        update_request_status(
-                            task_id, "delivery_failed", safe_missing_result_error
-                        )
-                        return VideoGenResult(
-                            status=VideoGenStatus.FAILED,
-                            error=(
-                                safe_missing_result_error
+                        if is_modern_video_endpoint:
+                            video_url = f"{request_base_url}/videos/{task_id}/content"
+                        else:
+                            safe_missing_result_error = (
+                                "EGRESS_OPERATION_UNKNOWN"
                                 if organization_request
-                                else f"No video url in DramaClawAPI result: {task}"
-                            ),
-                            task_id=task_id,
-                        )
+                                else "No video url in DramaClawAPI result"
+                            )
+                            if organization_request:
+                                await self._mark_operation_unknown(
+                                    operation_port,
+                                    operation_claim,
+                                    expected_version=operation_version,
+                                )
+                                operation_terminal = True
+                            update_request_status(
+                                task_id, "delivery_failed", safe_missing_result_error
+                            )
+                            return VideoGenResult(
+                                status=VideoGenStatus.FAILED,
+                                error=(
+                                    safe_missing_result_error
+                                    if organization_request
+                                    else f"No video url in DramaClawAPI result: {task}"
+                                ),
+                                task_id=task_id,
+                            )
                     if organization_request:
                         running_authority_error = None
                         try:
@@ -3768,9 +3896,19 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                                     "视频生成完成，正在下载...",
                                 )
                             )
-                            delivery = await self._download_video(
-                                video_url, output_path
-                            )
+                            if (
+                                is_modern_video_endpoint
+                                and video_url.endswith(f"/videos/{task_id}/content")
+                            ):
+                                delivery = await self._download_video_content(
+                                    video_url,
+                                    output_path,
+                                    headers=request_headers,
+                                )
+                            else:
+                                delivery = await self._download_video(
+                                    video_url, output_path
+                                )
                     except VideoDeliveryError as exc:
                         last_delivery_error = exc.code
                         update_request_status(
