@@ -147,7 +147,7 @@ class IndexTTS2FalClient:
                 self.api_key = ""
                 self.endpoint = ""
             else:
-                gateway = get_effective_newapi_gateway_config()
+                gateway = get_effective_newapi_gateway_config(capability="audio")
                 self.api_key = api_key if api_key is not None else gateway.api_key
                 self.endpoint = endpoint or gateway.base_url
             self.model = model or INDEXTTS2_NEWAPI_MODEL

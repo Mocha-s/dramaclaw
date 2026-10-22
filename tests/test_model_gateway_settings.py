@@ -29,6 +29,12 @@ from novelvideo.model_gateway_settings import (
     MODE_CUSTOM,
     MODE_HYBRID,
     MODE_OFFICIAL,
+    MODE_SUB2API,
+    CAPABILITY_AUDIO,
+    CAPABILITY_EMBEDDING,
+    CAPABILITY_IMAGE,
+    CAPABILITY_TEXT,
+    CAPABILITY_VIDEO,
     build_newapi_database_status,
     build_model_gateway_status,
     get_effective_cognee_embedding_config,
@@ -42,6 +48,7 @@ from novelvideo.model_gateway_settings import (
     normalize_relay_base_url,
     save_official_newapi_key,
     save_custom_newapi_gateway,
+    save_sub2api_gateway,
     save_newapi_embedding_model_config,
     save_newapi_media_model_mappings,
     save_media_relay_config,
@@ -852,6 +859,108 @@ def test_model_gateway_status_keeps_official_section_when_custom_is_active(
     assert status["effective"]["baseUrl"] == "http://new-api:3000/v1"
     assert status["official"]["baseUrl"] == OFFICIAL_NEWAPI_BASE_URL
     assert status["official"]["source"] == "database"
+
+
+def test_sub2api_routes_save_masks_keys_and_enable_without_local_provisioner(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setenv("NEWAPI_PROVISIONER_ENABLED", "false")
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    client = TestClient(app)
+    capabilities = ("text", "embedding", "image", "video", "audio")
+    keys = {capability: f"sk-{capability}-secret" for capability in capabilities}
+
+    saved = client.post(
+        "/model-gateway/sub2api/config",
+        json={"baseUrl": "https://sub2api.example/v1", "keys": keys},
+    )
+
+    assert saved.status_code == 200
+    assert "sk-image-secret" not in saved.text
+    assert saved.json()["data"]["sub2api"]["keys"]["image"]["configured"] is True
+    enabled = client.post("/model-gateway/sub2api/enable")
+    assert enabled.status_code == 200
+    assert enabled.json()["data"]["mode"] == MODE_SUB2API
+
+
+def test_sub2api_rejects_endpoint_change_without_all_new_keys(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_gateway(
+        base_url="https://old-sub2api.example/v1",
+        keys={
+            capability: f"sk-{capability}-old"
+            for capability in ("text", "embedding", "image", "video", "audio")
+        },
+        activate=True,
+    )
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/sub2api/config",
+        json={"baseUrl": "https://new-sub2api.example/v1", "keys": {"text": "sk-new"}},
+    )
+
+    assert response.status_code == 400
+    assert "all capability API keys are required" in response.json()["detail"]
+    assert get_effective_newapi_config().base_url == "https://old-sub2api.example/v1"
+
+
+def test_sub2api_uses_a_distinct_key_for_each_capability(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_gateway(
+        base_url="https://sub2api.example/v1",
+        keys={
+            CAPABILITY_TEXT: "sk-text-secret",
+            CAPABILITY_EMBEDDING: "sk-embedding-secret",
+            CAPABILITY_IMAGE: "sk-image-secret",
+            CAPABILITY_VIDEO: "sk-video-secret",
+            CAPABILITY_AUDIO: "sk-audio-secret",
+        },
+        activate=True,
+    )
+
+    assert get_effective_newapi_config().mode == MODE_SUB2API
+    assert get_effective_newapi_config().api_key == "sk-text-secret"
+    assert get_effective_newapi_config(capability=CAPABILITY_IMAGE).api_key == "sk-image-secret"
+    assert get_effective_newapi_config(capability=CAPABILITY_VIDEO).api_key == "sk-video-secret"
+    assert get_effective_newapi_config(capability=CAPABILITY_AUDIO).api_key == "sk-audio-secret"
+
+
+def test_sub2api_missing_capability_key_fails_closed(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_gateway(
+        base_url="https://sub2api.example/v1",
+        keys={CAPABILITY_TEXT: "sk-text-secret"},
+        activate=True,
+    )
+
+    assert get_effective_newapi_config(capability=CAPABILITY_IMAGE).base_url == ""
+    assert get_effective_newapi_config(capability=CAPABILITY_IMAGE).api_key == ""
+
+
+def test_sub2api_status_masks_each_capability_key(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_gateway(
+        base_url="https://sub2api.example/v1",
+        keys={
+            CAPABILITY_TEXT: "sk-text-secret",
+            CAPABILITY_EMBEDDING: "sk-embedding-secret",
+            CAPABILITY_IMAGE: "sk-image-secret",
+            CAPABILITY_VIDEO: "sk-video-secret",
+            CAPABILITY_AUDIO: "sk-audio-secret",
+        },
+        activate=True,
+    )
+
+    status = build_model_gateway_status()
+
+    assert status["mode"] == MODE_SUB2API
+    assert status["sub2api"]["baseUrl"] == "https://sub2api.example/v1"
+    assert status["sub2api"]["keys"][CAPABILITY_IMAGE]["apiKeyPreview"] == "sk-i...cret"
+    assert "sk-image-secret" not in json.dumps(status)
 
 
 def test_model_gateway_official_database_key_overrides_env(monkeypatch, tmp_path):

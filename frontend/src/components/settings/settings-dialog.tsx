@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { confirmDialog } from "@/components/confirm-dialog-host";
@@ -63,10 +63,12 @@ import {
   useEnableOfficial,
   useEnableCustom,
   useEnableHybrid,
+  useEnableSub2Api,
   useEnableBrainClaw,
   useSaveAgentLlmConfig,
   useSaveOfficialConfig,
   useSaveBrainClawConfig,
+  useSaveSub2ApiConfig,
   useSetCustomLlmMode,
   useInitCustomNewApi,
   useSaveCustomChannel,
@@ -87,6 +89,7 @@ import {
   type SavedEmbeddingModelConfig,
   type SavedMediaModelConfig,
   type SavedProviderChannelConfig,
+  type Sub2ApiCapability,
 } from "@/lib/queries/model-gateway";
 import {
   useSettingsStore,
@@ -266,7 +269,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   );
 }
 
-const GATEWAY_MODES: GatewayMode[] = ["official", "custom", "hybrid"];
+const GATEWAY_MODES: GatewayMode[] = ["official", "custom", "hybrid", "sub2api"];
 
 const DEFAULT_CUSTOM_NEWAPI_URL = "http://127.0.0.1:3000";
 
@@ -352,6 +355,7 @@ function ModelConfigSection({ open }: { open: boolean }) {
   const enableOfficialMode = useEnableOfficial();
   const enableCustomMode = useEnableCustom();
   const enableHybridMode = useEnableHybrid();
+  const enableSub2Api = useEnableSub2Api();
   const modelGatewayMissing = config
     ? !config.effective.configured || !config.llmEffective.configured
     : false;
@@ -416,11 +420,14 @@ function ModelConfigSection({ open }: { open: boolean }) {
       ? Boolean(config?.official?.configured)
       : mode === "custom"
         ? Boolean(config?.custom?.configured)
-        : Boolean(config?.official?.configured && config?.custom?.configured);
+        : mode === "hybrid"
+          ? Boolean(config?.official?.configured && config?.custom?.configured)
+          : Boolean(config?.sub2api?.configured);
   const activatingMode =
     enableOfficialMode.isPending ||
     enableCustomMode.isPending ||
-    enableHybridMode.isPending;
+    enableHybridMode.isPending ||
+    enableSub2Api.isPending;
 
   const handleActivateMode = async () => {
     const mutation =
@@ -428,7 +435,9 @@ function ModelConfigSection({ open }: { open: boolean }) {
         ? enableOfficialMode
         : mode === "custom"
           ? enableCustomMode
-          : enableHybridMode;
+          : mode === "hybrid"
+            ? enableHybridMode
+            : enableSub2Api;
     try {
       const response = await mutation.mutateAsync();
       if (!response.ok) {
@@ -662,7 +671,122 @@ function ModelConfigSection({ open }: { open: boolean }) {
           ) : null}
         </>
       ) : null}
+      {mode === "sub2api" ? (
+        <Sub2ApiGatewayPanel config={config} loading={loading} />
+      ) : null}
     </section>
+  );
+}
+
+const SUB2API_CAPABILITIES: readonly Sub2ApiCapability[] = [
+  "text",
+  "embedding",
+  "image",
+  "video",
+  "audio",
+];
+
+function Sub2ApiGatewayPanel({
+  config,
+  loading,
+}: {
+  config: ModelGatewayConfig | undefined;
+  loading: boolean;
+}) {
+  const { t } = useTranslation();
+  const saveConfig = useSaveSub2ApiConfig();
+  const saved = config?.sub2api;
+  const [baseUrl, setBaseUrl] = useState(saved?.baseUrl ?? "");
+  const [keys, setKeys] = useState<Partial<Record<Sub2ApiCapability, string>>>({});
+  const endpointChanged = Boolean(
+    saved?.baseUrl &&
+      baseUrl.trim().replace(/\/+$/, "") !== saved.baseUrl.replace(/\/+$/, ""),
+  );
+  const allKeysPresent = SUB2API_CAPABILITIES.every(
+    (capability) =>
+      Boolean(keys[capability]?.trim()) ||
+      (!endpointChanged && Boolean(saved?.keys[capability]?.configured)),
+  );
+  const canSave = Boolean(baseUrl.trim() && allKeysPresent);
+
+  useEffect(() => {
+    setBaseUrl(saved?.baseUrl ?? "");
+    setKeys({});
+  }, [saved?.baseUrl, saved?.configured]);
+
+  const handleSave = async () => {
+    try {
+      const response = await saveConfig.mutateAsync({
+        baseUrl: baseUrl.trim(),
+        keys,
+      });
+      if (!response.ok) {
+        toast.error(
+          getResponseErrorMessage(response, t("settings.modelConfig.requestFailed")),
+        );
+        return;
+      }
+      setKeys({});
+      toast.success(t("settings.modelConfig.sub2api.saved"));
+    } catch (error) {
+      toast.error(
+        await getRequestErrorMessage(error, t("settings.modelConfig.requestFailed")),
+      );
+    }
+  };
+
+  return (
+    <div className="mt-4 space-y-3">
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {t("settings.modelConfig.sub2api.description")}
+      </p>
+      <div className="space-y-3 rounded-md border border-border/70 p-3">
+        <FieldRow
+          label={t("settings.modelConfig.sub2api.baseUrl")}
+          name="sub2api-base-url"
+          value={baseUrl}
+          onChange={setBaseUrl}
+          placeholder="https://sub2api.example/v1"
+        />
+        <div className="space-y-2.5 border-t border-border/70 pt-3">
+          {SUB2API_CAPABILITIES.map((capability) => (
+            <FieldRow
+              key={capability}
+              secret
+              name={`sub2api-${capability}-key`}
+              label={t(`settings.modelConfig.sub2api.capabilities.${capability}`)}
+              value={keys[capability] ?? ""}
+              onChange={(value) =>
+                setKeys((current) => ({ ...current, [capability]: value }))
+              }
+              savedPreview={saved?.keys[capability]?.apiKeyPreview}
+              placeholder={t("settings.modelConfig.sub2api.keyPlaceholder")}
+            />
+          ))}
+        </div>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          {t("settings.modelConfig.sub2api.keyHint")}
+        </p>
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleSave}
+            disabled={loading || saveConfig.isPending || !canSave}
+            title={
+              canSave
+                ? t("settings.modelConfig.sub2api.save")
+                : t("settings.modelConfig.sub2api.missingFields")
+            }
+          >
+            {saveConfig.isPending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : null}
+            {t("settings.modelConfig.sub2api.save")}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -6343,6 +6467,7 @@ function FieldRow({
   savedPreview?: string;
 }) {
   const { t } = useTranslation();
+  const inputId = useId();
   const [revealed, setRevealed] = useState(false);
   useEffect(() => {
     if (!value) setRevealed(false);
@@ -6350,11 +6475,12 @@ function FieldRow({
   const hasSavedSecret = Boolean(savedPreview && !value);
   return (
     <div className="grid grid-cols-[120px_1fr] items-center gap-3">
-      <Label className="justify-start text-[11px] font-normal tracking-wide text-muted-foreground uppercase">
+      <Label htmlFor={inputId} className="justify-start text-[11px] font-normal tracking-wide text-muted-foreground uppercase">
         {label}
       </Label>
       <div className="relative">
         <Input
+          id={inputId}
           name={name}
           autoComplete={autoComplete ?? (secret ? "new-password" : undefined)}
           type={secret && !revealed ? "password" : "text"}

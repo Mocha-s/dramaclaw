@@ -36,7 +36,20 @@ from novelvideo.sqlite_pragmas import configure_sqlite_connection
 MODE_OFFICIAL = "official"
 MODE_CUSTOM = "custom"
 MODE_HYBRID = "hybrid"
-VALID_MODES = {MODE_OFFICIAL, MODE_CUSTOM, MODE_HYBRID}
+MODE_SUB2API = "sub2api"
+VALID_MODES = {MODE_OFFICIAL, MODE_CUSTOM, MODE_HYBRID, MODE_SUB2API}
+CAPABILITY_TEXT = "text"
+CAPABILITY_EMBEDDING = "embedding"
+CAPABILITY_IMAGE = "image"
+CAPABILITY_VIDEO = "video"
+CAPABILITY_AUDIO = "audio"
+SUB2API_CAPABILITIES = (
+    CAPABILITY_TEXT,
+    CAPABILITY_EMBEDDING,
+    CAPABILITY_IMAGE,
+    CAPABILITY_VIDEO,
+    CAPABILITY_AUDIO,
+)
 CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW = "relayclaw_brainclaw"
 CUSTOM_LLM_MODE_ADVANCED = "advanced"
 VALID_CUSTOM_LLM_MODES = {
@@ -131,6 +144,13 @@ def normalize_api_key(value: str | None) -> str:
 def normalize_gateway_mode(value: str | None) -> str:
     mode = str(value or "").strip().lower()
     return mode if mode in VALID_MODES else MODE_OFFICIAL
+
+
+def normalize_capability(value: str | None) -> str:
+    capability = str(value or CAPABILITY_TEXT).strip().lower()
+    if capability not in SUB2API_CAPABILITIES:
+        raise ValueError(f"unsupported model capability: {capability}")
+    return capability
 
 
 def normalize_custom_llm_mode(value: str | None) -> str:
@@ -323,6 +343,25 @@ def save_custom_newapi_gateway(
     }
     if activate:
         values["model_gateway_mode"] = MODE_CUSTOM
+    _write_many(values)
+
+
+def save_sub2api_gateway(
+    *,
+    base_url: str,
+    keys: dict[str, str],
+    activate: bool = False,
+) -> None:
+    normalized_keys = {
+        f"sub2api_api_key_{capability}": normalize_api_key(keys.get(capability, ""))
+        for capability in SUB2API_CAPABILITIES
+    }
+    values = {
+        "sub2api_base_url": normalize_relay_base_url(base_url),
+        **normalized_keys,
+    }
+    if activate:
+        values["model_gateway_mode"] = MODE_SUB2API
     _write_many(values)
 
 
@@ -1057,6 +1096,7 @@ def get_effective_newapi_config(
     explicit_config: EffectiveNewApiConfig | None = None,
     official_base_url: str | None = None,
     official_api_key: str | None = None,
+    capability: str = CAPABILITY_TEXT,
 ) -> EffectiveNewApiConfig:
     if explicit_config is not None:
         if type(explicit_config) is not EffectiveNewApiConfig:
@@ -1078,12 +1118,17 @@ def get_effective_newapi_config(
             ),
         )
 
+    capability = normalize_capability(capability)
     settings = get_model_gateway_settings()
     mode = normalize_gateway_mode(settings.get("model_gateway_mode"))
-    return get_ce_newapi_config_for_mode(mode)
+    return get_ce_newapi_config_for_mode(mode, capability=capability)
 
 
-def get_ce_newapi_config_for_mode(mode: str) -> EffectiveNewApiConfig:
+def get_ce_newapi_config_for_mode(
+    mode: str,
+    *,
+    capability: str = CAPABILITY_TEXT,
+) -> EffectiveNewApiConfig:
     """Return CE credentials for one gateway without changing the active mode.
 
     Embedding projects can remain bound to the gateway that created their vector
@@ -1095,6 +1140,25 @@ def get_ce_newapi_config_for_mode(mode: str) -> EffectiveNewApiConfig:
 
     settings = get_model_gateway_settings()
     mode = normalize_gateway_mode(mode)
+    capability = normalize_capability(capability)
+    if mode == MODE_SUB2API:
+        base_url = normalize_relay_base_url(settings.get("sub2api_base_url", ""))
+        api_key = normalize_api_key(
+            settings.get(f"sub2api_api_key_{capability}", "")
+        )
+        if not base_url or not api_key:
+            return EffectiveNewApiConfig(
+                mode=MODE_SUB2API,
+                source="sub2api",
+                base_url="",
+                api_key="",
+            )
+        return EffectiveNewApiConfig(
+            mode=MODE_SUB2API,
+            source="sub2api",
+            base_url=base_url,
+            api_key=api_key,
+        )
     if mode == MODE_CUSTOM:
         return EffectiveNewApiConfig(
             mode=MODE_CUSTOM,
@@ -1152,6 +1216,19 @@ def get_effective_llm_config() -> EffectiveLlmConfig:
             api_key=normalize_api_key(settings.get("official_newapi_api_key", "")),
             model="brainclaw",
             is_brainclaw=True,
+        )
+    if gateway_mode == MODE_SUB2API:
+        gateway = get_ce_newapi_config_for_mode(
+            MODE_SUB2API,
+            capability=CAPABILITY_TEXT,
+        )
+        return EffectiveLlmConfig(
+            mode=MODE_SUB2API,
+            source=MODE_SUB2API,
+            base_url=gateway.base_url,
+            api_key=gateway.api_key,
+            model="",
+            is_brainclaw=False,
         )
     if custom_llm_mode == CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW:
         brainclaw_base_url = normalize_relay_base_url(
@@ -1436,6 +1513,19 @@ def build_model_gateway_status(
         if uses_ce_settings
         else ""
     )
+    sub2api_base_url = (
+        normalize_relay_base_url(settings.get("sub2api_base_url", ""))
+        if uses_ce_settings
+        else ""
+    )
+    sub2api_keys = {
+        capability: (
+            normalize_api_key(settings.get(f"sub2api_api_key_{capability}", ""))
+            if uses_ce_settings
+            else ""
+        )
+        for capability in SUB2API_CAPABILITIES
+    }
     effective = get_effective_newapi_config(
         official_base_url=official_base_url,
         official_api_key=official_api_key,
@@ -1515,6 +1605,20 @@ def build_model_gateway_status(
             "adminBaseUrl": settings.get("custom_newapi_admin_base_url", ""),
             "tokenName": settings.get("custom_newapi_token_name", ""),
             "tokenId": settings.get("custom_newapi_token_id", ""),
+        },
+        "sub2api": {
+            "baseUrl": sub2api_base_url,
+            "keys": {
+                capability: {
+                    "apiKeyPreview": mask_secret(api_key),
+                    "configured": bool(sub2api_base_url and api_key),
+                }
+                for capability, api_key in sub2api_keys.items()
+            },
+            "configured": bool(
+                sub2api_base_url
+                and all(sub2api_keys[capability] for capability in SUB2API_CAPABILITIES)
+            ),
         },
     }
 

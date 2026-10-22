@@ -790,7 +790,7 @@ def _resolve_newapi_credentials() -> tuple[str, str]:
     from novelvideo.config import get_newapi_runtime_credentials
 
     if os.environ.get("ST_ORG_EGRESS_MODE") != "1":
-        return get_newapi_runtime_credentials()
+        return get_newapi_runtime_credentials(capability="image")
 
     org_key = (os.environ.get("ST_ORG_GATEWAY_API_KEY") or "").strip()
     org_base_url = (os.environ.get("ST_ORG_GATEWAY_BASE_URL") or "").strip()
@@ -799,6 +799,7 @@ def _resolve_newapi_credentials() -> tuple[str, str]:
     return get_newapi_runtime_credentials(
         api_key_override=org_key,
         base_url_override=org_base_url,
+        capability="image",
     )
 
 

@@ -7267,7 +7267,8 @@
       "modes": {
         "official": "Chính thức",
         "custom": "Tuỳ chỉnh",
-        "hybrid": "Kết hợp cục bộ + chính thức"
+        "hybrid": "Kết hợp cục bộ + chính thức",
+        "sub2api": "Sub2API"
       },
       "fields": {
         "baseUrl": "URL New API",
@@ -7325,6 +7326,22 @@
         "setupPasswordIncomplete": "Hãy nhập cả mật khẩu thiết lập lẫn phần xác nhận.",
         "setupPasswordTooShort": "Mật khẩu thiết lập phải dài ít nhất 8 ký tự.",
         "setupPasswordMismatch": "Hai lần nhập mật khẩu thiết lập không khớp nhau."
+      },
+      "sub2api": {
+        "description": "Định tuyến mọi năng lực model qua gateway Sub2API bên ngoài. Mỗi nhóm năng lực dùng một API Key riêng; Sub2API xử lý model upstream và chuyển đổi giao thức.",
+        "baseUrl": "URL Sub2API",
+        "keyPlaceholder": "Nhập API Key cho nhóm năng lực này",
+        "keyHint": "Văn bản, embedding, ảnh, video và âm thanh dùng các key riêng. Để trống để giữ key đã lưu.",
+        "save": "Lưu cấu hình Sub2API",
+        "saved": "Đã lưu cấu hình Sub2API. Hãy dùng nút phía trên để bật.",
+        "missingFields": "Hãy nhập URL và đủ năm API Key cho các nhóm năng lực.",
+        "capabilities": {
+          "text": "Văn bản / Thị giác",
+          "embedding": "Embedding",
+          "image": "Ảnh",
+          "video": "Video",
+          "audio": "Âm thanh"
+        }
       },
       "quick": {
         "title": "Thiết lập khuyến nghị",

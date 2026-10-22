@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import type { ErrorResponse, OkResponse } from "@/types/api";
 
-export type GatewayMode = "official" | "custom" | "hybrid";
+export type GatewayMode = "official" | "custom" | "hybrid" | "sub2api";
 export type CustomLlmMode = "relayclaw_brainclaw" | "advanced";
 export type AgentLlmMode = "inherit" | "third_party";
 
@@ -30,6 +30,24 @@ export interface CustomGatewayConfig extends GatewayEndpointPreview {
   adminBaseUrl: string;
   tokenName: string;
   tokenId: string;
+}
+
+export type Sub2ApiCapability =
+  | "text"
+  | "embedding"
+  | "image"
+  | "video"
+  | "audio";
+
+export interface Sub2ApiCapabilityConfig {
+  apiKeyPreview: string;
+  configured: boolean;
+}
+
+export interface Sub2ApiGatewayConfig {
+  baseUrl: string;
+  configured: boolean;
+  keys: Record<Sub2ApiCapability, Sub2ApiCapabilityConfig>;
 }
 
 export interface EffectiveGatewayConfig {
@@ -137,6 +155,7 @@ export interface ModelGatewayConfig {
   official: OfficialGatewayConfig;
   brainclaw?: GatewayEndpointPreview;
   custom: CustomGatewayConfig;
+  sub2api: Sub2ApiGatewayConfig;
   provisioner?: ModelGatewayProvisionerConfig;
   mediaRelay?: MediaRelayConfig;
 }
@@ -163,6 +182,11 @@ export interface SaveOfficialConfigInput {
 export interface SaveBrainClawConfigInput {
   newApiBaseUrl: string;
   newApiApiKey?: string;
+}
+
+export interface SaveSub2ApiConfigInput {
+  baseUrl: string;
+  keys: Partial<Record<Sub2ApiCapability, string>>;
 }
 
 export interface SaveAgentLlmConfigInput {
@@ -490,6 +514,35 @@ export function useEnableCustom() {
     mutationFn: () =>
       api
         .post("api/v1/model-gateway/custom/enable", { throwHttpErrors: false })
+        .json<OkResponse<ModelGatewayConfig> | ErrorResponse>(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.modelGateway() });
+    },
+  });
+}
+
+export function useSaveSub2ApiConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SaveSub2ApiConfigInput) =>
+      api
+        .post("api/v1/model-gateway/sub2api/config", {
+          json: input,
+          throwHttpErrors: false,
+        })
+        .json<OkResponse<ModelGatewayConfig> | ErrorResponse>(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.modelGateway() });
+    },
+  });
+}
+
+export function useEnableSub2Api() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api
+        .post("api/v1/model-gateway/sub2api/enable", { throwHttpErrors: false })
         .json<OkResponse<ModelGatewayConfig> | ErrorResponse>(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.modelGateway() });

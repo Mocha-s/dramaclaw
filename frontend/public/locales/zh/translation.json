@@ -7613,7 +7613,8 @@
       "modes": {
         "official": "官方",
         "custom": "自定义",
-        "hybrid": "本地 + 官方混合"
+        "hybrid": "本地 + 官方混合",
+        "sub2api": "Sub2API"
       },
       "fields": {
         "baseUrl": "New API 地址",
@@ -7654,6 +7655,22 @@
         "enabled": "已选用虾驿 BrainClaw，自定义模式下生效。",
         "missingEndpoint": "请填写 BrainClaw NewAPI 地址。",
         "advancedEnabled": "已切换为高级自定义 LLM。"
+      },
+      "sub2api": {
+        "description": "通过外部 Sub2API 统一调用所有模型能力。每个能力组使用独立 API Key，Sub2API 负责上游模型和接口适配。",
+        "baseUrl": "Sub2API 地址",
+        "keyPlaceholder": "输入该能力组的 API Key",
+        "keyHint": "文本、Embedding、图片、视频和音频分别使用独立 Key；留空表示沿用已保存的 Key。",
+        "save": "保存 Sub2API 配置",
+        "saved": "Sub2API 配置已保存。请点击上方按钮启用。",
+        "missingFields": "请填写地址和五个能力组的 API Key。",
+        "capabilities": {
+          "text": "文本 / 视觉",
+          "embedding": "Embedding",
+          "image": "图片",
+          "video": "视频",
+          "audio": "音频"
+        }
       },
       "agent": {
         "title": "Agent 模型",

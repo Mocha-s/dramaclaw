@@ -72,6 +72,7 @@ vi.mock("@/lib/queries/model-gateway", () => ({
   useEnableOfficial: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableCustom: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableHybrid: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useEnableSub2Api: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableBrainClaw: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveOfficialConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveAgentLlmConfig: () => ({
@@ -82,6 +83,7 @@ vi.mock("@/lib/queries/model-gateway", () => ({
     mutateAsync: modelGatewayMocks.saveBrainClaw,
     isPending: false,
   }),
+  useSaveSub2ApiConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSetCustomLlmMode: () => ({
     mutateAsync: modelGatewayMocks.setCustomLlmMode,
     isPending: false,

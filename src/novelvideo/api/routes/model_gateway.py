@@ -19,6 +19,8 @@ from novelvideo.model_gateway_settings import (
     CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
     MODE_OFFICIAL,
     MODE_HYBRID,
+    MODE_SUB2API,
+    SUB2API_CAPABILITIES,
     build_media_relay_status,
     build_model_gateway_status,
     get_model_gateway_settings,
@@ -33,6 +35,7 @@ from novelvideo.model_gateway_settings import (
     save_official_newapi_key,
     save_relayclaw_brainclaw_key,
     save_custom_newapi_gateway,
+    save_sub2api_gateway,
     save_newapi_database_config,
     save_newapi_embedding_model_config,
     save_newapi_media_model_mappings,
@@ -172,6 +175,16 @@ def require_ce_gateway_management() -> None:
     require_provisioner_enabled()
 
 
+def require_ce_gateway_settings_management() -> None:
+    """Allow external gateway settings when the local NewAPI provisioner is off."""
+    try:
+        require_legacy_local_service_operation()
+    except ServiceOperationExcluded as exc:
+        raise PermissionError(exc.code) from None
+    if not is_ce_effective():
+        raise ServiceControlEgressDenied()
+
+
 class OfficialGatewayBody(BaseModel):
     new_api_api_key: str = Field(alias="newApiApiKey")
 
@@ -183,6 +196,11 @@ class OfficialMediaCatalogPreferencesBody(BaseModel):
 class BrainClawGatewayBody(BaseModel):
     new_api_base_url: str | None = Field(default=None, alias="newApiBaseUrl")
     new_api_api_key: str | None = Field(default=None, alias="newApiApiKey")
+
+
+class Sub2ApiGatewayBody(BaseModel):
+    base_url: str = Field(alias="baseUrl")
+    keys: dict[str, str] = Field(default_factory=dict)
 
 
 class CustomLlmModeBody(BaseModel):
@@ -631,6 +649,82 @@ async def enable_custom_gateway() -> dict[str, Any]:
             status_code=400, detail="local NewAPI gateway is not configured"
         )
     set_model_gateway_mode(MODE_CUSTOM)
+    runtime = _refresh_runtime_after_gateway_write()
+    return {
+        "ok": True,
+        "data": build_model_gateway_status(
+            official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+            official_api_key=app_config.NEWAPI_API_KEY,
+        ),
+        "runtime": runtime,
+    }
+
+
+@router.post("/sub2api/config")
+async def save_sub2api_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any]:
+    try:
+        require_ce_gateway_settings_management()
+    except PermissionError as exc:
+        raise _permission_error(exc) from exc
+    base_url = normalize_relay_base_url(body.base_url)
+    if not base_url:
+        raise HTTPException(status_code=400, detail="baseUrl is required")
+    unknown = set(body.keys) - set(SUB2API_CAPABILITIES)
+    if unknown:
+        raise HTTPException(status_code=400, detail="unsupported Sub2API capability")
+    current = build_model_gateway_status(
+        official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+        official_api_key=app_config.NEWAPI_API_KEY,
+    )
+    current_sub2api = current["sub2api"]
+    endpoint_changed = base_url != current_sub2api["baseUrl"]
+    keys = {
+        capability: normalize_api_key(body.keys.get(capability, ""))
+        for capability in SUB2API_CAPABILITIES
+    }
+    if endpoint_changed and not all(keys.values()):
+        raise HTTPException(
+            status_code=400,
+            detail="all capability API keys are required when baseUrl changes",
+        )
+    if not endpoint_changed:
+        saved_settings = get_model_gateway_settings()
+        for capability in SUB2API_CAPABILITIES:
+            if not keys[capability] and current_sub2api["keys"][capability]["configured"]:
+                keys[capability] = saved_settings.get(
+                    f"sub2api_api_key_{capability}", ""
+                )
+    missing = [capability for capability, value in keys.items() if not value]
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"missing capability API keys: {', '.join(missing)}",
+        )
+    save_sub2api_gateway(base_url=base_url, keys=keys, activate=False)
+    runtime = _refresh_runtime_after_gateway_write()
+    return {
+        "ok": True,
+        "data": build_model_gateway_status(
+            official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+            official_api_key=app_config.NEWAPI_API_KEY,
+        ),
+        "runtime": runtime,
+    }
+
+
+@router.post("/sub2api/enable")
+async def enable_sub2api_gateway() -> dict[str, Any]:
+    try:
+        require_ce_gateway_settings_management()
+    except PermissionError as exc:
+        raise _permission_error(exc) from exc
+    status = build_model_gateway_status(
+        official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+        official_api_key=app_config.NEWAPI_API_KEY,
+    )
+    if not status["sub2api"]["configured"]:
+        raise HTTPException(status_code=400, detail="Sub2API gateway is not fully configured")
+    set_model_gateway_mode(MODE_SUB2API)
     runtime = _refresh_runtime_after_gateway_write()
     return {
         "ok": True,
