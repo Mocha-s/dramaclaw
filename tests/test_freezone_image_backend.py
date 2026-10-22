@@ -5034,6 +5034,40 @@ def test_seedance_compact_model_ids_support_omni_reference_mode(backend: str) ->
 
 
 @pytest.mark.asyncio
+async def test_omni_route_allows_compact_seedance_catalog_id_without_mode_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _patch_freezone_project(monkeypatch, tmp_path)
+    _patch_video_catalog(
+        monkeypatch,
+        {
+            "catalogId": "sd17-seedance-2.0",
+            "id": "sd17-seedance-2.0",
+            "apiModel": "newapi_sd17-seedance-2.0",
+            "providerId": "newapi",
+            "request": {"endpoint": "videos", "parameters": []},
+        },
+    )
+    _patch_runtime_error_enqueue(monkeypatch)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await freezone_routes.freezone_video_omni_gen(
+            project="58",
+            body=freezone_routes.FreezoneVideoOmniGenRequest(
+                prompt="reference-based video",
+                model="sd17-seedance-2.0",
+            ),
+            user={"username": "admin"},
+        )
+
+    # Reaching enqueue (mocked as unavailable) proves the route did not reject
+    # this compact Seedance 2.x ID at the local omni capability guard.
+    assert exc_info.value.status_code == 503
+    assert "omni reference mode" not in str(exc_info.value.detail)
+
+
+@pytest.mark.asyncio
 async def test_template_edit_takes_provider_model_and_identity_from_the_catalog(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

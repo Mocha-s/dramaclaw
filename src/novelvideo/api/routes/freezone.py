@@ -9573,6 +9573,8 @@ def _catalog_mode_enabled(
 ) -> bool | None:
     if capabilities is None:
         return None
+    if "supportedModes" not in capabilities:
+        return None
     modes = capabilities.get("supportedModes") or []
     return mode in modes
 
