@@ -2730,6 +2730,168 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             result.pop(key, None)
         return result
 
+    @classmethod
+    def _modern_video_form_fields(
+        cls, payload: dict[str, object], *, requested_mode: str = ""
+    ) -> list[tuple[str, str]]:
+        """Serialize a modern `/videos` request like the verified web client.
+
+        The gateway's modern video route is multipart even when references are
+        already public relay URLs. Keep the legacy JSON-shaped payload separate
+        from this wire representation so `/video/generations` remains unchanged.
+        """
+
+        def text(value: object, *, default: str = "") -> str:
+            if value is None:
+                return default
+            if isinstance(value, float) and value.is_integer():
+                return str(int(value))
+            return str(value)
+
+        fields: list[tuple[str, str]] = []
+        for key in ("model", "prompt"):
+            value = payload.get(key)
+            if value is not None:
+                fields.append((key, text(value)))
+
+        duration = payload.get("duration", payload.get("seconds"))
+        if duration is not None:
+            fields.append(("seconds", text(duration)))
+
+        ratio = text(payload.get("aspect_ratio", payload.get("ratio"))).strip()
+        resolution = text(payload.get("resolution"), default="720p").strip().lower()
+        size = text(payload.get("size")).strip()
+        if not size:
+            dimensions = cls._modern_video_dimensions(resolution, ratio)
+            if dimensions:
+                size = f"{dimensions[0]}x{dimensions[1]}"
+        if size:
+            fields.append(("size", size))
+        if ratio and ratio.lower() not in {"auto", "adaptive"}:
+            fields.append(("ratio", ratio))
+        if resolution:
+            fields.append(("resolution_name", resolution))
+
+        for key in ("generate_audio", "watermark"):
+            if key in payload:
+                fields.append((key, str(bool(payload[key])).lower()))
+
+        def values(key: str) -> list[str]:
+            raw_values = payload.get(key)
+            if not isinstance(raw_values, list):
+                return []
+            return [
+                value.strip()
+                for value in raw_values
+                if isinstance(value, str) and value.strip()
+            ]
+
+        image_values = values("images")
+        video_values = values("videos")
+        audio_values = values("audios")
+        task_type = text(payload.get("omni_reference_task_type")).strip().lower()
+        mode_alias = {
+            "imageToVideo": "image_reference",
+            "allReference": "all_reference",
+            "videoEdit": "video_edit",
+            "videoExtend": "video_extend",
+            "videoUpscale": "video_upscale",
+            "videoFrameRate": "video_frame_rate",
+        }.get(requested_mode, requested_mode)
+        reference_modes = {
+            "image_reference",
+            "all_reference",
+            "video_edit",
+            "video_extend",
+            "video_upscale",
+            "video_frame_rate",
+        }
+        mode = (
+            "reference"
+            if mode_alias in reference_modes
+            or task_type in {"reference", "edit", "extend"}
+            or len(image_values) > 2
+            or video_values
+            or audio_values
+            else "frames"
+        )
+        fields.append(("mode", mode))
+
+        if mode == "frames" and image_values:
+            fields.extend((("first_frame", image_values[0]), ("images", image_values[0])))
+            if len(image_values) > 1:
+                fields.extend((("last_frame", image_values[1]), ("images", image_values[1])))
+            fields.extend(("images", value) for value in image_values[2:])
+        else:
+            fields.extend(("images", value) for value in image_values)
+        fields.extend(("video[]", value) for value in video_values)
+        fields.extend(("audio[]", value) for value in audio_values)
+        return fields
+
+    @staticmethod
+    def _modern_video_dimensions(
+        resolution: str, ratio: str
+    ) -> tuple[int, int] | None:
+        """Match the verified web client's resolution-to-size conversion."""
+
+        ratio_parts = str(ratio or "").split(":", 1)
+        if len(ratio_parts) != 2:
+            return None
+        try:
+            ratio_width = float(ratio_parts[0])
+            ratio_height = float(ratio_parts[1])
+            resolution_value = float(str(resolution).lower().removesuffix("p"))
+        except (TypeError, ValueError):
+            return None
+        if ratio_width <= 0 or ratio_height <= 0 or resolution_value <= 0:
+            return None
+        if ratio_width >= ratio_height:
+            width = resolution_value * ratio_width / ratio_height
+            height = resolution_value
+        else:
+            width = resolution_value
+            height = resolution_value * ratio_height / ratio_width
+        return round(width / 2) * 2, round(height / 2) * 2
+
+    async def _post_multipart(
+        self,
+        url: str,
+        fields: list[tuple[str, str]],
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> dict:
+        """POST a modern video task as forced multipart form-data."""
+
+        form = aiohttp.FormData(default_to_multipart=True)
+        for name, value in fields:
+            form.add_field(name, value)
+        request_headers = {
+            key: value
+            for key, value in (headers or self.headers).items()
+            if key.lower() != "content-type"
+        }
+        async with aiohttp.ClientSession(timeout=self._client_timeout()) as session:
+            async with session.post(url, data=form, headers=request_headers) as resp:
+                text = await resp.text()
+                if resp.status < 200 or resp.status >= 300:
+                    request_id = self._extract_request_id(text, resp.headers)
+                    raise NewApiVideoError(
+                        f"DramaClawAPI submit failed: HTTP {resp.status} - {text}",
+                        request_id=request_id,
+                        status_code=resp.status,
+                    )
+                try:
+                    data = json.loads(text)
+                    if isinstance(data, dict):
+                        data["_newapi_request_id"] = self._extract_request_id(
+                            text, resp.headers
+                        )
+                    return data
+                except json.JSONDecodeError as exc:
+                    raise RuntimeError(
+                        f"DramaClawAPI submit returned invalid JSON: {text}"
+                    ) from exc
+
     @staticmethod
     def _task_response_data(task: dict) -> dict:
         """Accept both flat and wrapped generic task responses."""
@@ -3621,13 +3783,15 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             submit_headers = dict(request_headers or self.headers)
             if is_modern_video_endpoint:
                 submit_headers["Idempotency-Key"] = str(uuid.uuid4())
-            if organization_request:
-                submitted = await self._post_json(
+            if is_modern_video_endpoint:
+                submitted = await self._post_multipart(
                     f"{request_base_url}{submit_endpoint}",
-                    payload,
+                    self._modern_video_form_fields(
+                        payload, requested_mode=requested_mode
+                    ),
                     headers=submit_headers,
                 )
-            elif is_modern_video_endpoint:
+            elif organization_request:
                 submitted = await self._post_json(
                     f"{request_base_url}{submit_endpoint}",
                     payload,
