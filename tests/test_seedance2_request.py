@@ -66,6 +66,19 @@ def test_huimeng_seedance2_config_accepts_json_string():
     assert config == {"duration": 11, "final_prompt": "configured"}
 
 
+def test_newapi_video_generator_recognizes_compact_seedance2_model_ids():
+    from novelvideo.generators.video_generator import NewApiVideoGenerator
+
+    generator = NewApiVideoGenerator.__new__(NewApiVideoGenerator)
+    for model in (
+        "seedance2.0-900-fast",
+        "seedance2.5-900",
+        "sd17-seedance-2.0",
+    ):
+        generator.model = model
+        assert generator._is_seedance2_model() is True
+
+
 def test_build_seedance2_first_frame_request_normalizes_prompt_mentions():
     from novelvideo.seedance2_i2v.models import Seedance2I2VMode
     from novelvideo.seedance2_i2v.request import build_seedance2_huimeng_params

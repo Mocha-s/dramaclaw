@@ -432,6 +432,36 @@ def _sub2api_openai_compat_base_url(group: dict[str, Any]) -> str:
     return f"{base_url}/v1"
 
 
+def _sub2api_image_protocol(group: dict[str, Any], model: str) -> str:
+    """Resolve native Gemini image routing for legacy mislabeled groups.
+
+    Older CE settings could save a group named Gemini with ``protocol=openai``.
+    Gemini/Nano Banana image models must use the native ``generateContent``
+    contract, so preserve the explicit Gemini setting and repair that legacy
+    shape from the group name/model identity.
+    """
+    protocol = str(group.get("protocol") or "openai").strip().lower()
+    if protocol == "gemini":
+        return protocol
+    group_name = str(group.get("name") or "").strip().lower()
+    model_name = str(model or "").strip().lower()
+    if group_name in {"gemini", "google"} or model_name.startswith(
+        ("gemini-", "gemini/", "nano-banana", "nanobanana")
+    ):
+        return "gemini"
+    return protocol
+
+
+def _sub2api_gemini_base_url(group: dict[str, Any]) -> str:
+    """Return the native Gemini API root, including the required /v1beta path."""
+    base_url = normalize_sub2api_base_url(str(group.get("baseUrl") or ""))
+    if base_url.endswith("/v1beta"):
+        return base_url
+    if base_url.endswith("/v1"):
+        base_url = base_url[:-3]
+    return f"{base_url}/v1beta"
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -1494,16 +1524,23 @@ def get_ce_newapi_config_for_mode(
                 base_url="",
                 api_key="",
             )
+        protocol = (
+            _sub2api_image_protocol(group[0], model)
+            if capability == CAPABILITY_IMAGE
+            else str(group[0].get("protocol") or "openai").strip().lower()
+        )
         return EffectiveNewApiConfig(
             mode=MODE_SUB2API,
             source="sub2api",
-            base_url=_sub2api_openai_compat_base_url(group[0]),
+            base_url=_sub2api_openai_compat_base_url(
+                {**group[0], "protocol": protocol}
+            ),
             api_key=group[0]["apiKey"],
-            protocol=group[0]["protocol"],
+            protocol=protocol,
             model=group[1],
             native_base_url=(
-                normalize_sub2api_base_url(str(group[0].get("baseUrl") or ""))
-                if str(group[0].get("protocol") or "").strip().lower() == "gemini"
+                _sub2api_gemini_base_url(group[0])
+                if protocol == "gemini"
                 else ""
             ),
             image_edit_reference_format=str(group[2].get("imageEditFormat") or "images"),

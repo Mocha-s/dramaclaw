@@ -342,6 +342,10 @@ async def _call_gemini_image_api(
         },
     }
     endpoint = (base_url or "").rstrip("/")
+    if endpoint.endswith("/v1"):
+        endpoint = endpoint[:-3]
+    if not endpoint.endswith("/v1beta"):
+        endpoint = f"{endpoint}/v1beta"
     model_path = str(model or "").removeprefix("models/").strip()
     url = f"{endpoint}/models/{quote(model_path, safe='')}:generateContent"
     headers = {
@@ -3194,6 +3198,8 @@ async def _generate_image(
     generator = NanoBananaGridGenerator(
         api_key=effective_api_key, config=effective_config
     )
+    trace: dict[str, str] = {}
+    delivery_state: dict[str, bool | str] = {}
 
     if generator.provider == "openrouter":
         ref_bytes = [Path(path).read_bytes() for path in ref_paths]
@@ -3264,8 +3270,6 @@ async def _generate_image(
             )
     elif generator.provider == "newapi":
         ref_bytes = [(Path(path).read_bytes(), path) for path in ref_paths]
-        trace: dict[str, str] = {}
-        delivery_state: dict[str, bool | str] = {}
         image_bytes, _, error_detail = await _call_newapi_image_api(
             api_key=generator.api_key,
             model=generator.model,

@@ -5019,6 +5019,20 @@ async def test_scene_360_rejects_a_model_the_catalog_does_not_have(
     assert not captured
 
 
+@pytest.mark.parametrize(
+    "backend",
+    [
+        "newapi_seedance2.0-900-fast",
+        "newapi_seedance2.5-900",
+        "newapi_sd17-seedance-2.0",
+    ],
+)
+def test_seedance_compact_model_ids_support_omni_reference_mode(backend: str) -> None:
+    from novelvideo.freezone.video_node import is_freezone_seedance2_backend
+
+    assert is_freezone_seedance2_backend(backend) is True
+
+
 @pytest.mark.asyncio
 async def test_template_edit_takes_provider_model_and_identity_from_the_catalog(
     tmp_path: Path,

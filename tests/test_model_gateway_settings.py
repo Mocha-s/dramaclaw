@@ -1183,6 +1183,58 @@ def test_gemini_sub2api_gateway_uses_native_v1beta_protocol(monkeypatch, tmp_pat
     assert image_config["gateway_native_base_url"] == "https://gemini.example/v1beta"
 
 
+def test_gemini_named_openai_group_is_normalized_to_native_v1beta_protocol(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "gemini",
+                "name": "Gemini",
+                "protocol": "openai",
+                "baseUrl": "https://api.aigcdo.top",
+                "apiKey": "gemini-key",
+                "capabilities": ["image", "text", "video"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "nano-banana2-4k",
+                        "upstreamModel": "nano-banana2-4k",
+                    },
+                    {
+                        "requestPattern": "claude-sonnet-4-6",
+                        "upstreamModel": "claude-sonnet-4-6",
+                    },
+                    {
+                        "requestPattern": "sd17-seedance-2.0",
+                        "upstreamModel": "sd17-seedance-2.0",
+                    },
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    effective = get_effective_newapi_config(
+        capability="image", model="nano-banana2-4k"
+    )
+
+    assert effective.protocol == "gemini"
+    assert effective.native_base_url == "https://api.aigcdo.top/v1beta"
+    assert (
+        get_effective_newapi_config(
+            capability="text", model="claude-sonnet-4-6"
+        ).protocol
+        == "openai"
+    )
+    assert (
+        get_effective_newapi_config(
+            capability="video", model="sd17-seedance-2.0"
+        ).protocol
+        == "openai"
+    )
+
+
 def test_sub2api_effective_image_gateway_preserves_mapping_protocol_override(
     monkeypatch, tmp_path
 ):

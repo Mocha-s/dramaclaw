@@ -382,7 +382,13 @@ def is_freezone_seedance2_backend(backend: str | None) -> bool:
     from novelvideo.generators.video_generator import parse_newapi_video_backend
 
     model = parse_newapi_video_backend(text) or parse_huimeng_video_backend(text)
-    return bool(model and model.startswith("seedance-2.0"))
+    normalized = str(model or "").strip().lower().replace("_", "-")
+    # Sub2API catalogs commonly expose compact IDs such as seedance2.0-900;
+    # normalize that spelling before applying the same 2.x capability rule.
+    normalized = normalized.removeprefix("sd17-")
+    normalized = normalized.replace("seedance2.0", "seedance-2.0")
+    normalized = normalized.replace("seedance2.5", "seedance-2.5")
+    return normalized.startswith(("seedance-2.0", "seedance-2.5"))
 
 
 def is_freezone_seedance_backend(backend: str | None) -> bool:

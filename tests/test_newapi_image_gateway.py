@@ -1232,6 +1232,104 @@ def test_gemini_image_gateway_uses_native_generate_content_json(monkeypatch):
     }
 
 
+def test_gemini_text_to_image_uses_native_generate_content(monkeypatch, tmp_path):
+    from google import genai
+    from novelvideo.generators import nanobanana_grid
+
+    calls = []
+
+    async def fake_native(**kwargs):
+        calls.append(kwargs)
+        return b"native-gemini-image", "", ""
+
+    monkeypatch.setattr(nanobanana_grid, "_call_gemini_image_api", fake_native)
+    monkeypatch.setattr(
+        genai,
+        "Client",
+        lambda **_kwargs: pytest.fail("Gemini text-to-image must use the native gateway helper"),
+    )
+
+    output = run_async(
+        nanobanana_grid.generate_text_to_image(
+            prompt="a test image",
+            output_path=str(tmp_path / "gemini-text.png"),
+            aspect_ratio="3:4",
+            image_size="2K",
+            config={
+                "provider": "newapi",
+                "gateway_protocol": "gemini",
+                "gateway_native_base_url": "https://gemini.example/v1beta",
+                "api_key": "gemini-key",
+                "model": "gemini-3.1-flash-image-preview",
+                "rows": 1,
+                "cols": 1,
+                "total_panels": 1,
+                "mode": "1x1",
+            },
+        )
+    )
+
+    assert output.read_bytes() == b"native-gemini-image"
+    assert len(calls) == 1
+    assert calls[0]["model"] == "gemini-3.1-flash-image-preview"
+    assert calls[0]["reference_images"] is None
+    assert calls[0]["base_url"] == "https://gemini.example/v1beta"
+
+
+def test_gemini_native_helper_adds_v1beta_to_gateway_root(monkeypatch):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append(str(request.url))
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "inlineData": {
+                                        "mimeType": "image/png",
+                                        "data": base64.b64encode(b"image").decode(),
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_gemini_image_api(
+            api_key="gemini-key",
+            model="gemini-3.1-flash-image-preview",
+            prompt="a test image",
+            base_url="https://gemini.example",
+        )
+    )
+
+    assert image_bytes == b"image"
+    assert error == ""
+    assert posted == [
+        "https://gemini.example/v1beta/models/"
+        "gemini-3.1-flash-image-preview:generateContent"
+    ]
+
+
 def test_gemini_grid_generation_uses_native_generate_content(monkeypatch, tmp_path):
     import httpx
     from novelvideo.generators import nanobanana_grid

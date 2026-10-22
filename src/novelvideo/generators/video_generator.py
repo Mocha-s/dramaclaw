@@ -2428,7 +2428,11 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         return int(bounds[0]), int(bounds[1])
 
     def _is_seedance2_model(self) -> bool:
-        return self.model.strip().startswith("seedance-2.0")
+        normalized = self.model.strip().lower().replace("_", "-")
+        normalized = normalized.removeprefix("sd17-")
+        normalized = normalized.replace("seedance2.0", "seedance-2.0")
+        normalized = normalized.replace("seedance2.5", "seedance-2.5")
+        return normalized.startswith(("seedance-2.0", "seedance-2.5"))
 
     def _is_happyhorse_model(self) -> bool:
         return self.model.strip().lower() == "happyhorse-1.0"
@@ -2454,7 +2458,9 @@ class NewApiVideoGenerator(VideoGeneratorBase):
 
         if str(mode or "").strip() not in {"videoEdit", "video_edit"}:
             return False
-        return self.model.strip().lower().startswith("seedance-")
+        return self._is_seedance2_model() or self.model.strip().lower().startswith(
+            "seedance-"
+        )
 
     def _apply_seedance_source_video_ratio(self, payload: dict) -> dict:
         """Seedance 带输入视频时，「跟随输入」的比例要按厂商原词发 `adaptive`。
