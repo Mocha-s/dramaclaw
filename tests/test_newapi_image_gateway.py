@@ -990,7 +990,12 @@ def test_newapi_image_edit_supports_multipart_image_files_without_relay(
                 ("first.jpg", b"jpeg-bytes", "image/jpeg"),
                 ("second.png", b"png-bytes", "image/png"),
             ],
-            image_config={"reference_image_format": "multipart", "quality": "medium"},
+            image_config={
+                "reference_image_format": "multipart",
+                "quality": "medium",
+                "aspect_ratio": "3:4",
+                "image_size": "1K",
+            },
             base_url="https://gateway.test/v1",
         )
     )
@@ -1000,9 +1005,62 @@ def test_newapi_image_edit_supports_multipart_image_files_without_relay(
     assert len(posted) == 1
     content_type, body = posted[0]
     assert content_type.startswith("multipart/form-data; boundary=")
-    assert b'name="image"; filename="first.jpg"' in body
-    assert b'name="image"; filename="second.png"' in body
+    assert b'name="image[]"; filename="first.jpg"' in body
+    assert b'name="image[]"; filename="second.png"' in body
     assert b'name="prompt"' in body and b"edit prompt" in body
+    assert b'name="model"' in body and b"gpt-image-2.5" in body
+    assert b'name="size"' in body and b"768x1024" in body
+    assert b'name="quality"' in body and b"medium" in body
+    assert b'name="n"' in body and b"\r\n\r\n1\r\n" in body
+    assert b'name="response_format"' not in body
+    assert b'name="metadata"' not in body
+    assert b'name="width"' not in body
+    assert b'name="height"' not in body
+    assert b'name="watermark"' not in body
+
+
+def test_newapi_image_edit_multipart_uses_singular_image_for_one_reference(monkeypatch):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append(request.content)
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2.5",
+            prompt="edit prompt",
+            reference_images=[("first.jpg", b"jpeg-bytes", "image/jpeg")],
+            image_config={
+                "aspect_ratio": "3:4",
+                "image_size": "1K",
+                "reference_image_format": "multipart",
+            },
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert image_bytes == b"edited"
+    assert error == ""
+    assert len(posted) == 1
+    assert b'name="image"; filename="first.jpg"' in posted[0]
+    assert b'name="image[]"' not in posted[0]
 
 
 def test_gemini_image_gateway_uses_native_generate_content_json(monkeypatch):

@@ -3916,8 +3916,9 @@ async def _call_newapi_image_api(
                     )
                     extension = "jpg" if image_content_type == "image/jpeg" else "png"
                     filename = f"reference_{index + 1}.{extension}"
+            multipart_field = "image[]" if len(reference_images) > 1 else "image"
             multipart_files.append(
-                ("image", (filename, image_data, image_content_type))
+                (multipart_field, (filename, image_data, image_content_type))
             )
         # Keep only a non-sensitive marker for usage logs; the actual files are
         # passed separately to HTTPX and are never JSON-serialized.
@@ -3965,6 +3966,8 @@ async def _call_newapi_image_api(
                 )
                 return None, "", f"media relay upload failed ({code})"
             return None, "", f"media relay upload failed: {exc}"
+        request_path = "/images/edits"
+    elif reference_images:
         request_path = "/images/edits"
     else:
         request_path = "/images/generations"
@@ -4090,13 +4093,39 @@ async def _call_newapi_image_api(
                 "headers": headers,
             }
             if multipart_files:
-                form_fields = {
-                    key: json.dumps(value, ensure_ascii=False)
-                    if isinstance(value, (dict, list))
-                    else str(value)
-                    for key, value in payload.items()
-                    if key != "image"
+                form_fields: dict[str, str] = {
+                    "model": str(model),
+                    "prompt": str(prompt),
+                    "n": str(payload.get("n") or 1),
                 }
+                if "width" in payload and "height" in payload:
+                    form_fields["size"] = f"{payload['width']}x{payload['height']}"
+                elif str(metadata.get("ratio") or "").lower() in {"auto", "adaptive"}:
+                    form_fields["size"] = "auto"
+                if payload.get("quality"):
+                    form_fields["quality"] = str(payload["quality"])
+                if payload.get("background"):
+                    form_fields["background"] = str(payload["background"])
+                if payload.get("response_format") and not str(model).lower().startswith(
+                    "gpt-image"
+                ):
+                    form_fields["response_format"] = "b64_json"
+                if payload.get("output_format"):
+                    form_fields["output_format"] = str(payload["output_format"])
+                multipart_control_fields = {
+                    "model", "prompt", "n", "size", "width", "height", "quality",
+                    "background", "response_format", "output_format", "watermark",
+                    "metadata", "image", "images", "input_reference", "input_fidelity",
+                }
+                for key, value in payload.items():
+                    if key in multipart_control_fields:
+                        continue
+                    serialized = (
+                        json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+                        if isinstance(value, (dict, list))
+                        else str(value)
+                    )
+                    form_fields[key] = serialized
                 request_kwargs["data"] = form_fields
                 request_kwargs["files"] = multipart_files
             else:
