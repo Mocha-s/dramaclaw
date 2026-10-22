@@ -1175,6 +1175,47 @@ def test_gemini_grid_request_helper_uses_native_protocol(monkeypatch):
     assert captured["reference_images"] == [(b"ref", "/tmp/reference.jpg")]
 
 
+def test_newapi_image_gateway_surfaces_error_body_when_http_response_is_200(
+    monkeypatch,
+):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    real_client = httpx.AsyncClient
+
+    def handle_request(_request):
+        return httpx.Response(
+            200,
+            json={
+                "error": {
+                    "message": "No available channel for model gpt-image-2",
+                    "type": "new_api_error",
+                }
+            },
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2",
+            prompt="prompt",
+            base_url="https://gateway.example/v1",
+        )
+    )
+
+    assert image_bytes is None
+    assert "No available channel for model gpt-image-2" in error
+    assert "new_api_error" in error
+
+
 def test_newapi_image_edit_rejects_unknown_reference_format_before_upload(monkeypatch):
     from novelvideo.generators import nanobanana_grid
 

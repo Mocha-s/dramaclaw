@@ -4135,6 +4135,24 @@ async def _call_newapi_image_api(
 
             data = result.get("data") or []
             if not data:
+                response_error = result.get("error")
+                if isinstance(response_error, dict):
+                    error_message = str(response_error.get("message") or "").strip()
+                    error_type = str(response_error.get("type") or "").strip()
+                    detail = ": ".join(
+                        value for value in (error_message, error_type) if value
+                    )
+                    await _refund(
+                        reservation_id,
+                        "newapi_image_api",
+                        f"response_error:{detail or 'unknown'}",
+                        request_id=provider_request_id,
+                    )
+                    return None, "", (
+                        f"DramaClawAPI Images upstream error: {detail}"
+                        if detail
+                        else "DramaClawAPI Images upstream error"
+                    )
                 await _refund(
                     reservation_id,
                     "newapi_image_api",
