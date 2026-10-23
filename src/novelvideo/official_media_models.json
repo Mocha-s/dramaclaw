@@ -205,7 +205,6 @@
       "label": "Seedance 2.5",
       "enabled": true,
       "sortOrder": 100,
-      "aliases": ["newapi_seedance-2.5"],
       "config": {
         "request": {
           "endpoint": "video/generations",
@@ -239,7 +238,6 @@
       "label": "Seedance2.0 Fast",
       "enabled": true,
       "sortOrder": 10,
-      "aliases": ["newapi_seedance-2.0-fast"],
       "config": {
         "request": {"endpoint": "video/generations", "parameters": []},
         "humanReview": true,
@@ -263,7 +261,6 @@
       "label": "Seedance 2.0",
       "enabled": true,
       "sortOrder": 20,
-      "aliases": ["newapi_seedance-2.0"],
       "config": {
         "request": {"endpoint": "video/generations", "parameters": []},
         "humanReview": true,
@@ -287,7 +284,6 @@
       "label": "Seedance1.5 Pro",
       "enabled": true,
       "sortOrder": 50,
-      "aliases": ["newapi_seedance-1.5-pro"],
       "config": {
         "request": {"endpoint": "video/generations", "parameters": []},
         "minDuration": 4,
@@ -304,7 +300,6 @@
       "label": "Seedance1.0 Pro Fast",
       "enabled": true,
       "sortOrder": 60,
-      "aliases": ["newapi_seedance-1.0-pro-fast"],
       "config": {
         "request": {"endpoint": "video/generations", "parameters": []},
         "minDuration": 2,
@@ -321,7 +316,6 @@
       "label": "HappyHorse 1.0",
       "enabled": true,
       "sortOrder": 70,
-      "aliases": ["newapi_happyhorse-1.0"],
       "config": {
         "request": {"endpoint": "video/generations", "parameters": []},
         "minDuration": 3,
@@ -341,7 +335,6 @@
       "label": "HappyHorse 1.1",
       "enabled": true,
       "sortOrder": 71,
-      "aliases": ["newapi_happyhorse-1.1"],
       "config": {
         "request": {"endpoint": "video/generations", "parameters": []},
         "minDuration": 3,

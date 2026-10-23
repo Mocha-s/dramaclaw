@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Remove the RelayClaw and bundled NewAPI assumptions from the CE deployment and model identity, use `https://api.aigcdo.top/v1` as the platform gateway, and route third-party models through explicit configurable mappings without `newapi_` model IDs.
+**Goal:** Replace RelayClaw with `https://api.aigcdo.top/v1`, preserve the bundled NewAPI/Custom/Hybrid functionality, and route third-party models through explicit configurable mappings without `newapi_` model IDs.
 
-**Architecture:** Keep the existing gateway transport protocols and capability-specific request schemas, but make the catalog entry (`providerId`, `apiModel`, `gatewayModel`, and protocol) the routing authority. Platform mode points at the owned gateway; Sub2API groups remain the configurable third-party route. Bundled NewAPI provisioning and service orchestration are removed rather than retained as a compatibility path.
+**Architecture:** Keep the existing gateway transport protocols and capability-specific request schemas, but make the catalog entry (`providerId`, `apiModel`, `gatewayModel`, and protocol) the routing authority. Platform mode points at the owned gateway; Sub2API groups remain the configurable third-party route. Bundled NewAPI provisioning remains available for existing Custom/Hybrid users.
 
 **Tech Stack:** Python 3.11, FastAPI, Pydantic, SQLite settings, React 19, TypeScript, Vitest, pytest, Docker Compose.
 
@@ -17,6 +17,7 @@
 - Preserve existing OpenAI/Gemini, image reference-format, video endpoint, audio, and embedding protocol behavior.
 - Do not commit secrets, generated media, or local runtime state.
 - Keep backend model routing explicit; no model-prefix parsing may select a provider.
+- Do not remove or hide Custom, Hybrid, BrainClaw, provider-channel, Embedding, media-model, or quick-profile functionality.
 
 ## Review Focus
 
@@ -24,7 +25,7 @@
 - A configured Sub2API video mapping must not gain a `newapi_` prefix and must still select the async endpoint from its mapping; cover in catalog and video routing tests.
 - A platform-mode credential must resolve against `https://api.aigcdo.top/v1` and must not reuse an old RelayClaw key; cover in settings tests.
 - A fresh project must default to neutral image/video IDs and the frontend fallback catalog must match; cover in backend/frontend tests.
-- Compose source and release files must boot only API/web and must not require a gateway checkout or `newapi-data`; cover in compose contract tests.
+- Compose source and release files must preserve the existing optional bundled gateway and `newapi-data`; cover in compose contract tests.
 
 ---
 
@@ -69,7 +70,7 @@
 - [ ] Run focused backend tests for GREEN.
 - [ ] Commit the catalog/routing checkpoint.
 
-### Task 3: Remove bundled NewAPI deployment and provisioner surface
+### Task 3: Preserve bundled NewAPI deployment and provisioner surface
 
 **Files:**
 - Modify: `docker-compose.yml`
@@ -77,16 +78,16 @@
 - Modify: `.env.example`
 - Modify: `src/novelvideo/api/routes/model_gateway.py`
 - Modify: frontend model settings API/panels
-- Delete or make unreachable: `src/novelvideo/newapi_provisioner.py` and NewAPI-only management routes/components as dictated by tests.
+- Preserve: `src/novelvideo/newapi_provisioner.py` and the NewAPI management routes/components.
 - Test: compose and model-gateway route tests
 
 **Interfaces:**
-- Deployment contains API and web only.
-- Model settings expose platform and third-party mapping configuration without local NewAPI initialization/channel management.
+- Deployment retains API, web, and the optional bundled gateway.
+- Model settings preserve local NewAPI initialization/channel management while platform and Sub2API routes use neutral model mappings.
 
-- [ ] Add failing compose/settings tests proving no bundled service, volume, admin URL, or initialization path is required.
+- [ ] Add failing compose/settings tests proving the owned platform URL is the default while bundled service and initialization paths remain available.
 - [ ] Run focused tests for RED.
-- [ ] Remove the service, volume, provisioning environment, and management-only route surface.
+- [ ] Keep the service, volume, provisioning environment, and management route surface intact.
 - [ ] Run backend and frontend settings tests for GREEN.
 - [ ] Commit the deployment/settings checkpoint.
 
