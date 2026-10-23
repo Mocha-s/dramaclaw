@@ -84,7 +84,7 @@
       "label": "Seedream 5.0 Pro",
       "enabled": true,
       "sortOrder": 79,
-      "aliases": ["newapi_seedream-5.0", "seedream-5.0"],
+      "aliases": ["seedream-5.0"],
       "config": {
         "request": {
           "endpoint": "images/generations",
@@ -102,7 +102,7 @@
       "label": "Seedream 5.0 Lite",
       "enabled": true,
       "sortOrder": 79,
-      "aliases": ["newapi_seedream-5.0-lite", "seedream-5.0-Lite"],
+      "aliases": ["seedream-5.0-Lite"],
       "config": {
         "request": {"endpoint": "images/generations", "parameters": []},
         "minPixels": 3686400,
