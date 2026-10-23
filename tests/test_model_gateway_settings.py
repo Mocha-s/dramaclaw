@@ -93,6 +93,91 @@ def test_third_party_groups_migrate_sub2api_losslessly_and_normalize_mode(
     assert gateway_settings.get_third_party_gateway_groups(masked=True)[0]["apiKeyPreview"] == "*********"
 
 
+def test_legacy_gateway_fixture_migrates_resolves_masks_and_preserves_data(
+    monkeypatch, tmp_path
+):
+    """Exercise the complete CE upgrade path without exposing credentials."""
+    _isolate_settings_db(monkeypatch, tmp_path)
+    legacy_groups = [
+        {
+            "id": "portable-text",
+            "name": "Portable text",
+            "protocol": "openai",
+            "baseUrl": "https://portable.example/v1",
+            "apiKey": "sk-portable-secret",
+            "capabilities": ["text"],
+            "modelMappings": [
+                {"requestPattern": "logical-text", "upstreamModel": "upstream-text"}
+            ],
+        },
+        {
+            "id": "portable-image",
+            "name": "Portable image",
+            "protocol": "gemini",
+            "baseUrl": "https://gemini.example",
+            "apiKey": "gemini-secret",
+            "capabilities": ["image"],
+            "modelMappings": [
+                {"requestPattern": "logical-image", "upstreamModel": "gemini-image"}
+            ],
+        },
+    ]
+    legacy_admin_channels = [{"provider": "private", "upstreamKey": "admin-secret"}]
+    model_gateway_settings._write_many(
+        {
+            "sub2api_groups": json.dumps(legacy_groups),
+            "sub2api_base_url": "http://127.0.0.1:3000/v1",
+            "sub2api_api_key_text": "legacy-text-secret",
+            "custom_newapi_base_url": "http://127.0.0.1:4000/v1",
+            "custom_newapi_api_key": "legacy-local-secret",
+            "custom_newapi_provider_channels": json.dumps(legacy_admin_channels),
+            "model_gateway_mode": MODE_SUB2API,
+        }
+    )
+
+    groups = gateway_settings.get_third_party_gateway_groups()
+    text = gateway_settings.get_effective_newapi_config(model="logical-text")
+    image = gateway_settings.get_effective_newapi_config(
+        capability=CAPABILITY_IMAGE, model="logical-image"
+    )
+    status = gateway_settings.build_model_gateway_status()
+    warnings = status["migrationWarnings"]
+    saved = gateway_settings.get_model_gateway_settings()
+
+    assert groups == legacy_groups
+    assert (text.source, text.api_key, text.model) == (
+        "third_party",
+        "sk-portable-secret",
+        "upstream-text",
+    )
+    assert (image.source, image.api_key, image.model) == (
+        "third_party",
+        "gemini-secret",
+        "gemini-image",
+    )
+    assert saved["model_gateway_mode"] == MODE_CUSTOM
+    assert saved["sub2api_groups"] == json.dumps(legacy_groups)
+    assert saved["custom_newapi_provider_channels"] == json.dumps(legacy_admin_channels)
+    assert any("local or incomplete" in warning for warning in warnings)
+    assert any("not portable" in warning for warning in warnings)
+    warnings_text = json.dumps(warnings)
+    for secret in (
+        "sk-portable-secret",
+        "gemini-secret",
+        "legacy-text-secret",
+        "legacy-local-secret",
+        "admin-secret",
+    ):
+        assert secret not in warnings_text
+    masked = gateway_settings.get_third_party_gateway_groups(masked=True)
+    assert all("apiKey" not in group for group in masked)
+    assert all(
+        preview not in {"sk-portable-secret", "gemini-secret"}
+        for preview in (group["apiKeyPreview"] for group in masked)
+    )
+    assert all("secret" not in group["apiKeyPreview"] for group in masked)
+
+
 def test_third_party_migration_is_idempotent_and_canonical_wins(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     canonical = [{"id": "canonical", "name": "Canonical", "protocol": "openai", "baseUrl": "https://one.example/v1", "apiKey": "key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "*", "upstreamModel": "*"}]}]

@@ -14,17 +14,15 @@ After startup, open `http://localhost:8080` and go to **Settings → Models & Ch
 | Official | Use the models provided by RelayClaw | DC Key only |
 | Custom | Route models through configured third-party groups | Protocol, Base URL, group API key, capabilities, and logical-model mappings |
 | Hybrid | Keep official models while routing matching models through third-party groups | Official DC Key plus one or more configured third-party groups |
-| Sub2API | Route capabilities through separately configured OpenAI/Gemini-compatible account groups | Base URL, capability, model mapping, and API Key per group |
 
 Enable the intended mode after configuring it. New jobs read the latest mode, key, and mappings. Jobs already running do not switch gateways midway.
 
-### Sub2API image and video request formats
+### Third-party image and video request formats
 
-Sub2API model mappings expose per-model protocol selectors. Image edits default to
-the verified `images: [{"image_url": "..."}]` JSON shape; choose `input_reference`
-or multipart `image` only when that upstream model's documentation requires it.
-NewAPI/custom/official routes keep DramaClaw's existing `image: [url]` JSON
-format unless the deployment explicitly overrides it.
+Image-edit request shape is derived from the selected protocol and is not an operator
+setting. OpenAI-compatible groups use the verified `images: [{"image_url": "..."}]`
+JSON shape; Gemini-compatible groups use Gemini's native image request path. Existing
+legacy image-shape values remain hidden compatibility data during migration.
 
 Video models default to the modern `POST /videos`, `GET /videos/{id}`, and
 `GET /videos/{id}/content` lifecycle. Select the legacy
@@ -34,7 +32,7 @@ downloads the authenticated content endpoint. The server does not retry a
 generation with another format after an upstream error, avoiding duplicate
 billable jobs.
 
-For a Sub2API group whose protocol is **Gemini**, image models use Gemini's
+For a third-party group whose protocol is **Gemini**, image models use Gemini's
 native `POST /v1beta/models/{model}:generateContent` contract instead of the
 OpenAI-compatible image endpoint. Prompts and references are sent in
 `contents[].parts[]`; local reference images become `inlineData`, and
@@ -94,6 +92,11 @@ Custom mode uses one or more user-configured third-party gateway groups. Start t
 
 In **Custom**, add a group with a reachable Base URL, its own API key, and an explicit protocol: **OpenAI-compatible** or **Gemini-compatible**. Select capabilities such as text, vision, embedding, image, video, or audio, then map each DramaClaw logical model ID to the upstream model ID. Saved keys remain masked in the browser and are stored in the CE settings database.
 
+Saved groups are collapsed by default; expand each disclosure card to edit it. Existing
+`sub2api_*` settings are migrated automatically and retained as rollback input after the
+canonical third-party groups are written. If migration finds a local/incomplete endpoint,
+it leaves it inert and shows a masked warning rather than sending its key anywhere.
+
 OpenAI-compatible groups may use `/v1/models` for discovery when the endpoint supports it. Gemini-compatible image requests use Gemini's native `generateContent` contract. Manual model entry remains available when discovery is unavailable. The app owns the logical-model mapping; the external gateway owns its own upstream accounts and provider configuration.
 
 NewAPI-specific admin CRUD, provider-channel catalogs, channel-type synchronization, and root-account initialization are not portable and are not performed by CE. Recreate those upstream accounts directly in the external gateway you selected. Existing legacy settings and any old `newapi-data` volume are retained for migration or rollback, not used as a bundled service.
@@ -106,7 +109,7 @@ ComfyUI remains useful as an independent external provider. Configure its reacha
 
 ## Hybrid mode
 
-Hybrid keeps RelayClaw for official models while selecting configured third-party groups for matching capabilities or model IDs. Save the official DC key, add at least one valid external group, map the intended logical models, and enable Hybrid. An exact or most-specific unambiguous mapping wins; unmatched requests use the official gateway. Runtime failures do not automatically retry with another credential.
+Hybrid keeps RelayClaw for official models while selecting configured third-party groups for matching capabilities or model IDs. Save the official DC key, add at least one valid external group, map the intended logical models, and enable Hybrid. An exact or most-specific unambiguous mapping wins; unmatched requests use the official gateway. Runtime failures do not automatically retry with another credential. Ambiguous mappings are rejected rather than choosing a credential unpredictably.
 
 ## Reference media storage
 
