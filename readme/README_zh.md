@@ -318,9 +318,9 @@ DramaClaw 的所有模型推理都走 **OpenAI 兼容网关** —— 使用官�
 | **磁盘** | 预留几 GB 放镜像及 `ce-data` 卷中的生成媒体/状态（无硬性下限） |
 | **操作系统** | macOS（Apple Silicon / Intel）、Windows（Docker Desktop + WSL2 后端）、Linux（Docker Engine + compose 插件） |
 | **Docker** | Docker + `docker compose` |
-| **端口** | `8080` 网页 · `8780` REST API · `3000` 内置网关管理页（默认仅本机，可放开） |
+| **端口** | `8080` 网页 · `8780` REST API |
 | **数据库** | 全部不需要 —— 无 Postgres、Redis、Celery、Ray。任务进程内内联执行，状态存本地文件系统（SQLite + 文件） |
-| **网络** | 需能出网访问官方网关 `api.aigcdo.top`，和/或你在内置网关里配置的模型供应商 |
+| **网络** | 需能出网访问 `api.aigcdo.top`，和/或设置页中配置的外部网关地址 |
 
 > 本地开发（非 Docker）还需 Python 3.11–3.12 + [`uv`](https://docs.astral.sh/uv/) + `ffmpeg`。完整前置条件见[自托管指南](../docs/zh/guides/self-hosting.md)。
 
@@ -386,7 +386,7 @@ DramaClaw 对模型侧保持中立 —— 所有文本 / 图片 / 视频 / 音�
 
 - **官方（推荐）** —— 粘贴 DC key（到 <https://api.aigcdo.top> 获取）保存即用。RelayClaw 已经配好 DramaClaw 需要的全部模型映射，什么都不用调。
 - **自定义** —— 在设置中配置可访问的外部第三方网关组（API key、模型 ID 和能力）。
-- **本地 + 官方混合** —— 主链路继续用官方模型，额外渠道（比如本地 ComfyUI 视频工作流）走内置网关。
+- **混合** —— 主链路继续用官方模型，额外能力走设置中配置的外部网关组。
 
 完整步骤见 [配置模型供应商](../docs/zh/getting-started/configuring-models.md)。
 

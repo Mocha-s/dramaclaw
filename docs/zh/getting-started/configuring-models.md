@@ -3,7 +3,7 @@
 
 # 配置模型
 
-DramaClaw CE 通过 NewAPI 兼容网关调用文本、视觉理解、Embedding、图片、视频和音频模型。模型设置保存在 CE 的本地 `settings.db` 中；密钥不会回传到浏览器，只会显示脱敏后的保存状态。
+DramaClaw CE 通过官方网关或用户配置的第三方网关组调用文本、视觉理解、Embedding、图片、视频和音频模型。自定义组支持 OpenAI 兼容和 Gemini 兼容协议。模型设置保存在 CE 本地 `settings.db`；密钥仅以脱敏状态返回浏览器。
 
 启动后打开 `http://localhost:8080`，进入 **设置 → 模型与渠道**。页面顶部的“当前生效”表示实际运行模式，不是当前正在查看的标签。
 
@@ -12,8 +12,8 @@ DramaClaw CE 通过 NewAPI 兼容网关调用文本、视觉理解、Embedding�
 | 模式 | 适用场景 | 需要配置的内容 |
 |---|---|---|
 | 官方 | 直接使用 RelayClaw（虾驿）提供的模型 | 只需 DC Key |
-| 自定义 | 所有模型都通过自定义 NewAPI 配置 | 初始化 NewAPI、供应商渠道、业务模型、Embedding、媒体模型 |
-| 本地 + 官方混合 | 官方模型照常使用，同时新增本地 ComfyUI 视频模型，或用本地模型覆盖同名官方模型 | 官方 DC Key、本地 NewAPI、ComfyUI URL 和 Workflow |
+| 自定义 | 模型通过已配置的第三方网关组路由 | 协议、Base URL、组 API key、能力和逻辑模型映射 |
+| 混合 | 保留官方模型，并将匹配模型路由到第三方网关组 | 官方 DC Key 和一个或多个第三方网关组 |
 | Sub2API | 按能力通过独立配置的 OpenAI/Gemini 兼容账号组路由 | 每组的 Base URL、能力、模型映射和 API Key |
 
 配置完成后点击对应模式的启用按钮。更换模式、Key 或模型后，新任务会读取新配置；正在运行的任务不会中途切换。
@@ -84,188 +84,25 @@ DramaClaw 会使用认证信息下载 content 接口。上游报错后不会自�
 
 ## 自定义模式
 
-### 1. 启动本地服务
+自定义模式使用一个或多个用户配置的第三方网关组。执行 `docker compose up -d` 后，CE Compose 只启动 `api` 和 `web`。
 
-使用仓库的 compose 文件（内置 NewAPI 始终包含在内）：
+### 配置第三方网关组
 
-```bash
-docker compose up -d
-```
+在**自定义**中添加网关组，填写从 `api` 容器可访问的 Base URL、该组自己的 API key，并明确选择 **OpenAI 兼容**或 **Gemini 兼容**协议。选择文本、视觉、Embedding、图片、视频或音频能力，再把 DramaClaw 的逻辑模型 ID 映射到上游模型 ID。密钥保存在 CE 设置数据库中，浏览器只显示脱敏状态。
 
-它会启动 DramaClaw API、Web 和内置 NewAPI。默认情况下 DramaClaw 在容器网络中访问 NewAPI；浏览器访问的宿主机端口可以不同，不需要把内部地址改成浏览器地址。
+OpenAI 兼容组在支持时可通过 `/v1/models` 发现模型；Gemini 兼容图片请求使用原生 `generateContent` 接口。网关不提供模型列表时仍可手动输入。逻辑模型映射由应用管理；外部网关负责自己的上游账户和供应商配置。
 
-设置页会把通用网关组、凭据、能力和模型映射保存到 CE 设置数据库。不需要配置网关 SQLite 路径、管理地址或 provisioner。
+NewAPI 专用的管理员 CRUD、供应商渠道目录、渠道类型同步和 root 初始化不具备通用性，CE 不会执行这些操作。请直接在选定的外部网关中重建上游账户。旧设置和已有 `newapi-data` 卷会保留用于迁移或回滚，但不会作为内置服务使用。
 
-### 2. 初始化本地 NewAPI
+### 业务与媒体模型
 
-打开 **自定义**。如果状态为“等待初始化”：
+保留 `DC-character-builder-LLM`、`DC-scene-builder-LLM`、`DC-freezone-vision-LLM` 等稳定逻辑名称，并映射到合适的上游模型。文本功能需要文本模型，视觉功能需要多模态模型，Embedding 需要匹配的模型和维度，媒体模型需要对应的图片、视频或音频能力。编辑后保存映射；上游失败不会自动换用另一份凭据。
 
-1. 为全新的 NewAPI 设置 root 管理员密码并确认，密码至少 8 位。
-2. 点击 **初始化本地 NewAPI**。
+ComfyUI 仍可作为独立外部供应商使用：在所选第三方网关中配置可访问的服务地址和 Workflow，再在 DramaClaw 中添加对应视频网关组和模型映射。容器内的 `127.0.0.1` 不是宿主机地址，请使用 `api` 容器可访问的宿主机或局域网地址。
 
-初始化会：
+## 混合模式
 
-- 首次运行时创建 NewAPI 管理员；已经初始化时跳过该步骤。
-- 创建或复用 `dramaclaw-ce-runtime` 运行令牌。
-- 将运行地址和令牌保存到 CE 本地配置。
-- 检查 NewAPI SQLite 数据库与管理员访问是否可用。
-
-DramaClaw 不保存管理员密码。初始化完成后请自行保管该密码，以便登录 NewAPI 后台。对已经初始化的 NewAPI 再填写密码不会重置原密码。
-
-### 3. 使用推荐配置
-
-初始化完成后，推荐先使用 **推荐配置**。一份配置会同时处理：
-
-- 供应商渠道及上游 Key。
-- DramaClaw 业务模型映射。
-- Cognee Embedding 模型、维度和批量大小。
-- 图片、视频和音频模型映射。
-
-按渠道填写 API Key，然后点击 **保存并应用全部配置**。Key 独立保存，不会写入配置 JSON；已经保存的 Key 可以留空，重新输入会替换旧值。
-
-当前推荐模板包含 OpenRouter、VolcEngine、fal.ai 和 DoubaoAudio。推荐音频映射中的 DramaClaw 模型 ID 仍是 `index-tts-2`，实际通过 DoubaoAudio 渠道调用上游 `seed-audio-1.0`。
-
-内置推荐配置是只读模板。切换到 **我的配置** 后可以编辑 JSON，保存后的个人配置会在下次打开时恢复。JSON 的主要结构如下：
-
-```json
-{
-  "version": 2,
-  "name": "My CE profile",
-  "channels": [
-    {
-      "id": "openrouter",
-      "provider": "openrouter",
-      "baseUrl": "",
-      "priority": 0,
-      "settings": {}
-    }
-  ],
-  "featureModels": {
-    "text": {"channel": "openrouter", "model": "upstream-text-model"},
-    "vision": {"channel": "openrouter", "model": "upstream-vision-model"},
-    "overrides": {}
-  },
-  "embedding": {
-    "channel": "openrouter",
-    "model": "upstream-embedding-model",
-    "dimension": 1024,
-    "batchSize": 10
-  },
-  "mediaModels": {
-    "my-video-model": {
-      "channel": "openrouter",
-      "model": "upstream-video-model",
-      "mediaType": "video",
-      "label": "My Video Model",
-      "enabled": true,
-      "sortOrder": 100,
-      "config": {}
-    }
-  }
-}
-```
-
-`channel` 引用 `channels[].id`。当前一个 profile 中同一 `provider` 只能配置一次。切换配置或查看 JSON 只会切换待应用模板，不会覆盖当前已经生效的高级配置；点击 **保存并应用全部配置** 后，供应商渠道、业务模型、Embedding 和媒体模型才会一起写入后端并更新下方列表。高级配置保存后会同步为当前个人配置，避免两套配置同时生效。推荐配置升级后，如果下方仍显示旧渠道或旧模型，重新应用推荐配置即可，不需要清理浏览器数据。
-
-推荐配置不默认创建 ComfyUI 渠道；需要使用本地 MiniMax H3 时，请在高级配置中先通过 **渠道管理** 添加 ComfyUI，再在该渠道的 **ComfyUI Workflows** 区域载入模板。模板会补入 Workflow，并生成对应的 `MiniMax-H3-local` 媒体模型草稿。
-
-### 4. 高级配置
-
-高级配置用于逐项调整推荐配置应用后的结果。
-
-#### 供应商渠道
-
-点击 **渠道管理** 打开当前 NewAPI 支持的供应商目录。渠道类型及能力从 `/api/channel/types` 动态读取，每个供应商只能添加一次。目录支持按名称搜索，以及按文本、视觉理解、Embedding、图片、视频和音频等能力筛选；刚添加的渠道会显示在已配置渠道列表顶部。渠道目录加载失败时，先确认 RelayClaw CE 正常运行，再点击 **重新加载**。
-
-业务模型、Embedding 和媒体模型的渠道选择框会按照用途筛选：例如视频模型只列出支持视频能力的渠道，文本模型只列出支持文本能力的渠道。已有配置或暂时缺少能力元数据的渠道仍会保留，便于检查和修正，不会在升级后直接消失。
-
-- **保存渠道配置**：保存 CE 本地渠道预设。
-- **更新 NewAPI 渠道**：首次使用时创建渠道，后续更新 Key 和 Base URL，保留已有模型映射。
-- **获取模型列表**：先同步渠道，再获取上游支持的模型；成功后按钮显示模型数量。业务模型、Embedding、媒体模型及批量填写支持搜索下拉选择，选择后仍需保存映射。更新渠道配置会清除旧列表，重新打开模型下拉框或点击获取按钮即可刷新。
-- 上游没有模型列表接口、列表为空或获取失败时，仍可手动输入模型名称。列表不标注模型能力，请选择适合当前用途的模型。ComfyUI 继续通过 Workflow 配置模型。
-- OpenAI 渠道的模型列表请求为 `GET {Base URL}/v1/models`，使用渠道保存的上游 Key；Base URL 不要重复带上末尾 `/v1`。其他渠道使用 NewAPI 对应的供应商适配器。
-- **Base URL 覆盖**：通常留空，使用渠道默认地址；只有自建代理或供应商要求时填写。
-
-删除普通渠道前会显示受影响的业务模型、媒体模型和 Embedding 映射数量。删除已保存渠道会立即把剩余渠道列表写回后端；如果后端保存失败，当前本地配置会保留。删除最后一个普通渠道同样会持久化为空列表，刷新后不会恢复。ComfyUI 使用独立的清理确认，详见下文。
-
-保存推荐配置后，渠道 Key 应显示为“已保存”及脱敏预览。输入框中只有密码圆点且没有“已保存”标记时，它仍是尚未提交的草稿。
-
-#### 业务模型
-
-DramaClaw 使用稳定的内部逻辑模型名，例如 `DC-character-builder-LLM`、`DC-scene-builder-LLM` 和 `DC-freezone-vision-LLM`。自定义模式下，应保留这些内部名称，在 NewAPI 渠道中把它们映射到真实上游模型。
-
-- 文本理解与生成可以选择普通文本模型。
-- 视觉理解功能会发送图片或视频，必须选择支持相应输入的多模态模型。
-- 批量填充只修改页面草稿，仍需点击保存映射。
-- Hermes 可以使用独立模型；其他 `DC-*-LLM` 可以按需要统一映射或单独覆盖。
-- 升级后如果新增了功能行（例如 v2.0.3 新增的 `DC-character-builder-LLM`），新行默认为空，不会写入 NewAPI；需要选好模型后点「保存映射」，或重新应用一次快捷配置。在此之前该功能会报 `No available channel for model DC-...`。
-
-#### Embedding
-
-`DC-cognee-embedding` 用于小说知识图谱和语义检索。需要设置：
-
-- 上游 embedding 模型。
-- 模型输出维度。
-- 批量大小，默认 10。
-
-Embedding 模型和维度在项目创建时绑定。修改配置只自动影响新项目；已有项目更换模型或维度前，需要清空并重建知识图谱。
-
-出现 embedding HTTP 400/422 时，优先检查模型是否支持配置维度，以及批量大小是否超过上游单次 `input` 上限。
-
-#### 图片、视频和音频模型
-
-媒体模型配置同时决定：
-
-- 虾画中是否显示该模型。
-- 显示名称与排序。
-- 发送给 NewAPI 的上游模型名。
-- 分辨率、比例、图片质量、时长等控件选项。
-- 文生视频、首帧、首尾帧、图片参考、全能参考和视频编辑等能力。
-- 参考图片、视频和音频数量上限。
-- 是否显示真人审核选项。
-- 模型专属请求参数。
-
-主线内置模型提供默认能力基线，不能从配置中删除。我的配置可以新增图片或视频模型，并编辑自定义模型能力。保存后刷新虾画，模型列表和控件会使用最新配置。
-
-模型 ID 是 DramaClaw 使用的稳定名称，**上游模型名**是 NewAPI 渠道实际调用的名称，两者可以不同。
-
-### 5. ComfyUI 配置
-
-在 **自定义** 模式中，ComfyUI 通过 **高级配置 → 供应商渠道** 添加。在 **本地 + 官方混合** 模式中，通过独立的 **ComfyUI 配置** 添加。两种模式读取同一个本地 NewAPI 和 SQLite 数据，也使用相同的渠道编辑器。
-
-点击 **渠道管理**，从渠道目录添加 ComfyUI 后，渠道下方会出现 **ComfyUI Workflows** 区域。只有这时才显示 **载入 MiniMax H3 模板**；没有添加 ComfyUI 的用户不会看到模板入口。载入模板会填入三条初始 Workflow，并在 Base URL 为空时填入 `http://127.0.0.1:8188`，但不会覆盖已有的非空地址或同 ID Workflow。载入后仍需保存渠道和视频模型配置，才会写入本地 NewAPI。
-
-每个 ComfyUI 渠道配置需要：
-
-- 一个 DramaClaw 使用的模型名称。该名称会注册到本地 NewAPI，并显示在虾画中。
-- ComfyUI 服务地址；本机默认是 `http://127.0.0.1:8188`。
-- 一条或多条 Workflow。每条包含唯一的 **Workflow ID** 和从 ComfyUI 导出的 **API Format Workflow JSON**，不能使用浏览器工作流 JSON。
-- 该模型的媒体能力，例如支持模式、比例、分辨率、时长和参考素材数量。
-
-普通本地 ComfyUI 不需要 API Key，可以留空。只有在 ComfyUI 前方部署了要求认证的代理时，才需要按代理方案提供认证信息。
-
-同一个模型名称可以绑定多条 Workflow。DramaClaw 将模型名称、Workflow ID 和 Workflow JSON 保存到 NewAPI，具体选择哪条 Workflow 由虾驿处理；虾画只显示一个统一模型，不再为每条 Workflow 创建一个模型。
-
-MiniMax H3 模板使用模型名 `MiniMax-H3-local`，内置文生、首帧和全能参考三条 Workflow。初始媒体能力为文生视频、首帧和全能参考，分辨率为 `480p`、`768p`、`1080p`，比例为 `21:9`、`16:9`、`4:3`、`1:1`、`3:4`、`9:16`。这些是初始值，仍可在媒体模型能力配置中调整。
-
-删除单条 Workflow 只删除该路由，不会自动删除统一模型。需要彻底移除时，点击仅在已配置后显示的 **清除 ComfyUI 配置**，确认后会删除本地和 NewAPI 中的 ComfyUI 渠道、Workflow 及对应媒体模型映射；项目和已生成媒体不会被删除。
-
-## 本地 + 官方混合模式
-
-混合模式用于保留官方 RelayClaw，同时让指定视频模型从本地 ComfyUI 生成：
-
-1. 先在 **官方** 保存 DC Key。
-2. 在 **自定义** 中初始化一次 NewAPI；同一个 SQLite 不需要重复初始化。
-3. 打开 **本地 + 官方混合**。
-4. 打开独立的 **ComfyUI 配置**，点击 **渠道管理** 并从目录中添加 ComfyUI。
-5. 在该渠道的 **ComfyUI Workflows** 区域载入 MiniMax H3 模板；也可以填写自己的本地视频模型名称，再添加一条或多条 Workflow ID 和 **API Format Workflow JSON**。本机默认地址是 `http://127.0.0.1:8188`。
-6. 保存视频配置并启用混合模式。
-
-ComfyUI API Key 是可选项。Workflow 必须是 API Format，而不是浏览器工作流格式。自定义模式与混合模式共享 ComfyUI 渠道、Workflow 和媒体模型能力配置；任一模式保存后，另一模式会读取相同结果。
-
-ComfyUI 渠道存在时，MiniMax H3 模板按钮会保留在该渠道的 **ComfyUI Workflows** 区域，方便恢复缺少的模板。重复载入时会把模板合并到现有 Workflow 中，保留用户已经配置的同 ID Workflow；当 ComfyUI 地址为空时，会自动填入 `http://127.0.0.1:8188`，不会覆盖非空的自定义地址。
-
-混合模式按模型 ID 路由：本地 ComfyUI 模型可以作为新模型加入虾画；本地存在与官方同名的视频模型时，则使用本地模型覆盖该官方模型。其他模型继续使用官方 RelayClaw。保存视频配置时，DramaClaw 会先保存 ComfyUI 渠道，再保存对应媒体模型。DramaClaw 不会在本地生成失败后自动回退官方，是否重试或改选官方模型由用户决定。混合模式只管理本地视频模型，不要求再次配置 OpenRouter、火山等官方上游渠道。
+混合模式保留官方 RelayClaw，同时为匹配的能力或模型 ID 选择已配置的第三方网关组。保存官方 DC key，添加至少一个有效的外部组，完成逻辑模型映射后启用混合模式。精确且无歧义的映射优先；没有匹配时使用官方网关。运行时失败不会自动换用另一份凭据。
 
 ## 参考媒体存储
 
@@ -300,7 +137,7 @@ Bucket 无需公开读；DramaClaw 使用临时签名 URL 授权上游读取。
 | 保存 Key 后高级配置仍没有“已保存”标记 | Key 可能只存在于页面草稿。重新保存对应渠道或重新应用完整配置，并确认使用的是包含最新代码的镜像。 |
 | 添加媒体模型时提示缺少供应商 Key | 对应供应商渠道尚未真正写入 NewAPI；先保存/更新渠道，再保存媒体模型。 |
 | NewAPI 报 `No available channel for model ...` | 检查逻辑模型映射、渠道是否启用、上游模型名及分组。 |
-| 走 Codex 类中转站（Codex2API 等）时结构化环节报 `Exceeded maximum output retries` | 中转站在 `/v1/chat/completions` 上丢掉了 `tool_calls`。到 NewAPI 后台给该渠道开启 **ChatCompletions → Responses Compatibility**。详见[排错指南](../guides/troubleshooting.md#模型--网关类)。 |
+| 走 Codex 类中转站（Codex2API 等）时结构化环节报 `Exceeded maximum output retries` | 中转站可能在 `/v1/chat/completions` 上丢掉 `tool_calls`。检查所选外部网关的兼容选项；如支持，开启 Responses 兼容模式。详见[排错指南](../guides/troubleshooting.md#模型--网关类)。 |
 | 虾画没有显示新增模型 | 确认模型已启用、媒体类型正确、已保存全部配置并刷新页面。 |
 | 模型控件与实际能力不一致 | 检查媒体模型的 `config`，尤其是分辨率、比例、模式和参考素材上限。 |
 | 知识图谱 embedding 失败 | 检查 embedding Key、上游模型、维度和批量大小；429 表示上游限流。 |
@@ -313,6 +150,6 @@ Bucket 无需公开读；DramaClaw 使用临时签名 URL 授权上游读取。
 
 - `src/novelvideo/official_media_models.json`：CE 官方媒体模型与能力。
 - `.env.example`：环境变量参考。
-- `docker-compose.yml`（源码构建）/ `docker-compose.release.yml`（镜像）：部署文件（api + 内置 NewAPI + web），网关模式在设置页选择。
+- `docker-compose.yml`（源码构建）/ `docker-compose.release.yml`（镜像）：CE 双服务部署（api + web）；在设置页配置外部网关组。
 - [自托管手册](../guides/self-hosting.md)
 - [环境变量参考](../reference/environment-variables.md)

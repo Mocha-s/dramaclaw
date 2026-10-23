@@ -319,9 +319,9 @@ DramaClaw runs all inference through an **OpenAI-compatible gateway** — either
 | **Disk** | A few GB for images plus generated media/state under the `ce-data` volume (no hard minimum) |
 | **OS** | macOS (Apple Silicon / Intel), Windows (Docker Desktop + WSL2 backend), Linux (Docker Engine + compose plugin) |
 | **Docker** | Docker + `docker compose` |
-| **Ports** | `8080` web UI · `8780` REST API · `3000` bundled gateway admin UI (host-only by default, can be widened) |
+| **Ports** | `8080` web UI · `8780` REST API |
 | **Datastores** | None required — no Postgres, Redis, Celery or Ray. Tasks run in-process; state lives on the local filesystem (SQLite + files) |
-| **Network** | Outbound access to the official gateway `api.aigcdo.top`, and/or to the model providers you configure in the bundled gateway |
+| **Network** | Outbound access to `api.aigcdo.top` and/or to the external gateway endpoints configured in Settings |
 
 > Local development (non-Docker) additionally needs Python 3.11–3.12 + [`uv`](https://docs.astral.sh/uv/) + `ffmpeg`. Full prerequisites in the [Self-hosting guide](docs/en/guides/self-hosting.md).
 

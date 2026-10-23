@@ -310,7 +310,7 @@ Xia Director แปลงบรีฟสร้างสรรค์ด้วย�
 
 ## ความต้องการของระบบ
 
-DramaClaw รัน inference ทั้งหมดผ่าน **gateway ที่เข้ากันได้กับ OpenAI** — ไม่ว่าจะเป็นบริการ RelayClaw อย่างเป็นทางการ หรือ [gateway ภายนอกที่คุณกำหนด ไม่มี model ใดรันบนเครื่องของคุณ ดังนั้นการใช้ทรัพยากรในเครื่องจึงเบา แล็ปท็อปธรรมดาหรือ VPS ขนาดเล็กก็เพียงพอ
+DramaClaw รัน inference ทั้งหมดผ่าน **gateway ที่เข้ากันได้กับ OpenAI** — ไม่ว่าจะเป็นบริการ RelayClaw อย่างเป็นทางการ หรือ gateway ภายนอกที่คุณกำหนด ไม่มี model ใดรันบนเครื่องของคุณ ดังนั้นการใช้ทรัพยากรในเครื่องจึงเบา แล็ปท็อปธรรมดาหรือ VPS ขนาดเล็กก็เพียงพอ
 
 | รายการ | ความต้องการ |
 |---|---|
@@ -319,9 +319,9 @@ DramaClaw รัน inference ทั้งหมดผ่าน **gateway ที
 | **ดิสก์** | ไม่กี่ GB สำหรับ image บวกกับสื่อ/สถานะที่สร้างขึ้นใน volume `ce-data` (ไม่มีขั้นต่ำตายตัว) |
 | **OS** | macOS (Apple Silicon / Intel), Windows (Docker Desktop + WSL2 backend), Linux (Docker Engine + compose plugin) |
 | **Docker** | Docker + `docker compose` |
-| **พอร์ต** | `8080` เว็บ UI · `8780` REST API · `3000` admin UI ของ gateway ที่มาพร้อมกัน (ค่าเริ่มต้นเปิดเฉพาะ host ขยายได้) |
+| **พอร์ต** | `8080` เว็บ UI · `8780` REST API |
 | **Datastore** | ไม่ต้องใช้เลย — ไม่มี Postgres, Redis, Celery หรือ Ray งานรันใน process; สถานะอยู่บนระบบไฟล์ในเครื่อง (SQLite + ไฟล์) |
-| **เครือข่าย** | ต้องออกอินเทอร์เน็ตไปยัง gateway อย่างเป็นทางการ `api.aigcdo.top` และ/หรือผู้ให้บริการ model ที่คุณกำหนดใน gateway ที่มาพร้อมกัน |
+| **เครือข่าย** | ต้องออกอินเทอร์เน็ตไปยัง `api.aigcdo.top` และ/หรือ external gateway ที่ตั้งค่าใน Settings |
 
 > การพัฒนาในเครื่อง (ไม่ใช้ Docker) ต้องใช้ Python 3.11–3.12 + [`uv`](https://docs.astral.sh/uv/) + `ffmpeg` เพิ่มเติม ดูข้อกำหนดเบื้องต้นฉบับเต็มใน [คู่มือโฮสต์เอง](../docs/en/guides/self-hosting.md)
 
@@ -385,7 +385,7 @@ DramaClaw เป็นกลางเรื่อง model — model ข้อ�
 
 - **Official (แนะนำ)** — วาง DC key ของคุณ (รับได้ที่ <https://api.aigcdo.top>) บันทึก เสร็จ RelayClaw มี model mapping ทุกตัวที่ DramaClaw ต้องการอยู่แล้ว; ไม่ต้องตั้งค่าอะไรเลย
 - **Custom** — ตั้งค่ากลุ่ม gateway ภายนอก (API key, capabilities และ model ID) ใน Settings
-- **Local + Official Hybrid** — ใช้ model official สำหรับสายการผลิตหลัก และเพิ่ม channel อื่น (เช่นเวิร์กโฟลว์วิดีโอ ComfyUI ในเครื่อง) ผ่าน gateway ที่มาพร้อมกัน
+- **Hybrid** — ใช้ model official สำหรับสายการผลิตหลักและเพิ่ม capability ผ่านกลุ่ม gateway ภายนอกที่ตั้งค่าไว้
 
 คำแนะนำฉบับเต็มอยู่ใน [การตั้งค่า Model](../docs/en/getting-started/configuring-models.md)
 

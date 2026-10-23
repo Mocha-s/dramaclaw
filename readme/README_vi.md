@@ -319,9 +319,9 @@ DramaClaw chạy toàn bộ suy luận qua một **gateway tương thích OpenAI
 | **Ổ đĩa** | Vài GB cho image cộng với media/trạng thái sinh ra trong volume `ce-data` (không có mức tối thiểu cứng) |
 | **Hệ điều hành** | macOS (Apple Silicon / Intel), Windows (Docker Desktop + backend WSL2), Linux (Docker Engine + plugin compose) |
 | **Docker** | Docker + `docker compose` |
-| **Cổng** | `8080` giao diện web · `8780` REST API · `3000` giao diện quản trị gateway đi kèm (mặc định chỉ host, có thể mở rộng) |
+| **Cổng** | `8080` giao diện web · `8780` REST API |
 | **Kho dữ liệu** | Không cần gì — không Postgres, Redis, Celery hay Ray. Tác vụ chạy trong tiến trình; trạng thái nằm trên hệ thống file cục bộ (SQLite + file) |
-| **Mạng** | Truy cập ra ngoài tới gateway chính thức `api.aigcdo.top`, và/hoặc tới các nhà cung cấp model bạn cấu hình trong gateway đi kèm |
+| **Mạng** | Truy cập ra ngoài tới `api.aigcdo.top`, và/hoặc tới các gateway bên ngoài được cấu hình trong Settings |
 
 > Phát triển cục bộ (không Docker) cần thêm Python 3.11–3.12 + [`uv`](https://docs.astral.sh/uv/) + `ffmpeg`. Điều kiện tiên quyết đầy đủ trong [Hướng dẫn tự lưu trữ](../docs/en/guides/self-hosting.md).
 
@@ -385,7 +385,7 @@ DramaClaw giữ trung lập về model — mọi model text / ảnh / video / â
 
 - **Official (khuyến nghị)** — dán DC key của bạn (lấy tại <https://api.aigcdo.top>), lưu, xong. RelayClaw đã có sẵn mọi ánh xạ model mà DramaClaw cần; không phải cấu hình gì.
 - **Custom** — cấu hình nhóm gateway bên thứ ba bên ngoài (API key, model ID và capabilities) trong Settings.
-- **Local + Official Hybrid** — giữ các model official cho pipeline chính và thêm các kênh bổ sung (ví dụ một workflow video ComfyUI cục bộ) qua gateway đi kèm.
+- **Hybrid** — giữ model official cho pipeline chính và thêm capability qua các nhóm gateway bên ngoài đã cấu hình.
 
 Hướng dẫn đầy đủ trong [Cấu hình model](../docs/en/getting-started/configuring-models.md).
 

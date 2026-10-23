@@ -50,3 +50,18 @@ git diff --check — passed
 docker compose config --quiet — passed
 uv run pytest tests/test_docker_persistence_config.py -q — 15 passed
 ```
+
+## Documentation scoped re-review follow-up
+
+Rewrote the remaining English and Chinese model-configuration sections to use generic third-party groups with explicit OpenAI/Gemini protocol selection, app-owned logical-model mappings, and independent provider guidance. The docs now state that NewAPI-specific admin CRUD, channel catalogs/synchronization, and root initialization are not portable and are not performed by CE. Updated troubleshooting and ComfyUI guidance without removing useful provider behavior.
+
+Removed the obsolete port-3000 bundled-admin requirement and corrected network requirements in the root and localized READMEs. Audited the localized deployment snippets for three-service startup, bundled admin UI, sibling checkout, and stale port claims; corrected the remaining contradictions and repaired the Thai system-requirements link markup.
+
+Fresh verification:
+
+```text
+git diff --check — passed
+docker compose config --quiet — passed
+uv run pytest tests/test_docker_persistence_config.py -q — 15 passed
+targeted stale-instruction grep — no matches
+```
