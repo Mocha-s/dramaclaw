@@ -2979,3 +2979,4 @@ tests/test_wysiwyg_neo4j.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml a
 uv.lock,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/features/canvas/selected-node-overlay-template-model.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/features/canvas/use-freezone-image-models-ready.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+.superpowers/sdd/2026-10-24-generic-third-party-gateway/final-suite-fix-report.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
