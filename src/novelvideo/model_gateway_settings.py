@@ -280,20 +280,13 @@ def _normalize_sub2api_groups(groups: list[dict[str, Any]]) -> list[dict[str, An
 
 
 def save_sub2api_groups(groups: list[dict[str, Any]], *, activate: bool = False) -> None:
-    normalized = _normalize_sub2api_groups(groups)
-    values = {
-        "sub2api_groups": json.dumps(
-            normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-        ),
-        "sub2api_base_url": "",
-        **{f"sub2api_api_key_{capability}": "" for capability in SUB2API_CAPABILITIES},
-    }
-    if activate:
-        values["model_gateway_mode"] = MODE_SUB2API
-    _write_many(values)
+    save_third_party_gateway_groups(groups, activate=activate)
 
 
 def get_sub2api_groups(*, masked: bool = False) -> list[dict[str, Any]]:
+    canonical = get_third_party_gateway_groups(masked=masked)
+    if canonical:
+        return canonical
     settings = get_model_gateway_settings()
     raw = settings.get("sub2api_groups", "")
     try:
@@ -400,7 +393,7 @@ def _resolve_sub2api_group(
         if score == best_score
     ]
     if len(best_matches) != 1:
-        return None
+        raise ValueError("ambiguous third-party model mapping")
     selected_group, selected_model = best_matches[0]
     selected_mapping = next(
         (
@@ -680,6 +673,8 @@ def get_third_party_gateway_groups(*, masked: bool = False) -> list[dict[str, An
 
 def save_third_party_gateway_groups(groups: list[dict[str, Any]], *, activate: bool = False) -> None:
     normalized = _normalize_sub2api_groups(groups)
+    if activate and not normalized:
+        raise ValueError("at least one valid third-party gateway group is required")
     values = {THIRD_PARTY_GROUPS_KEY: json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":"))}
     if activate:
         values["model_gateway_mode"] = MODE_CUSTOM
@@ -1717,10 +1712,31 @@ def get_ce_newapi_config_for_mode(
         return EffectiveNewApiConfig(
             mode=MODE_CUSTOM,
             source="custom",
-            base_url=normalize_relay_base_url(
-                settings.get("custom_newapi_base_url", "")
-            ),
+            base_url=normalize_relay_base_url(settings.get("custom_newapi_base_url", "")),
             api_key=normalize_api_key(settings.get("custom_newapi_api_key", "")),
+            image_edit_reference_format="dc-media",
+        )
+    if mode == MODE_HYBRID:
+        groups = get_third_party_gateway_groups()
+        selected = _resolve_sub2api_group(capability=capability, model=model, groups=groups) if groups else None
+        if selected is not None:
+            group, upstream_model, mapping = selected
+            protocol = str(group.get("protocol") or "openai").strip().lower()
+            return EffectiveNewApiConfig(
+                mode=MODE_HYBRID,
+                source="third_party",
+                base_url=_sub2api_openai_compat_base_url(group),
+                api_key=str(group.get("apiKey") or ""),
+                protocol=protocol,
+                model=upstream_model,
+                native_base_url=_sub2api_gemini_base_url(group) if protocol == "gemini" else "",
+                image_edit_reference_format=str(mapping.get("imageEditFormat") or "images"),
+            )
+        return EffectiveNewApiConfig(
+            mode=MODE_HYBRID,
+            source="hybrid",
+            base_url=normalize_relay_base_url(OFFICIAL_NEWAPI_BASE_URL),
+            api_key=normalize_api_key(settings.get("platform_gateway_api_key", "")),
         )
     db_official_api_key = normalize_api_key(settings.get("platform_gateway_api_key", ""))
     return EffectiveNewApiConfig(
@@ -2136,7 +2152,7 @@ def build_model_gateway_status(
     )
     sub2api_groups = get_sub2api_groups(masked=True) if uses_ce_settings else []
     third_party_groups = get_third_party_gateway_groups(masked=True) if uses_ce_settings else []
-    sub2api_configured = bool(sub2api_groups)
+    sub2api_configured = bool(third_party_groups)
     sub2api_text_configured = any(CAPABILITY_TEXT in group.get("capabilities", []) for group in sub2api_groups)
     effective = get_effective_newapi_config(
         official_base_url=official_base_url,
@@ -2169,7 +2185,7 @@ def build_model_gateway_status(
             "apiKeyPreview": mask_secret(effective.api_key),
             "configured": (
                 sub2api_configured
-                if effective.mode == MODE_SUB2API
+                if effective.mode in {MODE_CUSTOM, MODE_HYBRID}
                 else bool(effective.base_url and effective.api_key)
             ),
         },
@@ -2180,7 +2196,7 @@ def build_model_gateway_status(
             "apiKeyPreview": mask_secret(effective_llm.api_key),
             "configured": (
                 sub2api_text_configured
-                if effective_llm.mode == MODE_SUB2API
+                if effective_llm.mode in {MODE_CUSTOM, MODE_HYBRID}
                 else bool(effective_llm.base_url and effective_llm.api_key)
             ),
             "model": effective_llm.model,
@@ -2221,7 +2237,7 @@ def build_model_gateway_status(
             "llmMode": custom_llm_mode,
             "baseUrl": custom_base_url,
             "apiKeyPreview": mask_secret(custom_api_key),
-            "configured": bool(custom_base_url and custom_api_key),
+            "configured": bool(third_party_groups or (custom_base_url and custom_api_key)),
             "adminBaseUrl": settings.get("custom_newapi_admin_base_url", ""),
             "tokenName": settings.get("custom_newapi_token_name", ""),
             "tokenId": settings.get("custom_newapi_token_id", ""),

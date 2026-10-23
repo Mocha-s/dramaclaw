@@ -7,7 +7,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from novelvideo import config as app_config
@@ -39,6 +39,8 @@ from novelvideo.model_gateway_settings import (
     save_custom_newapi_gateway,
     save_sub2api_groups,
     get_sub2api_groups,
+    save_third_party_gateway_groups,
+    get_third_party_gateway_groups,
     save_newapi_database_config,
     save_newapi_embedding_model_config,
     save_newapi_media_model_mappings,
@@ -657,16 +659,16 @@ async def enable_official_gateway() -> dict[str, Any]:
 @router.post("/custom/enable")
 async def enable_custom_gateway() -> dict[str, Any]:
     try:
-        require_ce_gateway_management()
+        require_ce_gateway_settings_management()
     except PermissionError as exc:
         raise _permission_error(exc) from exc
     status = build_model_gateway_status(
         official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
         official_api_key=app_config.NEWAPI_API_KEY,
     )
-    if not status["custom"]["configured"]:
+    if not status["thirdParty"]["configured"]:
         raise HTTPException(
-            status_code=400, detail="local NewAPI gateway is not configured"
+            status_code=400, detail="At least one valid third-party gateway group is required"
         )
     set_model_gateway_mode(MODE_CUSTOM)
     runtime = _refresh_runtime_after_gateway_write()
@@ -680,14 +682,14 @@ async def enable_custom_gateway() -> dict[str, Any]:
     }
 
 
-@router.post("/sub2api/config")
-async def save_sub2api_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any]:
+@router.post("/third-party/config")
+async def save_third_party_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any]:
     try:
         require_ce_gateway_settings_management()
     except PermissionError as exc:
         raise _permission_error(exc) from exc
     if not body.groups:
-        save_sub2api_groups([], activate=False)
+        save_third_party_gateway_groups([], activate=False)
         runtime = _refresh_runtime_after_gateway_write()
         return {
             "ok": True,
@@ -697,7 +699,7 @@ async def save_sub2api_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any
             ),
             "runtime": runtime,
         }
-    existing = {group["id"]: group for group in get_sub2api_groups()}
+    existing = {group["id"]: group for group in get_third_party_gateway_groups()}
     groups: list[dict[str, Any]] = []
     for submitted in body.groups:
         group = dict(submitted)
@@ -721,9 +723,17 @@ async def save_sub2api_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any
         if not api_key:
             raise HTTPException(status_code=400, detail=f"API Key is required for {group_id or 'new group'}")
         group["apiKey"] = api_key
+        # Image edit request shape is protocol-derived for new/rewritten groups;
+        # unchanged legacy group data keeps its hidden compatibility value.
+        if not previous or base_url != str(previous.get("baseUrl") or "").rstrip("/"):
+            group["modelMappings"] = [
+                {key: value for key, value in mapping.items() if key != "imageEditFormat"}
+                for mapping in group.get("modelMappings", [])
+                if isinstance(mapping, dict)
+            ]
         groups.append(group)
     try:
-        save_sub2api_groups(groups, activate=False)
+        save_third_party_gateway_groups(groups, activate=False)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     runtime = _refresh_runtime_after_gateway_write()
@@ -737,8 +747,14 @@ async def save_sub2api_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any
     }
 
 
-@router.post("/sub2api/models")
-async def fetch_sub2api_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
+@router.post("/sub2api/config")
+async def save_sub2api_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any]:
+    """Compatibility alias for the generic third-party configuration route."""
+    return await save_third_party_gateway_config(body)
+
+
+@router.post("/third-party/models")
+async def fetch_third_party_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
     try:
         require_ce_gateway_settings_management()
     except PermissionError as exc:
@@ -751,7 +767,7 @@ async def fetch_sub2api_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
     if parsed_base_url.scheme not in {"http", "https"} or not parsed_base_url.netloc:
         raise HTTPException(status_code=400, detail="Base URL must use HTTP or HTTPS")
     existing = next(
-        (group for group in get_sub2api_groups() if group["id"] == body.id.strip()),
+        (group for group in get_third_party_gateway_groups() if group["id"] == body.id.strip()),
         None,
     )
     api_key = normalize_api_key(body.api_key)
@@ -818,8 +834,13 @@ async def fetch_sub2api_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
     return {"ok": True, "data": {"models": models}}
 
 
-@router.post("/sub2api/enable")
-async def enable_sub2api_gateway() -> dict[str, Any]:
+@router.post("/sub2api/models")
+async def fetch_sub2api_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
+    return await fetch_third_party_models(body)
+
+
+@router.post("/third-party/enable")
+async def enable_third_party_gateway() -> dict[str, Any]:
     try:
         require_ce_gateway_settings_management()
     except PermissionError as exc:
@@ -828,9 +849,9 @@ async def enable_sub2api_gateway() -> dict[str, Any]:
         official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
         official_api_key=app_config.NEWAPI_API_KEY,
     )
-    if not status["sub2api"]["configured"]:
-        raise HTTPException(status_code=400, detail="At least one Sub2API account group is required")
-    set_model_gateway_mode(MODE_SUB2API)
+    if not status["thirdParty"]["configured"]:
+        raise HTTPException(status_code=400, detail="At least one third-party gateway group is required")
+    set_model_gateway_mode(MODE_CUSTOM)
     runtime = _refresh_runtime_after_gateway_write()
     return {
         "ok": True,
@@ -842,20 +863,25 @@ async def enable_sub2api_gateway() -> dict[str, Any]:
     }
 
 
+@router.post("/sub2api/enable")
+async def enable_sub2api_gateway() -> dict[str, Any]:
+    return await enable_third_party_gateway()
+
+
 @router.post("/hybrid/enable")
 async def enable_hybrid_gateway() -> dict[str, Any]:
     try:
-        require_ce_gateway_management()
+        require_ce_gateway_settings_management()
     except PermissionError as exc:
         raise _permission_error(exc) from exc
     status = build_model_gateway_status(
         official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
         official_api_key=app_config.NEWAPI_API_KEY,
     )
-    if not status["official"]["configured"] or not status["custom"]["configured"]:
+    if not status["official"]["configured"] or not status["thirdParty"]["configured"]:
         raise HTTPException(
             status_code=400,
-            detail="local and official NewAPI gateways must both be configured",
+            detail="Hybrid requires an official API key and at least one valid third-party gateway group",
         )
     set_model_gateway_mode(MODE_HYBRID)
     runtime = _refresh_runtime_after_gateway_write()
@@ -1238,575 +1264,22 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
     return {"ok": True, "data": _media_relay_status()}
 
 
-@router.post("/custom/newapi/init")
-async def init_custom_newapi(body: NewApiInitBody = NewApiInitBody()) -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-        cfg = _get_provisioner_config_from_request(body.new_api_base_url, body.database)
-        setup_status = ensure_newapi_setup(cfg, _setup_credentials_from_request(body))
-        admin = ensure_admin_access_token(cfg)
-        token_name = (
-            body.token_name or cfg.relay_token_name
-        ).strip() or cfg.relay_token_name
-        token = create_or_reuse_relay_token(
-            cfg,
-            admin,
-            name=token_name,
-            group=body.group,
-            unlimited_quota=body.unlimited_quota,
-            remain_quota=body.remain_quota,
-            expired_time=body.expired_time,
-            reuse_existing=body.reuse_existing,
-        )
-        relay_base_url = normalize_relay_base_url(cfg.admin_base_url)
-        save_custom_newapi_gateway(
-            base_url=relay_base_url,
-            api_key=token["key"],
-            admin_base_url=cfg.admin_base_url,
-            token_name=str(token["name"]),
-            token_id=token["tokenId"],
-            activate=True,
-        )
-        _save_request_database_config(cfg, body.database)
-        runtime = _refresh_runtime_after_gateway_write()
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    return {
-        "ok": True,
-        "data": {
-            "mode": "custom",
-            "newApiAdminBaseUrl": cfg.admin_base_url,
-            "newApiBaseUrl": relay_base_url,
-            "adminUserId": admin.admin_user_id,
-            "adminUsername": admin.admin_username,
-            "adminTokenCreated": admin.token_created,
-            "adminTokenPreview": mask_token(admin.access_token),
-            "newApiSetup": {
-                "initialized": setup_status.initialized,
-                "rootInitialized": setup_status.root_initialized,
-                "databaseType": setup_status.database_type,
-                "setupPerformed": setup_status.setup_performed,
-                "alreadyInitialized": setup_status.already_initialized,
-            },
-            "relayToken": {
-                "created": bool(token["created"]),
-                "tokenId": token["tokenId"],
-                "name": token["name"],
-                "keyPreview": token["keyPreview"],
-            },
-            "database": build_provisioner_status()["database"],
-            "effective": build_model_gateway_status(
-                official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
-                official_api_key=app_config.NEWAPI_API_KEY,
-            )["effective"],
-            "runtime": runtime,
-        },
-    }
-
-
-@router.post("/custom/newapi/provider-channels")
-async def save_custom_newapi_provider_channels(
-    body: SaveProviderChannelsBody,
-) -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-        saved = save_newapi_provider_channels(
-            [
-                {
-                    "provider": channel.provider,
-                    "type": channel.type or 0,
-                    "upstreamKey": channel.upstream_key or "",
-                    "baseUrl": channel.base_url or "",
-                    "priority": channel.priority,
-                    "settings": channel.settings,
-                }
-                for channel in body.channels
-            ],
-            preserve_unmentioned=body.preserve_unmentioned,
-        )
-        requested_providers = {
-            str(channel.provider or "").strip().lower() for channel in body.channels
-        }
-        comfyui_channels = [
-            channel
-            for channel in saved
-            if channel["provider"] == "comfyui" and "comfyui" in requested_providers
-        ]
-        if comfyui_channels:
-            cfg = get_provisioner_config()
-            admin = ensure_admin_access_token(cfg)
-            existing_media_mappings = get_newapi_media_model_mappings()
-            media_mappings = {
-                model: mapping
-                for model, mapping in existing_media_mappings.items()
-                if mapping.get("provider") != "comfyui"
-            }
-            for channel in comfyui_channels:
-                models, workflow_ids = parse_comfyui_channel_workflows(
-                    channel["settings"]
-                )
-                model_mapping = {model: model for model in models}
-                payload = build_channel_payload(
-                    provider="comfyui",
-                    channel_type=channel.get("type") or 63,
-                    upstream_key=channel["upstreamKey"],
-                    model_mapping=model_mapping,
-                    base_url=channel["baseUrl"],
-                    priority=channel.get("priority", 0),
-                    other_settings=channel["settings"],
-                )
-                result = upsert_channel(cfg, admin, payload)
-                if not result.get("ok"):
-                    raise RuntimeError("NewAPI rejected ComfyUI channel configuration")
-                for model in model_mapping:
-                    previous = existing_media_mappings.get(model, {})
-                    media_mappings[model] = {
-                        "provider": "comfyui",
-                        "upstreamModel": "",
-                        "mediaType": previous.get("mediaType", "video"),
-                        "label": previous.get("label", model),
-                        "enabled": previous.get("enabled", True),
-                        "sortOrder": previous.get("sortOrder", 100),
-                        "config": _comfyui_media_model_config(
-                            model,
-                            previous.get("config"),
-                            workflow_ids=workflow_ids,
-                        ),
-                    }
-            save_newapi_media_model_mappings(media_mappings)
-        media_models = get_newapi_media_model_mappings()
-        embedding_model = get_newapi_embedding_model_config()
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    return {
-        "ok": True,
-        "data": {
-            "channels": [
-                {
-                    "provider": channel["provider"],
-                    "type": channel.get("type", 0),
-                    "configured": bool(channel["upstreamKey"])
-                    or (
-                        channel["provider"] == "comfyui"
-                        and bool(channel["baseUrl"])
-                        and bool(channel.get("settings"))
-                    ),
-                    "upstreamKeyPreview": mask_token(channel["upstreamKey"]),
-                    "baseUrl": channel["baseUrl"],
-                    "priority": channel.get("priority", 0),
-                    "settings": channel.get("settings", {}),
-                }
-                for channel in saved
-            ],
-            "mediaModels": media_models,
-            "embeddingModel": embedding_model or None,
-        },
-    }
-
-
-@router.delete("/custom/newapi/comfyui")
-async def clear_custom_newapi_comfyui() -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-        cfg = get_provisioner_config()
-        admin = ensure_admin_access_token(cfg)
-        deleted = delete_channel_by_name(
-            cfg,
-            admin,
-            name="DC-comfyui",
-            channel_type=63,
-        )
-        channels = save_newapi_provider_channels(
-            [
-                channel
-                for channel in get_newapi_provider_channels()
-                if channel["provider"] != "comfyui"
-            ]
-        )
-        mappings = save_newapi_media_model_mappings(
-            {
-                model: mapping
-                for model, mapping in get_newapi_media_model_mappings().items()
-                if mapping.get("provider") != "comfyui"
-            }
-        )
-        return {
-            "ok": True,
-            "data": {
-                "channelDeleted": deleted,
-                "channels": channels,
-                "mediaModels": mappings,
-            },
-        }
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-
-@router.get("/custom/newapi/channel-types")
-async def get_custom_newapi_channel_types() -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-        cfg = get_provisioner_config()
-        # Token discovery may wait for an uninitialized local NewAPI. Keep all
-        # blocking HTTP/SQLite work off the ASGI event loop so official gateway
-        # saves and application startup remain responsive.
-        items = await asyncio.to_thread(
-            lambda: list_channel_types(cfg, ensure_admin_access_token(cfg))
-        )
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return {"ok": True, "data": {"items": items}}
-
-
-@router.post("/custom/newapi/provider-channel/models")
-async def get_custom_newapi_provider_channel_models(
-    body: ProviderChannelModelsBody,
-) -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-    except PermissionError as exc:
-        raise _permission_error(exc) from None
-    provider = body.provider.strip().lower()
-    if not provider:
-        raise HTTPException(status_code=400, detail="provider is required")
-    if body.type is not None and body.type <= 0:
-        raise HTTPException(status_code=400, detail="type must be positive")
-
-    def discover() -> dict[str, Any]:
-        cfg = _get_provisioner_config_from_request(body.new_api_base_url, body.database)
-        saved_channel = get_newapi_provider_channel(provider) or {}
-        channel_type = body.type or int(saved_channel.get("type") or 0) or None
-        admin = ensure_admin_access_token(cfg)
-        return fetch_provider_channel_models(
-            cfg, admin, provider=provider, channel_type=channel_type
-        )
-
-    try:
-        data = await asyncio.to_thread(discover)
-    except LookupError:
-        raise HTTPException(
-            status_code=404, detail="provider channel not found; save and sync it first"
-        ) from None
-    except httpx.TimeoutException:
-        raise HTTPException(
-            status_code=504, detail="NewAPI provider model discovery timed out"
-        ) from None
-    except Exception:
-        # Configuration, admin-token checks and channel lookup can also contain
-        # credentials in their exceptions. Keep all management failures opaque.
-        raise HTTPException(
-            status_code=502, detail="NewAPI provider model discovery failed"
-        ) from None
-    return {"ok": True, "data": data}
-
-
-@router.post("/custom/newapi/provider-channel/sync")
-async def sync_custom_newapi_provider_channel(
-    body: SyncProviderChannelBody,
-) -> dict[str, Any]:
-    provider = str(body.provider or "").strip().lower()
-    if not provider:
-        raise HTTPException(status_code=400, detail="provider is required")
-    try:
-        require_ce_gateway_management()
-        saved_channel = get_newapi_provider_channel(provider) or {}
-        upstream_key = (body.upstream_key or "").strip() or saved_channel.get(
-            "upstreamKey", ""
-        )
-        if not upstream_key:
-            raise ValueError(f"upstreamKey is required for provider {provider}")
-        base_url = (
-            body.base_url
-            if body.base_url is not None
-            else saved_channel.get("baseUrl", "")
-        )
-        cfg = _get_provisioner_config_from_request(body.new_api_base_url, body.database)
-        admin = ensure_admin_access_token(cfg)
-        update_kwargs: dict[str, Any] = {
-            "provider": provider,
-            "upstream_key": upstream_key,
-            "base_url": base_url,
-        }
-        saved_channel_type = int(saved_channel.get("type") or 0)
-        if saved_channel_type > 0:
-            update_kwargs["channel_type"] = saved_channel_type
-        result = update_provider_channel_credentials(cfg, admin, **update_kwargs)
-        saved = []
-        if result.get("ok"):
-            saved = save_newapi_provider_channels(
-                [
-                    {
-                        "provider": provider,
-                        "upstreamKey": upstream_key,
-                        "baseUrl": base_url or "",
-                    }
-                ],
-                preserve_unmentioned=True,
-            )
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except LookupError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    sent_payload = result.get("sentPayload")
-    return {
-        "ok": result["ok"],
-        "data": {
-            "provider": provider,
-            "channelId": result.get("channelId"),
-            "httpStatus": result.get("httpStatus"),
-            "newApiResponse": result.get("newApiResponse"),
-            "sentPayload": (
-                _mask_sent_channel_payload(sent_payload)
-                if isinstance(sent_payload, dict) and "channel" in sent_payload
-                else sent_payload
-            ),
-            "savedChannel": next(
-                (
-                    {
-                        "provider": channel["provider"],
-                        "configured": bool(channel["upstreamKey"]),
-                        "upstreamKeyPreview": mask_token(channel["upstreamKey"]),
-                        "baseUrl": channel["baseUrl"],
-                    }
-                    for channel in saved
-                    if channel["provider"] == provider
-                ),
-                None,
-            ),
-        },
-    }
-
-
-@router.post("/custom/newapi/channels")
-async def create_custom_newapi_channel(body: CreateChannelBody) -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-        cfg = _get_provisioner_config_from_request(body.new_api_base_url, body.database)
-        admin = ensure_admin_access_token(cfg)
-        payload = _build_channel_payload_from_spec(body)
-        result = upsert_channel(cfg, admin, payload)
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    return {
-        "ok": result["ok"],
-        "data": {
-            "newApiAdminBaseUrl": cfg.admin_base_url,
-            "httpStatus": result["httpStatus"],
-            "newApiResponse": result["newApiResponse"],
-            "action": result.get("action"),
-            "channelId": result.get("channelId"),
-            "sentPayload": _mask_sent_channel_payload(
-                result.get("sentPayload") or payload
-            ),
-        },
-    }
-
-
-@router.post("/custom/newapi/channels/batch")
-async def create_custom_newapi_channels_batch(
-    body: CreateChannelsBatchBody,
-) -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-        cfg = _get_provisioner_config_from_request(body.new_api_base_url, body.database)
-        admin = ensure_admin_access_token(cfg)
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    results: list[dict[str, Any]] = []
-    for index, channel in enumerate(body.channels):
-        try:
-            payload = _build_channel_payload_from_spec(channel)
-            result = upsert_channel(cfg, admin, payload)
-            item: dict[str, Any] = {
-                "index": index,
-                "ok": result["ok"],
-                "httpStatus": result["httpStatus"],
-                "newApiResponse": result["newApiResponse"],
-                "action": result.get("action"),
-                "channelId": result.get("channelId"),
-                "sentPayload": _mask_sent_channel_payload(
-                    result.get("sentPayload") or payload
-                ),
-            }
-            if not result["ok"]:
-                item["error"] = "NewAPI rejected channel creation"
-            results.append(item)
-        except Exception as exc:
-            results.append(
-                {
-                    "index": index,
-                    "ok": False,
-                    "error": str(exc),
-                }
-            )
-
-    succeeded = sum(1 for item in results if item["ok"])
-    failed = len(results) - succeeded
-    return {
-        "ok": failed == 0,
-        "data": {
-            "newApiAdminBaseUrl": cfg.admin_base_url,
-            "total": len(results),
-            "succeeded": succeeded,
-            "failed": failed,
-            "results": results,
-        },
-    }
-
-
-@router.post("/custom/newapi/embedding-model")
-async def save_custom_newapi_embedding_model(
-    body: SaveEmbeddingModelBody,
-) -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-        spec, normalized_model = _build_embedding_model_channel_spec(body)
-        cfg = _get_provisioner_config_from_request(body.new_api_base_url, body.database)
-        admin = ensure_admin_access_token(cfg)
-        payload = _build_channel_payload_from_spec(spec)
-        result = upsert_channel(cfg, admin, payload)
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    item: dict[str, Any] = {
-        "provider": spec.provider,
-        "ok": result["ok"],
-        "httpStatus": result["httpStatus"],
-        "newApiResponse": result["newApiResponse"],
-        "action": result.get("action"),
-        "channelId": result.get("channelId"),
-        "sentPayload": _mask_sent_channel_payload(result.get("sentPayload") or payload),
-    }
-    if not result["ok"]:
-        response = result.get("newApiResponse")
-        message = ""
-        if isinstance(response, dict):
-            message = str(
-                response.get("message") or response.get("error") or ""
-            ).strip()
-        item["error"] = message or "NewAPI rejected embedding model channel update"
-        return {
-            "ok": False,
-            "data": {
-                "newApiAdminBaseUrl": cfg.admin_base_url,
-                "embeddingModel": {},
-                "result": item,
-            },
-        }
-
-    saved = save_newapi_embedding_model_config(
-        provider=normalized_model["provider"],
-        upstream_model=normalized_model["upstreamModel"],
-        dimension=normalized_model["dimension"],
-        batch_size=normalized_model.get("batchSize"),
-        send_dimensions=normalized_model["sendDimensions"],
+def _newapi_admin_not_portable() -> None:
+    raise HTTPException(
+        status_code=410,
+        detail="NewAPI administration is not portable to third-party gateways; manage channels in the selected gateway.",
     )
-    return {
-        "ok": True,
-        "data": {
-            "newApiAdminBaseUrl": cfg.admin_base_url,
-            "embeddingModel": saved,
-            "result": item,
-        },
-    }
 
 
+@router.post("/custom/newapi/init")
+@router.post("/custom/newapi/provider-channels")
+@router.delete("/custom/newapi/comfyui")
+@router.get("/custom/newapi/channel-types")
+@router.post("/custom/newapi/provider-channel/models")
+@router.post("/custom/newapi/provider-channel/sync")
+@router.post("/custom/newapi/channels")
+@router.post("/custom/newapi/channels/batch")
+@router.post("/custom/newapi/embedding-model")
 @router.post("/custom/newapi/media-models")
-async def save_custom_newapi_media_models(body: SaveMediaModelsBody) -> dict[str, Any]:
-    try:
-        require_ce_gateway_management()
-        specs, normalized_models = _build_media_model_channel_specs(body.models)
-        cfg = _get_provisioner_config_from_request(body.new_api_base_url, body.database)
-        admin = ensure_admin_access_token(cfg)
-    except PermissionError as exc:
-        raise _permission_error(exc) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    results: list[dict[str, Any]] = []
-    for index, channel in enumerate(specs):
-        try:
-            payload = _build_channel_payload_from_spec(channel)
-            result = upsert_channel(cfg, admin, payload)
-            item: dict[str, Any] = {
-                "index": index,
-                "provider": channel.provider,
-                "ok": result["ok"],
-                "httpStatus": result["httpStatus"],
-                "newApiResponse": result["newApiResponse"],
-                "action": result.get("action"),
-                "channelId": result.get("channelId"),
-                "sentPayload": _mask_sent_channel_payload(
-                    result.get("sentPayload") or payload
-                ),
-            }
-            if not result["ok"]:
-                response = result.get("newApiResponse")
-                message = ""
-                if isinstance(response, dict):
-                    message = str(
-                        response.get("message") or response.get("error") or ""
-                    ).strip()
-                item["error"] = message or "NewAPI rejected media model channel update"
-            results.append(item)
-        except Exception as exc:
-            results.append(
-                {
-                    "index": index,
-                    "provider": channel.provider,
-                    "ok": False,
-                    "error": str(exc),
-                }
-            )
-
-    succeeded = sum(1 for item in results if item["ok"])
-    failed = len(results) - succeeded
-    if failed == 0:
-        save_newapi_media_model_mappings(normalized_models)
-
-    return {
-        "ok": failed == 0,
-        "data": {
-            "newApiAdminBaseUrl": cfg.admin_base_url,
-            "total": len(results),
-            "succeeded": succeeded,
-            "failed": failed,
-            "models": normalized_models if failed == 0 else {},
-            "results": results,
-        },
-    }
+async def legacy_newapi_admin_not_portable(_request: Request) -> None:
+    _newapi_admin_not_portable()

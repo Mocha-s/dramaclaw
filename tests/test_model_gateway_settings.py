@@ -168,6 +168,42 @@ def test_custom_resolution_uses_canonical_group(monkeypatch, tmp_path):
     assert effective.model == "upstream-model"
 
 
+def test_hybrid_uses_most_specific_third_party_mapping_then_official(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_platform_gateway_key(api_key="official-key", activate=False)
+    groups = [
+        {"id": "broad", "name": "Broad", "protocol": "openai", "baseUrl": "https://broad.example/v1", "apiKey": "broad-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "vendor-*", "upstreamModel": "broad-model"}]},
+        {"id": "specific", "name": "Specific", "protocol": "openai", "baseUrl": "https://specific.example/v1", "apiKey": "specific-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "vendor-chat-*", "upstreamModel": "specific-model"}]},
+    ]
+    gateway_settings.save_third_party_gateway_groups(groups)
+    set_model_gateway_mode(MODE_HYBRID)
+
+    selected = get_effective_newapi_config(model="vendor-chat-pro")
+    fallback = get_effective_newapi_config(model="unmapped-model")
+
+    assert (selected.source, selected.api_key, selected.model) == ("third_party", "specific-key", "specific-model")
+    assert (fallback.source, fallback.api_key) == ("hybrid", "official-key")
+
+
+def test_generic_third_party_config_and_enable_routes_are_available(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.setattr(model_gateway, "require_ce_gateway_settings_management", lambda: None)
+    monkeypatch.setattr(model_gateway, "_refresh_runtime_after_gateway_write", lambda: {})
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    client = TestClient(app)
+
+    response = client.post("/model-gateway/third-party/config", json={"groups": [
+        {"id": "g", "name": "Gateway", "protocol": "openai", "baseUrl": "https://gateway.example/v1", "apiKey": "sk-secret-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "*", "upstreamModel": "*"}]}
+    ]})
+
+    assert response.status_code == 200
+    assert "sk-secret-key" not in response.text
+    enabled = client.post("/model-gateway/third-party/enable")
+    assert enabled.status_code == 200
+    assert enabled.json()["data"]["mode"] == MODE_CUSTOM
+
+
 def test_legacy_sub2api_mode_resolves_through_canonical_custom_groups(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     group = {"id": "canonical", "name": "Canonical", "protocol": "openai", "baseUrl": "https://canonical.example/v1", "apiKey": "canonical-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "logical-model", "upstreamModel": "upstream-model"}]}
