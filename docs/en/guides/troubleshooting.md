@@ -18,9 +18,9 @@
 
 | Symptom | Diagnosis |
 |---|---|
-| **Every model call errors** | Under Settings → Model Configuration, confirm the active channel is configured. Check the DC key for the official channel, or the service, runtime token, and upstream channels for Local NewAPI. |
-| **A stage reports "model does not exist"** | Local NewAPI is missing the corresponding logical model mapping, or the target channel is disabled. See [Configuring model providers](../getting-started/configuring-models.md). |
-| **Structured steps fail with `Exceeded maximum output retries`** (character extraction, script planning…) while plain text works | The upstream did not return a function/tool call. The task log (v2.0.3+) shows the retry prompt and cause. Relays that convert Chat Completions themselves (Codex2API and similar Codex-backed proxies) are known to drop `tool_calls` on `/v1/chat/completions`: in the bundled NewAPI admin, enable **ChatCompletions → Responses Compatibility** (`chat_completions_to_responses_policy`) for that channel so NewAPI sends `/v1/responses` upstream. See #490. |
+| **Every model call errors** | Under Settings → Model Configuration, confirm the active group has the correct Base URL, protocol, capability, and API key. Verify the endpoint is reachable from the `api` container; for Official, check the DC key. |
+| **A stage reports "model does not exist"** | Check the app-owned logical-model mapping, upstream model ID, and whether the selected external group exposes the required capability. See [Configuring model providers](../getting-started/configuring-models.md). |
+| **Structured steps fail with `Exceeded maximum output retries`** (character extraction, script planning…) while plain text works | Check the selected external gateway's OpenAI/Gemini protocol compatibility and Responses/tool-call support. NewAPI-specific admin CRUD and compatibility settings are not supported by CE; configure the equivalent option directly in the external gateway. See #490. |
 | **Text model times out** | Increase `NEWAPI_TEXT_TIMEOUT_SECONDS` (default 120); if a system proxy is intercepting an internal gateway, set `NEWAPI_TEXT_TRUST_ENV=false`. |
 | **Reference-image feature unavailable** | Requires `OSS_RELAY_AK/SK`; the plain text→video pipeline can run without it. |
 

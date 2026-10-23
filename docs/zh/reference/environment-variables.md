@@ -19,15 +19,14 @@
 ## 模型网关
 
 CE 的渠道选择、网关地址和 token 由网页「设置 → 模型配置」写入本机
-`settings.db`，不通过环境变量配置。官方渠道地址固定；本地渠道使用 CE
-随附的 NewAPI。
+`settings.db`，不通过环境变量配置。官方渠道地址固定；自定义和混合模式使用应用中配置的外部网关组。CE Compose 不附带或初始化本地管理网关。
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `NEWAPI_TEXT_TIMEOUT_SECONDS` | `120` | 文本模型 HTTP 超时(秒)。 |
 | `NEWAPI_TEXT_TRUST_ENV` | `true` | 是否让文本客户端读系统代理;内网网关被代理拦截时设 `false`。 |
 
-约 **30 个 `*_MODEL` 逻辑模型名**（如 `HERMES_MODEL=DC-hermes-LLM`）映射到网关后台的真实模型。本地 NewAPI 的映射在网页配置——详见[配置模型供应商](../getting-started/configuring-models.md)。
+约 **30 个 `*_MODEL` 逻辑模型名**（如 `HERMES_MODEL=DC-hermes-LLM`）映射到真实上游模型。请在网页中为外部 OpenAI/Gemini 兼容网关组配置协议、Base URL、API key、能力和模型映射——详见[配置模型供应商](../getting-started/configuring-models.md)。仍保留的 NewAPI 命名变量仅供旧客户端兼容读取，不会让 CE Compose 启动 NewAPI 服务。
 
 ## 参考媒体 relay(可选)
 

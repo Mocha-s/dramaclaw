@@ -21,14 +21,14 @@
 In CE, the selected channel, gateway address, and token are written by
 **Settings → Model Configuration** to the local `settings.db`; they are not
 configured through environment variables. The official channel has a fixed
-address, while the local channel uses the NewAPI bundled with CE.
+address. Custom and Hybrid use external gateway groups configured in the app; CE Compose does not bundle or provision a local admin gateway.
 
 | Variable | Default | Description |
 |---|---|---|
 | `NEWAPI_TEXT_TIMEOUT_SECONDS` | `120` | HTTP timeout for text models (seconds). |
 | `NEWAPI_TEXT_TRUST_ENV` | `true` | Whether the text client reads the system proxy; set `false` when an internal gateway is being blocked by a proxy. |
 
-About **30 `*_MODEL` logical model names** (e.g. `HERMES_MODEL=DC-hermes-LLM`) map to real upstream models. Configure Local NewAPI mappings in the web UI—see [Configuring Model Providers](../getting-started/configuring-models.md).
+About **30 `*_MODEL` logical model names** (e.g. `HERMES_MODEL=DC-hermes-LLM`) map to real upstream models. Configure protocol, Base URL, API key, capabilities, and mappings for external OpenAI/Gemini-compatible groups in the web UI—see [Configuring Model Providers](../getting-started/configuring-models.md). Legacy NewAPI-named variables are compatibility settings for clients that still read them; they do not add a NewAPI service to CE Compose.
 
 ## Reference Media Relay (optional)
 

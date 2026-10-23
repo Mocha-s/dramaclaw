@@ -65,3 +65,17 @@ docker compose config --quiet — passed
 uv run pytest tests/test_docker_persistence_config.py -q — 15 passed
 targeted stale-instruction grep — no matches
 ```
+
+## Documentation re-review follow-up
+
+Updated the environment-variable references to describe external OpenAI/Gemini-compatible groups and clarify that legacy NewAPI-named variables are compatibility-only and do not add a service to CE Compose. Replaced English and Chinese troubleshooting advice about Local NewAPI services, runtime tokens, channel mappings, and admin settings with checks for Base URL, protocol, capabilities, model mappings, API keys, and container reachability. Explicitly documented that NewAPI-specific admin CRUD is not portable or supported by CE. Corrected the remaining architecture wording to remove the bundled-gateway implication.
+
+Fresh verification:
+
+```text
+git diff --check — passed
+uv run pytest tests/test_docker_persistence_config.py -q — 15 passed
+docker compose config --quiet — passed
+```
+
+Targeted operator-doc grep found no bundled-service, three-service, sibling-checkout, port-3000-admin, or local-admin instructions. Remaining matches are explanatory compatibility/legacy notes and the clearly marked historical design/spec files, not setup instructions.

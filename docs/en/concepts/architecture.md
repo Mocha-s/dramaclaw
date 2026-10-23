@@ -75,7 +75,7 @@ No external database is required.
 
 ## Model Access
 
-All text / image / video / audio models are reached through a single **OpenAI-compatible gateway** (a bundled gateway or an official key); see [Configuring Model Providers](../getting-started/configuring-models.md) for details.
+All text / image / video / audio models are reached through the official gateway or a user-configured **OpenAI-compatible or Gemini-compatible external gateway group**; see [Configuring Model Providers](../getting-started/configuring-models.md) for details.
 
 ## Tech Stack
 
