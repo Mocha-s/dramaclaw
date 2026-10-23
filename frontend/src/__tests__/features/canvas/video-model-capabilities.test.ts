@@ -54,12 +54,12 @@ describe("视频模式有效比例", () => {
 });
 
 // 对齐后端 freezone/video_node.py 的真实模型 id（apiModel == id == 后端 model）。
-const SEEDANCE2_FAST = "newapi_seedance-2.0-fast";
-const SEEDANCE2_VALUE = "newapi_seedance-2.0-fast-value";
-const SEEDANCE10_PRO_FAST = "newapi_seedance-1.0-pro-fast";
-const SEEDANCE15_PRO = "newapi_seedance-1.5-pro";
-const HAPPYHORSE = "newapi_happyhorse-1.0";
-const SEEDANCE25 = "newapi_seedance-2.5";
+const SEEDANCE2_FAST = "seedance-2.0-fast";
+const SEEDANCE2_VALUE = "seedance-2.0-fast-value";
+const SEEDANCE10_PRO_FAST = "seedance-1.0-pro-fast";
+const SEEDANCE15_PRO = "seedance-1.5-pro";
+const HAPPYHORSE = "happyhorse-1.0";
+const SEEDANCE25 = "seedance-2.5";
 
 describe("catalog models requiring video input", () => {
   const none = { images: 0, videos: 0, audios: 0 };
@@ -122,7 +122,7 @@ describe("video model family detection", () => {
     expect(isHappyHorseVideoModel(HAPPYHORSE)).toBe(true);
     expect(isSeedance2VideoModel(HAPPYHORSE)).toBe(false);
     expect(isSeedance1xVideoModel(HAPPYHORSE)).toBe(false);
-    expect(isGrokVideoChannelModel("newapi_grok-video-channel")).toBe(true);
+    expect(isGrokVideoChannelModel("grok-video-channel")).toBe(true);
   });
 
   it("tolerates null / empty / oddly-formatted ids without misclassifying", () => {
@@ -755,7 +755,7 @@ describe("videoModelReferenceDisabledReason — 模型选择器置灰守卫", ()
   });
 
   it("Grok Video Channel：仅图片、且最多 8 张", () => {
-    const GROK = "newapi_grok-video-channel";
+    const GROK = "grok-video-channel";
     expect(videoModelReferenceDisabledReason(GROK, { ...none, images: 8 })).toBeNull();
     expect(videoModelReferenceDisabledReason(GROK, { ...none, images: 9 })).toBeTruthy();
     expect(videoModelReferenceDisabledReason(GROK, { ...none, videos: 1 })).toBeTruthy();
@@ -814,7 +814,7 @@ describe("置灰守卫 × 提交守卫 — 不置灰的组合必须存在可提�
 
 // 选择器的真实顺序：Fast 排在基础款 2.0 前面（见 ProviderModelPicker VIDEO_MODELS）。
 // 这个顺序是关键——挑目标不能图省事取「第一个 2.0」，那会落到 Fast 上。
-const SEEDANCE2_BASE = "newapi_seedance-2.0";
+const SEEDANCE2_BASE = "seedance-2.0";
 const MODELS = [
   { id: SEEDANCE2_FAST, apiModel: SEEDANCE2_FAST },
   { id: SEEDANCE2_BASE, apiModel: SEEDANCE2_BASE },
@@ -876,13 +876,13 @@ describe("videoReferenceAutoSwitchAction — 接入视频/音频时替 1.x 换�
   });
 
   it("返回的是 id 而非 apiModel —— 存进 VideoNodeData.model 的是 id", () => {
-    const renamed = [{ id: "picker-id-2.0", apiModel: "newapi_seedance-2.0" }];
+    const renamed = [{ id: "picker-id-2.0", apiModel: "seedance-2.0" }];
     const action = pick(SEEDANCE15_PRO, { videos: 1, audios: 0 }, renamed);
     expect(expectSwitch(action).modelId).toBe("picker-id-2.0");
   });
 
   it("2.0 / HappyHorse / Grok 都不抢：各有自己的路径或渠道", () => {
-    for (const id of [SEEDANCE2_FAST, HAPPYHORSE, "newapi_grok-video-channel"]) {
+    for (const id of [SEEDANCE2_FAST, HAPPYHORSE, "grok-video-channel"]) {
       expect(pick(id, { videos: 1, audios: 1 }, MODELS)).toEqual({ kind: "none" });
     }
   });

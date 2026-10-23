@@ -154,7 +154,7 @@ describe("generation credit cost query hook", () => {
           {
             surface: "supertale",
             imageRole: "sketch",
-            params: { image_selection: "newapi_gpt_image2" },
+            params: { image_selection: "gpt-image-2" },
           },
         ),
       { wrapper },
@@ -215,13 +215,13 @@ describe("generation credit cost query hook", () => {
     );
 
     const { result } = renderHook(
-      () => useGenerationCreditCost("image_selection", "newapi_gpt_image2"),
+      () => useGenerationCreditCost("image_selection", "gpt-image-2"),
       { wrapper },
     );
 
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(requestedKind).toBe("image_selection");
-    expect(requestedValue).toBe("newapi_gpt_image2");
+    expect(requestedValue).toBe("gpt-image-2");
     expect(result.current.data?.data.display).toBe("7");
   });
 
@@ -273,13 +273,13 @@ describe("generation credit cost query hook", () => {
     );
 
     const { result } = renderHook(
-      () => useGenerationCreditCost("video_backend", "newapi_seedance-1.0-pro-fast"),
+      () => useGenerationCreditCost("video_backend", "seedance-1.0-pro-fast"),
       { wrapper },
     );
 
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(requestedKind).toBe("video_backend");
-    expect(requestedValue).toBe("newapi_seedance-1.0-pro-fast");
+    expect(requestedValue).toBe("seedance-1.0-pro-fast");
     expect(result.current.data?.data.display).toBe("12");
   });
 
@@ -309,7 +309,7 @@ describe("generation credit cost query hook", () => {
 
     const { result } = renderHook(
       () =>
-        useGenerationCreditCost("image_selection", "newapi_gpt_image2", {
+        useGenerationCreditCost("image_selection", "gpt-image-2", {
           surface: "canvas",
           params: { size: "2K" },
           quantity: 3,

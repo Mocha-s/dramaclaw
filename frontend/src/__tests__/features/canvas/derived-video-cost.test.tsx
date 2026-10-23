@@ -17,18 +17,18 @@ describe("GIF video model availability", () => {
     mocks.quote.mockReturnValue({ isLoading: false, error: null });
   });
 
-  it.each(["newapi_seedance-2.0-fast", "seedance-2.0-fast"])(
+  it.each(["seedance-2.0-fast", "seedance-2.0-fast"])(
     "resolves Seedance Fast with catalog ID %s",
     (id) => {
       mocks.catalog.mockReturnValue({ models: [{
-        id, catalogId: id, apiModel: "newapi_seedance-2.0-fast",
+        id, catalogId: id, apiModel: "seedance-2.0-fast",
       }] });
       const { result } = renderHook(() => useDerivedVideoCost());
       expect(result.current.available).toBe(true);
       expect(mocks.quote).toHaveBeenLastCalledWith(
         "feature", "freezone.video_generate",
         expect.objectContaining({ params: expect.objectContaining({
-          catalog_id: id, video_backend: "newapi_seedance-2.0-fast",
+          catalog_id: id, video_backend: "seedance-2.0-fast",
         }) }),
       );
     },
@@ -36,7 +36,7 @@ describe("GIF video model availability", () => {
 
   it("does not substitute another model when Seedance Fast is absent", () => {
     mocks.catalog.mockReturnValue({ models: [{
-      id: "seedance-2.0", apiModel: "newapi_seedance-2.0",
+      id: "seedance-2.0", apiModel: "seedance-2.0",
     }] });
     const { result } = renderHook(() => useDerivedVideoCost());
     expect(result.current.available).toBe(false);

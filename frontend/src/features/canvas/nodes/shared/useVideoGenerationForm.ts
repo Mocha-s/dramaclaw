@@ -241,8 +241,8 @@ function isCompositionTimelineAudioNode(node: CanvasNode): boolean {
 
 function isSeedance2ValueModel(modelId: string | null | undefined): boolean {
   const normalized = String(modelId ?? "").trim().toLowerCase();
-  return normalized === "newapi_seedance-2.0-value" ||
-    normalized === "newapi_seedance-2.0-fast-value" ||
+  return normalized === "seedance-2.0-value" ||
+    normalized === "seedance-2.0-fast-value" ||
     normalized === "huimeng_seedance-2.0-value" ||
     normalized === "huimeng_seedance-2.0-fast-value";
 }

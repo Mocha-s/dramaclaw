@@ -446,7 +446,7 @@ async def test_eg10_character_and_prop_assets_forward_org_context_to_gateway_ada
     prop = await nanobanana_prop.generate_prop_reference(
         "ancient bronze sword",
         str(prop_output),
-        model="newapi_gpt_image2",
+        model="gpt-image-2",
         egress_context=context,
     )
     character = nanobanana_character.NanoBananaCharacterGenerator(

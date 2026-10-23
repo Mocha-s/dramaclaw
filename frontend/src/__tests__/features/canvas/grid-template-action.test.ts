@@ -149,7 +149,7 @@ describe('工作流 · 宫格功能（点功能建节点 → ↑ 才提交）', 
 
   it('图片目录加载失败时不把兜底模型当成当前目录模型提交', async () => {
     waitForFreezoneImageModels.mockResolvedValue({
-      models: [{ ...CATALOG_MODEL, id: 'newapi_gpt_image2', apiModel: 'newapi_gpt_image2' }],
+      models: [{ ...CATALOG_MODEL, id: 'gpt-image-2', apiModel: 'gpt-image-2' }],
       isLoading: false,
       isFallback: true,
       error: new Error('catalog unavailable'),

@@ -323,8 +323,8 @@ describe('buildAssetBoard', () => {
 
 describe('modelBadgeLabel', () => {
   it('剥掉渠道前缀，只留模型名', () => {
-    expect(modelBadgeLabel('newapi_seedance-2.0-value')).toBe('seedance-2.0-value');
-    expect(modelBadgeLabel('newapi_happyhorse-1.0')).toBe('happyhorse-1.0');
+    expect(modelBadgeLabel('seedance-2.0-value')).toBe('seedance-2.0-value');
+    expect(modelBadgeLabel('happyhorse-1.0')).toBe('happyhorse-1.0');
   });
 
   it('没有前缀 / 前缀畸形的 id 原样返回（不吞成空串）', () => {

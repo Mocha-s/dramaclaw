@@ -621,7 +621,7 @@ def test_standard_tutorial_recommends_and_verifies_a_missing_video_model(monkeyp
         model_responses={
             "imageGenNode": {"ok": True, "data": [{"id": "image-model"}]},
             "videoNode": {"ok": True, "data": [{
-                "id": "seedance-2.0-fast", "aliases": ["newapi_seedance-2.0-fast"],
+                "id": "seedance-2.0-fast", "aliases": ["seedance-2.0-fast"],
                 "supportedModes": ["image_to_video"], "minDuration": 4,
                 "maxDuration": 15, "ratioOptions": ["16:9"],
                 "resolutionOptions": ["720P"],
@@ -4573,7 +4573,7 @@ def _video_compose_plan() -> dict:
 
 @pytest.mark.parametrize("requested_model", [
     "seedance-2.0-fast", "seedance-2.0", "seedance-1.5-pro",
-    "newapi_seedance-2.0-fast", "newapi_seedance-2.0",
+    "seedance-2.0-fast", "seedance-2.0",
     "huimeng_seedance-1.5-pro", "01M1N6KNNEQKPZCSKYSK02DPV1",
     "unknown-model", "recommended",
 ])

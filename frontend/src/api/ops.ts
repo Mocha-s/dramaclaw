@@ -707,7 +707,7 @@ export interface FreezoneVideoEditPayload extends FreezoneNodeContext {
   /** 视频编辑音频策略：auto 自动 / origin 保留原声。 */
   audioSetting?: "auto" | "origin";
   generateAudio?: boolean;
-  /** default newapi_happyhorse-1.0. */
+  /** default happyhorse-1.0. */
   model?: string;
   /** 视频编辑入口的固定业务模式。 */
   genMode: "videoEdit";
@@ -1260,7 +1260,7 @@ export interface MediaModelRequestSchema {
 export interface FreezoneImageModelInfo extends ReferenceMediaLimits {
   /** Opaque database identity used by new billing and task records. */
   catalogId?: string;
-  /** Stable picker id, e.g. `"newapi_gpt_image2"`. */
+  /** Stable picker id, e.g. `"gpt-image-2"`. */
   id: string;
   /** Provider tab id (`huimeng` / `openrouter` / `openai`). */
   providerId: FreezoneProvider;

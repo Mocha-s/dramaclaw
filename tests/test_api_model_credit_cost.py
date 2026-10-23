@@ -282,7 +282,7 @@ async def test_generation_credit_cost_route_passes_params_and_quantity(monkeypat
 
     result = await model_credits.get_generation_credit_cost(
         kind="image_selection",
-        value="newapi_gpt_image2",
+        value="gpt-image-2",
         params='{"size":"2k","quality":"high"}',
         quantity=3,
         user={"user_id": "usr_1"},
@@ -576,23 +576,23 @@ async def test_generation_credit_cost_route_prices_freezone_image_generate_by_mo
     from novelvideo import config
     from novelvideo.api.routes import model_credits
 
-    pricing_model = config.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"]
+    pricing_model = config.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"]
     patch_quote_expect(
         monkeypatch,
         model_credits,
         expected_kind="feature",
         expected_model="freezone.image_generate",
         expected_params={
-            "image_selection": "newapi_gpt_image2",
+            "image_selection": "gpt-image-2",
             "size": "2K",
             "quality": "low",
             "pricing_quantity": 3,
             "pricing_kind": "image",
             "pricing_model": pricing_model,
             "pricing_params": {"size": "2K", "quality": "low"},
-            "pricing_model_selection": "newapi_gpt_image2",
+            "pricing_model_selection": "gpt-image-2",
             "pricing_model_label": config.IMAGE_GENERATION_SELECTIONS[
-                "newapi_gpt_image2"
+                "gpt-image-2"
             ]["label"],
         },
         expected_quantity=3,
@@ -604,7 +604,7 @@ async def test_generation_credit_cost_route_prices_freezone_image_generate_by_mo
         surface="canvas",
         value="freezone.image_generate",
         params=(
-            '{"image_selection":"newapi_gpt_image2","size":"2K",'
+            '{"image_selection":"gpt-image-2","size":"2K",'
             '"quality":"low","pricing_quantity":3}'
         ),
         quantity=3,
@@ -693,14 +693,14 @@ async def test_generation_credit_cost_route_prices_freezone_image_tools_by_featu
     from novelvideo import config
     from novelvideo.api.routes import model_credits
 
-    pricing_model = config.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"]
+    pricing_model = config.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"]
     patch_quote_expect(
         monkeypatch,
         model_credits,
         expected_kind="feature",
         expected_model=feature_key,
         expected_params={
-            "image_selection": "newapi_gpt_image2",
+            "image_selection": "gpt-image-2",
             "size": "2K",
             "quality": "low",
             "operation": operation,
@@ -708,9 +708,9 @@ async def test_generation_credit_cost_route_prices_freezone_image_tools_by_featu
             "pricing_kind": "image",
             "pricing_model": pricing_model,
             "pricing_params": {"size": "2K", "quality": "low"},
-            "pricing_model_selection": "newapi_gpt_image2",
+            "pricing_model_selection": "gpt-image-2",
             "pricing_model_label": config.IMAGE_GENERATION_SELECTIONS[
-                "newapi_gpt_image2"
+                "gpt-image-2"
             ]["label"],
         },
         expected_quantity=1,
@@ -722,7 +722,7 @@ async def test_generation_credit_cost_route_prices_freezone_image_tools_by_featu
         surface="canvas",
         value=feature_key,
         params=(
-            '{"image_selection":"newapi_gpt_image2","size":"2K",'
+            '{"image_selection":"gpt-image-2","size":"2K",'
             f'"quality":"low","operation":"{operation}"}}'
         ),
         user={"user_id": "usr_1"},
@@ -736,13 +736,13 @@ async def test_generation_credit_cost_route_resolves_image_selection(monkeypatch
     from novelvideo.api.routes import model_credits
     from novelvideo import config
 
-    expected_model = config.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"]
+    expected_model = config.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"]
 
     patch_quote(monkeypatch, model_credits, expected_model=expected_model, cost=7)
 
     result = await model_credits.get_generation_credit_cost(
         kind="image_selection",
-        value="newapi_gpt_image2",
+        value="gpt-image-2",
         user={"user_id": "usr_1"},
     )
 
@@ -754,13 +754,13 @@ async def test_generation_credit_cost_route_resolves_image_selection_label(monke
     from novelvideo.api.routes import model_credits
     from novelvideo import config
 
-    expected_model = config.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"]
+    expected_model = config.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"]
 
     patch_quote(monkeypatch, model_credits, expected_model=expected_model, cost=7)
 
     result = await model_credits.get_generation_credit_cost(
         kind="image_selection",
-        value=config.character_image_selection_options()["newapi_gpt_image2"],
+        value=config.character_image_selection_options()["gpt-image-2"],
         user={"user_id": "usr_1"},
     )
 
@@ -824,19 +824,19 @@ def test_scene_reference_feature_quote_resolves_selected_bottom_model(monkeypatc
 
     monkeypatch.setitem(
         config.IMAGE_GENERATION_SELECTIONS,
-        "newapi_gpt_image2",
+        "gpt-image-2",
         {"label": "LingShan-G2", "provider": "newapi", "model": "gpt-image-2"},
     )
 
     params = model_credits._feature_billing_params(
         "mainline.scene_reference_image",
-        {"image_selection": "newapi_gpt_image2"},
+        {"image_selection": "gpt-image-2"},
     )
 
     assert params["pricing_kind"] == "image"
     assert params["pricing_model"] == "gpt-image-2"
     assert params["pricing_params"] == {"size": "1K", "quality": "medium"}
-    assert params["pricing_model_selection"] == "newapi_gpt_image2"
+    assert params["pricing_model_selection"] == "gpt-image-2"
 
 
 def test_scene_pano_feature_quote_resolves_runtime_model_and_params(monkeypatch):
@@ -881,7 +881,7 @@ async def test_generation_credit_cost_route_adds_image_mode_params(monkeypatch):
 
     result = await model_credits.get_generation_credit_cost(
         kind="image_selection",
-        value="newapi_gpt_image2",
+        value="gpt-image-2",
         mode_key="2x2_1-1",
         image_role="render",
         user={"user_id": "usr_1"},
@@ -914,7 +914,7 @@ async def test_generation_credit_cost_route_canvas_uses_only_explicit_params(
     result = await model_credits.get_generation_credit_cost(
         kind="image_selection",
         surface="canvas",
-        value="newapi_gpt_image2",
+        value="gpt-image-2",
         params='{"size":"2K"}',
         quantity=2,
         mode_key="2x2_1-1",
@@ -948,7 +948,7 @@ async def test_generation_credit_cost_route_adds_character_image_params(monkeypa
 
     result = await model_credits.get_generation_credit_cost(
         kind="image_selection",
-        value="newapi_gpt_image2",
+        value="gpt-image-2",
         image_role="character",
         user={"user_id": "usr_1"},
     )
@@ -974,7 +974,7 @@ async def test_generation_credit_cost_route_keeps_video_params_and_quantity(
 
     result = await model_credits.get_generation_credit_cost(
         kind="video_backend",
-        value="newapi_seedance-1.0-pro-fast",
+        value="seedance-1.0-pro-fast",
         params='{"resolution":"720p"}',
         quantity=5,
         user={"user_id": "usr_1"},
@@ -997,13 +997,13 @@ async def test_generation_credit_cost_route_prices_video_feature_by_backend_and_
         expected_params={
             "pricing_kind": "video",
             "pricing_model": "seedance-1.0-pro-fast",
-            "pricing_model_selection": "newapi_seedance-1.0-pro-fast",
+            "pricing_model_selection": "seedance-1.0-pro-fast",
             "pricing_params": {"resolution": "720p", "video_input": "none"},
             "pricing_quantity": 5,
             "video_input_present": False,
             "input_video_duration_seconds": 0.0,
             "resolution": "720p",
-            "video_backend": "newapi_seedance-1.0-pro-fast",
+            "video_backend": "seedance-1.0-pro-fast",
         },
         expected_quantity=1,
         cost=25,
@@ -1013,7 +1013,7 @@ async def test_generation_credit_cost_route_prices_video_feature_by_backend_and_
         kind="feature",
         value="mainline.beat_video_generation",
         params=(
-            '{"video_backend":"newapi_seedance-1.0-pro-fast",'
+            '{"video_backend":"seedance-1.0-pro-fast",'
             '"resolution":"720p","pricing_quantity":5}'
         ),
         user={"user_id": "usr_1"},
@@ -1033,7 +1033,7 @@ def test_single_video_billing_uses_backend_normalized_duration(
     from novelvideo.api.routes.generation import _single_video_billing_metadata
 
     billing = _single_video_billing_metadata(
-        "newapi_seedance-1.0-pro-fast",
+        "seedance-1.0-pro-fast",
         resolution="720p",
         duration=requested_duration,
     )
@@ -1048,7 +1048,7 @@ def test_video_feature_billing_ignores_client_pricing_model_override():
 
     billing = _video_backend_feature_billing_params(
         {
-            "video_backend": "newapi_seedance-1.0-pro-fast",
+            "video_backend": "seedance-1.0-pro-fast",
             "pricing_model": "attacker-cheap-model",
             "pricing_quantity": 100,
         }
@@ -1065,7 +1065,7 @@ def test_video_feature_billing_combines_output_with_total_input_duration():
 
     billing = _video_backend_feature_billing_params(
         {
-            "video_backend": "newapi_seedance-2.0",
+            "video_backend": "seedance-2.0",
             "resolution": "720p",
             "pricing_quantity": 12,
             "video_input_present": True,
@@ -1100,7 +1100,7 @@ async def test_generation_credit_cost_route_prices_freezone_video_generate_by_fe
         expected_kind="feature",
         expected_model="freezone.video_generate",
         expected_params={
-            "video_backend": "newapi_seedance-1.0-pro-fast",
+            "video_backend": "seedance-1.0-pro-fast",
             "resolution": "1080p",
             "pricing_quantity": 12,
             "operation": "imageToVideo",
@@ -1108,7 +1108,7 @@ async def test_generation_credit_cost_route_prices_freezone_video_generate_by_fe
             "pricing_kind": "video",
             "pricing_model": "seedance-1.0-pro-fast",
             "pricing_params": {"resolution": "1080p", "video_input": "none"},
-            "pricing_model_selection": "newapi_seedance-1.0-pro-fast",
+            "pricing_model_selection": "seedance-1.0-pro-fast",
             "video_input_present": False,
             "input_video_duration_seconds": 0.0,
         },
@@ -1121,7 +1121,7 @@ async def test_generation_credit_cost_route_prices_freezone_video_generate_by_fe
         surface="canvas",
         value="freezone.video_generate",
         params=(
-            '{"video_backend":"newapi_seedance-1.0-pro-fast",'
+            '{"video_backend":"seedance-1.0-pro-fast",'
             '"resolution":"1080p","pricing_quantity":16,'
             '"operation":"imageToVideo","generate_audio":true}'
         ),
@@ -1155,7 +1155,7 @@ async def test_generation_credit_cost_route_prices_video_batch_by_calls_and_tota
         surface="canvas",
         value="freezone.video_generate",
         params=(
-            '{"video_backend":"newapi_seedance-1.0-pro-fast",'
+            '{"video_backend":"seedance-1.0-pro-fast",'
             '"resolution":"720p","pricing_quantity":15}'
         ),
         quantity=3,
@@ -1216,7 +1216,7 @@ async def test_generation_credit_cost_route_resolves_newapi_video_backend(monkey
 
     result = await model_credits.get_generation_credit_cost(
         kind="video_backend",
-        value="newapi_seedance-1.0-pro-fast",
+        value="seedance-1.0-pro-fast",
         user={"user_id": "usr_1"},
     )
 
@@ -1236,7 +1236,7 @@ async def test_generation_credit_cost_route_resolves_newapi_video_backend_label(
 
     result = await model_credits.get_generation_credit_cost(
         kind="video_backend",
-        value=newapi_video_backend_options()["newapi_seedance-1.0-pro-fast"],
+        value=newapi_video_backend_options()["seedance-1.0-pro-fast"],
         user={"user_id": "usr_1"},
     )
 

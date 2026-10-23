@@ -145,8 +145,8 @@ describe("scene reference generation mutation", () => {
       wrapper: makeWrapperWithMainDefaults(),
     });
 
-    await result.current.mutateAsync({ model: "newapi_gpt_image2" });
+    await result.current.mutateAsync({ model: "gpt-image-2" });
 
-    expect(requestBody).toEqual({ model: "newapi_gpt_image2" });
+    expect(requestBody).toEqual({ model: "gpt-image-2" });
   });
 });

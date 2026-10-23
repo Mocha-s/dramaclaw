@@ -10621,7 +10621,7 @@ async def freezone_image_animate(
     )
     source_paths = [_image_output_source(project_dir, ctx, username, project_name, body.image_url)]
 
-    model = "newapi_seedance-2.0-fast"
+    model = "seedance-2.0-fast"
     try:
         backend = await _resolve_catalog_video_backend(
             model,

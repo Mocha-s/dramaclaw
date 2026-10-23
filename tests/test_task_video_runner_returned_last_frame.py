@@ -78,7 +78,7 @@ async def test_omni_video_edit_parameter_error_has_actionable_task_message(
                     "reference_items": [{"type": "video", "path": "source.mp4"}],
                     "aspect_ratio": "16:9",
                     "duration_seconds": 5,
-                    "backend": "newapi_seedance-2.0",
+                    "backend": "seedance-2.0",
                     "gen_mode": "all_reference",
                 }
             },
@@ -225,7 +225,7 @@ async def test_single_video_runner_preserves_seedance2_config_resolution(
                     },
                     "frame_path": "https://example.com/first.png",
                     "prompt": "configured prompt",
-                    "video_backend": "newapi_seedance-2.0",
+                    "video_backend": "seedance-2.0",
                     "video_duration": 6,
                 }
             },
@@ -288,7 +288,7 @@ async def test_single_video_runner_passes_happyhorse_references_and_audio_settin
                     "beat": {"beat_number": 1},
                     "frame_path": None,
                     "prompt": "happyhorse prompt",
-                    "video_backend": "newapi_happyhorse-1.0",
+                    "video_backend": "happyhorse-1.0",
                     "video_duration": 7,
                     "ratio": "1:1",
                     "audio_setting": "origin",

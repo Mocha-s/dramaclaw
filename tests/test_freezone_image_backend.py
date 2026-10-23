@@ -59,8 +59,8 @@ from novelvideo.task_state import get_task_manager
 @pytest.mark.parametrize(
     "selection,model",
     [
-        ("newapi_gpt_image2", "LingShan-G2"),
-        ("newapi_nanobanana2", "LingShan-NB-2"),
+        ("gpt-image-2", "LingShan-G2"),
+        ("nano-banana-2", "LingShan-NB-2"),
     ],
 )
 @pytest.mark.parametrize("quality", ["low", "medium", "high"])
@@ -100,8 +100,8 @@ async def test_mainline_canvas_enqueue_carries_effective_feature_price(
     # This legacy setting is not a generate_grid override: mode_key wins.
     monkeypatch.setenv("DIRECTOR_CONTROL_SKETCH_IMAGE_SIZE", "4K")
     for key, name in [
-        ("newapi_gpt_image2", "LingShan-G2"),
-        ("newapi_nanobanana2", "LingShan-NB-2"),
+        ("gpt-image-2", "LingShan-G2"),
+        ("nano-banana-2", "LingShan-NB-2"),
     ]:
         monkeypatch.setitem(
             image_config.IMAGE_GENERATION_SELECTIONS,
@@ -192,7 +192,7 @@ async def test_mainline_canvas_enqueue_carries_effective_feature_price(
         else "director_control_to_sketch" if entry == "director" else "sketch_regen"
     )
     params = {"size": "1K"}
-    if selection == "newapi_gpt_image2":
+    if selection == "gpt-image-2":
         params["quality"] = quality
     assert captured["payload"]["billing"] == {
         "feature_key": f"mainline.{feature}",
@@ -217,7 +217,7 @@ def test_director_canvas_billing_uses_projection_and_director_override(monkeypat
             "projection_version": 1,
             "task_type": "mainline_director_control_sketch",
             "fields": {
-                "sketch_image_selection": "newapi_nanobanana2",
+                "sketch_image_selection": "nano-banana-2",
                 "beats": [],
                 "characters": [],
                 "sketch_colors": {},
@@ -234,15 +234,15 @@ def test_director_canvas_billing_uses_projection_and_director_override(monkeypat
     billing = freezone_routes._director_sketch_task_billing(**args)
     assert (
         billing["pricing_model"]
-        == freezone_routes.IMAGE_GENERATION_SELECTIONS["newapi_nanobanana2"]["model"]
+        == freezone_routes.IMAGE_GENERATION_SELECTIONS["nano-banana-2"]["model"]
     )
     assert billing["pricing_params"] == {"size": "1K"}
-    monkeypatch.setenv("DIRECTOR_CONTROL_SKETCH_IMAGE_SELECTION", "newapi_gpt_image2")
+    monkeypatch.setenv("DIRECTOR_CONTROL_SKETCH_IMAGE_SELECTION", "gpt-image-2")
     monkeypatch.setenv("DIRECTOR_CONTROL_SKETCH_IMAGE_QUALITY", "high")
     billing = freezone_routes._director_sketch_task_billing(**args)
     assert (
         billing["pricing_model"]
-        == freezone_routes.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"]
+        == freezone_routes.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"]
     )
     assert billing["pricing_params"] == {"size": "1K", "quality": "high"}
 
@@ -529,7 +529,7 @@ async def test_freezone_video_omni_gen_rejects_happyhorse_model(
             project="58",
             body=freezone_routes.FreezoneVideoOmniGenRequest(
                 prompt="雨夜街头，人物缓慢回头。",
-                model="newapi_happyhorse-1.0",
+                model="happyhorse-1.0",
             ),
             user={"username": "admin"},
         )
@@ -660,7 +660,7 @@ async def test_freezone_video_omni_gen_uses_catalog_audio_total_limit(
         {
             "catalogId": "cat-omni",
             "id": "cat-omni",
-            "apiModel": "newapi_seedance-2.0-fast",
+            "apiModel": "seedance-2.0-fast",
             "providerId": "newapi",
             "supportedModes": ["all_reference"],
             "referenceAudioTotalMaxSeconds": 8,
@@ -705,7 +705,7 @@ async def test_freezone_video_omni_gen_skips_duration_guard_for_unknown_model(
         {
             "catalogId": "cat-other",
             "id": "cat-other",
-            "apiModel": "newapi_seedance-1.5-pro",
+            "apiModel": "seedance-1.5-pro",
             "providerId": "newapi",
             "supportedModes": ["all_reference"],
         },
@@ -749,7 +749,7 @@ async def test_freezone_video_omni_gen_catalog_total_does_not_apply_per_clip_bou
         {
             "catalogId": "cat-long",
             "id": "cat-long",
-            "apiModel": "newapi_seedance-1.5-pro",
+            "apiModel": "seedance-1.5-pro",
             "providerId": "newapi",
             "supportedModes": ["all_reference"],
             "referenceAudioTotalMaxSeconds": 60,
@@ -790,7 +790,7 @@ async def test_freezone_video_omni_gen_uses_explicit_catalog_total_limit(
         {
             "catalogId": "cat-wide",
             "id": "cat-wide",
-            "apiModel": "newapi_seedance-2.0-fast",
+            "apiModel": "seedance-2.0-fast",
             "providerId": "newapi",
             "supportedModes": ["all_reference"],
             "referenceAudioTotalMaxSeconds": 60,
@@ -848,7 +848,7 @@ async def test_freezone_video_omni_gen_probes_audio_concurrently(
         {
             "catalogId": "cat-conc",
             "id": "cat-conc",
-            "apiModel": "newapi_seedance-2.0-fast",
+            "apiModel": "seedance-2.0-fast",
             "providerId": "newapi",
             "supportedModes": ["all_reference"],
         },
@@ -983,7 +983,7 @@ async def test_freezone_video_generation_enqueues_feature_billing(
         generate_audio=True,
         human_review=False,
         scene_optimize=None,
-        backend="newapi_seedance-1.0-pro-fast",
+        backend="seedance-1.0-pro-fast",
         gen_mode="image_reference",
         requested_gen_mode="imageToVideo",
     )
@@ -993,7 +993,7 @@ async def test_freezone_video_generation_enqueues_feature_billing(
     assert captured["queue_kind"] == "video"
     assert captured["payload"]["billing"] == {
         "feature_key": "freezone.video_generate",
-        "video_backend": "newapi_seedance-1.0-pro-fast",
+        "video_backend": "seedance-1.0-pro-fast",
         "resolution": "1080p",
         "pricing_quantity": 8,
         "operation": "imageToVideo",
@@ -1009,7 +1009,7 @@ async def test_freezone_video_generation_enqueues_feature_billing(
             "input_video_duration_ms": 0,
             "input_video_billed_seconds": 0,
         },
-        "pricing_model_selection": "newapi_seedance-1.0-pro-fast",
+        "pricing_model_selection": "seedance-1.0-pro-fast",
         "video_input_present": False,
         "input_video_duration_seconds": 0.0,
     }
@@ -1054,7 +1054,7 @@ async def test_freezone_video_generation_forces_audio_off_when_model_disallows_i
         generate_audio=True,
         human_review=False,
         scene_optimize=None,
-        backend="newapi_seedance-2.0",
+        backend="seedance-2.0",
         gen_mode="text_to_video",
         capabilities={"supportsGenerateAudio": False},
     )
@@ -1112,7 +1112,7 @@ async def test_freezone_video_generation_probes_reference_duration_before_billin
         generate_audio=False,
         human_review=False,
         scene_optimize=None,
-        backend="newapi_seedance-2.0",
+        backend="seedance-2.0",
         gen_mode="allReference",
     )
 
@@ -1170,7 +1170,7 @@ async def test_video_edit_uses_source_duration_for_output_reservation(
         generate_audio=False,
         human_review=False,
         scene_optimize=None,
-        backend="newapi_happyhorse-1.0",
+        backend="happyhorse-1.0",
         gen_mode="video_edit",
         requested_gen_mode="videoEdit",
     )
@@ -1225,7 +1225,7 @@ async def test_freezone_video_generation_validates_catalog_video_duration_before
             generate_audio=False,
             human_review=False,
             scene_optimize=None,
-            backend="newapi_seedance-2.0",
+            backend="seedance-2.0",
             gen_mode="allReference",
             capabilities={"referenceVideoTotalMaxSeconds": 10},
         )
@@ -3438,14 +3438,14 @@ def test_split_provider_and_model_accepts_sketch_selection_key() -> None:
 
 
 def test_split_provider_and_model_accepts_newapi_selection_key() -> None:
-    provider, model = _split_provider_and_model(None, "newapi_gpt_image2")
+    provider, model = _split_provider_and_model(None, "gpt-image-2")
 
     assert provider == "newapi"
     assert model == NEWAPI_IMAGE_MODEL
 
 
 def test_freezone_defaults_to_newapi_gpt_image2() -> None:
-    assert FREEZONE_DEFAULT_IMAGE_MODEL == "newapi_gpt_image2"
+    assert FREEZONE_DEFAULT_IMAGE_MODEL == "gpt-image-2"
     assert _resolve_freezone_image_provider(None) == "newapi"
     assert _resolve_freezone_image_provider("newapi") == "newapi"
 
@@ -3767,7 +3767,7 @@ async def test_freezone_gen_route_passes_output_dir_and_quality(
             prompt="衣服好看点",
             aspect_ratio="16:9",
             image_size="1K",
-            model="newapi_gpt_image2",
+            model="gpt-image-2",
             quality="low",
             canvas_id="default",
             node_id="node_gen",
@@ -3780,12 +3780,12 @@ async def test_freezone_gen_route_passes_output_dir_and_quality(
     assert captured["payload"]["project_dir"] == str(project_dir)
     assert captured["payload"]["quality"] == "low"
     billing = captured["payload"]["billing"]
-    assert billing["image_selection"] == "newapi_gpt_image2"
+    assert billing["image_selection"] == "gpt-image-2"
     assert billing["size"] == "1K"
     assert billing["quality"] == "low"
     assert billing["pricing_kind"] == "image"
     assert billing["pricing_model"] == freezone_routes.IMAGE_GENERATION_SELECTIONS[
-        "newapi_gpt_image2"
+        "gpt-image-2"
     ]["model"]
     assert billing["pricing_params"] == {"size": "1K", "quality": "low"}
     assert billing["pricing_quantity"] == 1
@@ -4418,7 +4418,7 @@ async def test_freezone_celery_image_jobs_preserve_canvas_node_context(
         camera=None,
         style=None,
         provider="newapi",
-        model="newapi_gpt_image2",
+        model="gpt-image-2",
         quality=None,
         canvas_id="canvas_a",
         node_id="node_gen",
@@ -4438,7 +4438,7 @@ async def test_freezone_celery_image_jobs_preserve_canvas_node_context(
         camera=None,
         style=None,
         provider="newapi",
-        model="newapi_gpt_image2",
+        model="gpt-image-2",
         quality=None,
         canvas_id="canvas_a",
         node_id="node_edit",
@@ -5022,9 +5022,9 @@ async def test_scene_360_rejects_a_model_the_catalog_does_not_have(
 @pytest.mark.parametrize(
     "backend",
     [
-        "newapi_seedance2.0-900-fast",
-        "newapi_seedance2.5-900",
-        "newapi_sd17-seedance-2.0",
+    "seedance2.0-900-fast",
+    "seedance2.5-900",
+    "sd17-seedance-2.0",
     ],
 )
 def test_seedance_compact_model_ids_support_omni_reference_mode(backend: str) -> None:
@@ -5044,7 +5044,7 @@ async def test_omni_route_allows_compact_seedance_catalog_id_without_mode_metada
         {
             "catalogId": "sd17-seedance-2.0",
             "id": "sd17-seedance-2.0",
-            "apiModel": "newapi_sd17-seedance-2.0",
+            "apiModel": "sd17-seedance-2.0",
             "providerId": "newapi",
             "request": {"endpoint": "videos", "parameters": []},
         },
@@ -5805,7 +5805,7 @@ async def test_skill_run_frame_accepts_plain_canvas_image_as_sketch_input(
     assert captured["payload"]["billing"] == {
         "feature_key": "mainline.render_regen",
         "pricing_kind": "image",
-        "pricing_model": freezone_routes.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"],
+        "pricing_model": freezone_routes.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"],
         "pricing_params": {"size": "1K", "quality": "medium"},
     }
     assert captured["payload"]["config"]["canvas_sketch_paths"]["8"].endswith(
@@ -5954,7 +5954,7 @@ async def test_skill_run_normalizes_project_media_url_before_dispatch(
     assert captured["payload"]["billing"] == {
         "feature_key": "mainline.sketch_regen",
         "pricing_kind": "image",
-        "pricing_model": freezone_routes.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"],
+        "pricing_model": freezone_routes.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"],
         "pricing_params": {"size": "1K", "quality": "low"},
     }
     assert captured["episode"] == 1
@@ -7203,7 +7203,7 @@ async def test_skill_run_sketch_accepts_director_combined_background(
     assert captured["payload"]["billing"] == {
         "feature_key": "mainline.director_control_to_sketch",
         "pricing_kind": "image",
-        "pricing_model": freezone_routes.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"],
+        "pricing_model": freezone_routes.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"],
         "pricing_params": {"size": "1K", "quality": "low"},
     }
     assert captured["episode"] == 1
@@ -7293,7 +7293,7 @@ async def test_skill_run_sketch_prefers_director_combined_over_background(
     assert captured["payload"]["billing"] == {
         "feature_key": "mainline.director_control_to_sketch",
         "pricing_kind": "image",
-        "pricing_model": freezone_routes.IMAGE_GENERATION_SELECTIONS["newapi_gpt_image2"]["model"],
+        "pricing_model": freezone_routes.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"],
         "pricing_params": {"size": "1K", "quality": "low"},
     }
     assert captured["episode"] == 1
@@ -8486,19 +8486,19 @@ async def test_freezone_image_models_returns_selection_keys(
     assert result["ok"] is True
     assert result["data"] == [
         {
-            "id": "newapi_gpt_image2",
+            "id": "gpt-image-2",
             "providerId": "newapi",
             "provider": "newapi",
-            "apiModel": "newapi_gpt_image2",
-            "api_model": "newapi_gpt_image2",
+            "apiModel": "gpt-image-2",
+            "api_model": "gpt-image-2",
             "label": "LingShan-G2",
         },
         {
-            "id": "newapi_nanobanana2",
+            "id": "nano-banana-2",
             "providerId": "newapi",
             "provider": "newapi",
-            "apiModel": "newapi_nanobanana2",
-            "api_model": "newapi_nanobanana2",
+            "apiModel": "nano-banana-2",
+            "api_model": "nano-banana-2",
             "label": "LingShan-NB-2",
         },
     ]
@@ -8782,8 +8782,8 @@ async def test_catalog_id_resolves_without_breaking_legacy_model_id(
         {
             "catalogId": "01TESTCATALOG0000000000000",
             "catalog_id": "01TESTCATALOG0000000000000",
-            "id": "newapi_seedance-2.0",
-            "apiModel": "newapi_seedance-2.0",
+            "id": "seedance-2.0",
+            "apiModel": "seedance-2.0",
             "gatewayModel": "seedance-2.0",
         }
     ]
@@ -8798,13 +8798,13 @@ async def test_catalog_id_resolves_without_breaking_legacy_model_id(
         await freezone_routes._resolve_catalog_video_backend(
             "01TESTCATALOG0000000000000"
         )
-        == "newapi_seedance-2.0"
+        == "seedance-2.0"
     )
     assert (
         await freezone_routes._resolve_catalog_video_backend(
-            "newapi_seedance-2.0"
+            "seedance-2.0"
         )
-        == "newapi_seedance-2.0"
+        == "seedance-2.0"
     )
 
 
@@ -10136,7 +10136,7 @@ async def test_freezone_video_generation_rejects_small_reference_image_before_bi
             generate_audio=False,
             human_review=False,
             scene_optimize=None,
-            backend="newapi_seedance-2.0",
+            backend="seedance-2.0",
             gen_mode="allReference",
             capabilities={"referenceImageMinWidth": 300, "referenceImageMinHeight": 300},
         )
@@ -10188,7 +10188,7 @@ async def test_freezone_video_generation_skips_dimension_gate_for_non_seedance_b
         generate_audio=False,
         human_review=False,
         scene_optimize=None,
-        backend="newapi_happyhorse-1.0",
+        backend="happyhorse-1.0",
         gen_mode="allReference",
         capabilities={},
     )
@@ -10231,7 +10231,7 @@ async def test_freezone_video_generation_reports_duplicate_last_frame_once(
             generate_audio=False,
             human_review=False,
             scene_optimize=None,
-            backend="newapi_seedance-2.0",
+            backend="seedance-2.0",
             last_frame_path=str(small),
             gen_mode="keyframe",
             capabilities={"referenceImageMinHeight": 300},

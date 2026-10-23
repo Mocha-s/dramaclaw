@@ -48,28 +48,24 @@ export const WORKFLOW_STABLE_CONTRACT = {
   ],
   "model_aliases_by_node_type": {
     "imageGenNode": {
-      "nano-banana-2": "newapi_nanobanana2",
-      "nanobanana2": "newapi_nanobanana2",
-      "nano_banana_2": "newapi_nanobanana2",
-      "gpt-image-2": "newapi_gpt_image2",
-      "openai/gpt-image-2": "newapi_gpt_image2"
+      "nano-banana-2": "nano-banana-2",
+      "nanobanana2": "nano-banana-2",
+      "nano_banana_2": "nano-banana-2",
+      "gpt-image-2": "gpt-image-2",
+      "openai/gpt-image-2": "gpt-image-2"
     },
     "videoNode": {
       "omni-flash": "seedance-2.0-fast",
       "omni_flash": "seedance-2.0-fast",
       "seedance_2_0_fast": "seedance-2.0-fast",
-      "seedance-2.0-fast": "seedance-2.0-fast",
-      "seedance-2.0": "seedance-2.0",
-      "seedance-1.5-pro": "seedance-1.5-pro",
-      "seedance-1.0-pro-fast": "seedance-1.0-pro-fast",
       "huimeng_seedance-2.0-fast": "seedance-2.0-fast",
       "huimeng_seedance-2.0": "seedance-2.0",
       "huimeng_seedance-1.5-pro": "seedance-1.5-pro",
       "huimeng_seedance-1.0-pro-fast": "seedance-1.0-pro-fast",
-      "newapi_seedance-2.0-fast": "seedance-2.0-fast",
-      "newapi_seedance-2.0": "seedance-2.0",
-      "newapi_seedance-1.5-pro": "seedance-1.5-pro",
-      "newapi_seedance-1.0-pro-fast": "seedance-1.0-pro-fast"
+      "seedance-2.0-fast": "seedance-2.0-fast",
+      "seedance-2.0": "seedance-2.0",
+      "seedance-1.5-pro": "seedance-1.5-pro",
+      "seedance-1.0-pro-fast": "seedance-1.0-pro-fast"
     }
   },
   "recipe_envelope": {

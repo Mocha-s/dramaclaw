@@ -30,10 +30,10 @@ def _gateway_model_from_backend(backend: str | None) -> str:
     lowered = value.lower()
     if lowered == "newapi":
         return NEWAPI_VIDEO_MODEL
-    for prefix in ("newapi_", "huimeng_", "huimengi_"):
+    for prefix in ("huimeng_", "huimengi_"):
         if lowered.startswith(prefix):
             return value[len(prefix) :].strip()
-    return ""
+    return value
 
 
 def video_duration_bounds_for_backend(

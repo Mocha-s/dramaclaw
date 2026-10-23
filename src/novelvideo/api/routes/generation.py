@@ -745,7 +745,7 @@ async def _build_character_map(
 
 def _validate_seedance_pro_dialogue_only(beats: list[dict], video_backend: str) -> str | None:
     """Seedance 1.5 有声仅允许 dialogue beat。"""
-    if video_backend not in {"seedance_pro", "newapi_seedance-1.5-pro"}:
+    if video_backend not in {"seedance_pro", "seedance-1.5-pro"}:
         return None
 
     non_dialogue = [
@@ -803,7 +803,7 @@ GROK_VIDEO_SUPPORTED_MODES = ("first_frame", "multimodal_reference")
 
 def _seedance2_model_from_backend(video_backend: str | None) -> str:
     text = str(video_backend or "").strip().lower()
-    for prefix in ("newapi_", "huimeng_", "huimengi_"):
+    for prefix in ("huimeng_", "huimengi_"):
         if text.startswith(prefix):
             return text[len(prefix) :].strip()
     return text
@@ -1674,9 +1674,9 @@ def _api_video_backend_options() -> list[VideoBackendOption]:
     )
 
     hidden_mainline_backends = {
-        "newapi_seedance-2.0-value",
-        "newapi_seedance-2.0-fast-value",
-        "newapi_happyhorse-1.0",
+        "seedance-2.0-value",
+        "seedance-2.0-fast-value",
+        "happyhorse-1.0",
     }
     options = {
         value: label
@@ -1709,7 +1709,7 @@ def _api_video_backend_options() -> list[VideoBackendOption]:
                 is_seedance2=_is_seedance2_backend(value),
                 is_happyhorse=is_happyhorse,
                 is_grok_video=is_grok_video,
-                dialogue_only=value in {"seedance_pro", "newapi_seedance-1.5-pro"},
+                dialogue_only=value in {"seedance_pro", "seedance-1.5-pro"},
                 min_duration=bounds[0] if bounds else None,
                 max_duration=bounds[1] if bounds else None,
                 resolution_options=(

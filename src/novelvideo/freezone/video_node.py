@@ -93,38 +93,38 @@ VIDEO_CAMERA_TEMPLATES: list[dict[str, str]] = [
 ]
 
 LEGACY_FREEZONE_VIDEO_BACKEND_ALIASES: dict[str, str] = {
-    "huimeng_seedance20_fast": "newapi_seedance-2.0-fast",
-    "huimeng_seedance-2.0-fast": "newapi_seedance-2.0-fast",
-    "seedance_2": "newapi_seedance-2.0-fast",
-    "huimeng_seedance10_fast": "newapi_seedance-1.0-pro-fast",
-    "huimeng_seedance-1.0-pro-fast": "newapi_seedance-1.0-pro-fast",
-    "seedance_fast": "newapi_seedance-1.0-pro-fast",
-    "huimeng_seedance15_pro": "newapi_seedance-1.5-pro",
-    "huimeng_seedance-1.5-pro": "newapi_seedance-1.5-pro",
-    "seedance_pro": "newapi_seedance-1.5-pro",
-    "seedance_pro_silent": "newapi_seedance-1.5-pro",
+    "huimeng_seedance20_fast": "seedance-2.0-fast",
+    "huimeng_seedance-2.0-fast": "seedance-2.0-fast",
+    "seedance_2": "seedance-2.0-fast",
+    "huimeng_seedance10_fast": "seedance-1.0-pro-fast",
+    "huimeng_seedance-1.0-pro-fast": "seedance-1.0-pro-fast",
+    "seedance_fast": "seedance-1.0-pro-fast",
+    "huimeng_seedance15_pro": "seedance-1.5-pro",
+    "huimeng_seedance-1.5-pro": "seedance-1.5-pro",
+    "seedance_pro": "seedance-1.5-pro",
+    "seedance_pro_silent": "seedance-1.5-pro",
 }
 
 LEGACY_FREEZONE_VIDEO_LABEL_ALIASES: dict[str, str] = {
-    "huimeng seedance 2.0 fast": "newapi_seedance-2.0-fast",
-    "huimeng seedance 1.0 pro fast": "newapi_seedance-1.0-pro-fast",
-    "huimeng seedance 1.5 pro": "newapi_seedance-1.5-pro",
-    "seedance 1.0 fast": "newapi_seedance-1.0-pro-fast",
-    "seedance 1.5 有声": "newapi_seedance-1.5-pro",
-    "seedance 1.5 无声": "newapi_seedance-1.5-pro",
+    "huimeng seedance 2.0 fast": "seedance-2.0-fast",
+    "huimeng seedance 1.0 pro fast": "seedance-1.0-pro-fast",
+    "huimeng seedance 1.5 pro": "seedance-1.5-pro",
+    "seedance 1.0 fast": "seedance-1.0-pro-fast",
+    "seedance 1.5 有声": "seedance-1.5-pro",
+    "seedance 1.5 无声": "seedance-1.5-pro",
 }
 
-FREEZONE_DEFAULT_VIDEO_BACKEND = "newapi_seedance-2.0-fast"
+FREEZONE_DEFAULT_VIDEO_BACKEND = "seedance-2.0-fast"
 FREEZONE_NEWAPI_VIDEO_BACKENDS = {
-    "newapi_seedance-2.0",
-    "newapi_seedance-2.0-fast",
-    "newapi_seedance-2.0-value",
-    "newapi_seedance-2.0-fast-value",
-    "newapi_seedance-1.0-pro-fast",
-    "newapi_seedance-1.5-pro",
-    "newapi_happyhorse-1.0",
+    "seedance-2.0",
+    "seedance-2.0-fast",
+    "seedance-2.0-value",
+    "seedance-2.0-fast-value",
+    "seedance-1.0-pro-fast",
+    "seedance-1.5-pro",
+    "happyhorse-1.0",
 }
-FREEZONE_DISABLED_VIDEO_BACKENDS = {"newapi_grok-video-channel"}
+FREEZONE_DISABLED_VIDEO_BACKENDS = {"grok-video-channel"}
 
 
 def get_video_camera_templates() -> list[dict[str, str]]:
@@ -198,7 +198,7 @@ FREEZONE_GROK_VIDEO_CHANNEL_RESOLUTION_OPTIONS = ("720p", "480p")
 
 def _freezone_video_model_from_backend(backend: str | None) -> str:
     text = str(backend or "").strip().lower()
-    for prefix in ("newapi_", "huimeng_", "huimengi_"):
+    for prefix in ("huimeng_", "huimengi_"):
         if text.startswith(prefix):
             return text[len(prefix) :].strip()
     return text
@@ -285,7 +285,7 @@ def _freezone_newapi_video_options() -> dict[str, str]:
         for key, value in newapi_video_backend_options().items()
         if key in FREEZONE_NEWAPI_VIDEO_BACKENDS
     }
-    options.setdefault("newapi_happyhorse-1.0", "HappyHorse 1.0")
+    options.setdefault("happyhorse-1.0", "HappyHorse 1.0")
     if FREEZONE_DEFAULT_VIDEO_BACKEND not in options:
         return options
     ordered = {FREEZONE_DEFAULT_VIDEO_BACKEND: options[FREEZONE_DEFAULT_VIDEO_BACKEND]}
@@ -376,6 +376,11 @@ def resolve_freezone_video_backend(model: str | None) -> str:
 def is_freezone_seedance2_backend(backend: str | None) -> bool:
     text = str(backend or "").strip()
     if text == "seedance_2":
+        return True
+    compact = text.lower().replace("_", "-").removeprefix("sd17-")
+    compact = compact.replace("seedance2.0", "seedance-2.0")
+    compact = compact.replace("seedance2.5", "seedance-2.5")
+    if compact.startswith(("seedance-2.0", "seedance-2.5")):
         return True
 
     from novelvideo.generators.huimengi import parse_huimeng_video_backend
@@ -760,7 +765,7 @@ async def run_trusted_freezone_video_gen(
     generate_audio: bool = False,
     human_review: bool = False,
     scene_optimize: str | None = None,
-    backend: str = "newapi_seedance-2.0-fast",
+    backend: str = "seedance-2.0-fast",
     last_frame_path: str | None = None,
     audio_setting: str | None = None,
     gen_mode: str | None = None,

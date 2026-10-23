@@ -10,7 +10,7 @@
       "label": "LingShan G2",
       "enabled": true,
       "sortOrder": 10,
-      "aliases": ["gpt-image-2", "huimeng_gpt_image2", "newapi_gpt_image2"],
+      "aliases": ["gpt-image-2", "huimeng_gpt_image2"],
       "config": {
         "request": {"endpoint": "images/generations", "parameters": []},
         "ratioOptions": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "4:5", "5:4", "21:9"],
@@ -55,7 +55,7 @@
       "label": "LingShan NB 2",
       "enabled": true,
       "sortOrder": 20,
-      "aliases": ["nano-banana-2", "nanobanana2", "newapi_nanobanana2"],
+      "aliases": ["nano-banana-2", "nanobanana2"],
       "config": {
         "request": {"endpoint": "images/generations", "parameters": []},
         "ratioOptions": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "21:9", "5:4", "4:5", "1:4", "4:1", "1:8", "8:1"],

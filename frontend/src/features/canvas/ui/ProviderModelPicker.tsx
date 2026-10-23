@@ -92,15 +92,15 @@ export const SHARED_PROVIDERS: ProviderOption[] = [
 // 兜底状态下的尺寸 / 比例选择器仍有可用档位，而不是散落回各个面板里去硬编码。
 export const SHARED_MODELS: ModelOption[] = [
   {
-    id: 'newapi_gpt_image2',
+    id: 'gpt-image-2',
     providerId: 'newapi',
-    apiModel: 'newapi_gpt_image2',
+    apiModel: 'gpt-image-2',
     label: 'LingShan-G2',
   },
   {
-    id: 'newapi_nanobanana2',
+    id: 'nano-banana-2',
     providerId: 'newapi',
-    apiModel: 'newapi_nanobanana2',
+    apiModel: 'nano-banana-2',
     label: 'LingShan-NB-2',
   },
   {
@@ -130,8 +130,8 @@ export const SHARED_MODELS: ModelOption[] = [
   },
 ];
 
-export const DEFAULT_SHARED_MODEL_ID = 'newapi_gpt_image2';
-export const DEFAULT_UPSCALE_MODEL_ID = 'newapi_gpt_image2';
+export const DEFAULT_SHARED_MODEL_ID = 'gpt-image-2';
+export const DEFAULT_UPSCALE_MODEL_ID = 'gpt-image-2';
 
 // Video generation models. `id` is the raw backend model id sent to
 // /freezone/video/gen so we don't need a separate apiModel mapping.
@@ -144,9 +144,9 @@ export const VIDEO_PROVIDERS: ProviderOption[] = [
 // 顶上，能力字段随行以保证兜底状态下参数面板仍有档位可选。
 export const VIDEO_MODELS: ModelOption[] = [
   {
-    id: 'newapi_seedance-2.0-fast',
+    id: 'seedance-2.0-fast',
     providerId: 'seedance',
-    apiModel: 'newapi_seedance-2.0-fast',
+    apiModel: 'seedance-2.0-fast',
     label: 'Seedance2.0 Fast',
     resolutionOptions: ['480p', '720p'],
     ratioOptions: [...FALLBACK_VIDEO_ASPECT_OPTIONS],
@@ -154,9 +154,9 @@ export const VIDEO_MODELS: ModelOption[] = [
     maxDuration: 15,
   },
   {
-    id: 'newapi_seedance-2.0',
+    id: 'seedance-2.0',
     providerId: 'seedance',
-    apiModel: 'newapi_seedance-2.0',
+    apiModel: 'seedance-2.0',
     label: 'Seedance2.0',
     resolutionOptions: ['480p', '720p', '1080p'],
     ratioOptions: [...FALLBACK_VIDEO_ASPECT_OPTIONS],
@@ -164,9 +164,9 @@ export const VIDEO_MODELS: ModelOption[] = [
     maxDuration: 15,
   },
   {
-    id: 'newapi_seedance-2.0-value',
+    id: 'seedance-2.0-value',
     providerId: 'seedance',
-    apiModel: 'newapi_seedance-2.0-value',
+    apiModel: 'seedance-2.0-value',
     label: 'Seedance2.0 Value',
     resolutionOptions: ['720p', '1080p'],
     ratioOptions: [...FALLBACK_VIDEO_ASPECT_OPTIONS],
@@ -176,9 +176,9 @@ export const VIDEO_MODELS: ModelOption[] = [
     defaultSceneOptimize: 'anime',
   },
   {
-    id: 'newapi_seedance-2.0-fast-value',
+    id: 'seedance-2.0-fast-value',
     providerId: 'seedance',
-    apiModel: 'newapi_seedance-2.0-fast-value',
+    apiModel: 'seedance-2.0-fast-value',
     label: 'Seedance2.0 Fast Value',
     resolutionOptions: ['720p', '1080p'],
     ratioOptions: [...FALLBACK_VIDEO_ASPECT_OPTIONS],
@@ -188,18 +188,18 @@ export const VIDEO_MODELS: ModelOption[] = [
     defaultSceneOptimize: 'realistic',
   },
   {
-    id: 'newapi_seedance-1.5-pro',
+    id: 'seedance-1.5-pro',
     providerId: 'seedance',
-    apiModel: 'newapi_seedance-1.5-pro',
+    apiModel: 'seedance-1.5-pro',
     label: 'Seedance1.5 Pro',
     ratioOptions: [...FALLBACK_VIDEO_ASPECT_OPTIONS],
     minDuration: 4,
     maxDuration: 12,
   },
   {
-    id: 'newapi_seedance-1.0-pro-fast',
+    id: 'seedance-1.0-pro-fast',
     providerId: 'seedance',
-    apiModel: 'newapi_seedance-1.0-pro-fast',
+    apiModel: 'seedance-1.0-pro-fast',
     label: 'Seedance1.0 Pro Fast',
     ratioOptions: [...FALLBACK_VIDEO_ASPECT_OPTIONS],
     minDuration: 2,
@@ -211,7 +211,7 @@ export const VIDEO_MODELS: ModelOption[] = [
 // hydrates the live list via /freezone/video/models, but this id is what the
 // canvas store uses on first node creation before that fetch resolves (and
 // when no previously-picked model has been remembered).
-export const DEFAULT_VIDEO_MODEL_ID = 'newapi_seedance-2.0';
+export const DEFAULT_VIDEO_MODEL_ID = 'seedance-2.0';
 
 export type ProviderModelDomain = 'image' | 'video';
 

@@ -607,17 +607,31 @@ def save_agent_llm_config(
     _write_many(values)
 
 
-def save_official_newapi_key(
+def save_platform_gateway_key(
     *,
     api_key: str,
     activate: bool = True,
 ) -> None:
     values = {
-        "official_newapi_api_key": str(api_key or "").strip(),
+        "platform_gateway_api_key": str(api_key or "").strip(),
     }
     if activate:
         values["model_gateway_mode"] = MODE_OFFICIAL
     _write_many(values)
+    conn = _connect()
+    try:
+        conn.execute(
+            "DELETE FROM runtime_settings WHERE key = ?",
+            ("official_newapi_api_key",),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def save_official_newapi_key(*, api_key: str, activate: bool = True) -> None:
+    """Deprecated name; save a key for the owned platform gateway."""
+    save_platform_gateway_key(api_key=api_key, activate=activate)
 
 
 def save_custom_newapi_gateway(
@@ -1234,7 +1248,7 @@ def _media_model_catalog(
             },
         )
         gateway_model = str(item.get("upstreamModel") or model)
-        api_model = model if wanted == "image" else f"newapi_{model}"
+        api_model = model
         aliases = item.get("aliases") if isinstance(item.get("aliases"), list) else []
         result.append(
             {
@@ -1559,7 +1573,7 @@ def get_ce_newapi_config_for_mode(
             ),
             api_key=normalize_api_key(settings.get("custom_newapi_api_key", "")),
         )
-    db_official_api_key = normalize_api_key(settings.get("official_newapi_api_key", ""))
+    db_official_api_key = normalize_api_key(settings.get("platform_gateway_api_key", ""))
     return EffectiveNewApiConfig(
         mode=mode,
         source="hybrid" if mode == MODE_HYBRID else "official",
@@ -1569,7 +1583,7 @@ def get_ce_newapi_config_for_mode(
 
 
 def _is_official_relay_url(base_url: str) -> bool:
-    """Whether a base URL is the official RelayClaw endpoint.
+    """Whether a base URL is the owned platform gateway endpoint.
 
     Compared after normalisation so a trailing slash or a missing /v1 does not
     decide whether a credential may travel.
@@ -1604,7 +1618,7 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
             mode=gateway_mode,
             source="hybrid" if gateway_mode == MODE_HYBRID else "official",
             base_url=normalize_relay_base_url(OFFICIAL_NEWAPI_BASE_URL),
-            api_key=normalize_api_key(settings.get("official_newapi_api_key", "")),
+            api_key=normalize_api_key(settings.get("platform_gateway_api_key", "")),
             model="brainclaw",
             is_brainclaw=True,
         )
@@ -1645,7 +1659,7 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
         # meant to expose there.
         brainclaw_api_key = normalize_api_key(
             settings.get("brainclaw_newapi_api_key", "")
-            or (settings.get("official_newapi_api_key", "")
+            or (settings.get("platform_gateway_api_key", "")
                 if _is_official_relay_url(brainclaw_base_url) else "")
         )
         return EffectiveLlmConfig(
@@ -1954,7 +1968,7 @@ def build_model_gateway_status(
         )
     )
     db_official_api_key = (
-        normalize_api_key(settings.get("official_newapi_api_key", ""))
+        normalize_api_key(settings.get("platform_gateway_api_key", ""))
         if uses_ce_settings
         else ""
     )

@@ -1590,7 +1590,7 @@ async def test_single_video_runner_propagates_trusted_context(
                 "config": {
                     "frame_path": None,
                     "prompt": "prompt",
-                    "video_backend": "newapi_seedance-1.0-pro-fast",
+                    "video_backend": "seedance-1.0-pro-fast",
                 }
             },
         },
@@ -1631,7 +1631,7 @@ async def test_freezone_video_leaf_propagates_trusted_context(
         project_dir=tmp_path,
         job_id="job-1",
         prompt="prompt",
-        backend="newapi_seedance-1.0-pro-fast",
+        backend="seedance-1.0-pro-fast",
         egress_context=context,
         task_type="freezone_video_gen",
         episode=0,
@@ -1996,8 +1996,8 @@ async def test_video_enhancement_pipeline_has_distinct_durable_operations(
         target_fps=target_fps,
         slowdown=slowdown,
         smart_interpolation=smart_interpolation,
-        upscale_backend="newapi_video-super-resolution",
-        frame_rate_backend="newapi_video-frame-rate",
+        upscale_backend="video-super-resolution",
+        frame_rate_backend="video-frame-rate",
         egress_context=enhancement_context,
     )
     output, _ = await run_freezone_video_upscale(**kwargs)
@@ -2043,7 +2043,7 @@ async def test_video_enhancement_stage_retry_keeps_its_operation_identity(
         job_id="enhance-stage",
         source_path=source,
         output_path=tmp_path / "output.mp4",
-        backend=f"newapi_{model}",
+        backend=model,
         mode=mode,
         duration=10,
         resolution="1080p",

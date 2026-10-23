@@ -118,7 +118,7 @@ def resolve_generation_recommendations(
         if not symbolic and not symbolic_fields and not fill_missing:
             continue
         # A concrete model may be any identifier the catalog publishes for the
-        # entry (id, apiModel, catalogId or an alias such as ``newapi_gpt_image2``
+        # entry (id, apiModel, catalogId or an alias such as ``gpt-image-2``
         # for ``LingShan-G2``); the symbolic default resolves the same way.
         entry = _catalog_entry_for_model(
             catalog, _RECOMMENDED_MODEL_ALIASES[kind] if symbolic else requested

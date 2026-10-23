@@ -98,7 +98,7 @@ def test_project_model_keeps_its_gateway_after_active_mode_switch(monkeypatch, t
         embedding_model_spec(COGNEE_EMBEDDING_MODEL_LEGACY)
     )
 
-    assert official == ("sk-official", "https://relayclaw.cdnfg.com/v1")
+    assert official == ("sk-official", "https://api.aigcdo.top/v1")
     assert custom == ("sk-custom", "http://new-api:3000/v1")
 
 

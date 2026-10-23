@@ -143,10 +143,10 @@ describe("character image selection query hooks", () => {
             ok: true,
             data: {
               asset_kind: "scene",
-              image_source_selection: "newapi_gpt_image2",
+              image_source_selection: "gpt-image-2",
               options: {
-                newapi_gpt_image2: "LingShan-G2",
-                newapi_nanobanana2: "LingShan-NB-2",
+                "gpt-image-2": "LingShan-G2",
+                "nano-banana-2": "LingShan-NB-2",
               },
             },
           });
@@ -164,7 +164,7 @@ describe("character image selection query hooks", () => {
       "/api/v1/projects/demo/image-source-selection/scene",
     );
     expect(result.current.data?.data.image_source_selection).toBe(
-      "newapi_gpt_image2",
+      "gpt-image-2",
     );
   });
 
@@ -181,10 +181,10 @@ describe("character image selection query hooks", () => {
             ok: true,
             data: {
               asset_kind: "prop",
-              image_source_selection: "newapi_nanobanana2",
+              image_source_selection: "nano-banana-2",
               options: {
-                newapi_gpt_image2: "LingShan-G2",
-                newapi_nanobanana2: "LingShan-NB-2",
+                "gpt-image-2": "LingShan-G2",
+                "nano-banana-2": "LingShan-NB-2",
               },
             },
           });
@@ -197,12 +197,12 @@ describe("character image selection query hooks", () => {
       { wrapper },
     );
 
-    result.current.mutate("newapi_nanobanana2");
+    result.current.mutate("nano-banana-2");
 
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(requestedPath).toBe(
       "/api/v1/projects/demo/image-source-selection/prop",
     );
-    expect(patchBody).toEqual({ image_source_selection: "newapi_nanobanana2" });
+    expect(patchBody).toEqual({ image_source_selection: "nano-banana-2" });
   });
 });

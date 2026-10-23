@@ -55,7 +55,7 @@ def enqueue_harness(monkeypatch: pytest.MonkeyPatch, tmp_path):
             "beats": [{"beat_number": 1}],
             "style": "chinese_period_drama",
             "mode_key": kwargs["mode_key"],
-            "image_generation_selection": "newapi_gpt_image2",
+            "image_generation_selection": "gpt-image-2",
         }
 
     async def fake_store_for_context(ctx):

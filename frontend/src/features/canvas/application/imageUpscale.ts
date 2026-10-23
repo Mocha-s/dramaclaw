@@ -30,7 +30,7 @@ export const UPSCALE_SCALE_FACTORS: readonly FreezoneUpscaleScaleFactor[] = [2, 
 export const DEFAULT_UPSCALE_SCALE_FACTOR: FreezoneUpscaleScaleFactor = 2;
 
 /** 工作流预建节点默认写入的模型 id（SelectedNodeOverlay 原硬编码值）。 */
-export const DEFAULT_UPSCALE_MODEL_ID = 'newapi_gpt_image2';
+export const DEFAULT_UPSCALE_MODEL_ID = 'gpt-image-2';
 
 /**
  * 预建「高清放大」结果节点（从 SelectedNodeOverlay.handleOpenUpscale 原样搬出，

@@ -114,7 +114,7 @@ function columnOf(node: CanvasNode): AssetBoardColumn | null {
 }
 
 /**
- * 模型徽标文案：节点存的是渠道内部 id（`newapi_seedance-2.0-value`），直接摆到卡片上
+ * 模型徽标文案：节点存的是渠道内部 id（`seedance-2.0-value`），直接摆到卡片上
  * 又长又像日志。这里只剥掉 `<渠道>_` 前缀（→ `seedance-2.0-value`），不做 id→展示名
  * 映射——展示名只有静态表里的模型才有，服务端下发的模型（happyhorse 等）查不到，
  * 混用会让同一栏里一半是「Seedance2.0 Value」一半是 `happyhorse-1.0`。

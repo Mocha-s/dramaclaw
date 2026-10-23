@@ -1185,7 +1185,7 @@ describe("SuperChatPanel Freezone selection attachment state", () => {
       selected: false,
       data: {
         prompt: "test video",
-        model: "newapi_seedance-2.0",
+        model: "seedance-2.0",
         aspectRatio: "16:9",
         quality: "720P",
         durationSec: 5,

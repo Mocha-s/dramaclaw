@@ -3241,8 +3241,8 @@ function normalizeSeedance2Mode(value: unknown): Seedance2ConfigDraft["mode"] {
 function isSeedance2ValueBackend(value: string | null | undefined): boolean {
   const text = String(value ?? "").trim().toLowerCase();
   return (
-    text === "newapi_seedance-2.0-value" ||
-    text === "newapi_seedance-2.0-fast-value" ||
+    text === "seedance-2.0-value" ||
+    text === "seedance-2.0-fast-value" ||
     text === "huimeng_seedance-2.0-value" ||
     text === "huimeng_seedance-2.0-fast-value"
   );

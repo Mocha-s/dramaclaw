@@ -37,7 +37,7 @@ FREEZONE_STORY_SCRIPT_MODEL = {
     "label": "DramaClawAPI Story Script",
 }
 LEGACY_FREEZONE_STORY_SCRIPT_MODEL_IDS = {
-    "newapi_gemini_flash",
+    "gemini-flash",
     "openrouter_gemini_flash",
     "OpenRouter Gemini 2.5 Flash",
 }

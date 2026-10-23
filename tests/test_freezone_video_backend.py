@@ -401,11 +401,11 @@ def test_video_model_options_and_resolution_work() -> None:
     labels = {item["label"] for item in options}
     api_models = {item["apiModel"] for item in options}
 
-    assert names[0] == "newapi_seedance-2.0-fast"
+    assert names[0] == "seedance-2.0-fast"
     assert {
-        "newapi_seedance-2.0-fast",
-        "newapi_seedance-1.0-pro-fast",
-        "newapi_seedance-1.5-pro",
+        "seedance-2.0-fast",
+        "seedance-1.0-pro-fast",
+        "seedance-1.5-pro",
     }.issubset(names)
     assert "newapi_grok-video-channel" not in names
     assert ids == set(names)
@@ -417,11 +417,11 @@ def test_video_model_options_and_resolution_work() -> None:
     assert "HappyHorse 1.0" in labels
     assert "Grok Video Channel" not in labels
     assert normalize_video_resolution("720P") == "720p"
-    happyhorse = next(item for item in options if item["id"] == "newapi_happyhorse-1.0")
+    happyhorse = next(item for item in options if item["id"] == "happyhorse-1.0")
     assert happyhorse["resolutionOptions"] == ["720p", "1080p"]
     assert happyhorse["minDuration"] == 3
     assert happyhorse["maxDuration"] == 15
-    assert normalize_video_resolution_for_backend("newapi_happyhorse-1.0", "480p") == "720p"
+    assert normalize_video_resolution_for_backend("happyhorse-1.0", "480p") == "720p"
 
 
 def test_catalog_resolution_options_override_legacy_video_whitelist() -> None:
@@ -438,7 +438,7 @@ def test_catalog_resolution_options_override_legacy_video_whitelist() -> None:
 def test_catalog_duration_bounds_override_legacy_video_bounds() -> None:
     assert (
         normalize_video_duration_for_backend(
-            "newapi_happyhorse-1.0",
+            "happyhorse-1.0",
             20,
             2,
             30,
@@ -447,7 +447,7 @@ def test_catalog_duration_bounds_override_legacy_video_bounds() -> None:
     )
     assert (
         normalize_video_duration_for_backend(
-            "newapi_happyhorse-1.0",
+            "happyhorse-1.0",
             1,
             2,
             30,
@@ -458,15 +458,15 @@ def test_catalog_duration_bounds_override_legacy_video_bounds() -> None:
 
 def test_video_duration_normalization_uses_ceiling_and_backend_bounds() -> None:
     assert normalize_video_duration_for_backend(
-        "newapi_seedance-1.0-pro-fast",
+        "seedance-1.0-pro-fast",
         1,
     ) == 2
     assert normalize_video_duration_for_backend(
-        "newapi_seedance-1.0-pro-fast",
+        "seedance-1.0-pro-fast",
         100,
     ) == 12
     assert normalize_video_duration_for_backend(
-        "newapi_seedance-1.0-pro-fast",
+        "seedance-1.0-pro-fast",
         5.1,
     ) == 6
 
@@ -480,7 +480,7 @@ def test_seedance_mini_duration_fallback_with_legacy_env(monkeypatch) -> None:
         "seedance-1.0-pro-fast:2-12,seedance-2.0:4-15",
     )
 
-    backend = "newapi_seedance-2.0-mini"
+    backend = "seedance-2.0-mini"
     assert video_duration_bounds_for_backend(backend) == (4, 15)
     assert normalize_video_duration_for_backend(backend, 2) == 4
     assert normalize_video_duration_for_backend(backend, 13) == 13
@@ -490,7 +490,7 @@ def test_seedance_mini_duration_fallback_with_legacy_env(monkeypatch) -> None:
 def test_newapi_video_backend_preserves_gateway_model_case() -> None:
     from novelvideo.generators.video_generator import parse_newapi_video_backend
 
-    assert parse_newapi_video_backend("newapi_Kling-V2.1") == "Kling-V2.1"
+    assert parse_newapi_video_backend("Kling-V2.1") is None
 
 
 def test_grok_video_channel_is_not_exposed_even_if_configured(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -510,27 +510,27 @@ def test_grok_video_channel_is_not_exposed_even_if_configured(monkeypatch: pytes
 
 def test_resolve_freezone_video_backend_accepts_id_and_label() -> None:
     assert (
-        resolve_freezone_video_backend("newapi_seedance-1.0-pro-fast")
-        == "newapi_seedance-1.0-pro-fast"
+        resolve_freezone_video_backend("seedance-1.0-pro-fast")
+        == "seedance-1.0-pro-fast"
     )
-    assert resolve_freezone_video_backend("Seedance1.5 Pro") == "newapi_seedance-1.5-pro"
-    assert resolve_freezone_video_backend("huimeng_seedance20_fast") == "newapi_seedance-2.0-fast"
-    assert resolve_freezone_video_backend("seedance_fast") == "newapi_seedance-1.0-pro-fast"
-    assert resolve_freezone_video_backend("Seedance 1.5 有声") == "newapi_seedance-1.5-pro"
-    assert resolve_freezone_video_backend(None) == "newapi_seedance-2.0-fast"
+    assert resolve_freezone_video_backend("Seedance1.5 Pro") == "seedance-1.5-pro"
+    assert resolve_freezone_video_backend("huimeng_seedance20_fast") == "seedance-2.0-fast"
+    assert resolve_freezone_video_backend("seedance_fast") == "seedance-1.0-pro-fast"
+    assert resolve_freezone_video_backend("Seedance 1.5 有声") == "seedance-1.5-pro"
+    assert resolve_freezone_video_backend(None) == "seedance-2.0-fast"
 
 
 def test_seedance2_backend_detection_accepts_newapi_and_legacy_values() -> None:
-    assert is_freezone_seedance2_backend("newapi_seedance-2.0-fast")
+    assert is_freezone_seedance2_backend("seedance-2.0-fast")
     assert is_freezone_seedance2_backend("huimeng_seedance-2.0-fast")
     assert is_freezone_seedance2_backend("seedance_2")
-    assert not is_freezone_seedance2_backend("newapi_seedance-1.5-pro")
+    assert not is_freezone_seedance2_backend("seedance-1.5-pro")
 
 
 def test_happyhorse_backend_detection_accepts_newapi_value() -> None:
-    assert is_freezone_happyhorse_backend("newapi_happyhorse-1.0")
-    assert not is_freezone_happyhorse_backend("newapi_happyhorse-1.1")
-    assert not is_freezone_happyhorse_backend("newapi_seedance-2.0-fast")
+    assert is_freezone_happyhorse_backend("happyhorse-1.0")
+    assert not is_freezone_happyhorse_backend("happyhorse-1.1")
+    assert not is_freezone_happyhorse_backend("seedance-2.0-fast")
 
 
 def test_direct_seedance_ratio_accepts_canonical_and_legacy_auto_values() -> None:
@@ -575,11 +575,11 @@ async def test_freezone_video_gen_allows_newapi_seedance2_text_to_video(
         job_id="job_newapi_t2v",
         prompt="雨夜街头，镜头缓慢推进",
         reference_items=[],
-        backend="newapi_seedance-2.0-fast",
+        backend="seedance-2.0-fast",
     )
 
     assert out.exists()
-    assert captured["create"]["backend"] == "newapi_seedance-2.0-fast"
+    assert captured["create"]["backend"] == "seedance-2.0-fast"
     assert captured["generate"]["image_path"] is None
     assert captured["generate"]["references"] == []
 
@@ -610,11 +610,11 @@ async def test_freezone_video_gen_allows_newapi_fast_text_to_video(monkeypatch, 
         job_id="job_newapi_fast_t2v",
         prompt="雨夜街头，镜头缓慢推进",
         reference_items=[],
-        backend="newapi_seedance-1.0-pro-fast",
+        backend="seedance-1.0-pro-fast",
     )
 
     assert out.exists()
-    assert captured["create"]["backend"] == "newapi_seedance-1.0-pro-fast"
+    assert captured["create"]["backend"] == "seedance-1.0-pro-fast"
     assert captured["generate"]["image_path"] is None
     assert captured["generate"]["references"] == []
 
@@ -645,7 +645,7 @@ async def test_freezone_keyframe_tail_only_does_not_promote_tail_to_first_frame(
         job_id="job_tail_only",
         prompt="最终停在目标构图",
         reference_items=[{"type": "image", "path": str(tail_path), "role": "尾帧"}],
-        backend="newapi_seedance-2.0",
+        backend="seedance-2.0",
         last_frame_path=str(tail_path),
         gen_mode="first_last_frame",
     )

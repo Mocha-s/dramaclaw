@@ -146,11 +146,11 @@ def test_mainline_video_backend_options_hide_legacy_models_and_expose_mini() -> 
         item.value: item.model_dump()
         for item in generation._api_video_backend_options()
     }
-    assert "newapi_seedance-2.0-value" not in options
-    assert "newapi_seedance-2.0-fast-value" not in options
-    assert "newapi_happyhorse-1.0" not in options
+    assert "seedance-2.0-value" not in options
+    assert "seedance-2.0-fast-value" not in options
+    assert "happyhorse-1.0" not in options
 
-    mini = options["newapi_seedance-2.0-mini"]
+    mini = options["seedance-2.0-mini"]
     assert mini["label"] == "Seedance2.0 Mini"
     assert mini["is_seedance2"] is True
     assert mini["is_happyhorse"] is False
@@ -588,7 +588,7 @@ async def test_single_video_normalizes_duration_before_billing_and_enqueue(
         episode_num=3,
         beat_num=2,
         body=SingleVideoRequest(
-            video_backend="newapi_seedance-1.0-pro-fast",
+            video_backend="seedance-1.0-pro-fast",
             duration=requested_duration,
         ),
         user={"username": "alice"},
@@ -828,7 +828,7 @@ async def test_happyhorse_single_video_enqueues_prepared_references(
         episode_num=3,
         beat_num=2,
         body=SingleVideoRequest(
-            video_backend="newapi_happyhorse-1.0",
+            video_backend="happyhorse-1.0",
             mode="multimodal_reference",
             resolution="1080p",
             ratio="1:1",

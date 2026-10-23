@@ -57,16 +57,16 @@ def test_dc_image_2_selection_maps_to_newapi_gpt_image2(monkeypatch, tmp_path):
     monkeypatch.setenv("NEWAPI_API_KEY", "newapi-token")
     monkeypatch.setenv("NEWAPI_BASE_URL", "http://newapi.test/v1")
     monkeypatch.setenv("NEWAPI_IMAGE_MODEL", "LingShan-G2")
-    monkeypatch.setenv("DEFAULT_CHARACTER_IMAGE_SELECTION", "newapi_gpt_image2")
+    monkeypatch.setenv("DEFAULT_CHARACTER_IMAGE_SELECTION", "gpt-image-2")
 
     import novelvideo.config as config
 
     config = importlib.reload(config)
 
-    assert config.character_image_selection_options()["newapi_gpt_image2"] == "LingShan-G2"
-    assert config.get_character_image_selection() == "newapi_gpt_image2"
+    assert config.character_image_selection_options()["gpt-image-2"] == "LingShan-G2"
+    assert config.get_character_image_selection() == "gpt-image-2"
 
-    image_config = config.get_grid_generation_config(selection_override="newapi_gpt_image2")
+    image_config = config.get_grid_generation_config(selection_override="gpt-image-2")
     assert image_config["provider"] == "newapi"
     assert image_config["api_key"] == "newapi-token"
     assert image_config["base_url"] == "http://newapi.test/v1"
@@ -78,16 +78,16 @@ def test_dc_banana_2_selection_maps_to_newapi_nanobanana2(monkeypatch, tmp_path)
     monkeypatch.setenv("NEWAPI_API_KEY", "newapi-token")
     monkeypatch.setenv("NEWAPI_BASE_URL", "http://newapi.test/v1")
     monkeypatch.setenv("NEWAPI_NANOBANANA2_MODEL", "LingShan-NB-2")
-    monkeypatch.setenv("DEFAULT_CHARACTER_IMAGE_SELECTION", "newapi_nanobanana2")
+    monkeypatch.setenv("DEFAULT_CHARACTER_IMAGE_SELECTION", "nano-banana-2")
 
     import novelvideo.config as config
 
     config = importlib.reload(config)
 
-    assert config.character_image_selection_options()["newapi_nanobanana2"] == "LingShan-NB-2"
-    assert config.get_character_image_selection() == "newapi_nanobanana2"
+    assert config.character_image_selection_options()["nano-banana-2"] == "LingShan-NB-2"
+    assert config.get_character_image_selection() == "nano-banana-2"
 
-    image_config = config.get_grid_generation_config(selection_override="newapi_nanobanana2")
+    image_config = config.get_grid_generation_config(selection_override="nano-banana-2")
     assert image_config["provider"] == "newapi"
     assert image_config["api_key"] == "newapi-token"
     assert image_config["base_url"] == "http://newapi.test/v1"
@@ -160,7 +160,7 @@ def test_newapi_sketch_config_defaults_to_dc_image2_low_quality(monkeypatch):
     monkeypatch.setenv("NEWAPI_API_KEY", "newapi-token")
     monkeypatch.setenv("NEWAPI_BASE_URL", "http://newapi.test/v1")
     monkeypatch.setenv("NEWAPI_IMAGE_MODEL", "LingShan-G2")
-    monkeypatch.setenv("DEFAULT_SKETCH_IMAGE_SELECTION", "newapi_gpt_image2")
+    monkeypatch.setenv("DEFAULT_SKETCH_IMAGE_SELECTION", "gpt-image-2")
     monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
 
     config = importlib.reload(config)
@@ -230,7 +230,7 @@ def test_newapi_sketch_config_can_use_dc_banana2_without_quality(monkeypatch):
     monkeypatch.setenv("NEWAPI_API_KEY", "newapi-token")
     monkeypatch.setenv("NEWAPI_BASE_URL", "http://newapi.test/v1")
     monkeypatch.setenv("NEWAPI_NANOBANANA2_MODEL", "LingShan-NB-2")
-    monkeypatch.setenv("DEFAULT_SKETCH_IMAGE_SELECTION", "newapi_nanobanana2")
+    monkeypatch.setenv("DEFAULT_SKETCH_IMAGE_SELECTION", "nano-banana-2")
     monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
 
     config = importlib.reload(config)
@@ -1821,7 +1821,7 @@ def test_newapi_character_portrait_raise_on_error_preserves_provider_detail(monk
     monkeypatch.setenv("NEWAPI_API_KEY", "newapi-token")
     monkeypatch.setenv("NEWAPI_BASE_URL", "http://newapi.test/v1")
     monkeypatch.setenv("NEWAPI_IMAGE_MODEL", "LingShan-G2")
-    monkeypatch.setenv("DEFAULT_CHARACTER_IMAGE_SELECTION", "newapi_gpt_image2")
+    monkeypatch.setenv("DEFAULT_CHARACTER_IMAGE_SELECTION", "gpt-image-2")
     importlib.reload(config)
     monkeypatch.setattr(
         nanobanana_character,
@@ -1836,7 +1836,7 @@ def test_newapi_character_portrait_raise_on_error_preserves_provider_detail(monk
                 appearance_prompt="young man",
                 output_dir=str(tmp_path),
                 count=1,
-                model="newapi_gpt_image2",
+                model="gpt-image-2",
                 raise_on_error=True,
             )
         )

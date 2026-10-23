@@ -26,7 +26,7 @@ from novelvideo.seedance2_i2v.spoken_dialogue import required_seedance2_dialogue
 from novelvideo.seedance2_i2v.voice_clone import normalize_seedance2_audio_type
 
 SEEDANCE2_HUIMENG_BACKEND = "huimeng_seedance-2.0-fast"
-SEEDANCE2_NEWAPI_BACKEND = "newapi_seedance-2.0-fast"
+SEEDANCE2_NEWAPI_BACKEND = "seedance-2.0-fast"
 MAX_SEEDANCE2_REFERENCE_AUDIOS = 3
 MAX_SEEDANCE2_REFERENCE_AUDIO_TOTAL_SECONDS = 15.0
 
@@ -57,10 +57,13 @@ def is_huimeng_seedance2_backend(backend: str | None) -> bool:
     value = str(backend or "").strip()
     if value in {SEEDANCE2_HUIMENG_BACKEND, SEEDANCE2_NEWAPI_BACKEND}:
         return True
-    for prefix in ("huimeng_", "huimengi_", "newapi_"):
+    for prefix in ("huimeng_", "huimengi_"):
         if value.startswith(prefix):
             return value[len(prefix) :].strip().startswith("seedance-2.0")
-    return False
+    normalized = value.lower().replace("_", "-").removeprefix("sd17-")
+    normalized = normalized.replace("seedance2.0", "seedance-2.0")
+    normalized = normalized.replace("seedance2.5", "seedance-2.5")
+    return normalized.startswith(("seedance-2.0", "seedance-2.5"))
 
 
 def _unique_paths(paths: list[str]) -> list[str]:

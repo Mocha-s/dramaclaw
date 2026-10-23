@@ -16,8 +16,8 @@ import type {
  * - 图生视频 i2v / 首尾帧 keyframes / 视频编辑 edit：均**不校验 prompt**（允许空提示词）；
  * - 视频编辑 edit：仅 HappyHorse。
  *
- * 模型 id / apiModel 形如 `newapi_seedance-2.0-fast` / `newapi_seedance-1.0-pro-fast`
- * / `newapi_happyhorse-1.0`（见 freezone/video_node.py）。这里统一去掉分隔符后按版本号
+ * 模型 id / apiModel 形如 `seedance-2.0-fast` / `seedance-1.0-pro-fast`
+ * / `happyhorse-1.0`（见 freezone/video_node.py）。这里统一去掉分隔符后按版本号
  * 前缀匹配，避免把 `2.0` 误命中成 `1.x`（`seedance1\d` 只吃 `seedance1` 后跟数字）。
  */
 
@@ -48,7 +48,7 @@ export function isSeedance2VideoModel(modelId: string | null | undefined): boole
 }
 
 /**
- * Seedance 2.5（目录里的 `gateway_model = seedance-2.5`，apiModel `newapi_seedance-2.5`）。
+ * Seedance 2.5（目录里的 `gateway_model = seedance-2.5`，apiModel `seedance-2.5`）。
  *
  * 归一化后是 `seedance25`，所以它同时也命中上面的 `isSeedance2VideoModel`(`/seedance2/`)
  * ——那条是「2.x 族」的粗口径（能吃多图 / 视频 / 音频），两者不冲突，别为了区分把它

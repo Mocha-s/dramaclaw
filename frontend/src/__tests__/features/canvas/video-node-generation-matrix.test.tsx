@@ -587,10 +587,10 @@ it("rejects AI-persisted imageToVideo on a text-only model before submitting", a
 
 describe("video model selection when the catalog request fails", () => {
   it.each([
-    ["seedance-2.0", "newapi_seedance-2.0"],
-    ["newapi_seedance-2.0", "newapi_seedance-2.0"],
-    ["seedance-1.5-pro", "newapi_seedance-1.5-pro"],
-    ["seedance-1.0-pro-fast", "newapi_seedance-1.0-pro-fast"],
+    ["seedance-2.0", "seedance-2.0"],
+    ["seedance-2.0", "seedance-2.0"],
+    ["seedance-1.5-pro", "seedance-1.5-pro"],
+    ["seedance-1.0-pro-fast", "seedance-1.0-pro-fast"],
   ])("preserves %s in the fallback catalog", async (persisted, expected) => {
     requestScope.project = `fallback-${persisted}`;
     vi.mocked(fetchFreezoneVideoModels).mockRejectedValueOnce(new Error("catalog unavailable"));
@@ -620,6 +620,6 @@ describe("video model selection when the catalog request fails", () => {
       await result.current.submit();
     });
 
-    expect(payloadOf(submitFreezoneVideoGen)).toMatchObject({ model: "newapi_seedance-2.0" });
+    expect(payloadOf(submitFreezoneVideoGen)).toMatchObject({ model: "seedance-2.0" });
   });
 });

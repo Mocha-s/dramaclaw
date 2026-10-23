@@ -367,7 +367,7 @@ describe("canvas action catalog", () => {
       data: {
         prompt: "公益广告短片",
         genMode: "imageToVideo",
-        model: "newapi_seedance-2.0-fast",
+        model: "seedance-2.0-fast",
         aspectRatio: "9:16",
         quality: "720P",
         durationSec: 5,

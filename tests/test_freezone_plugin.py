@@ -980,7 +980,7 @@ def test_generation_preflight_does_not_require_quality_for_model_without_quality
             "ok": True,
             "data": [
                 {
-                    "id": "newapi_nanobanana2",
+                    "id": "nano-banana-2",
                     "label": "LingShan NB 2",
                     "ratioOptions": ["16:9"],
                     "resolutionOptions": ["1K"],
@@ -995,7 +995,7 @@ def test_generation_preflight_does_not_require_quality_for_model_without_quality
             "client_id": "image",
             "node_type": "imageGenNode",
             "data": {
-                "model": "newapi_nanobanana2",
+                "model": "nano-banana-2",
                 "aspectRatio": "16:9",
                 "size": "1K",
                 "count": 1,
@@ -1309,7 +1309,7 @@ def test_external_canvas_write_resolves_recommended_model_from_live_catalog(
     monkeypatch.setattr(plugin, "_mcp_direct_canvas_apply_enabled", lambda: False)
     monkeypatch.setattr(plugin, "_request", lambda *_args, **_kwargs: {
         "ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["9:16"], "resolutionOptions": ["1K", "2K"],
             "qualityOptions": ["high"],
         }],
@@ -1360,7 +1360,7 @@ def test_existing_media_node_update_resolves_recommendations_before_dispatch(mon
     monkeypatch.setattr(
         plugin, "_request",
         lambda *_args, **_kwargs: {"ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["21:9"], "resolutionOptions": ["3K"],
             "qualityOptions": ["high"],
         }]},
@@ -1453,7 +1453,7 @@ def test_recommended_model_switch_replaces_stale_options_before_generation(monke
         },
     }
     catalog = {
-        "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+        "id": "LingShan-G2", "aliases": ["gpt-image-2"],
         "ratioOptions": ["9:16"], "resolutionOptions": ["1K"],
         "qualityOptions": ["medium"],
     }
@@ -1505,7 +1505,7 @@ def test_recommended_model_switch_rejects_incompatible_explicit_ratio(monkeypatc
     monkeypatch.setattr(
         plugin, "_request",
         lambda *_args, **_kwargs: {"ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["9:16"], "resolutionOptions": ["1K"],
         }]},
     )
@@ -1537,7 +1537,7 @@ def test_recommended_video_switch_clears_unsupported_inherited_audio(monkeypatch
     monkeypatch.setattr(
         plugin, "_request",
         lambda *_args, **_kwargs: {"ok": True, "data": [{
-            "id": "seedance-2.0-fast", "aliases": ["newapi_seedance-2.0-fast"],
+            "id": "seedance-2.0-fast", "aliases": ["seedance-2.0-fast"],
             "ratioOptions": ["9:16"], "resolutionOptions": ["720P"],
             "minDuration": 4, "maxDuration": 15,
             "supportsGenerateAudio": False,
@@ -1586,7 +1586,7 @@ def test_hermes_canvas_write_resolves_recommended_model(monkeypatch):
     monkeypatch.setattr(plugin, "_mcp_direct_canvas_apply_enabled", lambda: False)
     monkeypatch.setattr(plugin, "_request", lambda *_args, **_kwargs: {
         "ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["9:16"], "resolutionOptions": ["1K"],
             "qualityOptions": ["medium"],
         }],
@@ -4166,7 +4166,7 @@ def test_generation_clarification_recommendation_has_concrete_answers(monkeypatc
                         lambda _project, _canvas, event: captured.append(event) or "shown")
     monkeypatch.setattr(plugin, "_request", lambda *_args, **_kwargs: {
         "ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["9:16"], "resolutionOptions": ["2K", "1K"],
             "qualityOptions": ["medium"],
         }],
@@ -4194,11 +4194,11 @@ def test_generation_recommendation_uses_explicit_specs_and_keeps_delivery_separa
                         lambda _project, _canvas, event: events.append(event) or "shown")
     monkeypatch.setattr(plugin, "_request", lambda method, path, **_kwargs: {
         "ok": True, "data": [{
-            "id": "newapi_seedance-2.0-fast", "ratioOptions": ["9:16", "16:9"],
+            "id": "seedance-2.0-fast", "ratioOptions": ["9:16", "16:9"],
             "resolutionOptions": ["720P", "1080P"], "minDuration": 4,
             "maxDuration": 15, "supportsGenerateAudio": True,
         }] if "/video/models" in path else [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["9:16", "16:9"],
             "resolutionOptions": ["1K"], "qualityOptions": ["medium"],
         }],
@@ -4366,11 +4366,11 @@ def test_generation_recommendation_shares_one_sided_ratio_for_image_video_card(m
                         lambda _project, _canvas, event: events.append(event) or "shown")
     monkeypatch.setattr(plugin, "_request", lambda method, path, **_kwargs: {
         "ok": True, "data": [{
-            "id": "newapi_seedance-2.0-fast", "ratioOptions": ["9:16", "16:9"],
+            "id": "seedance-2.0-fast", "ratioOptions": ["9:16", "16:9"],
             "resolutionOptions": ["720P", "1080P"], "minDuration": 4,
             "maxDuration": 15, "supportsGenerateAudio": True,
         }] if "/video/models" in path else [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": image_ratios,
             "resolutionOptions": ["1K"], "qualityOptions": ["medium"],
         }],
@@ -4432,7 +4432,7 @@ def test_generation_recommendation_keeps_distinct_shot_durations_out_of_global_c
                         lambda _project, _canvas, event: events.append(event) or "shown")
     monkeypatch.setattr(plugin, "_request", lambda *_args, **_kwargs: {
         "ok": True, "data": [{
-            "id": "newapi_seedance-2.0-fast", "ratioOptions": ["16:9"],
+            "id": "seedance-2.0-fast", "ratioOptions": ["16:9"],
             "resolutionOptions": ["720P"], "minDuration": 4,
             "maxDuration": 15, "supportsGenerateAudio": True,
         }],
@@ -4475,7 +4475,7 @@ def test_unsupported_explicit_audio_rejects_stale_recommended_receipt(monkeypatc
     monkeypatch.setattr(plugin, "_emit_clarification_event", lambda *_args: {
         "ok": True, "clarification_status": "recommended", "used_recommended": True,
         "answers": {
-            "video_model": {"option_ids": ["newapi_seedance-2.0-fast"]},
+            "video_model": {"option_ids": ["seedance-2.0-fast"]},
             "video_aspect_ratio": {"option_ids": ["9:16"]},
             "video_resolution": {"option_ids": ["720P"]},
             "video_duration_seconds": {"option_ids": ["5"]},
@@ -4503,7 +4503,7 @@ def test_use_recommended_ignores_stale_frontend_answer_for_explicit_audio(monkey
     })
     monkeypatch.setattr(plugin, "_request", lambda *_args, **_kwargs: {
         "ok": True, "data": [{
-            "id": "newapi_seedance-2.0-fast", "ratioOptions": ["16:9"],
+            "id": "seedance-2.0-fast", "ratioOptions": ["16:9"],
             "resolutionOptions": ["720P"], "minDuration": 4,
             "maxDuration": 15, "supportsGenerateAudio": True,
         }],
@@ -4521,7 +4521,7 @@ def test_use_recommended_ignores_stale_frontend_answer_for_explicit_audio(monkey
 _ISSUE_637_IMAGE_CATALOG = {
     "ok": True, "data": [
         {
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["9:16"], "resolutionOptions": ["2K", "1K"],
             "qualityOptions": ["medium"],
         },
@@ -4537,11 +4537,11 @@ _ISSUE_674_VIDEO_CATALOG = {
     "ok": True, "data": [
         {
             # The default video model declares resolutions but no ratioOptions.
-            "id": "newapi_seedance-2.0-fast", "resolutionOptions": ["480P", "720P"],
+            "id": "seedance-2.0-fast", "resolutionOptions": ["480P", "720P"],
             "minDuration": 4, "maxDuration": 15, "supportsGenerateAudio": False,
         },
         {
-            "id": "newapi_happyhorse-1.0", "ratioOptions": ["16:9"],
+            "id": "happyhorse-1.0", "ratioOptions": ["16:9"],
             "resolutionOptions": ["720P"], "minDuration": 4, "maxDuration": 8,
         },
     ],
@@ -4570,7 +4570,7 @@ def test_generation_clarification_offers_recommendation_without_catalog_ratio_op
     event = captured[0]
     assert event["allow_recommended"] is True
     recommended = event["recommended_answers"]
-    assert recommended["video_model"] == {"option_ids": ["newapi_seedance-2.0-fast"]}
+    assert recommended["video_model"] == {"option_ids": ["seedance-2.0-fast"]}
     # Unconstrained by the catalog: the product default ratio, which the frontend
     # also lists for manual selection when a model declares no ratioOptions.
     assert recommended["video_aspect_ratio"] == {"option_ids": ["9:16"]}
@@ -4640,7 +4640,7 @@ def test_generation_clarification_partial_card_recommends_for_alias_model(monkey
         "generation_required_choices": {
             "image": ["aspect_ratio", "resolution", "quality", "count"],
         },
-        "answers": {"image_model": {"option_ids": ["newapi_gpt_image2"]}},
+        "answers": {"image_model": {"option_ids": ["gpt-image-2"]}},
     })
 
     event = captured[0]

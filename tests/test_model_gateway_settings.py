@@ -49,6 +49,7 @@ from novelvideo.model_gateway_settings import (
     get_newapi_provider_channels,
     normalize_relay_base_url,
     save_official_newapi_key,
+    save_platform_gateway_key,
     save_custom_newapi_gateway,
     save_sub2api_gateway,
     save_sub2api_groups,
@@ -92,6 +93,36 @@ def test_platform_gateway_defaults_to_owned_endpoint_and_neutral_identity(
     assert OFFICIAL_NEWAPI_BASE_URL == "https://api.aigcdo.top/v1"
     assert effective.base_url == "https://api.aigcdo.top/v1"
     assert effective.api_key == "sk-owned-platform"
+
+
+def test_platform_gateway_does_not_reuse_legacy_official_key(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "official_newapi_api_key": "sk-relayclaw-key",
+            "model_gateway_mode": MODE_OFFICIAL,
+        }
+    )
+
+    effective = get_effective_newapi_config(capability=CAPABILITY_TEXT, model="writer")
+
+    assert effective.base_url == "https://api.aigcdo.top/v1"
+    assert effective.api_key == ""
+
+
+def test_saving_platform_key_retires_legacy_official_key(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {"official_newapi_api_key": "sk-relayclaw-key"}
+    )
+
+    save_platform_gateway_key(api_key="sk-platform-key", activate=True)
+
+    settings = model_gateway_settings.get_model_gateway_settings()
+    assert settings["platform_gateway_api_key"] == "sk-platform-key"
+    assert "official_newapi_api_key" not in settings
 
 
 def test_sub2api_media_catalog_keeps_custom_logical_names_without_newapi_prefix(
@@ -571,7 +602,7 @@ def test_hybrid_video_routes_only_comfyui_models_to_local_gateway(
     assert local.base_url == "http://127.0.0.1:3000/v1"
     assert local.api_key == "sk-custom-secret"
     assert official.api_key == "sk-official-secret"
-    assert newapi_video_backend_options()["newapi_wan-i2v"] == "wan-i2v"
+    assert newapi_video_backend_options()["wan-i2v"] == "wan-i2v"
 
 
 def test_newapi_video_backends_only_include_enabled_comfyui_video_models(
@@ -601,10 +632,10 @@ def test_newapi_video_backends_only_include_enabled_comfyui_video_models(
 
     options = newapi_video_backend_options()
 
-    assert "newapi_legacy-video" in options
-    assert "newapi_enabled-video" in options
-    assert "newapi_disabled-video" not in options
-    assert "newapi_comfy-image" not in options
+    assert "legacy-video" in options
+    assert "enabled-video" in options
+    assert "disabled-video" not in options
+    assert "comfy-image" not in options
 
 
 def test_newapi_runtime_credentials_prefer_saved_custom_gateway(monkeypatch, tmp_path):
@@ -766,7 +797,7 @@ def test_ee_platform_video_paths_do_not_call_ce_media_model_accessor(
 
     assert generator.api_key == "sk-ee-secret"
     assert generator.base_url == "https://ee-gateway.example/v1"
-    assert "newapi_seedance-2.0" in options
+    assert "seedance-2.0" in options
 
 
 def test_ee_model_gateway_settings_reader_does_not_open_sqlite(monkeypatch, tmp_path):
@@ -4297,7 +4328,7 @@ def test_ce_media_model_catalog_uses_saved_custom_model_capabilities(
 
     assert len(catalog) == 1
     assert catalog[0]["id"] == "custom-video"
-    assert catalog[0]["apiModel"] == "newapi_custom-video"
+    assert catalog[0]["apiModel"] == "custom-video"
     assert catalog[0]["label"] == "Custom Video"
     assert catalog[0]["resolutionOptions"] == ["720p", "1080p"]
     assert catalog[0]["supportedModes"] == ["text_to_video", "first_frame"]
@@ -4320,7 +4351,7 @@ def test_official_media_model_catalog_uses_ce_export_shape():
     assert wan["referenceLinkMax"] == 1
     assert "pdf" in wan["referenceFileTypes"]
     seedance_25 = next(entry for entry in videos if entry["id"] == "seedance-2.5")
-    assert seedance_25["apiModel"] == "newapi_seedance-2.5"
+    assert seedance_25["apiModel"] == "seedance-2.5"
     assert seedance_25["resolutionOptions"] == ["480p", "720p", "1080p"]
     assert seedance_25["ratioOptions"][-1] == "auto"
     seedream = next(entry for entry in images if entry["id"] == "seedream-5.0-pro")
@@ -4328,7 +4359,7 @@ def test_official_media_model_catalog_uses_ce_export_shape():
     assert seedream["resolutionOptions"] == ["1k", "2k"]
     assert seedream["minPixels"] == 3686400
     seedance = next(entry for entry in videos if entry["id"] == "seedance-2.0-mini")
-    assert seedance["apiModel"] == "newapi_seedance-2.0-mini"
+    assert seedance["apiModel"] == "seedance-2.0-mini"
     assert "video_edit" in seedance["supportedModes"]
     happyhorse_11 = next(entry for entry in videos if entry["id"] == "happyhorse-1.1")
     assert happyhorse_11["gatewayModel"] == "happyhorse-1.1"

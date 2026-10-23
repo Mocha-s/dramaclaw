@@ -169,7 +169,7 @@ describe('SelectedNodeOverlay template-edit model selection', () => {
 
   it('does not submit a fallback model after the catalog request fails', async () => {
     waitForFreezoneImageModels.mockResolvedValue({
-      models: [{ ...CATALOG_MODEL, id: 'newapi_gpt_image2', apiModel: 'newapi_gpt_image2' }],
+      models: [{ ...CATALOG_MODEL, id: 'gpt-image-2', apiModel: 'gpt-image-2' }],
       isLoading: false,
       isFallback: true,
       error: new Error('catalog unavailable'),

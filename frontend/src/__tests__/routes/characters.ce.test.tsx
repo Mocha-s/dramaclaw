@@ -96,8 +96,8 @@ vi.mock("@/lib/queries/character-image-selection", () => ({
       ok: true,
       data: {
         asset_kind: "character",
-        image_source_selection: "newapi_gpt_image2",
-        options: { newapi_gpt_image2: "LingShan-G2" },
+        image_source_selection: "gpt-image-2",
+        options: { "gpt-image-2": "LingShan-G2" },
       },
     },
     isLoading: false,

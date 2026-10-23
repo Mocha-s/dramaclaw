@@ -436,7 +436,7 @@ def test_m09_l2_exercises_all_23_endpoint_contracts(m09_client_factory):
     _assert_ok(
         client.patch(
             f"/api/v1/projects/{_PROJECT}/render-settings",
-            json={"render_image_selection": "newapi_nanobanana2", "sketch_aspect_padding": True},
+            json={"render_image_selection": "nano-banana-2", "sketch_aspect_padding": True},
         )
     )
     _assert_ok(client.post(f"/api/v1/projects/{_PROJECT}/episodes/1/videos/compose", json={}))

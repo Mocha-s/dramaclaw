@@ -24,7 +24,7 @@ const videoFormSource = readFileSync(
 const EE_CATALOG_ULID = "01KZ58VSE52RFFDASY2T9SY4NC";
 const SEEDANCE2_GATEWAY_MODEL = "seedance-2.0";
 const HAPPYHORSE_GATEWAY_MODEL = "happyhorse-1.0";
-const CE_SEEDANCE2_ID = "newapi_seedance-2.0";
+const CE_SEEDANCE2_ID = "seedance-2.0";
 
 const EE_SEEDANCE2_ROW = {
   id: EE_CATALOG_ULID,
@@ -94,7 +94,7 @@ describe("video catalog model selection", () => {
 
   it("resolves a workflow alias to a unique live catalog row and retains its submission id", () => {
     const row = { ...EE_SEEDANCE2_ROW, providerId: "newapi", label: "Standard" } as const;
-    expect(selectVideoModel([row], "newapi_seedance-2.0")?.catalogId).toBe(EE_CATALOG_ULID);
+    expect(selectVideoModel([row], "seedance-2.0")?.catalogId).toBe(EE_CATALOG_ULID);
   });
 
   it("does not guess a provider route from an ambiguous model alias", () => {

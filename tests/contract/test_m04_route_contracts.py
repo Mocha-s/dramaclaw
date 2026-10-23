@@ -389,7 +389,7 @@ def test_prop_reference_generation_accepts_image_source_model(m04_client_factory
 
     payload = client.post(
         f"/api/v1/projects/{_PROJECT}/props/{_PROP}/reference/generate-async",
-        json={"model": "newapi_nanobanana2"},
+        json={"model": "nano-banana-2"},
     ).json()
     _assert_task_shape(
         payload,
@@ -398,7 +398,7 @@ def test_prop_reference_generation_accepts_image_source_model(m04_client_factory
     )
 
     assert payload["ok"] is True
-    assert task_backend.calls[-1]["payload"]["model"] == "newapi_nanobanana2"
+    assert task_backend.calls[-1]["payload"]["model"] == "nano-banana-2"
 
 
 def test_m04_l2_exercises_all_57_endpoint_contracts(m04_client_factory):

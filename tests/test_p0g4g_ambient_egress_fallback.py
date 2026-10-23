@@ -201,8 +201,8 @@ def test_seedream_is_a_legacy_alias_for_a_newapi_selection() -> None:
 
     from novelvideo.config import normalize_character_image_selection
 
-    assert normalize_character_image_selection("seedream") == "newapi_gpt_image2"
-    assert normalize_character_image_selection(None).startswith("newapi_")
+    assert normalize_character_image_selection("seedream") == "gpt-image-2"
+    assert normalize_character_image_selection(None) == "nano-banana-2"
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,4 @@
-"""The official RelayClaw key may only travel to the official endpoint.
+"""The platform gateway key may only travel to the platform endpoint.
 
 The fallback that produced this was unconditional: an empty dedicated BrainClaw
 key resolved to the official one whatever host the operator had typed. So a CE
@@ -23,7 +23,7 @@ import pytest
 
 import novelvideo.model_gateway_settings as gateway
 
-OFFICIAL_KEY = "sk-official-relayclaw-secret"
+OFFICIAL_KEY = "sk-official-platform-secret"
 DEDICATED_KEY = "sk-dedicated-brainclaw"
 CUSTOM_URL = "http://127.0.0.1:8317"
 
@@ -34,7 +34,7 @@ def _settings(*, base_url: str, dedicated: str) -> dict[str, str]:
         "custom_llm_mode": gateway.CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
         "brainclaw_newapi_base_url": base_url,
         "brainclaw_newapi_api_key": dedicated,
-        "official_newapi_api_key": OFFICIAL_KEY,
+        "platform_gateway_api_key": OFFICIAL_KEY,
     }
 
 
@@ -72,9 +72,9 @@ def test_a_dedicated_key_is_preferred_even_on_the_official_endpoint():
 
 
 @pytest.mark.parametrize("variant", [
-    "https://relayclaw.cdnfg.com/v1",
-    "https://relayclaw.cdnfg.com/v1/",
-    "https://relayclaw.cdnfg.com",
+    "https://api.aigcdo.top/v1",
+    "https://api.aigcdo.top/v1/",
+    "https://api.aigcdo.top",
 ])
 def test_the_official_endpoint_is_recognised_after_normalisation(variant):
     """A trailing slash must not decide whether a credential may travel."""
@@ -83,8 +83,8 @@ def test_the_official_endpoint_is_recognised_after_normalisation(variant):
 
 @pytest.mark.parametrize("url", [
     CUSTOM_URL,
-    "https://relayclaw.cdnfg.com.evil.example/v1",
-    "https://not-relayclaw.example/v1",
+    "https://api.aigcdo.top.evil.example/v1",
+    "https://not-platform.example/v1",
     "",
 ])
 def test_anything_else_is_not_the_official_endpoint(url):

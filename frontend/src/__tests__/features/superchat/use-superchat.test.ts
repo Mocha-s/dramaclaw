@@ -2219,7 +2219,7 @@ describe("Skill Studio question response", () => {
         {
           id: "image_model",
           title: "图片模型",
-          options: [{ id: "newapi_nanobanana2", label: "LingShan NB 2" }],
+          options: [{ id: "nano-banana-2", label: "LingShan NB 2" }],
         },
         {
           id: "image_quality",
@@ -2231,7 +2231,7 @@ describe("Skill Studio question response", () => {
           ],
         },
       ],
-      { image_model: { option_ids: ["newapi_nanobanana2"] } },
+      { image_model: { option_ids: ["nano-banana-2"] } },
     );
 
     expect(items).toEqual([
@@ -3318,14 +3318,14 @@ describe("Canvas command approval image params", () => {
         options: [{ id: "seedream-4.5", label: "Seedream 4.5", description: "快速" }],
       }],
       [
-        { id: "newapi_gpt_image2", label: "LingShan G2", apiModel: "LingShan-G2" },
+        { id: "gpt-image-2", label: "LingShan G2", apiModel: "LingShan-G2" },
         { id: "seedream-catalog-id", label: "Seedream 4.5", apiModel: "seedream-4.5" },
       ],
       [],
     );
 
     expect(questions[0]?.options).toEqual([
-      { id: "newapi_gpt_image2", label: "LingShan G2" },
+      { id: "gpt-image-2", label: "LingShan G2" },
       { id: "seedream-catalog-id", label: "Seedream 4.5", description: "快速" },
     ]);
   });
@@ -3667,7 +3667,7 @@ describe("Canvas command approval image params", () => {
 
     const amended = amendCanvasApprovalWithImageParamsForTest(approval as never, {
       nodeId: "image-a",
-      model: "newapi_gpt_image2",
+      model: "gpt-image-2",
       aspectRatio: "9:16",
       size: "2K",
       quality: "high",
@@ -3679,7 +3679,7 @@ describe("Canvas command approval image params", () => {
         type: "update_node_data",
         node_id: "image-a",
         data: {
-          model: "newapi_gpt_image2",
+          model: "gpt-image-2",
           aspectRatio: "9:16",
           size: "2K",
           quality: "high",
@@ -3890,7 +3890,7 @@ describe("Canvas command approval image params", () => {
             node_type: "imageGenNode" as const,
             data: {
               prompt: "水彩风格",
-              model: "newapi_gpt_image2",
+              model: "gpt-image-2",
               aspectRatio: "9:16",
               size: "1k",
               quality: "medium",
@@ -3902,14 +3902,14 @@ describe("Canvas command approval image params", () => {
       }],
     };
     const groups = imageApprovalParamGroupsForTest(approval as never, [], "other-model", [{
-      id: "newapi_gpt_image2",
+      id: "gpt-image-2",
       resolutionOptions: ["1k", "2k", "4k"],
       qualityOptions: ["low", "medium", "high"],
     }]);
     expect(groups).toHaveLength(1);
     expect(groups[0]).toMatchObject({
       nodeId: "image-a",
-      model: "newapi_gpt_image2",
+      model: "gpt-image-2",
       aspectRatio: "9:16",
       size: "1k",
       quality: "medium",
@@ -3938,14 +3938,14 @@ describe("Canvas command approval image params", () => {
             client_id: "image-a",
             source_node_id: "upload-1",
             node_type: "imageGenNode" as const,
-            data: { model: "newapi_gpt_image2", aspectRatio: "9:16", size: "1k" },
+            data: { model: "gpt-image-2", aspectRatio: "9:16", size: "1k" },
           },
           { type: "update_node_data" as const, node_id: "image-a", data: { aspectRatio: "1:1", prompt: "水彩" } },
           { type: "run_node_action" as const, node_id: "image-a", action: "generate_image" },
         ],
       }],
     };
-    const models = [{ id: "newapi_gpt_image2", resolutionOptions: ["1k", "2k", "4k"] }];
+    const models = [{ id: "gpt-image-2", resolutionOptions: ["1k", "2k", "4k"] }];
     const groups = imageApprovalParamGroupsForTest(approval as never, [], "other-model", models);
     expect(groups[0]).toMatchObject({ aspectRatio: "1:1", size: "1k" });
 
@@ -3977,14 +3977,14 @@ describe("Canvas command approval image params", () => {
             client_id: "image-a",
             source_node_id: "upload-1",
             node_type: "imageGenNode" as const,
-            data: { model: "newapi_gpt_image2", aspectRatio: "9:16", size: "1k" },
+            data: { model: "gpt-image-2", aspectRatio: "9:16", size: "1k" },
           },
           { type: "run_workflow" as const, scope: "canvas" as const },
         ],
       }],
     };
     const groups = imageApprovalParamGroupsForTest(approval as never, [], "other-model", [{
-      id: "newapi_gpt_image2",
+      id: "gpt-image-2",
       resolutionOptions: ["1k", "2k", "4k"],
     }]);
     expect(groups).toHaveLength(1);
@@ -4025,7 +4025,7 @@ describe("Canvas command approval image params", () => {
               type: "add_next_node" as const,
               client_id: "image-a",
               source_node_id: "upload-1",
-              data: { model: "newapi_gpt_image2", aspectRatio: "9:16", size: "1k" },
+              data: { model: "gpt-image-2", aspectRatio: "9:16", size: "1k" },
             },
             // 本批新建节点作源：类型沿 client_id 链继续推断（imageGen 的首个下游
             // 类型仍是 imageGen），与执行器 chooseNextNodeType 的结果一致。
@@ -4033,14 +4033,14 @@ describe("Canvas command approval image params", () => {
               type: "add_next_node" as const,
               client_id: "image-b",
               source_node_id: "image-a",
-              data: { model: "newapi_gpt_image2", aspectRatio: "1:1", size: "2k" },
+              data: { model: "gpt-image-2", aspectRatio: "1:1", size: "2k" },
             },
             { type: "run_workflow" as const, scope: "canvas" as const },
           ],
         }],
       };
       const groups = imageApprovalParamGroupsForTest(approval as never, [], "other-model", [{
-        id: "newapi_gpt_image2",
+        id: "gpt-image-2",
         resolutionOptions: ["1k", "2k", "4k"],
       }]);
       expect(groups).toHaveLength(2);
@@ -4068,7 +4068,7 @@ describe("Canvas command approval image params", () => {
             type: "add_next_node" as const,
             source_node_id: "upload-1",
             node_type: "imageGenNode" as const,
-            data: { model: "newapi_gpt_image2", aspectRatio: "9:16", size: "1k" },
+            data: { model: "gpt-image-2", aspectRatio: "9:16", size: "1k" },
           },
           { type: "run_workflow" as const, scope: "canvas" as const },
         ],
@@ -4083,7 +4083,7 @@ describe("Canvas command approval image params", () => {
         receivedAt: 1, commandCount: 2, plans: [], envelopes,
       };
       const groups = imageApprovalParamGroupsForTest(approval as never, [], "other-model", [{
-        id: "newapi_gpt_image2",
+        id: "gpt-image-2",
         resolutionOptions: ["1k", "2k", "4k"],
       }]);
       expect(groups).toHaveLength(1);
@@ -4493,7 +4493,7 @@ describe("Canvas command approval video params", () => {
 
     const amended = amendCanvasApprovalWithVideoParamsForTest(approval as never, {
       nodeId: "video-a",
-      model: "newapi_seedance-2.0",
+      model: "seedance-2.0",
       aspectRatio: "9:16",
       quality: "1080P",
       durationSec: 10,
@@ -4508,7 +4508,7 @@ describe("Canvas command approval video params", () => {
         type: "update_node_data",
         node_id: "video-a",
         data: {
-          model: "newapi_seedance-2.0",
+          model: "seedance-2.0",
           aspectRatio: "9:16",
           quality: "1080P",
           durationSec: 10,
@@ -4543,7 +4543,7 @@ describe("Canvas command approval video params", () => {
               type: "create_node" as const,
               client_id: "video-a",
               node_type: "videoNode" as const,
-              data: { model: "newapi_seedance-2.0-fast", genMode: "imageToVideo" },
+              data: { model: "seedance-2.0-fast", genMode: "imageToVideo" },
             },
             {
               type: "create_edge" as const,
@@ -4589,7 +4589,7 @@ describe("Canvas command approval video params", () => {
         type: "videoNode",
         position: { x: 0, y: 0 },
         data: {
-          model: "newapi_seedance-2.0-fast",
+          model: "seedance-2.0-fast",
           genMode: "imageToVideo",
           humanReview: true,
         },

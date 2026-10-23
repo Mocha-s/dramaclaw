@@ -330,7 +330,7 @@ async def test_freezone_story_script_route_uses_source_text(
     assert result["data"]["task_type"] == "freezone_story_script"
     assert captured["source_text"] == "沈昭昭在深夜办公室醒来。"
     assert captured["prompt"] == "根据我上传的剧本生成一个完整的故事脚本"
-    assert captured["model"] == "newapi_gemini_flash"
+    assert captured["model"] == "gemini-flash"
 
 
 @pytest.mark.asyncio

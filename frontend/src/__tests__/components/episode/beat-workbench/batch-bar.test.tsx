@@ -270,7 +270,7 @@ vi.mock("@/lib/queries/sketch-settings", () => ({
     data: {
       ok: true,
       data: {
-        sketch_image_selection: "newapi_gpt_image2",
+        sketch_image_selection: "gpt-image-2",
         options: {},
       },
     },

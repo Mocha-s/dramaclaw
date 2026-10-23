@@ -48,7 +48,7 @@ def test_scene_360_model_rejects_provider_mismatch_instead_of_raw_passthrough():
     ):
         stage_asset_tasks.resolve_scene_360_image_model(
             provider="openai",
-            model="newapi_gpt_image2",
+            model="gpt-image-2",
         )
 
 

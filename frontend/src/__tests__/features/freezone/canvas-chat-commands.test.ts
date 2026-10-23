@@ -546,10 +546,10 @@ describe("canvas chat commands", () => {
   });
 
   it.each([
-    "newapi_seedance-2.0-fast",
-    "newapi_seedance-2.0",
-    "newapi_seedance-1.5-pro",
-    "newapi_seedance-1.0-pro-fast",
+    "seedance-2.0-fast",
+    "seedance-2.0",
+    "seedance-1.5-pro",
+    "seedance-1.0-pro-fast",
   ])("accepts the workflow compiler's canonical video model %s", (model) => {
     const envelopes = extractCanvasChatCommandEnvelopes([{
       schema_version: CANVAS_CHAT_COMMANDS_SCHEMA_VERSION,
@@ -3802,13 +3802,13 @@ describe("canvas chat commands", () => {
     expect(upscaleAction?.parameters?.parameter_schema).toMatchObject({
       model: {
         type: "enum",
-        options: expect.arrayContaining(["newapi_gpt_image2"]),
+        options: expect.arrayContaining(["gpt-image-2"]),
       },
     });
     expect(outpaintAction?.parameters?.parameter_schema).toMatchObject({
       model: {
         type: "enum",
-        options: expect.arrayContaining(["newapi_gpt_image2"]),
+        options: expect.arrayContaining(["gpt-image-2"]),
       },
     });
     expect(context).toContain("action_summary_json");
@@ -5531,7 +5531,7 @@ describe("canvas chat commands", () => {
               parameters: {
                 scale_factor: 4,
                 image_size: "4K",
-                model: "newapi_gpt_image2",
+                model: "gpt-image-2",
               },
             },
           ],
@@ -5549,7 +5549,7 @@ describe("canvas chat commands", () => {
           parameters: {
             scale_factor: 4,
             image_size: "4K",
-            model: "newapi_gpt_image2",
+            model: "gpt-image-2",
           },
         },
       ]);

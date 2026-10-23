@@ -41,7 +41,7 @@ def test_recommended_model_materializes_one_scoped_catalog_configuration():
     catalog = [
         {"id": "first-but-not-default", "ratioOptions": ["9:16"],
          "resolutionOptions": ["1K"], "qualityOptions": ["medium"]},
-        {"id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+        {"id": "LingShan-G2", "aliases": ["gpt-image-2"],
          "ratioOptions": ["9:16"], "resolutionOptions": ["2K", "1K"],
          "qualityOptions": ["high", "medium"]},
     ]
@@ -65,7 +65,7 @@ def test_recommended_model_rejects_incompatible_explicit_ratio():
     result = evaluate_workflow_preflight(
         {"plan": plan},
         model_responses={"imageGenNode": {"ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["9:16"], "resolutionOptions": ["1K"],
         }]}},
         limits={"ok": True, "data": {"default": {"limit": 2, "remaining": 1}}},
@@ -85,7 +85,7 @@ def test_recommended_model_keeps_explicit_catalog_supported_tenant_options():
     result = evaluate_workflow_preflight(
         {"plan": plan},
         model_responses={"imageGenNode": {"ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["21:9"], "resolutionOptions": ["3K"],
             "qualityOptions": ["ultra"],
         }]}},
@@ -123,7 +123,7 @@ def test_recommended_video_uses_video_capabilities_and_concrete_resolution():
     result = evaluate_workflow_preflight(
         {"plan": plan},
         model_responses={"videoNode": {"ok": True, "data": [{
-            "id": "seedance-2.0-fast", "aliases": ["newapi_seedance-2.0-fast"],
+            "id": "seedance-2.0-fast", "aliases": ["seedance-2.0-fast"],
             "ratioOptions": ["16:9", "9:16"], "resolutionOptions": ["480P", "720P"],
             "minDuration": 4, "maxDuration": 15,
             "supportsGenerateAudio": False,
@@ -143,7 +143,7 @@ def test_recommended_video_without_catalog_ratio_options_still_resolves(ratio_op
     exactly as runtime preflight already treats aspectRatio, so the remaining
     recommendations resolve and the ratio falls back to the product default."""
     entry = {
-        "id": "seedance-2.0-fast", "aliases": ["newapi_seedance-2.0-fast"],
+        "id": "seedance-2.0-fast", "aliases": ["seedance-2.0-fast"],
         "resolutionOptions": ["480P", "720P"],
         "minDuration": 4, "maxDuration": 15, "supportsGenerateAudio": False,
     }
@@ -173,7 +173,7 @@ def test_recommended_image_without_catalog_ratio_options_still_resolves():
     result = evaluate_workflow_preflight(
         {"plan": plan},
         model_responses={"imageGenNode": {"ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "resolutionOptions": ["1K"], "qualityOptions": ["medium"],
         }]}},
         limits={"ok": True, "data": {"default": {"limit": 2, "remaining": 1}}},
@@ -194,7 +194,7 @@ def test_recommended_ratio_still_requires_a_declared_catalog_option_when_constra
     result = evaluate_workflow_preflight(
         {"plan": plan},
         model_responses={"videoNode": {"ok": True, "data": [{
-            "id": "seedance-2.0-fast", "aliases": ["newapi_seedance-2.0-fast"],
+            "id": "seedance-2.0-fast", "aliases": ["seedance-2.0-fast"],
             "ratioOptions": ["21:9", "4:3"], "resolutionOptions": ["720P"],
             "minDuration": 4, "maxDuration": 15, "supportsGenerateAudio": False,
         }]}},
@@ -208,7 +208,7 @@ def test_recommended_ratio_still_requires_a_declared_catalog_option_when_constra
 
 def test_video_mode_must_match_live_model_capabilities():
     entry = {
-        "id": "newapi_seedance-2.0",
+        "id": "seedance-2.0",
         "supportedModes": [
             "text_to_video", "all_reference", "first_last_frame", "image_reference",
         ],
@@ -725,7 +725,7 @@ def test_canvas_catalog_id_is_valid_when_live_entry_has_separate_backend_api_mod
         {"model": "seedance-2.0", "durationSec": 5},
         {
             "id": "seedance-2.0",
-            "apiModel": "newapi_seedance-2.0",
+            "apiModel": "seedance-2.0",
             "minDuration": 2,
             "maxDuration": 10,
         },
@@ -738,7 +738,7 @@ def test_canvas_catalog_id_is_valid_when_live_entry_has_separate_backend_api_mod
     }
 
 
-@pytest.mark.parametrize("model_id", ["seedance-2.0", "newapi_seedance-2.0"])
+@pytest.mark.parametrize("model_id", ["seedance-2.0", "seedance-2.0"])
 def test_ready_video_catalog_id_remains_valid_in_canvas_command(model_id):
     plan = {
         "schema_version": "freezone_workflow_plan.v1",
@@ -760,7 +760,7 @@ def test_ready_video_catalog_id_remains_valid_in_canvas_command(model_id):
     }
     catalog_entry = {
         "id": model_id,
-        "apiModel": "newapi_seedance-2.0",
+        "apiModel": "seedance-2.0",
         "supportedModes": ["text_to_video", "image_reference"],
         "resolutionOptions": ["720P"],
         "minDuration": 4,
@@ -807,7 +807,7 @@ def _image_check(data, *, fill_missing):
         [node],
         {"imageGenNode": {"ok": True, "data": [
             {
-                "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+                "id": "LingShan-G2", "aliases": ["gpt-image-2"],
                 "ratioOptions": ["9:16"], "resolutionOptions": ["2K", "1K"],
                 "qualityOptions": ["medium"],
             },
@@ -841,25 +841,25 @@ def test_fill_missing_still_blocks_unknown_concrete_model():
 
 def test_fill_missing_resolves_a_catalog_alias_to_its_entry():
     """A node keeps a legal alias (the sketch default) and still gets its fields."""
-    blockers, data = _image_check({"model": "newapi_gpt_image2"}, fill_missing=True)
+    blockers, data = _image_check({"model": "gpt-image-2"}, fill_missing=True)
     assert blockers == []
     assert data == {
-        "model": "newapi_gpt_image2", "aspectRatio": "9:16", "size": "1K",
+        "model": "gpt-image-2", "aspectRatio": "9:16", "size": "1K",
         "quality": "medium", "count": 1,
     }
 
 
 def test_recommended_fields_on_an_alias_model_resolve_without_fill_missing():
     blockers, data = _image_check(
-        {"model": "newapi_gpt_image2", "aspectRatio": "recommended"}, fill_missing=False,
+        {"model": "gpt-image-2", "aspectRatio": "recommended"}, fill_missing=False,
     )
     assert blockers == []
     assert data["aspectRatio"] == "9:16"
-    assert data["model"] == "newapi_gpt_image2"
+    assert data["model"] == "gpt-image-2"
 
 
 _ALIAS_IMAGE_CATALOG = {"imageGenNode": {"ok": True, "data": [{
-    "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+    "id": "LingShan-G2", "aliases": ["gpt-image-2"],
     "ratioOptions": ["9:16"], "resolutionOptions": ["1K"], "qualityOptions": ["medium"],
 }]}}
 
@@ -877,20 +877,20 @@ def _image_preflight(data):
 def test_full_preflight_accepts_a_legal_catalog_alias_for_recommended_fields():
     """An alias model (the sketch default) must not be reported as unavailable."""
     result, data = _image_preflight({
-        "model": "newapi_gpt_image2", "aspectRatio": "recommended",
+        "model": "gpt-image-2", "aspectRatio": "recommended",
         "size": "1K", "quality": "medium", "count": 1,
     })
     assert result["status"] == "ready", result["blockers"]
     assert result["runtime_checks"]["imageGenNode.models"] == {
-        "requested": ["newapi_gpt_image2"], "available": True,
+        "requested": ["gpt-image-2"], "available": True,
     }
     assert data["aspectRatio"] == "9:16"
-    assert data["model"] == "newapi_gpt_image2"
+    assert data["model"] == "gpt-image-2"
 
 
 def test_full_preflight_checks_alias_model_capabilities_against_its_entry():
     result, _data = _image_preflight({
-        "model": "newapi_gpt_image2", "aspectRatio": "21:9",
+        "model": "gpt-image-2", "aspectRatio": "21:9",
         "size": "1K", "quality": "medium", "count": 1,
     })
     assert result["status"] == "blocked"

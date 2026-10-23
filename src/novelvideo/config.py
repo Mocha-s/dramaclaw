@@ -969,7 +969,7 @@ def _csv_env(name: str, default: str) -> list[str]:
     return [item for item in values if item]
 
 
-# newAPI 视频网关。VIDEO_BACKEND 使用 newapi_<model> 时会通过 NEWAPI_BASE_URL 调用。
+# Platform gateway video defaults use provider-neutral logical model names.
 NEWAPI_VIDEO_MODELS = _csv_env(
     "NEWAPI_VIDEO_MODELS",
     "seedance-1.0-pro-fast,seedance-1.5-pro,seedance-2.0,seedance-2.0-fast,seedance-2.0-value,seedance-2.0-fast-value,happyhorse-1.0,seedance-2.0-mini",
@@ -989,9 +989,9 @@ NEWAPI_VIDEO_DURATION_BOUNDS = os.environ.get(
     "seedance-1.0-pro-fast:2-12,seedance-1.5-pro:4-12,seedance-2.0:4-15,seedance-2.0-fast:4-15,seedance-2.0-value:4-15,seedance-2.0-fast-value:4-15,happyhorse-1.0:3-15,seedance-2.0-mini:4-15",
 ).strip()
 
-# 视频生成后端: newapi_seedance-1.0-pro-fast (默认), newapi_seedance-2.0-fast,
+# 视频生成后端: seedance-1.0-pro-fast (默认), seedance-2.0-fast,
 # comfyui, seedance_fast, seedance_pro, seedance_pro_silent, grok_720
-VIDEO_BACKEND = os.environ.get("VIDEO_BACKEND", f"newapi_{DEFAULT_VIDEO_MODEL}")
+VIDEO_BACKEND = os.environ.get("VIDEO_BACKEND", DEFAULT_VIDEO_MODEL)
 
 # Seedance 模型（火山方舟）
 SEEDANCE_FAST_MODEL = os.environ.get(

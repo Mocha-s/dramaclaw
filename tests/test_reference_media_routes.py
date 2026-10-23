@@ -40,7 +40,7 @@ def test_public_video_route_returns_locatable_errors(
         )
 
     async def backend(*_, **__):
-        return "newapi_seedance-2.5"
+        return "seedance-2.5"
 
     async def request(*_, **__):
         return (

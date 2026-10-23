@@ -48,7 +48,7 @@ function isScene360Model(model: { apiModel: string; label: string }): boolean {
     model.label === SCENE_360_MODEL_NAME
     || model.apiModel === SCENE_360_MODEL_NAME
     // CE 拉取目录失败时的兼容兜底条目仍使用旧模型别名。
-    || model.apiModel === 'newapi_gpt_image2'
+    || model.apiModel === 'gpt-image-2'
     || model.apiModel === 'huimeng_gpt_image2'
   );
 }

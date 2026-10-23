@@ -4437,7 +4437,7 @@ def test_exact_plan_recommendation_can_be_confirmed(
 
     async def recommended_models(project, user):
         return {"ok": True, "data": [{
-            "id": "LingShan-G2", "aliases": ["newapi_gpt_image2"],
+            "id": "LingShan-G2", "aliases": ["gpt-image-2"],
             "ratioOptions": ["1:1", "9:16"],
             "resolutionOptions": ["1K"], "qualityOptions": ["medium"],
         }]}

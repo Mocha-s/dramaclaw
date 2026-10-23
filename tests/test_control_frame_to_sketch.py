@@ -63,7 +63,7 @@ async def test_director_control_frame_to_sketch_accepts_newapi_provider(monkeypa
         "load_project_config_file",
         lambda *_args, **_kwargs: {
             "visual_style": "realistic",
-            "sketch_image_selection": "newapi_gpt_image2",
+            "sketch_image_selection": "gpt-image-2",
         },
     )
     monkeypatch.setattr(

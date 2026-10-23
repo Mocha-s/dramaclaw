@@ -243,7 +243,7 @@ vi.mock("@/lib/queries/video", () => ({
       ok: true,
       data: [
         {
-          value: "newapi_seedance-1.0-pro-fast",
+          value: "seedance-1.0-pro-fast",
           label: "Seedance 1.0 Pro Fast",
           is_default: true,
           is_seedance2: false,
@@ -252,7 +252,7 @@ vi.mock("@/lib/queries/video", () => ({
           max_duration: 12,
         },
         {
-          value: "newapi_seedance-1.5-pro",
+          value: "seedance-1.5-pro",
           label: "Seedance 1.5 Pro",
           is_default: false,
           is_seedance2: false,
@@ -270,7 +270,7 @@ vi.mock("@/lib/queries/video", () => ({
           max_duration: 15,
         },
         {
-          value: "newapi_seedance-2.0-fast",
+          value: "seedance-2.0-fast",
           label: "Seedance2.0 Fast",
           is_default: false,
           is_seedance2: true,
@@ -279,7 +279,7 @@ vi.mock("@/lib/queries/video", () => ({
           max_duration: 15,
         },
         {
-          value: "newapi_seedance-2.0",
+          value: "seedance-2.0",
           label: "Seedance2.0",
           is_default: false,
           is_seedance2: true,
@@ -288,7 +288,7 @@ vi.mock("@/lib/queries/video", () => ({
           max_duration: 15,
         },
         {
-          value: "newapi_seedance-2.0-value",
+          value: "seedance-2.0-value",
           label: "Seedance2.0 Value",
           is_default: false,
           is_seedance2: true,
@@ -297,7 +297,7 @@ vi.mock("@/lib/queries/video", () => ({
           max_duration: 15,
         },
         {
-          value: "newapi_seedance-2.0-fast-value",
+          value: "seedance-2.0-fast-value",
           label: "Seedance2.0 Fast Value",
           is_default: false,
           is_seedance2: true,
@@ -323,7 +323,7 @@ vi.mock("@/lib/queries/video", () => ({
             generated_at: "2026-05-16T09:00:00Z",
             duration: 5,
             video_mode: "first_frame",
-            backend: "newapi_seedance-2.0-fast",
+            backend: "seedance-2.0-fast",
             prompt: "old",
           },
           {
@@ -334,7 +334,7 @@ vi.mock("@/lib/queries/video", () => ({
             generated_at: "2026-05-16T10:00:00Z",
             duration: 5,
             video_mode: "first_frame",
-            backend: "newapi_seedance-2.0-fast",
+            backend: "seedance-2.0-fast",
             prompt: "new",
           },
         ],
@@ -762,7 +762,7 @@ describe("VideoPane Seedance2 inspector", () => {
         video_mode: "first_frame",
         video_prompt: "base video prompt",
       }),
-      { defaultBackend: "newapi_seedance-1.0-pro-fast" },
+      { defaultBackend: "seedance-1.0-pro-fast" },
     );
 
     expect(screen.queryByText("Seedance2 Inspector")).not.toBeInTheDocument();
@@ -792,7 +792,7 @@ describe("VideoPane Seedance2 inspector", () => {
         video_mode: "first_frame",
         video_prompt: "base video prompt",
       }),
-      { defaultBackend: "newapi_seedance-1.0-pro-fast" },
+      { defaultBackend: "seedance-1.0-pro-fast" },
     );
     expandSeedance2References();
 
@@ -807,7 +807,7 @@ describe("VideoPane Seedance2 inspector", () => {
     const user = userEvent.setup();
     renderPane(
       makeBeat({ video_mode: "first_frame", video_prompt: "" }),
-      { defaultBackend: "newapi_seedance-1.0-pro-fast" },
+      { defaultBackend: "seedance-1.0-pro-fast" },
     );
 
     const promptButton = screen.getByRole("button", {
@@ -833,7 +833,7 @@ describe("VideoPane Seedance2 inspector", () => {
     });
     renderPane(
       makeBeat({ video_mode: "first_frame", video_prompt: "" }),
-      { defaultBackend: "newapi_seedance-1.0-pro-fast" },
+      { defaultBackend: "seedance-1.0-pro-fast" },
     );
 
     await user.click(screen.getByRole("button", { name: "生成本 Beat 提示词" }));
@@ -860,7 +860,7 @@ describe("VideoPane Seedance2 inspector", () => {
     );
     renderPane(
       makeBeat({ video_mode: "first_frame", video_prompt: "" }),
-      { defaultBackend: "newapi_seedance-1.0-pro-fast" },
+      { defaultBackend: "seedance-1.0-pro-fast" },
     );
 
     await user.click(screen.getByRole("button", { name: "生成本 Beat 提示词" }));
@@ -876,7 +876,7 @@ describe("VideoPane Seedance2 inspector", () => {
         video_prompt: "first frame prompt",
         keyframe_prompt: "transition prompt",
       }),
-      { defaultBackend: "newapi_seedance-1.0-pro-fast" },
+      { defaultBackend: "seedance-1.0-pro-fast" },
     );
 
     expect(screen.getByLabelText("单个 Beat 视频提示词")).toHaveValue(
@@ -906,7 +906,7 @@ describe("VideoPane Seedance2 inspector", () => {
     const user = userEvent.setup();
     renderPane(
       makeBeat({ video_url: null, video_mode: "first_frame", video_prompt: "" }),
-      { defaultBackend: "newapi_seedance-1.0-pro-fast" },
+      { defaultBackend: "seedance-1.0-pro-fast" },
     );
 
     await user.click(screen.getByRole("button", { name: "重新生成" }));
@@ -1100,13 +1100,13 @@ describe("VideoPane Seedance2 inspector", () => {
     renderPane();
 
     expect(screen.getAllByText("Seedance2.0 Fast").length).toBeGreaterThan(0);
-    expect(screen.queryByText("newapi_seedance-2.0-fast")).not.toBeInTheDocument();
+    expect(screen.queryByText("seedance-2.0-fast")).not.toBeInTheDocument();
   });
 
   it("shows scene optimize styles only for Seedance2 value models", async () => {
     const user = userEvent.setup();
     renderPane(makeBeat({ seedance2_config_json: "" }), {
-      defaultBackend: "newapi_seedance-2.0-value",
+      defaultBackend: "seedance-2.0-value",
     });
 
     expect(screen.getByRole("radiogroup", { name: "风格" })).toBeInTheDocument();
@@ -1126,7 +1126,7 @@ describe("VideoPane Seedance2 inspector", () => {
   it("uses model-specific Seedance2 resolution options", async () => {
     const user = userEvent.setup();
     renderPane(makeBeat({ seedance2_config_json: "" }), {
-      defaultBackend: "newapi_seedance-2.0",
+      defaultBackend: "seedance-2.0",
     });
 
     await user.click(screen.getByRole("combobox", { name: "分辨率" }));
@@ -1138,7 +1138,7 @@ describe("VideoPane Seedance2 inspector", () => {
   it("hides unsupported Seedance2 value resolution options", async () => {
     const user = userEvent.setup();
     renderPane(makeBeat({ seedance2_config_json: "" }), {
-      defaultBackend: "newapi_seedance-2.0-value",
+      defaultBackend: "seedance-2.0-value",
     });
 
     await waitFor(() =>
@@ -1161,7 +1161,7 @@ describe("VideoPane Seedance2 inspector", () => {
           final_prompt: "existing seedance2 prompt",
         }),
       }),
-      { defaultBackend: "newapi_seedance-2.0-value" },
+      { defaultBackend: "seedance-2.0-value" },
     );
 
     await waitForSeedance2Autosave();
@@ -1184,7 +1184,7 @@ describe("VideoPane Seedance2 inspector", () => {
       }),
     });
     const view = renderPane(beat, {
-      defaultBackend: "newapi_seedance-2.0",
+      defaultBackend: "seedance-2.0",
     });
 
     view.rerender(
@@ -1194,7 +1194,7 @@ describe("VideoPane Seedance2 inspector", () => {
           project="demo"
           episode={1}
           state="ready"
-          defaultBackend="newapi_seedance-2.0-fast"
+          defaultBackend="seedance-2.0-fast"
         />
       </I18nextProvider>,
     );

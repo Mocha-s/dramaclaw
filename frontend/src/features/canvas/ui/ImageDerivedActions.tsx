@@ -29,7 +29,7 @@ import {
 export function useDerivedVideoCost() {
   const catalog = useFreezoneVideoModels();
   const model = catalog.models.find((m) =>
-    m.id === "newapi_seedance-2.0-fast" || m.apiModel === "newapi_seedance-2.0-fast",
+    m.id === "seedance-2.0-fast" || m.apiModel === "seedance-2.0-fast",
   );
   const cost = useGenerationCreditCost(
     "feature",

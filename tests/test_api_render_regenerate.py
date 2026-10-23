@@ -195,7 +195,7 @@ def test_render_selected_regen_returns_scope_and_passes_render_settings(
         json={
             "beat_indices": [3, 1],
             "mode_key": "1x1_2-3",
-            "image_generation_selection": "newapi_nanobanana2",
+            "image_generation_selection": "nano-banana-2",
             "sketch_aspect_padding": True,
             "batch_id": "first-frame-batch-1",
             "batch_size": 2,
@@ -209,13 +209,13 @@ def test_render_selected_regen_returns_scope_and_passes_render_settings(
     assert body["task_type"] == "selected_regen"
     assert body["scope"] == expected_scope
     assert calls[0]["payload"]["mode_key"] == "1x1_2-3"
-    assert calls[0]["payload"]["config"]["image_generation_selection"] == "newapi_nanobanana2"
+    assert calls[0]["payload"]["config"]["image_generation_selection"] == "nano-banana-2"
     assert calls[0]["payload"]["config"]["sketch_aspect_padding"] is True
     assert calls[0]["payload"]["batch_id"] == "first-frame-batch-1"
     assert calls[0]["payload"]["batch_size"] == 2
     assert "force_half_k" not in calls[0]["payload"]["config"]
     billing = calls[0]["payload"]["billing"]
-    assert billing["image_selection"] == "newapi_nanobanana2"
+    assert billing["image_selection"] == "nano-banana-2"
     assert billing["pricing_kind"] == "image"
     assert billing["pricing_model"]
     assert billing["pricing_params"]
@@ -368,7 +368,7 @@ def test_render_grid_regen_passes_render_settings(monkeypatch, tmp_path):
         "/api/v1/projects/demo/episodes/2/grids/0/regenerate",
         json={
             "scene_grouping": True,
-            "image_generation_selection": "newapi_nanobanana2",
+            "image_generation_selection": "nano-banana-2",
             "sketch_aspect_padding": True,
         },
     )
@@ -378,11 +378,11 @@ def test_render_grid_regen_passes_render_settings(monkeypatch, tmp_path):
     assert body["ok"] is True
     assert body["task_type"] == "grid_regenerate"
     assert calls[0]["payload"]["grid_index"] == 0
-    assert calls[0]["payload"]["config"]["image_generation_selection"] == "newapi_nanobanana2"
+    assert calls[0]["payload"]["config"]["image_generation_selection"] == "nano-banana-2"
     assert calls[0]["payload"]["config"]["sketch_aspect_padding"] is True
     assert "force_half_k" not in calls[0]["payload"]["config"]
     billing = calls[0]["payload"]["billing"]
-    assert billing["image_selection"] == "newapi_nanobanana2"
+    assert billing["image_selection"] == "nano-banana-2"
     assert billing["pricing_kind"] == "image"
     assert billing["pricing_model"]
     assert billing["pricing_params"]

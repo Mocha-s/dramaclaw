@@ -4778,7 +4778,6 @@ class ComfyUIVideoGenerator(VideoGeneratorBase):
             )
 
 
-NEWAPI_VIDEO_BACKEND_PREFIX = "newapi_"
 NEWAPI_VIDEO_DISPLAY_LABELS = {
     "seedance-1.0-pro-fast": "Seedance1.0 Pro Fast",
     "seedance-1.5-pro": "Seedance1.5 Pro",
@@ -4805,9 +4804,20 @@ def parse_newapi_video_backend(backend: str | None) -> str | None:
         from novelvideo.config import NEWAPI_VIDEO_MODEL
 
         return NEWAPI_VIDEO_MODEL
-    if lowered.startswith(NEWAPI_VIDEO_BACKEND_PREFIX):
-        model = value[len(NEWAPI_VIDEO_BACKEND_PREFIX) :].strip()
-        return model or None
+    if value in newapi_video_backend_options():
+        return value
+    if lowered in {
+        "seedance_fast",
+        "seedance_pro",
+        "seedance_pro_silent",
+        "seedance_2",
+        "grok_720",
+        "comfyui",
+        "ltx23",
+    }:
+        return None
+    if value == value.lower() and lowered.startswith(("video-", "seedance", "sd17-")):
+        return value
     return None
 
 
@@ -4826,6 +4836,7 @@ def newapi_video_backend_options(
         try:
             from novelvideo.model_gateway_settings import (
                 get_newapi_media_model_mappings,
+                get_sub2api_media_model_catalog,
             )
 
             for model, mapping in get_newapi_media_model_mappings().items():
@@ -4837,18 +4848,17 @@ def newapi_video_backend_options(
                     and model not in models
                 ):
                     models.append(model)
+            for entry in get_sub2api_media_model_catalog("video"):
+                model = str(entry.get("id") or "").strip()
+                if model and model not in models:
+                    models.append(model)
         except (RuntimeError, ImportError):
             pass
     if include_seedance2_variants:
         for model in NEWAPI_MAINLINE_SEEDANCE2_MODELS:
             if model not in models:
                 models.append(model)
-    return {
-        f"{NEWAPI_VIDEO_BACKEND_PREFIX}{model}": NEWAPI_VIDEO_DISPLAY_LABELS.get(
-            model, model
-        )
-        for model in models
-    }
+    return {model: NEWAPI_VIDEO_DISPLAY_LABELS.get(model, model) for model in models}
 
 
 def _coerce_video_backend_value(backend: VideoBackend | str | None) -> str:
@@ -4858,10 +4868,6 @@ def _coerce_video_backend_value(backend: VideoBackend | str | None) -> str:
         return backend.value
     value = str(backend).strip()
     lowered = value.lower()
-    if lowered.startswith(NEWAPI_VIDEO_BACKEND_PREFIX):
-        return (
-            f"{NEWAPI_VIDEO_BACKEND_PREFIX}{value[len(NEWAPI_VIDEO_BACKEND_PREFIX) :]}"
-        )
     return "comfyui" if lowered == "jimeng" else lowered
 
 
@@ -4928,7 +4934,7 @@ def create_video_generator(
 
     Args:
         backend: 视频后端选择
-            - newapi_<model>: newAPI 视频模型，如 newapi_seedance-1.0-pro-fast
+            - <model>: platform gateway video model, such as seedance-1.0-pro-fast
             - huimeng_<model>: HuiMeng 视频模型，如 huimeng_seedance-2.0-fast
             - SEEDANCE_FAST: Seedance 1.0 Pro Fast（火山方舟）
             - SEEDANCE_PRO: Seedance 1.5 Pro 有声（火山方舟）
@@ -4944,7 +4950,7 @@ def create_video_generator(
 
     环境变量:
         VIDEO_BACKEND: 默认后端
-            (newapi_seedance-1.0-pro-fast/huimeng_seedance-2.0-fast/comfyui/...)
+            (seedance-1.0-pro-fast/huimeng_seedance-2.0-fast/comfyui/...)
         HUIMENGI_API_KEY: HuiMeng API 密钥
         COMFYUI_WORKFLOW: ComfyUI 工作流类型 (gguf/fp8)
         VOLCENGINE_VISUAL_API_KEY: Seedance API 密钥

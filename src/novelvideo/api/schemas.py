@@ -1180,7 +1180,7 @@ class FreezoneVideoGenRequest(FreezoneWorkflowMediaLink):
         description="Seedance 2.0 Value 系列的场景风格优化参数",
     )
     model: str = Field(
-        default="newapi_seedance-2.0-fast",
+        default="seedance-2.0-fast",
         description="视频模型名称。请传 `/api/v1/projects/{project}/freezone/video/models` 返回值之一。",
     )
     canvas_id: str = Field(default="", description="可选：来源画布 id，用于记录节点生成历史")
@@ -1236,7 +1236,7 @@ class FreezoneImageToVideoRequest(FreezoneWorkflowMediaLink):
         description="Seedance 2.0 Value 系列的场景风格优化参数",
     )
     model: str = Field(
-        default="newapi_seedance-2.0-fast",
+        default="seedance-2.0-fast",
         description="视频模型或模型选项 id。请传 /freezone/video/models 返回值之一",
     )
     canvas_id: str = Field(default="", description="可选：来源画布 id，用于记录节点生成历史")
@@ -1296,7 +1296,7 @@ class FreezoneKeyframeVideoRequest(FreezoneWorkflowMediaLink):
         description="Seedance 2.0 Value 系列的场景风格优化参数",
     )
     model: str = Field(
-        default="newapi_seedance-2.0-fast",
+        default="seedance-2.0-fast",
         description="视频模型或模型选项 id。请传 /freezone/video/models 返回值之一",
     )
     canvas_id: str = Field(default="", description="可选：来源画布 id，用于记录节点生成历史")
@@ -1345,7 +1345,7 @@ class FreezoneVideoEditRequest(FreezoneWorkflowMediaLink):
         description="是否开启真人素材审核/加白流程",
     )
     model: str = Field(
-        default="newapi_happyhorse-1.0",
+        default="happyhorse-1.0",
         description="视频模型或模型选项 id。请传 /freezone/video/models 返回值之一",
     )
     canvas_id: str = Field(default="", description="可选：来源画布 id，用于记录节点生成历史")
@@ -1378,7 +1378,7 @@ class FreezoneVideoExtendRequest(BaseModel):
         description="是否开启真人素材审核/加白流程",
     )
     model: str = Field(
-        default="newapi_seedance-2.5",
+        default="seedance-2.5",
         description="视频模型或模型选项 id。请传 /freezone/video/models 返回值之一",
     )
     canvas_id: str = Field(default="", description="可选：来源画布 id，用于记录节点生成历史")
@@ -1548,7 +1548,7 @@ class FreezoneVideoOmniGenRequest(FreezoneWorkflowMediaLink):
         description="Seedance 2.0 Value 系列的场景风格优化参数",
     )
     model: str = Field(
-        default="newapi_seedance-2.0-fast",
+        default="seedance-2.0-fast",
         description="视频模型或模型选项 id。请传 /freezone/video/models 返回值之一",
     )
     canvas_id: str = Field(default="", description="可选：来源画布 id，用于记录节点生成历史")
@@ -2010,7 +2010,7 @@ class FreezoneStoryScriptGenerateRequest(BaseModel):
         description="用户补充要求，会和源剧本内容一起交给模型",
     )
     model: str = Field(
-        default="newapi_gemini_flash",
+        default="gemini-flash",
         description="文本模型选项 id 或展示名",
     )
     canvas_id: str = Field(default="", description="可选：来源画布 id，用于记录节点生成历史")
