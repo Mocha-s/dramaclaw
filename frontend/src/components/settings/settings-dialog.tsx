@@ -63,6 +63,7 @@ import {
   useEnableOfficial,
   useEnableCustom,
   useEnableHybrid,
+  useSetCustomLlmMode,
   useEnableBrainClaw,
   useSaveAgentLlmConfig,
   useSaveOfficialConfig,
@@ -80,6 +81,7 @@ import {
   useSyncProviderChannel,
   type GatewayMode,
   type AgentLlmMode,
+  type CustomLlmMode,
   type NewApiDatabaseConfigInput,
   type ModelGatewayConfig,
   type CustomChannelInput,
@@ -524,6 +526,19 @@ function ModelConfigSection({ open }: { open: boolean }) {
       {mode === "custom" || mode === "hybrid" ? (
         <ThirdPartyGatewayPanel config={config} loading={loading} />
       ) : null}
+      {mode === "custom" ? (
+        <CustomLlmSettings config={config} loading={loading} />
+      ) : null}
+      {mode === "hybrid" ? (
+        <FeatureModelsBlock
+          newApiBaseUrl=""
+          database={undefined}
+          channelTypesEnabled={false}
+          savedProviderChannels={config?.provisioner?.providerChannels ?? []}
+          savedEmbeddingModel={config?.provisioner?.embeddingModel}
+          savedMediaModels={config?.provisioner?.mediaModels ?? {}}
+        />
+      ) : null}
     </section>
   );
 }
@@ -536,7 +551,7 @@ type ThirdPartyGroupDraft = ThirdPartyGatewayGroup & {
 
 function newThirdPartyGroup(): ThirdPartyGroupDraft {
   return {
-    id: globalThis.crypto?.randomUUID?.() ?? `sub2api-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    id: globalThis.crypto?.randomUUID?.() ?? `third-party-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     name: "",
     protocol: "openai",
     baseUrl: "",
@@ -710,11 +725,11 @@ function ThirdPartyGroupCard({
     model.toLowerCase().includes(modelSearch.trim().toLowerCase()),
   );
   return (
-    <details open={expanded} onToggle={(event) => onExpandedChange(event.currentTarget.open)} className="rounded-md border border-border/70 p-3">
-      <summary role="button" aria-expanded={expanded} onClick={(event) => { event.preventDefault(); onExpandedChange(!expanded); }} className="cursor-pointer text-xs font-medium text-foreground">
+    <section role="group" className="rounded-md border border-border/70 p-3">
+      <button type="button" aria-expanded={expanded} onClick={() => onExpandedChange(!expanded)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onExpandedChange(!expanded); } }} className="w-full cursor-pointer text-left text-xs font-medium text-foreground">
         {group.name || t("settings.modelConfig.thirdParty.newGroup")}
-      </summary>
-      <div className="mt-3 space-y-3">
+      </button>
+      {expanded ? <div className="mt-3 space-y-3">
       <div className="flex justify-end">
           <Button type="button" size="sm" variant="ghost" onClick={onRemove} aria-label={t("settings.modelConfig.thirdParty.removeGroup")}>
           <Trash2 className="size-3.5" />
@@ -876,8 +891,50 @@ function ThirdPartyGroupCard({
         </div>
         <p id={`${modelsId}-hint`} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.thirdParty.modelsHint")}</p>
       </div>
-      </div>
-    </details>
+      </div> : null}
+    </section>
+  );
+}
+
+function CustomLlmSettings({
+  config,
+  loading,
+}: {
+  config: ModelGatewayConfig | undefined;
+  loading: boolean;
+}) {
+  const { t } = useTranslation();
+  const [llmMode, setLlmMode] = useState<CustomLlmMode>(config?.custom?.llmMode ?? "relayclaw_brainclaw");
+  const updateMode = useSetCustomLlmMode();
+  useEffect(() => {
+    if (config?.custom?.llmMode) setLlmMode(config.custom.llmMode);
+  }, [config?.custom?.llmMode]);
+  const onModeChange = async (value: string) => {
+    const next = value as CustomLlmMode;
+    setLlmMode(next);
+    if (next === "advanced") await updateMode.mutateAsync(next);
+  };
+  return (
+    <div className="mt-5 space-y-3">
+      <Tabs value={llmMode} onValueChange={onModeChange}>
+        <TabsList>
+          <TabsTrigger value="relayclaw_brainclaw">{t("settings.modelConfig.brainclaw.tab")}</TabsTrigger>
+          <TabsTrigger value="advanced">{t("settings.modelConfig.brainclaw.advancedTab")}</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      {llmMode === "relayclaw_brainclaw" ? (
+        <BrainClawGatewayPanel config={config} loading={loading} />
+      ) : (
+        <FeatureModelsBlock
+          newApiBaseUrl=""
+          database={undefined}
+          channelTypesEnabled={false}
+          savedProviderChannels={config?.provisioner?.providerChannels ?? []}
+          savedEmbeddingModel={config?.provisioner?.embeddingModel}
+          savedMediaModels={config?.provisioner?.mediaModels ?? {}}
+        />
+      )}
+    </div>
   );
 }
 

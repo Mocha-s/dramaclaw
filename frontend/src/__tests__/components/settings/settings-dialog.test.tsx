@@ -158,6 +158,9 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.thirdParty.addGroup": "添加第三方网关组",
         "settings.modelConfig.thirdParty.title": "第三方网关",
         "settings.modelConfig.thirdParty.description": "第三方网关配置",
+        "settings.modelConfig.brainclaw.missingEndpoint": "请填写 BrainClaw 网关地址。",
+        "settings.modelConfig.brainclaw.enabled": "BrainClaw 已启用",
+        "settings.modelConfig.brainclaw.advancedEnabled": "已切换高级自定义 LLM",
         "settings.modelConfig.thirdParty.saved": "第三方网关配置已保存",
         "settings.modelConfig.thirdParty.newGroup": "新网关组",
         "settings.modelConfig.thirdParty.removeGroup": "删除网关组",
@@ -638,11 +641,73 @@ describe("SettingsDialog pages", () => {
     expect(primary).toHaveAttribute("aria-expanded", "true");
     expect(secondary).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByLabelText("视频任务接口")).toBeInTheDocument();
-    expect(screen.getAllByPlaceholderText("https://api.example.com/v1")).toHaveLength(2);
+    expect(screen.getAllByPlaceholderText("https://api.example.com/v1")).toHaveLength(1);
 
     fireEvent.click(screen.getByRole("tab", { name: "本地 + 官方混合" }));
     expect(screen.getByText("官方渠道说明")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Primary/ })).toBeInTheDocument();
+  });
+
+  it("retains Custom BrainClaw and provider feature model settings", () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "custom", baseUrl: "", apiKeyPreview: "", configured: true, model: "", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [] },
+      provisioner: { enabled: false, adminBaseUrl: "", dbConfigured: false, adminUsername: "", relayTokenName: "", relayBaseUrl: "", providers: {}, providerChannels: [], mediaModels: {} },
+    };
+    renderSettingsDialog();
+
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    expect(screen.getByRole("tab", { name: "虾驿 BrainClaw（推荐）" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "高级自定义" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
+    expect(screen.getByText("业务模型映射")).toBeInTheDocument();
+  });
+
+  it("uses a generic fallback identifier for a newly created gateway group", () => {
+    const originalCrypto = globalThis.crypto;
+    Object.defineProperty(globalThis, "crypto", { configurable: true, value: undefined });
+    try {
+      modelGatewayMocks.config = {
+        mode: "custom", effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: false },
+        llmEffective: { mode: "custom", source: "custom", baseUrl: "", apiKeyPreview: "", configured: false, model: "", brainclaw: false },
+        official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+        custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: false },
+        thirdParty: { configured: false, groups: [] },
+      };
+      renderSettingsDialog();
+      fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+      fireEvent.click(screen.getAllByRole("button", { name: "添加第三方网关组" })[0]);
+      expect(document.querySelector('input[name^="third-party-"]')).not.toBeNull();
+      expect(document.querySelector('input[name^="sub2api-"]')).toBeNull();
+    } finally {
+      Object.defineProperty(globalThis, "crypto", { configurable: true, value: originalCrypto });
+    }
+  });
+
+  it("opens and closes each saved gateway disclosure independently with keyboard activation", () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "custom", baseUrl: "", apiKeyPreview: "", configured: true, model: "", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [
+        { id: "one", name: "One", protocol: "openai", baseUrl: "https://one.example/v1", apiKeyPreview: "sk-...", capabilities: ["text"], modelMappings: [{ requestPattern: "*", upstreamModel: "one" }] },
+        { id: "two", name: "Two", protocol: "openai", baseUrl: "https://two.example/v1", apiKeyPreview: "sk-...", capabilities: ["text"], modelMappings: [{ requestPattern: "*", upstreamModel: "two" }] },
+      ] },
+    };
+    renderSettingsDialog();
+    const one = screen.getByRole("button", { name: /One/ });
+    const two = screen.getByRole("button", { name: /Two/ });
+    fireEvent.keyDown(one, { key: "Enter", code: "Enter" });
+    expect(one).toHaveAttribute("aria-expanded", "true");
+    expect(two).toHaveAttribute("aria-expanded", "false");
+    fireEvent.keyDown(one, { key: " ", code: "Space" });
+    expect(one).toHaveAttribute("aria-expanded", "false");
   });
 
   it("saves per-model image and video protocol overrides for Sub2API", async () => {
