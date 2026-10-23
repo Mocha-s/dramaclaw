@@ -29,6 +29,7 @@ from novelvideo.model_gateway_settings import (
     get_official_media_catalog_update_status,
     normalize_relay_base_url,
     normalize_api_key,
+    normalize_sub2api_gemini_base_url,
     parse_comfyui_channel_workflows,
     save_media_relay_config,
     save_agent_llm_config,
@@ -759,7 +760,10 @@ async def fetch_sub2api_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
     if not api_key:
         raise HTTPException(status_code=400, detail="API Key is required to fetch models")
 
-    endpoint = base_url if base_url.endswith("/models") else f"{base_url}/models"
+    if protocol == "gemini":
+        endpoint = f"{normalize_sub2api_gemini_base_url(base_url)}/models"
+    else:
+        endpoint = base_url if base_url.endswith("/models") else f"{base_url}/models"
     headers = (
         {"Authorization": f"Bearer {api_key}"}
         if protocol == "openai"

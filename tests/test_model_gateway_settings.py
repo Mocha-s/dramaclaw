@@ -1422,6 +1422,63 @@ def test_sub2api_model_discovery_uses_protocol_auth_and_normalizes_models(
         assert request["headers"][expected_header] == "sk-group-secret"
 
 
+def test_gemini_model_discovery_normalizes_v1_base_url_to_v1beta(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    requests: list[dict[str, Any]] = []
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def get(self, url, *, headers, params):
+            requests.append({"url": url, "headers": headers, "params": params})
+            return Response(
+                200,
+                json={
+                    "models": [
+                        {
+                            "name": "models/gemini-3.1-flash-image-preview",
+                            "baseModelId": "gemini-3.1-flash-image-preview",
+                        }
+                    ]
+                },
+            )
+
+    monkeypatch.setattr(model_gateway.httpx, "Client", FakeClient)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/sub2api/models",
+        json={
+            "id": "gemini-image",
+            "protocol": "gemini",
+            "baseUrl": "https://sub2api.example/v1",
+            "apiKey": "gemini-key",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["models"] == [
+        "gemini-3.1-flash-image-preview"
+    ]
+    assert requests == [
+        {
+            "url": "https://sub2api.example/v1beta/models",
+            "headers": {"x-goog-api-key": "gemini-key"},
+            "params": {"pageSize": 1000},
+        }
+    ]
+
+
 def test_sub2api_model_discovery_hides_upstream_error_body(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     class FakeClient:

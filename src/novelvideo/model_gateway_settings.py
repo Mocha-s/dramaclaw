@@ -452,14 +452,19 @@ def _sub2api_image_protocol(group: dict[str, Any], model: str) -> str:
     return protocol
 
 
-def _sub2api_gemini_base_url(group: dict[str, Any]) -> str:
-    """Return the native Gemini API root, including the required /v1beta path."""
-    base_url = normalize_sub2api_base_url(str(group.get("baseUrl") or ""))
+def normalize_sub2api_gemini_base_url(value: str | None) -> str:
+    """Return a Sub2API Gemini base URL with its native ``/v1beta`` path."""
+    base_url = normalize_sub2api_base_url(value)
     if base_url.endswith("/v1beta"):
         return base_url
     if base_url.endswith("/v1"):
         base_url = base_url[:-3]
     return f"{base_url}/v1beta"
+
+
+def _sub2api_gemini_base_url(group: dict[str, Any]) -> str:
+    """Return the native Gemini API root for a configured Sub2API group."""
+    return normalize_sub2api_gemini_base_url(str(group.get("baseUrl") or ""))
 
 
 def _now_iso() -> str:
