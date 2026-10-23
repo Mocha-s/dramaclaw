@@ -142,6 +142,50 @@ def test_migration_warning_is_non_secret_and_preserves_newapi_admin_data(
     assert "custom-secret" not in json.dumps(warnings)
     assert "provider-secret" not in json.dumps(warnings)
     assert gateway_settings.get_model_gateway_settings()["custom_newapi_provider_channels"]
+
+
+def test_malformed_canonical_groups_are_preserved_and_retryable(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    raw = "{not-json"
+    model_gateway_settings._write_many({"third_party_gateway_groups": raw, "sub2api_groups": "[]"})
+
+    assert gateway_settings.get_third_party_gateway_groups() == []
+    settings = gateway_settings.get_model_gateway_settings()
+    assert settings["third_party_gateway_groups"] == raw
+    assert "Canonical" in settings["third_party_gateway_migration_warnings"]
+    assert gateway_settings.get_model_gateway_settings().get("third_party_gateway_migration_version") != "1"
+
+
+def test_custom_resolution_uses_canonical_group(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    group = {"id": "canonical", "name": "Canonical", "protocol": "openai", "baseUrl": "https://canonical.example/v1", "apiKey": "canonical-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "logical-model", "upstreamModel": "upstream-model"}]}
+    model_gateway_settings._write_many({"third_party_gateway_groups": json.dumps([group]), "model_gateway_mode": MODE_CUSTOM})
+
+    effective = gateway_settings.get_effective_newapi_config(model="logical-model")
+
+    assert effective.source == "third_party"
+    assert effective.api_key == "canonical-key"
+    assert effective.model == "upstream-model"
+
+
+def test_legacy_sub2api_mode_resolves_through_canonical_custom_groups(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    group = {"id": "canonical", "name": "Canonical", "protocol": "openai", "baseUrl": "https://canonical.example/v1", "apiKey": "canonical-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "logical-model", "upstreamModel": "upstream-model"}]}
+    model_gateway_settings._write_many({"third_party_gateway_groups": json.dumps([group]), "model_gateway_mode": MODE_SUB2API})
+
+    effective = gateway_settings.get_effective_newapi_config(model="logical-model")
+
+    assert effective.mode == MODE_CUSTOM
+    assert effective.source == "third_party"
+    assert effective.api_key == "canonical-key"
+
+
+@pytest.mark.parametrize("url", ["http://10.0.0.7:3000/v1", "http://192.168.1.4/v1", "http://[fc00::1]/v1", "http://[::1]/v1"])
+def test_custom_migration_rejects_private_or_local_addresses(monkeypatch, tmp_path, url):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many({"custom_newapi_base_url": url, "custom_newapi_api_key": "local-key"})
+
+    assert gateway_settings.get_third_party_gateway_groups() == []
 from novelvideo.newapi_provisioner import (
     _merge_channel_payload,
     AdminToken,

@@ -8,6 +8,7 @@ keeps its deployment environment as the sole credential source.
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import json
 import os
 import sqlite3
@@ -167,18 +168,25 @@ def normalize_api_key(value: str | None) -> str:
 
 def normalize_gateway_mode(value: str | None) -> str:
     mode = str(value or "").strip().lower()
+    if mode == MODE_SUB2API:
+        return MODE_CUSTOM
     return mode if mode in VALID_MODES else MODE_OFFICIAL
 
 
 def _is_external_http_url(value: str) -> bool:
     parsed = urlsplit(str(value or "").strip())
     host = (parsed.hostname or "").strip().lower().rstrip(".")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
     return (
         parsed.scheme in {"http", "https"}
         and bool(host)
         and host not in {"localhost", "127.0.0.1", "0.0.0.0", "::1", "host.docker.internal"}
         and not host.startswith("127.")
         and not host.startswith("169.254.")
+        and not (address is not None and (address.is_private or address.is_loopback or address.is_link_local or address.is_reserved))
     )
 
 
@@ -324,12 +332,13 @@ def get_sub2api_groups(*, masked: bool = False) -> list[dict[str, Any]]:
 
 
 def _resolve_sub2api_group(
-    *, capability: str, model: str
+    *, capability: str, model: str, groups: list[dict[str, Any]] | None = None
 ) -> dict[str, Any] | None:
     capability = normalize_capability(capability)
     wanted_model = str(model or "").strip()
     matches: list[tuple[int, dict[str, Any], str]] = []
-    for group in get_sub2api_groups():
+    resolved_groups = groups if groups is not None else get_sub2api_groups()
+    for group in resolved_groups:
         if capability not in group.get("capabilities", []):
             continue
         mappings = group.get("modelMappings") or [
@@ -358,7 +367,7 @@ def _resolve_sub2api_group(
     if not matches and not wanted_model:
         defaults = [
             (group, str(mapping.get("upstreamModel") or ""))
-            for group in get_sub2api_groups()
+            for group in resolved_groups
             if capability in group.get("capabilities", [])
             for mapping in (group.get("modelMappings") or [])
             if mapping.get("requestPattern") == "*"
@@ -366,7 +375,7 @@ def _resolve_sub2api_group(
         if not defaults:
             candidates = [
                 (group, mapping)
-                for group in get_sub2api_groups()
+                for group in resolved_groups
                 if capability in group.get("capabilities", [])
                 for mapping in (group.get("modelMappings") or [])
             ]
@@ -592,10 +601,15 @@ def _migrate_third_party_gateway_settings() -> None:
         if THIRD_PARTY_GROUPS_KEY in current:
             try:
                 existing = json.loads(current[THIRD_PARTY_GROUPS_KEY])
-                groups = existing if isinstance(existing, list) else []
+                if not isinstance(existing, list):
+                    raise ValueError("canonical groups are not a list")
+                groups = existing
             except json.JSONDecodeError:
-                # Preserve invalid canonical data and do not replace it.
-                groups = []
+                warnings.append("Canonical third-party gateway groups are malformed and were preserved.")
+                migration_failed = True
+            except ValueError:
+                warnings.append("Canonical third-party gateway groups are malformed and were preserved.")
+                migration_failed = True
         else:
             raw_groups = current.get("sub2api_groups", "")
             if raw_groups:
@@ -1686,7 +1700,7 @@ def get_ce_newapi_config_for_mode(
         )
     if mode == MODE_CUSTOM:
         groups = get_third_party_gateway_groups()
-        selected = _resolve_sub2api_group(capability=capability, model=model) if groups else None
+        selected = _resolve_sub2api_group(capability=capability, model=model, groups=groups) if groups else None
         if selected is not None:
             group, upstream_model, mapping = selected
             protocol = str(group.get("protocol") or "openai").strip().lower()
