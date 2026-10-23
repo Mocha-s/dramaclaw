@@ -26,8 +26,8 @@ import {
   useCheckOfficialMediaCatalog,
   useOfficialMediaCatalogWatcher,
   useSaveProviderChannels,
-  useSaveSub2ApiConfig,
-  useEnableSub2Api,
+  useSaveThirdPartyGatewayConfig,
+  useEnableCustom,
 } from "@/lib/queries/model-gateway";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -307,12 +307,12 @@ describe("provider channel persistence", () => {
   });
 });
 
-describe("Sub2API capability credentials", () => {
-  it("saves the shared endpoint and five capability keys", async () => {
+describe("third-party gateway groups", () => {
+  it("writes canonical groups to the generic route", async () => {
     let requestBody: unknown;
     server.use(
       http.post(
-        "http://localhost:3000/api/v1/model-gateway/sub2api/config",
+        "http://localhost:3000/api/v1/model-gateway/third-party/config",
         async ({ request }) => {
           requestBody = await request.json();
           return HttpResponse.json({ ok: true, data: {} });
@@ -323,7 +323,7 @@ describe("Sub2API capability credentials", () => {
       defaultOptions: { queries: { retry: false } },
     });
     const { result } = renderHook(
-      () => ({ save: useSaveSub2ApiConfig(), enable: useEnableSub2Api() }),
+      () => ({ save: useSaveThirdPartyGatewayConfig(), enable: useEnableCustom() }),
       { wrapper: wrapper(queryClient) },
     );
 
@@ -374,5 +374,19 @@ describe("Sub2API capability credentials", () => {
         },
       ],
     });
+  });
+
+  it("enables Custom through the generic custom route", async () => {
+    let requestedUrl = "";
+    server.use(
+      http.post("http://localhost:3000/api/v1/model-gateway/custom/enable", ({ request }) => {
+        requestedUrl = request.url;
+        return HttpResponse.json({ ok: true, data: {} });
+      }),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useEnableCustom(), { wrapper: wrapper(queryClient) });
+    await act(async () => { await result.current.mutateAsync(); });
+    expect(requestedUrl).toBe("http://localhost:3000/api/v1/model-gateway/custom/enable");
   });
 });

@@ -7596,7 +7596,7 @@
     },
     "modelConfig": {
       "title": "Model Config",
-      "description": "Choose the official gateway, configure your own NewAPI, or combine local and official services.",
+      "description": "Choose the official gateway, configure third-party gateways, or combine both.",
       "baseUrlHint": "The CE runtime configures the Local NewAPI URL automatically.",
       "effectiveBadge": "Active: {{channel}}",
       "guide": "Configuration guide",
@@ -7609,12 +7609,11 @@
       "statusNotConfigured": "Not configured",
       "statusActive": "Active",
       "gatewayWarningIconLabel": "Model gateway is not configured",
-      "gatewayNotConfiguredImpact": "The active model gateway is not configured. Text, image, video, and audio model calls will fail; configure the official channel or initialize Local NewAPI before generating content.",
+      "gatewayNotConfiguredImpact": "The active model gateway is not configured. Configure the official gateway or a third-party gateway before generating content.",
       "modes": {
         "official": "Official",
         "custom": "Custom",
-        "hybrid": "Local + Official Hybrid",
-        "sub2api": "Sub2API"
+        "hybrid": "Local + Official Hybrid"
       },
       "fields": {
         "baseUrl": "New API URL",
@@ -7656,50 +7655,18 @@
         "missingEndpoint": "Enter the BrainClaw NewAPI URL.",
         "advancedEnabled": "Advanced custom LLM is enabled."
       },
-      "sub2api": {
-        "description": "Add any number of OpenAI/Gemini account groups, then choose each group's capabilities and model match rules. Requests select one group by capability and model name.",
-        "newGroup": "New account group",
-        "addGroup": "Add account group",
-        "removeGroup": "Remove group",
-        "groupName": "Group name",
-        "protocol": "Protocol",
-        "baseUrl": "Base URL",
-        "apiKey": "API Key",
-        "capabilitiesLabel": "Capabilities",
-        "models": "Model match rules",
-        "requestModel": "DramaClaw model pattern",
-        "upstreamModel": "Upstream model",
-        "imageEditFormat": "Image edit format",
-        "imageEditFormats": {
-          "dc-media": "DramaClaw NewAPI JSON",
-          "images": "images[].image_url JSON",
-          "input_reference": "input_reference JSON",
-          "multipart": "Multipart image files"
-        },
-        "videoEndpoint": "Video task endpoint",
-        "videoEndpoints": {
-          "videos": "Modern /videos",
-          "legacy": "Legacy /video/generations"
-        },
-        "modelsPlaceholder": "One per line, e.g. gpt-5 or gemini-embedding-*",
-        "modelsHint": "Map DramaClaw request models (for example DC-freezone-text-writer-LLM) to the selected Sub2API upstream model. Request rules may end with *; exact matches win.",
-        "modelSearch": "Filter models",
-        "fetchModels": "Fetch models",
-        "availableModels": "Available models",
-        "noModels": "No matching models",
-        "fetchFailed": "Could not fetch models. Check the URL, protocol, and API key, or enter model names manually.",
-        "keyPlaceholder": "Enter API Key",
-        "keyHint": "Each group may serve multiple capabilities, and multiple groups may serve the same capability.",
-        "save": "Save Sub2API settings",
-        "saved": "Sub2API account groups saved. Use the button above to activate them.",
-        "missingFields": "Complete each group's name, Base URL, key, capabilities, and model rules.",
-        "capabilities": {
-          "text": "Text / Vision",
-          "embedding": "Embedding",
-          "image": "Image",
-          "video": "Video",
-          "audio": "Audio"
-        }
+      "thirdParty": {
+        "title": "Third-party gateway",
+        "description": "Configure one or more OpenAI- or Gemini-compatible gateway groups. Each group has its own endpoint, key, capabilities, and model mappings.",
+        "newGroup": "New gateway group", "addGroup": "Add gateway group", "removeGroup": "Remove group",
+        "groupName": "Group name", "protocol": "Protocol", "baseUrl": "Base URL", "apiKey": "API Key",
+        "capabilitiesLabel": "Capabilities", "models": "Model mappings", "requestModel": "DramaClaw model pattern", "upstreamModel": "Upstream model",
+        "videoEndpoint": "Video task endpoint", "videoEndpoints": { "videos": "Modern /videos", "legacy": "Legacy /video/generations" },
+        "modelsHint": "Map request model patterns to upstream models; exact matches take precedence.", "modelSearch": "Filter models", "fetchModels": "Fetch models", "availableModels": "Available models", "noModels": "No matching models",
+        "fetchFailed": "Could not fetch models. Check the URL, protocol, and API key, or enter model names manually.", "keyPlaceholder": "Enter API Key", "keyHint": "Keys are masked; enter a new key only when changing the endpoint.",
+        "save": "Save third-party gateway settings", "saved": "Third-party gateway groups saved.", "missingFields": "Complete each group name, Base URL, key, capability, and model mapping.",
+        "warning": "Some legacy settings could not be migrated. Recreate them manually in your selected third-party gateway.",
+        "capabilities": { "text": "Text / Vision", "embedding": "Embedding", "image": "Image", "video": "Video", "audio": "Audio" }
       },
       "agent": {
         "title": "Agent model",

@@ -69,6 +69,19 @@ export interface Sub2ApiGatewayConfig {
   groups: Sub2ApiAccountGroup[];
 }
 
+/** Canonical user-configured gateway groups. Legacy Sub2API fields are read as aliases only. */
+export type ThirdPartyCapability = Sub2ApiCapability;
+export type ThirdPartyVideoEndpoint = Sub2ApiVideoEndpoint;
+export type ThirdPartyModelMapping = Omit<Sub2ApiModelMapping, "imageEditFormat">;
+export type ThirdPartyGatewayGroup = Omit<Sub2ApiAccountGroup, "modelMappings"> & {
+  modelMappings: ThirdPartyModelMapping[];
+};
+export interface ThirdPartyGatewayConfig {
+  configured: boolean;
+  groups: ThirdPartyGatewayGroup[];
+  migrationWarnings?: string[];
+}
+
 export interface EffectiveGatewayConfig {
   /** "official" | "custom"。 */
   source: string;
@@ -182,6 +195,8 @@ export interface ModelGatewayConfig {
   brainclaw?: GatewayEndpointPreview;
   custom: CustomGatewayConfig;
   sub2api: Sub2ApiGatewayConfig;
+  thirdParty?: ThirdPartyGatewayConfig;
+  migrationWarnings?: string[];
   provisioner?: ModelGatewayProvisionerConfig;
   mediaRelay?: MediaRelayConfig;
 }
@@ -213,6 +228,7 @@ export interface SaveBrainClawConfigInput {
 export interface SaveSub2ApiConfigInput {
   groups: Array<Omit<Sub2ApiAccountGroup, "apiKeyPreview"> & { apiKey?: string }>;
 }
+export type SaveThirdPartyGatewayConfigInput = SaveSub2ApiConfigInput;
 
 export interface FetchSub2ApiModelsInput {
   id?: string;
@@ -224,6 +240,8 @@ export interface FetchSub2ApiModelsInput {
 export interface FetchSub2ApiModelsResult {
   models: string[];
 }
+export type FetchThirdPartyModelsInput = FetchSub2ApiModelsInput;
+export type FetchThirdPartyModelsResult = FetchSub2ApiModelsResult;
 
 export interface SaveAgentLlmConfigInput {
   mode: AgentLlmMode;
@@ -576,6 +594,18 @@ export function useSaveSub2ApiConfig() {
   });
 }
 
+export function useSaveThirdPartyGatewayConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SaveThirdPartyGatewayConfigInput) =>
+      api.post("api/v1/model-gateway/third-party/config", {
+        json: input,
+        throwHttpErrors: false,
+      }).json<OkResponse<ModelGatewayConfig> | ErrorResponse>(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.modelGateway() }),
+  });
+}
+
 export function useEnableSub2Api() {
   const qc = useQueryClient();
   return useMutation({
@@ -599,6 +629,17 @@ export function useFetchSub2ApiModels() {
           throwHttpErrors: false,
         })
         .json<OkResponse<FetchSub2ApiModelsResult> | ErrorResponse>(),
+  });
+}
+
+export function useFetchThirdPartyModels() {
+  return useMutation({
+    mutationFn: (input: FetchThirdPartyModelsInput) =>
+      api.post("api/v1/model-gateway/third-party/models", {
+        json: input,
+        timeout: 30_000,
+        throwHttpErrors: false,
+      }).json<OkResponse<FetchThirdPartyModelsResult> | ErrorResponse>(),
   });
 }
 

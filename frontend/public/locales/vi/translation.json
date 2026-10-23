@@ -7250,7 +7250,7 @@
     },
     "modelConfig": {
       "title": "Cấu hình model",
-      "description": "Chọn gateway chính thức, tự cấu hình NewAPI, hoặc kết hợp dịch vụ cục bộ với dịch vụ chính thức.",
+      "description": "Chọn gateway chính thức, cấu hình gateway bên thứ ba hoặc kết hợp cả hai.",
       "baseUrlHint": "Runtime CE tự động cấu hình URL của Local NewAPI.",
       "effectiveBadge": "Đang dùng: {{channel}}",
       "guide": "Hướng dẫn cấu hình",
@@ -7263,12 +7263,11 @@
       "statusNotConfigured": "Chưa cấu hình",
       "statusActive": "Đang dùng",
       "gatewayWarningIconLabel": "Chưa cấu hình model gateway",
-      "gatewayNotConfiguredImpact": "Model gateway đang dùng chưa được cấu hình. Mọi lệnh gọi model văn bản, ảnh, video và âm thanh đều sẽ thất bại; hãy cấu hình kênh chính thức hoặc khởi tạo Local NewAPI trước khi tạo nội dung.",
+      "gatewayNotConfiguredImpact": "Model gateway đang dùng chưa được cấu hình. Hãy cấu hình gateway chính thức hoặc gateway bên thứ ba trước khi tạo nội dung.",
       "modes": {
         "official": "Chính thức",
         "custom": "Tuỳ chỉnh",
-        "hybrid": "Kết hợp cục bộ + chính thức",
-        "sub2api": "Sub2API"
+        "hybrid": "Kết hợp cục bộ + chính thức"
       },
       "fields": {
         "baseUrl": "URL New API",
@@ -7327,50 +7326,16 @@
         "setupPasswordTooShort": "Mật khẩu thiết lập phải dài ít nhất 8 ký tự.",
         "setupPasswordMismatch": "Hai lần nhập mật khẩu thiết lập không khớp nhau."
       },
-      "sub2api": {
-        "description": "Thêm bất kỳ số lượng nhóm tài khoản OpenAI/Gemini, rồi chọn năng lực và quy tắc khớp model cho từng nhóm. Request được định tuyến theo năng lực và tên model.",
-        "newGroup": "Nhóm tài khoản mới",
-        "addGroup": "Thêm nhóm tài khoản",
-        "removeGroup": "Xóa nhóm",
-        "groupName": "Tên nhóm",
-        "protocol": "Giao thức",
-        "baseUrl": "Base URL",
-        "apiKey": "API Key",
-        "capabilitiesLabel": "Năng lực",
-        "models": "Quy tắc khớp model",
-        "requestModel": "Mẫu model DramaClaw",
-        "upstreamModel": "Model upstream",
-        "imageEditFormat": "Định dạng chỉnh sửa ảnh",
-        "imageEditFormats": {
-          "dc-media": "JSON DramaClaw NewAPI",
-          "images": "JSON images[].image_url",
-          "input_reference": "JSON input_reference",
-          "multipart": "Tệp ảnh multipart"
-        },
-        "videoEndpoint": "Endpoint tác vụ video",
-        "videoEndpoints": {
-          "videos": "Hiện đại /videos",
-          "legacy": "Cũ /video/generations"
-        },
-        "modelsPlaceholder": "Mỗi dòng một mục, ví dụ: gpt-5 hoặc gemini-embedding-*",
-        "modelsHint": "Ánh xạ model request của DramaClaw (ví dụ DC-freezone-text-writer-LLM) tới model upstream Sub2API đã chọn. Quy tắc có thể kết thúc bằng *; khớp chính xác được ưu tiên.",
-        "modelSearch": "Lọc model",
-        "fetchModels": "Lấy danh sách model",
-        "availableModels": "Model khả dụng",
-        "noModels": "Không có model phù hợp",
-        "fetchFailed": "Không lấy được model. Hãy kiểm tra URL, giao thức, API Key hoặc nhập tên model thủ công.",
-        "keyPlaceholder": "Nhập API Key",
-        "keyHint": "Mỗi nhóm có thể phục vụ nhiều năng lực và nhiều nhóm có thể dùng chung một năng lực.",
-        "save": "Lưu cấu hình Sub2API",
-        "saved": "Đã lưu nhóm tài khoản Sub2API. Dùng nút phía trên để bật.",
-        "missingFields": "Hãy điền tên, Base URL, key, năng lực và quy tắc model cho mỗi nhóm.",
-        "capabilities": {
-          "text": "Văn bản / Thị giác",
-          "embedding": "Embedding",
-          "image": "Ảnh",
-          "video": "Video",
-          "audio": "Âm thanh"
-        }
+      "thirdParty": {
+        "title": "Gateway bên thứ ba",
+        "description": "Cấu hình một hoặc nhiều nhóm gateway tương thích OpenAI hoặc Gemini. Mỗi nhóm có endpoint, key, năng lực và ánh xạ model riêng.",
+        "newGroup": "Nhóm gateway mới", "addGroup": "Thêm nhóm gateway", "removeGroup": "Xóa nhóm", "groupName": "Tên nhóm", "protocol": "Giao thức", "baseUrl": "Base URL", "apiKey": "API Key",
+        "capabilitiesLabel": "Năng lực", "models": "Ánh xạ model", "requestModel": "Mẫu model DramaClaw", "upstreamModel": "Model upstream",
+        "videoEndpoint": "Endpoint tác vụ video", "videoEndpoints": { "videos": "Mới /videos", "legacy": "Cũ /video/generations" },
+        "modelsHint": "Ánh xạ mẫu model yêu cầu sang model upstream; khớp chính xác được ưu tiên.", "modelSearch": "Lọc model", "fetchModels": "Lấy danh sách model", "availableModels": "Model khả dụng", "noModels": "Không có model phù hợp",
+        "fetchFailed": "Không lấy được danh sách model. Kiểm tra URL, giao thức và API key hoặc nhập tên model thủ công.", "keyPlaceholder": "Nhập API Key", "keyHint": "Key được ẩn; chỉ nhập key mới khi đổi endpoint.",
+        "save": "Lưu cấu hình gateway bên thứ ba", "saved": "Đã lưu nhóm gateway bên thứ ba.", "missingFields": "Hãy điền tên nhóm, Base URL, key, năng lực và ánh xạ model.", "warning": "Một số cài đặt cũ không thể di chuyển. Hãy tạo lại chúng trong gateway bên thứ ba đã chọn.",
+        "capabilities": { "text": "Văn bản / Thị giác", "embedding": "Embedding", "image": "Hình ảnh", "video": "Video", "audio": "Âm thanh" }
       },
       "quick": {
         "title": "Thiết lập khuyến nghị",

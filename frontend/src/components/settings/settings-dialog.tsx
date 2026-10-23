@@ -63,14 +63,12 @@ import {
   useEnableOfficial,
   useEnableCustom,
   useEnableHybrid,
-  useEnableSub2Api,
   useEnableBrainClaw,
   useSaveAgentLlmConfig,
   useSaveOfficialConfig,
   useSaveBrainClawConfig,
-  useSaveSub2ApiConfig,
-  useFetchSub2ApiModels,
-  useSetCustomLlmMode,
+  useSaveThirdPartyGatewayConfig,
+  useFetchThirdPartyModels,
   useInitCustomNewApi,
   useSaveCustomChannel,
   useSaveCustomChannelsBatch,
@@ -82,18 +80,16 @@ import {
   useSyncProviderChannel,
   type GatewayMode,
   type AgentLlmMode,
-  type CustomLlmMode,
+  type NewApiDatabaseConfigInput,
   type ModelGatewayConfig,
   type CustomChannelInput,
-  type NewApiDatabaseConfigInput,
   type NewApiChannelType,
   type SavedEmbeddingModelConfig,
   type SavedMediaModelConfig,
   type SavedProviderChannelConfig,
-  type Sub2ApiCapability,
-  type Sub2ApiAccountGroup,
-  type Sub2ApiImageEditFormat,
-  type Sub2ApiVideoEndpoint,
+  type ThirdPartyCapability,
+  type ThirdPartyGatewayGroup,
+  type ThirdPartyVideoEndpoint,
 } from "@/lib/queries/model-gateway";
 import {
   useSettingsStore,
@@ -275,9 +271,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   );
 }
 
-const GATEWAY_MODES: GatewayMode[] = ["official", "custom", "hybrid", "sub2api"];
+const GATEWAY_MODES: GatewayMode[] = ["official", "custom", "hybrid"];
 
-const DEFAULT_CUSTOM_NEWAPI_URL = "http://127.0.0.1:3000";
 
 async function getRequestErrorMessage(
   error: unknown,
@@ -361,79 +356,33 @@ function ModelConfigSection({ open }: { open: boolean }) {
   const enableOfficialMode = useEnableOfficial();
   const enableCustomMode = useEnableCustom();
   const enableHybridMode = useEnableHybrid();
-  const enableSub2Api = useEnableSub2Api();
   const modelGatewayMissing = config
     ? !config.effective.configured || !config.llmEffective.configured
     : false;
 
   const [mode, setMode] = useState<GatewayMode>("official");
   const modeChosenByUser = useRef(false);
-  const [customLlmMode, setCustomLlmMode] =
-    useState<CustomLlmMode>("relayclaw_brainclaw");
-  const updateCustomLlmMode = useSetCustomLlmMode();
   // 配置加载后，把激活的 tab 同步到服务端当前 mode。
   const serverMode = config?.mode;
   useEffect(() => {
     if (serverMode && !modeChosenByUser.current) {
-      setMode((current) => (current === serverMode ? current : serverMode));
+      const normalizedMode = serverMode === "sub2api" ? "custom" : serverMode;
+      setMode((current) => (current === normalizedMode ? current : normalizedMode));
     }
   }, [serverMode]);
-  useEffect(() => {
-    if (config?.custom.llmMode) {
-      setCustomLlmMode(config.custom.llmMode);
-    }
-  }, [config?.custom.llmMode]);
-
-  const handleCustomLlmModeChange = async (value: string) => {
-    const nextMode = value as CustomLlmMode;
-    const previousMode = customLlmMode;
-    setCustomLlmMode(nextMode);
-    if (nextMode !== "advanced") return;
-    try {
-      const response = await updateCustomLlmMode.mutateAsync(nextMode);
-      if (!response.ok) {
-        setCustomLlmMode(previousMode);
-        toast.error(getResponseErrorMessage(response, t("settings.modelConfig.requestFailed")));
-        return;
-      }
-      toast.success(t("settings.modelConfig.brainclaw.advancedEnabled"));
-    } catch (error) {
-      setCustomLlmMode(previousMode);
-      toast.error(await getRequestErrorMessage(error, t("settings.modelConfig.requestFailed")));
-    }
-  };
-
-  // CE 运行环境提供本地 NewAPI 管理地址；初始化与下方模型映射共用该地址。
-  const [customBaseUrl, setCustomBaseUrl] = useState(DEFAULT_CUSTOM_NEWAPI_URL);
-  const seededCustomBaseUrl =
-    config?.custom?.adminBaseUrl ||
-    config?.provisioner?.adminBaseUrl ||
-    config?.custom?.baseUrl ||
-    "";
-  useEffect(() => {
-    if (seededCustomBaseUrl) {
-      setCustomBaseUrl((current) =>
-        current === seededCustomBaseUrl ? current : seededCustomBaseUrl,
-      );
-    }
-  }, [seededCustomBaseUrl]);
-
-  // CE owns one local SQLite-backed NewAPI instance. Database paths and the
-  // root username are deployment details, not user-editable model settings.
-  const customDatabase: NewApiDatabaseConfigInput | undefined = undefined;
   const selectedModeConfigured =
     mode === "official"
       ? Boolean(config?.official?.configured)
       : mode === "custom"
         ? Boolean(config?.custom?.configured)
         : mode === "hybrid"
-          ? Boolean(config?.official?.configured && config?.custom?.configured)
-          : Boolean(config?.sub2api?.configured);
+          ? Boolean(config?.official?.configured && config?.thirdParty?.configured)
+          : Boolean(config?.thirdParty?.configured || config?.sub2api?.configured);
   const activatingMode =
     enableOfficialMode.isPending ||
     enableCustomMode.isPending ||
     enableHybridMode.isPending ||
-    enableSub2Api.isPending;
+    false;
 
   const handleActivateMode = async () => {
     const mutation =
@@ -441,9 +390,7 @@ function ModelConfigSection({ open }: { open: boolean }) {
         ? enableOfficialMode
         : mode === "custom"
           ? enableCustomMode
-          : mode === "hybrid"
-            ? enableHybridMode
-            : enableSub2Api;
+            : enableHybridMode;
     try {
       const response = await mutation.mutateAsync();
       if (!response.ok) {
@@ -574,123 +521,20 @@ function ModelConfigSection({ open }: { open: boolean }) {
           />
         ) : null}
       </div>
-
-      {/* 功能模型映射仅在自定义渠道展示；官方渠道不需要。 */}
       {mode === "custom" || mode === "hybrid" ? (
-        <>
-          <CustomGatewayPanel
-            config={config}
-            loading={loading}
-            baseUrl={customBaseUrl}
-            activateHybrid={mode === "hybrid"}
-          />
-          {mode === "custom" ? (
-            <>
-              <QuickLocalNewApiSetup
-                config={config}
-                loading={loading}
-                newApiBaseUrl={customBaseUrl}
-                database={customDatabase}
-              />
-              <div className="mt-5">
-                <Tabs
-                  value={customLlmMode}
-                  onValueChange={handleCustomLlmModeChange}
-                >
-                  <TabsList>
-                    <TabsTrigger value="relayclaw_brainclaw">
-                      {t("settings.modelConfig.brainclaw.tab")}
-                    </TabsTrigger>
-                    <TabsTrigger value="advanced">
-                      {t("settings.modelConfig.brainclaw.advancedTab")}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-              {customLlmMode === "relayclaw_brainclaw" ? (
-                <>
-                  <BrainClawGatewayPanel config={config} loading={loading} />
-                  <FeatureModelsBlock
-                    showAdvancedLlm={false}
-                    newApiBaseUrl={customBaseUrl}
-                    database={customDatabase}
-                    channelTypesEnabled={Boolean(
-                      config?.custom?.configured &&
-                      config?.provisioner?.database?.available,
-                    )}
-                    savedProviderChannels={
-                      config?.provisioner?.providerChannels ?? []
-                    }
-                    savedEmbeddingModel={config?.provisioner?.embeddingModel}
-                    savedMediaModels={config?.provisioner?.mediaModels ?? {}}
-                  />
-                </>
-              ) : null}
-            </>
-          ) : null}
-          {mode === "hybrid" ? (
-            <details className="mt-5 rounded-md border border-border/70">
-              <summary className="cursor-pointer px-3 py-3 text-xs font-medium text-foreground">
-                {t("settings.modelConfig.quick.comfyConfig")}
-              </summary>
-              <div className="border-t border-border/70 px-3 pb-4">
-                <FeatureModelsBlock
-                  newApiBaseUrl={customBaseUrl}
-                  database={customDatabase}
-                  channelTypesEnabled={Boolean(
-                    config?.custom?.configured &&
-                    config?.provisioner?.database?.available,
-                  )}
-                  savedProviderChannels={
-                    config?.provisioner?.providerChannels ?? []
-                  }
-                  savedEmbeddingModel={config?.provisioner?.embeddingModel}
-                  savedMediaModels={config?.provisioner?.mediaModels ?? {}}
-                  defaultComfyWorkflows={HYBRID_COMFYUI_WORKFLOWS}
-                  mediaOnly
-                  comfyOnly
-                />
-              </div>
-            </details>
-          ) : null}
-          {mode === "custom" && customLlmMode === "advanced" ? (
-            <details className="mt-5 rounded-md border border-border/70">
-              <summary className="cursor-pointer px-3 py-3 text-xs font-medium text-foreground">
-                {t("settings.modelConfig.quick.advanced")}
-              </summary>
-              <div className="border-t border-border/70 px-3 pb-4">
-                <FeatureModelsBlock
-                  newApiBaseUrl={customBaseUrl}
-                  database={customDatabase}
-                  channelTypesEnabled={Boolean(
-                    config?.custom?.configured &&
-                    config?.provisioner?.database?.available,
-                  )}
-                  savedProviderChannels={
-                    config?.provisioner?.providerChannels ?? []
-                  }
-                  savedEmbeddingModel={config?.provisioner?.embeddingModel}
-                  savedMediaModels={config?.provisioner?.mediaModels ?? {}}
-                />
-              </div>
-            </details>
-          ) : null}
-        </>
-      ) : null}
-      {mode === "sub2api" ? (
-        <Sub2ApiGatewayPanel config={config} loading={loading} />
+        <ThirdPartyGatewayPanel config={config} loading={loading} />
       ) : null}
     </section>
   );
 }
 
-const SUB2API_CAPABILITIES: readonly Sub2ApiCapability[] = ["text", "embedding", "image", "video", "audio"];
+const THIRD_PARTY_CAPABILITIES: readonly ThirdPartyCapability[] = ["text", "embedding", "image", "video", "audio"];
 
-type Sub2ApiGroupDraft = Sub2ApiAccountGroup & {
+type ThirdPartyGroupDraft = ThirdPartyGatewayGroup & {
   apiKey: string;
 };
 
-function newSub2ApiGroup(): Sub2ApiGroupDraft {
+function newThirdPartyGroup(): ThirdPartyGroupDraft {
   return {
     id: globalThis.crypto?.randomUUID?.() ?? `sub2api-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     name: "",
@@ -703,7 +547,7 @@ function newSub2ApiGroup(): Sub2ApiGroupDraft {
   };
 }
 
-function Sub2ApiGatewayPanel({
+function ThirdPartyGatewayPanel({
   config,
   loading,
 }: {
@@ -711,10 +555,11 @@ function Sub2ApiGatewayPanel({
   loading: boolean;
 }) {
   const { t } = useTranslation();
-  const saveConfig = useSaveSub2ApiConfig();
-  const fetchModels = useFetchSub2ApiModels();
-  const saved = config?.sub2api;
-  const [groups, setGroups] = useState<Sub2ApiGroupDraft[]>([]);
+  const saveConfig = useSaveThirdPartyGatewayConfig();
+  const fetchModels = useFetchThirdPartyModels();
+  const saved = config?.thirdParty ?? (config?.sub2api ? { ...config.sub2api } : undefined);
+  const [groups, setGroups] = useState<ThirdPartyGroupDraft[]>([]);
+  const [openGroupIds, setOpenGroupIds] = useState<string[]>([]);
   const [modelsByGroup, setModelsByGroup] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -722,6 +567,7 @@ function Sub2ApiGatewayPanel({
       (saved?.groups ?? []).map((group) => ({ ...group, apiKey: "" })),
     );
     setModelsByGroup({});
+    setOpenGroupIds([]);
   }, [saved?.groups]);
 
   const canSave = groups.length === 0 || groups.every((group) => {
@@ -748,9 +594,6 @@ function Sub2ApiGatewayPanel({
           modelMappings: group.modelMappings.map((mapping) => ({
             requestPattern: mapping.requestPattern.trim(),
             upstreamModel: mapping.upstreamModel.trim(),
-            ...(group.capabilities.includes("image")
-              ? { imageEditFormat: mapping.imageEditFormat ?? "images" }
-              : {}),
             ...(group.capabilities.includes("video")
               ? { videoEndpoint: mapping.videoEndpoint ?? "videos" }
               : {}),
@@ -764,7 +607,7 @@ function Sub2ApiGatewayPanel({
         );
         return;
       }
-      toast.success(t("settings.modelConfig.sub2api.saved"));
+      toast.success(t("settings.modelConfig.thirdParty.saved"));
     } catch (error) {
       toast.error(
         await getRequestErrorMessage(error, t("settings.modelConfig.requestFailed")),
@@ -774,16 +617,22 @@ function Sub2ApiGatewayPanel({
 
   return (
     <div className="mt-4 space-y-3">
+      <h4 className="text-xs font-medium text-foreground">{t("settings.modelConfig.thirdParty.title")}</h4>
       <p className="text-xs leading-relaxed text-muted-foreground">
-        {t("settings.modelConfig.sub2api.description")}
+        {t("settings.modelConfig.thirdParty.description")}
       </p>
+      {(config?.migrationWarnings ?? config?.thirdParty?.migrationWarnings ?? []).map((warning, index) => (
+        <p key={index} role="status" className="rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">{warning}</p>
+      ))}
       <div className="space-y-3">
         {groups.map((group) => (
-          <Sub2ApiGroupCard
+          <ThirdPartyGroupCard
             key={group.id}
             group={group}
             onChange={(next) => setGroups((current) => current.map((item) => item.id === next.id ? next : item))}
             onRemove={() => setGroups((current) => current.filter((item) => item.id !== group.id))}
+            expanded={openGroupIds.includes(group.id)}
+            onExpandedChange={(expanded) => setOpenGroupIds((current) => expanded ? [...current, group.id] : current.filter((id) => id !== group.id))}
             availableModels={modelsByGroup[group.id] ?? []}
             fetchPending={fetchModels.isPending}
             onFetchModels={async () => {
@@ -795,22 +644,22 @@ function Sub2ApiGatewayPanel({
                   ...(group.apiKey ? { apiKey: group.apiKey } : {}),
                 });
                 if (!response.ok) {
-                  toast.error(getResponseErrorMessage(response, t("settings.modelConfig.sub2api.fetchFailed")));
+                  toast.error(getResponseErrorMessage(response, t("settings.modelConfig.thirdParty.fetchFailed")));
                   return;
                 }
                 setModelsByGroup((current) => ({ ...current, [group.id]: response.data.models }));
               } catch (error) {
-                toast.error(await getRequestErrorMessage(error, t("settings.modelConfig.sub2api.fetchFailed")));
+                toast.error(await getRequestErrorMessage(error, t("settings.modelConfig.thirdParty.fetchFailed")));
               }
             }}
           />
         ))}
-        <Button type="button" variant="outline" size="sm" onClick={() => setGroups((current) => [...current, newSub2ApiGroup()])}>
+        <Button type="button" variant="outline" size="sm" onClick={() => { const group = newThirdPartyGroup(); setGroups((current) => [...current, group]); setOpenGroupIds((current) => [...current, group.id]); }}>
           <Plus className="size-3.5" />
-          {t("settings.modelConfig.sub2api.addGroup")}
+          {t("settings.modelConfig.thirdParty.addGroup")}
         </Button>
         <p className="text-[11px] leading-relaxed text-muted-foreground">
-          {t("settings.modelConfig.sub2api.keyHint")}
+          {t("settings.modelConfig.thirdParty.keyHint")}
         </p>
         <div className="flex justify-end">
           <Button
@@ -820,14 +669,14 @@ function Sub2ApiGatewayPanel({
             disabled={loading || saveConfig.isPending || !canSave}
             title={
               canSave
-                ? t("settings.modelConfig.sub2api.save")
-                : t("settings.modelConfig.sub2api.missingFields")
+                ? t("settings.modelConfig.thirdParty.save")
+                : t("settings.modelConfig.thirdParty.missingFields")
             }
           >
             {saveConfig.isPending ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : null}
-            {t("settings.modelConfig.sub2api.save")}
+            {t("settings.modelConfig.thirdParty.save")}
           </Button>
         </div>
       </div>
@@ -835,17 +684,21 @@ function Sub2ApiGatewayPanel({
   );
 }
 
-function Sub2ApiGroupCard({
+function ThirdPartyGroupCard({
   group,
   onChange,
   onRemove,
+  expanded,
+  onExpandedChange,
   availableModels,
   fetchPending,
   onFetchModels,
 }: {
-  group: Sub2ApiGroupDraft;
-  onChange: (group: Sub2ApiGroupDraft) => void;
+  group: ThirdPartyGroupDraft;
+  onChange: (group: ThirdPartyGroupDraft) => void;
   onRemove: () => void;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
   availableModels: string[];
   fetchPending: boolean;
   onFetchModels: () => void;
@@ -857,25 +710,26 @@ function Sub2ApiGroupCard({
     model.toLowerCase().includes(modelSearch.trim().toLowerCase()),
   );
   return (
-    <fieldset className="space-y-3 rounded-md border border-border/70 p-3">
-      <legend className="px-1 text-xs font-medium text-foreground">
-        {group.name || t("settings.modelConfig.sub2api.newGroup")}
-      </legend>
+    <details open={expanded} onToggle={(event) => onExpandedChange(event.currentTarget.open)} className="rounded-md border border-border/70 p-3">
+      <summary role="button" aria-expanded={expanded} onClick={(event) => { event.preventDefault(); onExpandedChange(!expanded); }} className="cursor-pointer text-xs font-medium text-foreground">
+        {group.name || t("settings.modelConfig.thirdParty.newGroup")}
+      </summary>
+      <div className="mt-3 space-y-3">
       <div className="flex justify-end">
-        <Button type="button" size="sm" variant="ghost" onClick={onRemove} aria-label={t("settings.modelConfig.sub2api.removeGroup")}>
+          <Button type="button" size="sm" variant="ghost" onClick={onRemove} aria-label={t("settings.modelConfig.thirdParty.removeGroup")}>
           <Trash2 className="size-3.5" />
-          {t("settings.modelConfig.sub2api.removeGroup")}
+          {t("settings.modelConfig.thirdParty.removeGroup")}
         </Button>
       </div>
       <FieldRow
-        label={t("settings.modelConfig.sub2api.groupName")}
-        name={`sub2api-${group.id}-name`}
+        label={t("settings.modelConfig.thirdParty.groupName")}
+        name={`third-party-${group.id}-name`}
         value={group.name}
         onChange={(name) => onChange({ ...group, name })}
         placeholder="openai-main"
       />
       <div className="grid grid-cols-[120px_1fr] items-center gap-3">
-        <Label htmlFor={`${modelsId}-protocol`} className="text-[11px] text-muted-foreground uppercase">{t("settings.modelConfig.sub2api.protocol")}</Label>
+        <Label htmlFor={`${modelsId}-protocol`} className="text-[11px] text-muted-foreground uppercase">{t("settings.modelConfig.thirdParty.protocol")}</Label>
         <select
           id={`${modelsId}-protocol`}
           className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm"
@@ -887,25 +741,25 @@ function Sub2ApiGroupCard({
         </select>
       </div>
       <FieldRow
-        label={t("settings.modelConfig.sub2api.baseUrl")}
-        name={`sub2api-${group.id}-base-url`}
+        label={t("settings.modelConfig.thirdParty.baseUrl")}
+        name={`third-party-${group.id}-base-url`}
         value={group.baseUrl}
         onChange={(baseUrl) => onChange({ ...group, baseUrl })}
-        placeholder="https://sub2api.example/v1"
+        placeholder="https://api.example.com/v1"
       />
       <FieldRow
         secret
-        label={t("settings.modelConfig.sub2api.apiKey")}
-        name={`sub2api-${group.id}-key`}
+        label={t("settings.modelConfig.thirdParty.apiKey")}
+        name={`third-party-${group.id}-key`}
         value={group.apiKey}
         onChange={(apiKey) => onChange({ ...group, apiKey })}
         savedPreview={group.apiKeyPreview}
-        placeholder={t("settings.modelConfig.sub2api.keyPlaceholder")}
+        placeholder={t("settings.modelConfig.thirdParty.keyPlaceholder")}
       />
       <div className="space-y-1.5">
-        <p className="text-[11px] font-medium text-muted-foreground">{t("settings.modelConfig.sub2api.capabilitiesLabel")}</p>
+        <p className="text-[11px] font-medium text-muted-foreground">{t("settings.modelConfig.thirdParty.capabilitiesLabel")}</p>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {SUB2API_CAPABILITIES.map((capability) => (
+          {THIRD_PARTY_CAPABILITIES.map((capability) => (
             <label key={capability} className="inline-flex items-center gap-1.5 text-xs text-foreground">
               <input
                 type="checkbox"
@@ -917,19 +771,19 @@ function Sub2ApiGroupCard({
                     : group.capabilities.filter((item) => item !== capability),
                 })}
               />
-              {t(`settings.modelConfig.sub2api.capabilities.${capability}`)}
+              {t(`settings.modelConfig.thirdParty.capabilities.${capability}`)}
             </label>
           ))}
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor={modelsId} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.sub2api.models")}</Label>
+        <Label htmlFor={modelsId} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.thirdParty.models")}</Label>
         <div className="flex gap-2">
           <Input
             value={modelSearch}
             onChange={(event) => setModelSearch(event.target.value)}
-            placeholder={t("settings.modelConfig.sub2api.modelSearch")}
-            aria-label={t("settings.modelConfig.sub2api.modelSearch")}
+            placeholder={t("settings.modelConfig.thirdParty.modelSearch")}
+            aria-label={t("settings.modelConfig.thirdParty.modelSearch")}
           />
           <Button
             type="button"
@@ -939,16 +793,16 @@ function Sub2ApiGroupCard({
             disabled={fetchPending || !group.baseUrl.trim()}
           >
             {fetchPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-            {t("settings.modelConfig.sub2api.fetchModels")}
+            {t("settings.modelConfig.thirdParty.fetchModels")}
           </Button>
         </div>
         {availableModels.length > 0 ? (
           <div
             className="max-h-36 space-y-1 overflow-auto rounded-md border border-border/70 p-2"
-            aria-label={t("settings.modelConfig.sub2api.availableModels")}
+            aria-label={t("settings.modelConfig.thirdParty.availableModels")}
           >
             {filteredModels.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t("settings.modelConfig.sub2api.noModels")}</p>
+              <p className="text-xs text-muted-foreground">{t("settings.modelConfig.thirdParty.noModels")}</p>
             ) : filteredModels.map((model) => (
               <label key={model} className="flex items-center gap-2 text-xs text-foreground">
                 <input
@@ -962,7 +816,6 @@ function Sub2ApiGroupCard({
                           {
                             requestPattern: "",
                             upstreamModel: model,
-                            imageEditFormat: "images",
                             videoEndpoint: "videos",
                           },
                         ]
@@ -979,7 +832,7 @@ function Sub2ApiGroupCard({
             <div key={`${mapping.upstreamModel}-${index}`} className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <Input
-                  aria-label={t("settings.modelConfig.sub2api.requestModel")}
+                  aria-label={t("settings.modelConfig.thirdParty.requestModel")}
                   value={mapping.requestPattern}
                   onChange={(event) => onChange({
                     ...group,
@@ -988,7 +841,7 @@ function Sub2ApiGroupCard({
                   placeholder="DC-codex-agent-LLM"
                 />
                 <Input
-                  aria-label={t("settings.modelConfig.sub2api.upstreamModel")}
+                  aria-label={t("settings.modelConfig.thirdParty.upstreamModel")}
                   value={mapping.upstreamModel}
                   onChange={(event) => onChange({
                     ...group,
@@ -997,43 +850,23 @@ function Sub2ApiGroupCard({
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {group.capabilities.includes("image") ? (
-                  <label className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
-                    <span>{t("settings.modelConfig.sub2api.imageEditFormat")}</span>
-                    <select
-                      aria-label={t("settings.modelConfig.sub2api.imageEditFormat")}
-                      className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm text-foreground"
-                      value={mapping.imageEditFormat ?? "images"}
-                      onChange={(event) => onChange({
-                        ...group,
-                        modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
-                          ? { ...item, imageEditFormat: event.target.value as Sub2ApiImageEditFormat }
-                          : item),
-                      })}
-                    >
-                      <option value="images">{t("settings.modelConfig.sub2api.imageEditFormats.images")}</option>
-                      <option value="input_reference">{t("settings.modelConfig.sub2api.imageEditFormats.input_reference")}</option>
-                      <option value="multipart">{t("settings.modelConfig.sub2api.imageEditFormats.multipart")}</option>
-                      <option value="dc-media">{t("settings.modelConfig.sub2api.imageEditFormats.dc-media")}</option>
-                    </select>
-                  </label>
-                ) : <span />}
+                {group.capabilities.includes("image") ? <span /> : null}
                 {group.capabilities.includes("video") ? (
                   <label className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
-                    <span>{t("settings.modelConfig.sub2api.videoEndpoint")}</span>
+                    <span>{t("settings.modelConfig.thirdParty.videoEndpoint")}</span>
                     <select
-                      aria-label={t("settings.modelConfig.sub2api.videoEndpoint")}
+                      aria-label={t("settings.modelConfig.thirdParty.videoEndpoint")}
                       className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm text-foreground"
                       value={mapping.videoEndpoint ?? "videos"}
                       onChange={(event) => onChange({
                         ...group,
                         modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
-                          ? { ...item, videoEndpoint: event.target.value as Sub2ApiVideoEndpoint }
+                          ? { ...item, videoEndpoint: event.target.value as ThirdPartyVideoEndpoint }
                           : item),
                       })}
                     >
-                      <option value="videos">{t("settings.modelConfig.sub2api.videoEndpoints.videos")}</option>
-                      <option value="video/generations">{t("settings.modelConfig.sub2api.videoEndpoints.legacy")}</option>
+                      <option value="videos">{t("settings.modelConfig.thirdParty.videoEndpoints.videos")}</option>
+                      <option value="video/generations">{t("settings.modelConfig.thirdParty.videoEndpoints.legacy")}</option>
                     </select>
                   </label>
                 ) : null}
@@ -1041,9 +874,10 @@ function Sub2ApiGroupCard({
             </div>
           ))}
         </div>
-        <p id={`${modelsId}-hint`} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.sub2api.modelsHint")}</p>
+        <p id={`${modelsId}-hint`} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.thirdParty.modelsHint")}</p>
       </div>
-    </fieldset>
+      </div>
+    </details>
   );
 }
 
@@ -1562,7 +1396,7 @@ function OfficialGatewayPanel({
   );
 }
 
-function BrainClawGatewayPanel({
+export function BrainClawGatewayPanel({
   config,
   loading,
 }: {
@@ -1717,7 +1551,7 @@ function BrainClawGatewayPanel({
   );
 }
 
-function CustomGatewayPanel({
+export function CustomGatewayPanel({
   config,
   loading,
   baseUrl,
@@ -2200,7 +2034,7 @@ function minimaxH3ReferenceWorkflow() {
   };
 }
 
-const HYBRID_COMFYUI_WORKFLOWS = {
+export const HYBRID_COMFYUI_WORKFLOWS = {
   model: "MiniMax-H3-local",
   workflows: {
     minimax_h3_t2v: minimaxH3Fl2vaWorkflow(false),
@@ -2613,7 +2447,7 @@ export function syncQuickProfileFromAdvancedSettings(
   }
 }
 
-function QuickLocalNewApiSetup({
+export function QuickLocalNewApiSetup({
   config,
   loading,
   newApiBaseUrl,
@@ -3219,7 +3053,7 @@ function featureProviderLabel(
   );
 }
 
-function FeatureModelsBlock({
+export function FeatureModelsBlock({
   showAdvancedLlm = true,
   newApiBaseUrl,
   database,

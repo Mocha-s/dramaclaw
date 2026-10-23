@@ -13,6 +13,7 @@ const modelGatewayMocks = vi.hoisted(() => ({
   saveAgent: vi.fn(),
   saveBrainClaw: vi.fn(),
   saveSub2Api: vi.fn(),
+  saveThirdParty: vi.fn(),
   fetchSub2ApiModels: vi.fn(),
   setCustomLlmMode: vi.fn(),
   saveMediaRelay: vi.fn(),
@@ -75,7 +76,6 @@ vi.mock("@/lib/queries/model-gateway", () => ({
   useEnableOfficial: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableCustom: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableHybrid: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useEnableSub2Api: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useEnableBrainClaw: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveOfficialConfig: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveAgentLlmConfig: () => ({
@@ -90,6 +90,8 @@ vi.mock("@/lib/queries/model-gateway", () => ({
     mutateAsync: modelGatewayMocks.saveSub2Api,
     isPending: false,
   }),
+  useSaveThirdPartyGatewayConfig: () => ({ mutateAsync: modelGatewayMocks.saveSub2Api, isPending: false }),
+  useFetchThirdPartyModels: () => ({ mutateAsync: modelGatewayMocks.fetchSub2ApiModels, isPending: false }),
   useFetchSub2ApiModels: () => ({ mutateAsync: modelGatewayMocks.fetchSub2ApiModels, isPending: false }),
   useSetCustomLlmMode: () => ({
     mutateAsync: modelGatewayMocks.setCustomLlmMode,
@@ -148,10 +150,43 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.gatewayWarningIconLabel": "模型网关未配置",
         "settings.modelConfig.gatewayNotConfiguredImpact": "模型网关未配置",
         "settings.modelConfig.modes.official": "官方渠道",
-        "settings.modelConfig.modes.custom": "自定义 NewAPI",
+        "settings.modelConfig.modes.custom": "自定义",
         "settings.modelConfig.modes.hybrid": "本地 + 官方混合",
         "settings.modelConfig.modes.sub2api": "Sub2API",
+        "settings.modelConfig.modes.thirdParty": "第三方网关",
         "settings.modelConfig.sub2api.description": "Sub2API 配置",
+        "settings.modelConfig.thirdParty.addGroup": "添加第三方网关组",
+        "settings.modelConfig.thirdParty.title": "第三方网关",
+        "settings.modelConfig.thirdParty.description": "第三方网关配置",
+        "settings.modelConfig.thirdParty.saved": "第三方网关配置已保存",
+        "settings.modelConfig.thirdParty.newGroup": "新网关组",
+        "settings.modelConfig.thirdParty.removeGroup": "删除网关组",
+        "settings.modelConfig.thirdParty.groupName": "账号组名称",
+        "settings.modelConfig.thirdParty.protocol": "协议",
+        "settings.modelConfig.thirdParty.baseUrl": "Base URL",
+        "settings.modelConfig.thirdParty.apiKey": "API Key",
+        "settings.modelConfig.thirdParty.capabilitiesLabel": "支持能力",
+        "settings.modelConfig.thirdParty.models": "模型匹配规则",
+        "settings.modelConfig.thirdParty.requestModel": "DramaClaw 模型规则",
+        "settings.modelConfig.thirdParty.upstreamModel": "上游模型",
+        "settings.modelConfig.thirdParty.videoEndpoint": "视频任务接口",
+        "settings.modelConfig.thirdParty.videoEndpoints.videos": "现代 /videos",
+        "settings.modelConfig.thirdParty.videoEndpoints.legacy": "旧版 /video/generations",
+        "settings.modelConfig.thirdParty.modelSearch": "筛选模型",
+        "settings.modelConfig.thirdParty.fetchModels": "拉取模型列表",
+        "settings.modelConfig.thirdParty.availableModels": "可用模型列表",
+        "settings.modelConfig.thirdParty.noModels": "没有匹配模型",
+        "settings.modelConfig.thirdParty.fetchFailed": "拉取模型失败",
+        "settings.modelConfig.thirdParty.keyPlaceholder": "输入 API Key",
+        "settings.modelConfig.thirdParty.keyHint": "密钥保持隐藏",
+        "settings.modelConfig.thirdParty.save": "保存第三方网关配置",
+        "settings.modelConfig.thirdParty.missingFields": "请填写完整配置",
+        "settings.modelConfig.thirdParty.capabilities.text": "文本 / 视觉",
+        "settings.modelConfig.thirdParty.capabilities.embedding": "Embedding",
+        "settings.modelConfig.thirdParty.capabilities.image": "图片",
+        "settings.modelConfig.thirdParty.capabilities.video": "视频",
+        "settings.modelConfig.thirdParty.capabilities.audio": "音频",
+        "settings.modelConfig.thirdParty.warning": "部分旧配置无法迁移，请在所选第三方网关中手动重建。",
         "settings.modelConfig.sub2api.newGroup": "新账号组",
         "settings.modelConfig.sub2api.addGroup": "添加账号组",
         "settings.modelConfig.sub2api.removeGroup": "删除账号组",
@@ -515,13 +550,13 @@ describe("SettingsDialog pages", () => {
     modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
 
     renderSettingsDialog();
-    fireEvent.click(screen.getByRole("tab", { name: "Sub2API" }));
-    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
-    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "添加第三方网关组" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "添加第三方网关组" })[0]);
     const [openaiGroup, geminiGroup] = screen.getAllByRole("group").map((element) => within(element));
 
     fireEvent.change(openaiGroup.getByLabelText("账号组名称"), { target: { value: "OpenAI main" } });
-    fireEvent.change(openaiGroup.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1" } });
+    fireEvent.change(openaiGroup.getByLabelText("Base URL"), { target: { value: "https://sub2api.example/v1" } });
     fireEvent.change(openaiGroup.getByLabelText("API Key"), { target: { value: "sk-openai" } });
     modelGatewayMocks.fetchSub2ApiModels
       .mockResolvedValueOnce({ ok: true, data: { models: ["gpt-5", "gpt-4o"] } })
@@ -536,7 +571,7 @@ describe("SettingsDialog pages", () => {
 
     fireEvent.change(geminiGroup.getByLabelText("账号组名称"), { target: { value: "Gemini embedding" } });
     fireEvent.change(geminiGroup.getByLabelText("协议"), { target: { value: "gemini" } });
-    fireEvent.change(geminiGroup.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1beta" } });
+    fireEvent.change(geminiGroup.getByLabelText("Base URL"), { target: { value: "https://sub2api.example/v1beta" } });
     fireEvent.change(geminiGroup.getByLabelText("API Key"), { target: { value: "sk-gemini" } });
     fireEvent.click(geminiGroup.getByRole("button", { name: "拉取模型列表" }));
     await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(2));
@@ -544,7 +579,7 @@ describe("SettingsDialog pages", () => {
     fireEvent.click(geminiGroup.getByLabelText("Embedding"));
     fireEvent.click(geminiGroup.getByLabelText("gemini-embedding-001"));
     fireEvent.change(geminiGroup.getByLabelText("DramaClaw 模型规则"), { target: { value: "DC-cognee-embedding" } });
-    fireEvent.click(screen.getByRole("button", { name: "保存 Sub2API 配置" }));
+    fireEvent.click(screen.getByRole("button", { name: "保存第三方网关配置" }));
 
     await waitFor(() => {
       expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
@@ -559,7 +594,6 @@ describe("SettingsDialog pages", () => {
             modelMappings: [{
               requestPattern: "DC-codex-agent-LLM",
               upstreamModel: "gpt-5",
-              imageEditFormat: "images",
             }],
           },
           {
@@ -574,6 +608,41 @@ describe("SettingsDialog pages", () => {
         ],
       });
     });
+  });
+
+  it("places independent, collapsed third-party group disclosures in Custom and Hybrid", () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "custom", baseUrl: "", apiKeyPreview: "", configured: true, model: "", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      migrationWarnings: ["Legacy provider-channel records need manual recreation."],
+      thirdParty: { configured: true, groups: [
+        { id: "one", name: "Primary", protocol: "openai", baseUrl: "https://one.example/v1", apiKeyPreview: "sk-...", capabilities: ["text", "video"], modelMappings: [{ requestPattern: "*", upstreamModel: "model", videoEndpoint: "videos" }] },
+        { id: "two", name: "Secondary", protocol: "gemini", baseUrl: "https://two.example/v1", apiKeyPreview: "AIza...", capabilities: ["text"], modelMappings: [{ requestPattern: "*", upstreamModel: "gemini-model" }] },
+      ] },
+    };
+    renderSettingsDialog();
+
+    expect(screen.queryByRole("tab", { name: "Sub2API" })).not.toBeInTheDocument();
+    expect(screen.getByText("第三方网关")).toBeInTheDocument();
+    expect(screen.getByText("Legacy provider-channel records need manual recreation.")).toBeInTheDocument();
+    expect(screen.queryByText(/NewAPI/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("图片编辑协议")).not.toBeInTheDocument();
+    const primary = screen.getByRole("button", { name: /Primary/ });
+    const secondary = screen.getByRole("button", { name: /Secondary/ });
+    expect(primary).toHaveAttribute("aria-expanded", "false");
+    expect(secondary).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(primary);
+    expect(primary).toHaveAttribute("aria-expanded", "true");
+    expect(secondary).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByLabelText("视频任务接口")).toBeInTheDocument();
+    expect(screen.getAllByPlaceholderText("https://api.example.com/v1")).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("tab", { name: "本地 + 官方混合" }));
+    expect(screen.getByText("官方渠道说明")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Primary/ })).toBeInTheDocument();
   });
 
   it("saves per-model image and video protocol overrides for Sub2API", async () => {
@@ -593,11 +662,11 @@ describe("SettingsDialog pages", () => {
     modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
 
     renderSettingsDialog();
-    fireEvent.click(screen.getByRole("tab", { name: "Sub2API" }));
-    fireEvent.click(screen.getByRole("button", { name: "添加账号组" }));
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "添加第三方网关组" })[0]);
     const group = within(screen.getByRole("group"));
     fireEvent.change(group.getByLabelText("账号组名称"), { target: { value: "media" } });
-    fireEvent.change(group.getByLabelText("Sub2API 地址"), { target: { value: "https://sub2api.example/v1" } });
+    fireEvent.change(group.getByLabelText("Base URL"), { target: { value: "https://sub2api.example/v1" } });
     fireEvent.change(group.getByLabelText("API Key"), { target: { value: "sk-media" } });
     fireEvent.click(group.getByLabelText("文本 / 视觉"));
     fireEvent.click(group.getByLabelText("图片"));
@@ -606,13 +675,11 @@ describe("SettingsDialog pages", () => {
     await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(1));
     fireEvent.click(group.getByLabelText("gpt-image-2.5"));
     fireEvent.click(group.getByLabelText("sd17-seedance-2.5-2"));
-    const imageFormats = group.getAllByLabelText("图片编辑协议");
     const videoEndpoints = group.getAllByLabelText("视频任务接口");
-    fireEvent.change(imageFormats[0], { target: { value: "multipart" } });
     fireEvent.change(videoEndpoints[1], { target: { value: "video/generations" } });
     fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[0], { target: { value: "gpt-image-2.5" } });
     fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[1], { target: { value: "sd17-seedance-2.5-2" } });
-    fireEvent.click(screen.getByRole("button", { name: "保存 Sub2API 配置" }));
+    fireEvent.click(screen.getByRole("button", { name: "保存第三方网关配置" }));
 
     await waitFor(() =>
       expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
@@ -624,14 +691,12 @@ describe("SettingsDialog pages", () => {
               expect.objectContaining({
                 requestPattern: "gpt-image-2.5",
                 upstreamModel: "gpt-image-2.5",
-                imageEditFormat: "multipart",
-                videoEndpoint: "videos",
+                 videoEndpoint: "videos",
               }),
               expect.objectContaining({
                 requestPattern: "sd17-seedance-2.5-2",
                 upstreamModel: "sd17-seedance-2.5-2",
-                imageEditFormat: "images",
-                videoEndpoint: "video/generations",
+                 videoEndpoint: "video/generations",
               }),
             ],
           }),
@@ -676,81 +741,6 @@ describe("SettingsDialog pages", () => {
         model: "vendor-agent-model",
       });
     });
-  });
-
-  it("lets BrainClaw use an editable NewAPI endpoint in custom mode", async () => {
-    modelGatewayMocks.config = {
-      mode: "custom",
-      effective: {
-        source: "custom",
-        baseUrl: "http://local-newapi:3000/v1",
-        apiKeyPreview: "sk-c...cret",
-        configured: true,
-      },
-      llmEffective: {
-        mode: "relayclaw_brainclaw",
-        source: "official",
-        baseUrl: "https://relayclaw.cdnfg.com/v1",
-        apiKeyPreview: "sk-r...cret",
-        configured: true,
-        model: "brainclaw",
-        brainclaw: true,
-      },
-      official: {
-        source: "database",
-        baseUrl: "https://relayclaw.cdnfg.com/v1",
-        apiKeyPreview: "sk-r...cret",
-        configured: true,
-        environment: {
-          baseUrl: "https://relayclaw.cdnfg.com/v1",
-          apiKeyPreview: "",
-          configured: false,
-        },
-      },
-      brainclaw: {
-        baseUrl: "https://relayclaw.cdnfg.com/v1",
-        apiKeyPreview: "sk-r...cret",
-        configured: true,
-      },
-      custom: {
-        llmMode: "relayclaw_brainclaw",
-        baseUrl: "http://local-newapi:3000/v1",
-        apiKeyPreview: "sk-c...cret",
-        configured: true,
-        adminBaseUrl: "http://local-newapi:3000",
-        tokenName: "dramaclaw",
-        tokenId: "1",
-      },
-    };
-
-    renderSettingsDialog();
-
-    expect(screen.getByRole("tab", { name: "虾驿 BrainClaw（推荐）" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "高级自定义" })).toBeInTheDocument();
-    expect(screen.getByText("虾脑 BrainClaw（推荐）")).toBeInTheDocument();
-    const endpoint = screen.getByDisplayValue("https://relayclaw.cdnfg.com/v1");
-    expect(endpoint).not.toHaveAttribute("readonly");
-    expect(screen.getByText("brainclaw")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "保存并启用 BrainClaw" })).toBeEnabled();
-    expect(screen.getByText("Embedding 模型")).toBeInTheDocument();
-    expect(screen.getByText("媒体模型")).toBeInTheDocument();
-    expect(screen.queryByText("业务模型映射")).not.toBeInTheDocument();
-
-    modelGatewayMocks.saveBrainClaw.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
-    fireEvent.change(endpoint, { target: { value: "http://127.0.0.1:8317" } });
-    fireEvent.click(screen.getByRole("button", { name: "保存并启用 BrainClaw" }));
-    await waitFor(() => {
-      expect(modelGatewayMocks.saveBrainClaw).toHaveBeenCalledWith({
-        newApiBaseUrl: "http://127.0.0.1:8317",
-      });
-    });
-
-    fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
-
-    expect(modelGatewayMocks.setCustomLlmMode).toHaveBeenCalledWith("advanced");
-    expect(screen.getByText("业务模型映射")).toBeInTheDocument();
-    expect(screen.getByText("Embedding 模型")).toBeInTheDocument();
-    expect(screen.getByText("媒体模型")).toBeInTheDocument();
   });
 
   it("limits EE settings to Freezone Skills with Recipes under advanced management", () => {
