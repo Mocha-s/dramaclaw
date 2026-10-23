@@ -14,7 +14,7 @@ Two compose files ship in the repo: `docker-compose.yml` builds all three servic
 - Docker + `docker compose`.
 - Docker Compose ≥ 2.24 (`docker compose version`).
 - Resources: ≥ 2 vCPU / 4GB recommended (excluding model inference, which runs through an external gateway).
-- A DC key (the default official gateway is RelayClaw, see <https://relayclaw.cdnfg.com>), or your own OpenAI-compatible gateway.
+- A DC key (the default official gateway is RelayClaw, see <https://api.aigcdo.top>), or your own OpenAI-compatible gateway.
 
 ## 2. Get the compose file and configuration
 
@@ -54,7 +54,7 @@ Groups (each item is commented inline in `.env.example`): local NewAPI provision
 
 Recommended and alternative options (see [Configuring Model Providers](../getting-started/configuring-models.md) for details):
 
-- **A. DC official key (recommended)**: the default compose already uses the official gateway. After bringing the stack up, open `http://localhost:8080` → Settings → Model Configuration → Official Channel → paste your DC key and save to start using it, **no model mapping required**. Get a key at <https://relayclaw.cdnfg.com>.
+- **A. DC official key (recommended)**: the default compose already uses the official gateway. After bringing the stack up, open `http://localhost:8080` → Settings → Model Configuration → Official Channel → paste your DC key and save to start using it, **no model mapping required**. Get a key at <https://api.aigcdo.top>.
 - **B. Local NewAPI**: the bundled gateway is already running; open Settings → Model Configuration → Custom, click Initialize, then configure upstream channels and model mappings from the Local NewAPI page.
 
 Local NewAPI must map DramaClaw's logical models to real upstream models. The reference-image feature needs `OSS_RELAY_AK/SK` (you can skip it for a text-only workflow).

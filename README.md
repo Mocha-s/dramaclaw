@@ -321,7 +321,7 @@ DramaClaw runs all inference through an **OpenAI-compatible gateway** — either
 | **Docker** | Docker + `docker compose` |
 | **Ports** | `8080` web UI · `8780` REST API · `3000` bundled gateway admin UI (host-only by default, can be widened) |
 | **Datastores** | None required — no Postgres, Redis, Celery or Ray. Tasks run in-process; state lives on the local filesystem (SQLite + files) |
-| **Network** | Outbound access to the official gateway `relayclaw.cdnfg.com`, and/or to the model providers you configure in the bundled gateway |
+| **Network** | Outbound access to the official gateway `api.aigcdo.top`, and/or to the model providers you configure in the bundled gateway |
 
 > Local development (non-Docker) additionally needs Python 3.11–3.12 + [`uv`](https://docs.astral.sh/uv/) + `ffmpeg`. Full prerequisites in the [Self-hosting guide](docs/en/guides/self-hosting.md).
 
@@ -356,7 +356,7 @@ docker compose -f docker-compose.release.yml up -d
 
 Open the app at <http://localhost:8080>; the REST API is at <http://localhost:8780>. In **Settings → Model Config** pick one of:
 
-- **Official** — paste your DC key (get one at <https://relayclaw.cdnfg.com>); no model mapping needed. The bundled gateway stays idle.
+- **Official** — paste your DC key (get one at <https://api.aigcdo.top>); no model mapping needed. The bundled gateway stays idle.
 - **Custom** — one click initializes the bundled `newapi` gateway; then add your own upstream channels.
 - **Local + Official Hybrid** — official for the main pipeline, bundled gateway for extra channels.
 
@@ -402,7 +402,7 @@ or run the gateway from source in the sibling checkout (`make dev-api` / `make d
 
 DramaClaw stays model-neutral — all text / image / video / audio models connect through an **OpenAI-compatible gateway**. Pick the mode in **Settings → Model Config**:
 
-- **Official (recommended)** — paste your DC key (get one at <https://relayclaw.cdnfg.com>), save, done. RelayClaw already ships every model mapping DramaClaw needs; nothing to configure.
+- **Official (recommended)** — paste your DC key (get one at <https://api.aigcdo.top>), save, done. RelayClaw already ships every model mapping DramaClaw needs; nothing to configure.
 - **Custom** — one click initializes the bundled `dramaclaw-gateway`, then add your own provider channels (API keys, model IDs) in its admin UI. Every model DramaClaw calls goes through your channels.
 - **Local + Official Hybrid** — keep the official models for the main pipeline and add extra channels (for example a local ComfyUI video workflow) through the bundled gateway.
 

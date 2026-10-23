@@ -10,7 +10,7 @@ DramaClaw is the Community Edition (CE): it runs on a single machine with no Pos
 ## Prerequisites
 
 - Docker (Desktop or Engine) with `docker compose` support.
-- A **DC key** — sign up / purchase at <https://relayclaw.cdnfg.com>; alternatively use the local NewAPI bundled with CE.
+- A **DC key** — sign up / purchase at <https://api.aigcdo.top>; alternatively use the local NewAPI bundled with CE.
 
 ## Steps
 
@@ -36,7 +36,7 @@ docker compose ps   # api, newapi, and web should all be running
 ## Enter your DC key (one-time, required)
 
 1. Open **`http://localhost:8080`** in your browser — this is the DramaClaw UI.
-2. Go to Settings → **Model Configuration → Official Channel**. The gateway address is already prefilled as `https://relayclaw.cdnfg.com/v1`.
+2. Go to Settings → **Model Configuration → Official Channel**. The gateway address is already prefilled as `https://api.aigcdo.top/v1`.
 3. **Paste your DC key** and click "Save and Enable". It works immediately, with **no model mapping required** (RelayClaw has everything configured on the backend).
 
 > CE defaults to no-login, single local user (`ST_EDITION=ce`, enforced by compose). The REST API lives at `http://localhost:8780` (the browser only talks to `web`, which reverse-proxies to `api`).

@@ -321,7 +321,7 @@ DramaClaw รัน inference ทั้งหมดผ่าน **gateway ที
 | **Docker** | Docker + `docker compose` |
 | **พอร์ต** | `8080` เว็บ UI · `8780` REST API · `3000` admin UI ของ gateway ที่มาพร้อมกัน (ค่าเริ่มต้นเปิดเฉพาะ host ขยายได้) |
 | **Datastore** | ไม่ต้องใช้เลย — ไม่มี Postgres, Redis, Celery หรือ Ray งานรันใน process; สถานะอยู่บนระบบไฟล์ในเครื่อง (SQLite + ไฟล์) |
-| **เครือข่าย** | ต้องออกอินเทอร์เน็ตไปยัง gateway อย่างเป็นทางการ `relayclaw.cdnfg.com` และ/หรือผู้ให้บริการ model ที่คุณกำหนดใน gateway ที่มาพร้อมกัน |
+| **เครือข่าย** | ต้องออกอินเทอร์เน็ตไปยัง gateway อย่างเป็นทางการ `api.aigcdo.top` และ/หรือผู้ให้บริการ model ที่คุณกำหนดใน gateway ที่มาพร้อมกัน |
 
 > การพัฒนาในเครื่อง (ไม่ใช้ Docker) ต้องใช้ Python 3.11–3.12 + [`uv`](https://docs.astral.sh/uv/) + `ffmpeg` เพิ่มเติม ดูข้อกำหนดเบื้องต้นฉบับเต็มใน [คู่มือโฮสต์เอง](../docs/en/guides/self-hosting.md)
 
@@ -356,7 +356,7 @@ docker compose -f docker-compose.release.yml up -d
 
 เปิดแอปที่ <http://localhost:8080>; REST API อยู่ที่ <http://localhost:8780> ใน **Settings → Model Config** เลือกหนึ่งอย่าง:
 
-- **Official** — วาง DC key ของคุณ (รับได้ที่ <https://relayclaw.cdnfg.com>); ไม่ต้อง map model gateway ที่มาพร้อมกันจะอยู่เฉย ๆ
+- **Official** — วาง DC key ของคุณ (รับได้ที่ <https://api.aigcdo.top>); ไม่ต้อง map model gateway ที่มาพร้อมกันจะอยู่เฉย ๆ
 - **Custom** — คลิกเดียวเพื่อเริ่มต้น gateway `newapi` ที่มาพร้อมกัน; จากนั้นเพิ่ม upstream channel ของคุณเอง
 - **Local + Official Hybrid** — ใช้ official สำหรับสายการผลิตหลัก ใช้ gateway ที่มาพร้อมกันสำหรับ channel เพิ่มเติม
 
@@ -397,7 +397,7 @@ docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
 
 DramaClaw เป็นกลางเรื่อง model — model ข้อความ / ภาพ / วิดีโอ / เสียงทั้งหมดเชื่อมต่อผ่าน **gateway ที่เข้ากันได้กับ OpenAI** เลือกโหมดใน **Settings → Model Config**:
 
-- **Official (แนะนำ)** — วาง DC key ของคุณ (รับได้ที่ <https://relayclaw.cdnfg.com>) บันทึก เสร็จ RelayClaw มี model mapping ทุกตัวที่ DramaClaw ต้องการอยู่แล้ว; ไม่ต้องตั้งค่าอะไรเลย
+- **Official (แนะนำ)** — วาง DC key ของคุณ (รับได้ที่ <https://api.aigcdo.top>) บันทึก เสร็จ RelayClaw มี model mapping ทุกตัวที่ DramaClaw ต้องการอยู่แล้ว; ไม่ต้องตั้งค่าอะไรเลย
 - **Custom** — คลิกเดียวเพื่อเริ่มต้น `dramaclaw-gateway` ที่มาพร้อมกัน จากนั้นเพิ่ม channel ของผู้ให้บริการของคุณเอง (API key, model ID) ใน admin UI ของมัน ทุก model ที่ DramaClaw เรียกจะผ่าน channel ของคุณ
 - **Local + Official Hybrid** — ใช้ model official สำหรับสายการผลิตหลัก และเพิ่ม channel อื่น (เช่นเวิร์กโฟลว์วิดีโอ ComfyUI ในเครื่อง) ผ่าน gateway ที่มาพร้อมกัน
 

@@ -14,7 +14,7 @@ CE 三个容器：`api` + `newapi`（内置 DramaClaw 网关，切到自定义/�
 - Docker + `docker compose`。
 - Docker Compose ≥ 2.24（`docker compose version` 确认）。
 - 资源：建议 ≥ 2 vCPU / 4GB（不含模型推理，推理走外部网关）。
-- 一个 DC key（默认官方网关 RelayClaw,见 <https://relayclaw.cdnfg.com>），或自己的 OpenAI 兼容网关。
+- 一个 DC key（默认官方网关 RelayClaw,见 <https://api.aigcdo.top>），或自己的 OpenAI 兼容网关。
 
 ## 2. 拿到 compose 与配置
 
@@ -54,7 +54,7 @@ cp .env.example .env
 
 推荐与备选(详见 [配置模型供应商](../getting-started/configuring-models.md)):
 
-- **A. DC 官方 key(推荐)**：默认 compose 已走官方网关。起栈后开 `http://localhost:8080` → 设置 → 模型配置 → 官方渠道 → 粘贴 DC key 保存即用,**无需映射模型**。到 <https://relayclaw.cdnfg.com> 取 key。
+- **A. DC 官方 key(推荐)**：默认 compose 已走官方网关。起栈后开 `http://localhost:8080` → 设置 → 模型配置 → 官方渠道 → 粘贴 DC key 保存即用,**无需映射模型**。到 <https://api.aigcdo.top> 取 key。
 - **B. 本地 NewAPI**：内置网关已在运行；到 设置 → 模型配置 → 自定义，点初始化，然后在「本地 NewAPI」页配置上游渠道和模型映射。
 
 本地 NewAPI 需把 DramaClaw 逻辑模型映射到真实上游模型。参考图功能需要 `OSS_RELAY_AK/SK`（纯文本流程可暂不配）。

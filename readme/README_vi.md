@@ -321,7 +321,7 @@ DramaClaw chạy toàn bộ suy luận qua một **gateway tương thích OpenAI
 | **Docker** | Docker + `docker compose` |
 | **Cổng** | `8080` giao diện web · `8780` REST API · `3000` giao diện quản trị gateway đi kèm (mặc định chỉ host, có thể mở rộng) |
 | **Kho dữ liệu** | Không cần gì — không Postgres, Redis, Celery hay Ray. Tác vụ chạy trong tiến trình; trạng thái nằm trên hệ thống file cục bộ (SQLite + file) |
-| **Mạng** | Truy cập ra ngoài tới gateway chính thức `relayclaw.cdnfg.com`, và/hoặc tới các nhà cung cấp model bạn cấu hình trong gateway đi kèm |
+| **Mạng** | Truy cập ra ngoài tới gateway chính thức `api.aigcdo.top`, và/hoặc tới các nhà cung cấp model bạn cấu hình trong gateway đi kèm |
 
 > Phát triển cục bộ (không Docker) cần thêm Python 3.11–3.12 + [`uv`](https://docs.astral.sh/uv/) + `ffmpeg`. Điều kiện tiên quyết đầy đủ trong [Hướng dẫn tự lưu trữ](../docs/en/guides/self-hosting.md).
 
@@ -356,7 +356,7 @@ docker compose -f docker-compose.release.yml up -d
 
 Mở ứng dụng tại <http://localhost:8080>; REST API ở <http://localhost:8780>. Trong **Settings → Model Config** chọn một trong:
 
-- **Official** — dán DC key của bạn (lấy tại <https://relayclaw.cdnfg.com>); không cần ánh xạ model. Gateway đi kèm ở trạng thái chờ.
+- **Official** — dán DC key của bạn (lấy tại <https://api.aigcdo.top>); không cần ánh xạ model. Gateway đi kèm ở trạng thái chờ.
 - **Custom** — một cú bấm khởi tạo gateway `newapi` đi kèm; sau đó thêm các kênh upstream của riêng bạn.
 - **Local + Official Hybrid** — official cho pipeline chính, gateway đi kèm cho các kênh bổ sung.
 
@@ -397,7 +397,7 @@ hoặc chạy gateway từ mã nguồn trong checkout kế bên (`make dev-api` 
 
 DramaClaw giữ trung lập về model — mọi model text / ảnh / video / âm thanh đều kết nối qua một **gateway tương thích OpenAI**. Chọn chế độ trong **Settings → Model Config**:
 
-- **Official (khuyến nghị)** — dán DC key của bạn (lấy tại <https://relayclaw.cdnfg.com>), lưu, xong. RelayClaw đã có sẵn mọi ánh xạ model mà DramaClaw cần; không phải cấu hình gì.
+- **Official (khuyến nghị)** — dán DC key của bạn (lấy tại <https://api.aigcdo.top>), lưu, xong. RelayClaw đã có sẵn mọi ánh xạ model mà DramaClaw cần; không phải cấu hình gì.
 - **Custom** — một cú bấm khởi tạo `dramaclaw-gateway` đi kèm, rồi thêm các kênh nhà cung cấp của riêng bạn (API key, model ID) trong giao diện quản trị của nó. Mọi model DramaClaw gọi đều đi qua kênh của bạn.
 - **Local + Official Hybrid** — giữ các model official cho pipeline chính và thêm các kênh bổ sung (ví dụ một workflow video ComfyUI cục bộ) qua gateway đi kèm.
 

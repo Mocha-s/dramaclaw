@@ -84,7 +84,7 @@ The repository's `publish-official-media-catalog` workflow uploads `catalogs/<sh
 
 Keep `dramaclaw-dl` private and grant anonymous `GetObject` only for the `official-media-catalog/*` prefix. The CI identity only needs write access to that prefix. Git pull requests remain the source of truth; enabling OSS versioning is recommended for infrastructure recovery.
 
-To obtain a DC Key, visit <https://relayclaw.cdnfg.com>.
+To obtain a DC Key, visit <https://api.aigcdo.top>.
 
 ## Custom mode
 

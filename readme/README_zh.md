@@ -320,7 +320,7 @@ DramaClaw 的所有模型推理都走 **OpenAI 兼容网关** —— 要么是�
 | **Docker** | Docker + `docker compose` |
 | **端口** | `8080` 网页 · `8780` REST API · `3000` 内置网关管理页（默认仅本机，可放开） |
 | **数据库** | 全部不需要 —— 无 Postgres、Redis、Celery、Ray。任务进程内内联执行，状态存本地文件系统（SQLite + 文件） |
-| **网络** | 需能出网访问官方网关 `relayclaw.cdnfg.com`，和/或你在内置网关里配置的模型供应商 |
+| **网络** | 需能出网访问官方网关 `api.aigcdo.top`，和/或你在内置网关里配置的模型供应商 |
 
 > 本地开发（非 Docker）还需 Python 3.11–3.12 + [`uv`](https://docs.astral.sh/uv/) + `ffmpeg`。完整前置条件见[自托管指南](../docs/zh/guides/self-hosting.md)。
 
@@ -355,7 +355,7 @@ docker compose -f docker-compose.release.yml up -d
 
 浏览器打开 <http://localhost:8080>；REST API 在 <http://localhost:8780>。到**设置 → 模型配置**三选一：
 
-- **官方** —— 粘贴 DC key（到 <https://relayclaw.cdnfg.com> 获取），无需映射模型，内置网关闲置待命。
+- **官方** —— 粘贴 DC key（到 <https://api.aigcdo.top> 获取），无需映射模型，内置网关闲置待命。
 - **自定义** —— 一键初始化内置 `newapi` 网关，再自行配上游渠道。
 - **本地 + 官方混合** —— 主链路走官方，额外渠道走内置网关。
 
@@ -396,7 +396,7 @@ docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
 
 DramaClaw 对模型侧保持中立 —— 所有文本 / 图片 / 视频 / 音频模型都经一个 **OpenAI 兼容网关**接入。到**设置 → 模型配置**三选一：
 
-- **官方（推荐）** —— 粘贴 DC key（到 <https://relayclaw.cdnfg.com> 获取）保存即用。RelayClaw 已经配好 DramaClaw 需要的全部模型映射，什么都不用调。
+- **官方（推荐）** —— 粘贴 DC key（到 <https://api.aigcdo.top> 获取）保存即用。RelayClaw 已经配好 DramaClaw 需要的全部模型映射，什么都不用调。
 - **自定义** —— 一键初始化内置的 `dramaclaw-gateway`，然后在它的管理页里添加你自己的供应商渠道（API key、模型 ID）。DramaClaw 调用的每一个模型都走你的渠道。
 - **本地 + 官方混合** —— 主链路继续用官方模型，额外渠道（比如本地 ComfyUI 视频工作流）走内置网关。
 

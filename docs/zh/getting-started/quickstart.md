@@ -10,7 +10,7 @@ DramaClaw 是社区版(CE),单机运行、无需 PostgreSQL / Redis。默认 `do
 ## 前置
 
 - Docker(Desktop 或 Engine),支持 `docker compose`。
-- 一个 **DC key** —— 到 <https://relayclaw.cdnfg.com> 注册 / 购买；也可以改用 CE 随附的本地 NewAPI。
+- 一个 **DC key** —— 到 <https://api.aigcdo.top> 注册 / 购买；也可以改用 CE 随附的本地 NewAPI。
 
 ## 步骤
 
@@ -36,7 +36,7 @@ docker compose ps   # api、newapi、web 均应 running
 ## 填入 DC key(必做一次)
 
 1. 浏览器打开 **`http://localhost:8080`** —— 这就是 DramaClaw 的界面。
-2. 进入设置 → **模型配置 → 官方渠道**。网关地址已预填 `https://relayclaw.cdnfg.com/v1`。
+2. 进入设置 → **模型配置 → 官方渠道**。网关地址已预填 `https://api.aigcdo.top/v1`。
 3. **粘贴你的 DC key**,点「保存并启用」。立即可用,**无需映射任何模型**(RelayClaw 后台已配齐)。
 
 > CE 默认免登录、单本地用户(`ST_EDITION=ce`,compose 已强制)。REST API 在 `http://localhost:8780`(浏览器只与 `web` 通信,它再反代到 `api`)。

@@ -80,7 +80,7 @@ DramaClaw 会使用认证信息下载 content 接口。上游报错后不会自�
 
 `dramaclaw-dl` Bucket 本身保持私有，只对 `official-media-catalog/*` 前缀授予匿名 `GetObject`，CI 身份仅需该前缀的写权限。模型目录仍以 Git PR 为唯一内容源；建议开启 Bucket 版本控制作为基础设施灾备。
 
-还没有 DC Key 时，可前往 <https://relayclaw.cdnfg.com> 注册或购买。
+还没有 DC Key 时，可前往 <https://api.aigcdo.top> 注册或购买。
 
 ## 自定义模式
 
