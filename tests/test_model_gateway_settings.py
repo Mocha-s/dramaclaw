@@ -155,8 +155,14 @@ def test_legacy_gateway_fixture_migrates_resolves_masks_and_preserves_data(
         "gemini-secret",
         "gemini-image",
     )
+    rejected = gateway_settings.get_effective_newapi_config(model="unmapped-model")
+    assert rejected.source != "third_party"
+    assert rejected.base_url == ""
+    assert rejected.api_key == ""
     assert saved["model_gateway_mode"] == MODE_CUSTOM
     assert saved["sub2api_groups"] == json.dumps(legacy_groups)
+    assert saved["custom_newapi_base_url"] == "http://127.0.0.1:4000/v1"
+    assert saved["custom_newapi_api_key"] == "legacy-local-secret"
     assert saved["custom_newapi_provider_channels"] == json.dumps(legacy_admin_channels)
     assert any("local or incomplete" in warning for warning in warnings)
     assert any("not portable" in warning for warning in warnings)
@@ -175,7 +181,16 @@ def test_legacy_gateway_fixture_migrates_resolves_masks_and_preserves_data(
         preview not in {"sk-portable-secret", "gemini-secret"}
         for preview in (group["apiKeyPreview"] for group in masked)
     )
-    assert all("secret" not in group["apiKeyPreview"] for group in masked)
+    assert [group["apiKeyPreview"] for group in masked] == [
+        "sk-p...cret",
+        "gemi...cret",
+    ]
+    status_groups = status["thirdParty"]["groups"]
+    assert all("apiKey" not in group for group in status_groups)
+    assert [group["apiKeyPreview"] for group in status_groups] == [
+        "sk-p...cret",
+        "gemi...cret",
+    ]
 
 
 def test_third_party_migration_is_idempotent_and_canonical_wins(monkeypatch, tmp_path):

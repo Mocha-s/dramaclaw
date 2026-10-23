@@ -1709,6 +1709,18 @@ def get_ce_newapi_config_for_mode(
                 native_base_url=_sub2api_gemini_base_url(group) if protocol == "gemini" else "",
                 image_edit_reference_format=str(mapping.get("imageEditFormat") or "images"),
             )
+        # Once canonical groups exist (including an empty result after a
+        # rejected legacy endpoint), never select the preserved legacy URL.
+        # It may be loopback/container-local and is retained only for
+        # rollback/audit, not as a third-party credential source.
+        if THIRD_PARTY_GROUPS_KEY in settings:
+            return EffectiveNewApiConfig(
+                mode=MODE_CUSTOM,
+                source="custom",
+                base_url="",
+                api_key="",
+                image_edit_reference_format="dc-media",
+            )
         return EffectiveNewApiConfig(
             mode=MODE_CUSTOM,
             source="custom",
