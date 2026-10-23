@@ -59,6 +59,10 @@ SUB2API_IMAGE_EDIT_FORMATS = {
     "multipart",
 }
 SUB2API_VIDEO_ENDPOINTS = {"videos", "video/generations"}
+THIRD_PARTY_GROUPS_KEY = "third_party_gateway_groups"
+THIRD_PARTY_MIGRATION_VERSION_KEY = "third_party_gateway_migration_version"
+THIRD_PARTY_MIGRATION_WARNINGS_KEY = "third_party_gateway_migration_warnings"
+THIRD_PARTY_MIGRATION_VERSION = "1"
 CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW = "relayclaw_brainclaw"
 CUSTOM_LLM_MODE_ADVANCED = "advanced"
 VALID_CUSTOM_LLM_MODES = {
@@ -166,6 +170,18 @@ def normalize_gateway_mode(value: str | None) -> str:
     return mode if mode in VALID_MODES else MODE_OFFICIAL
 
 
+def _is_external_http_url(value: str) -> bool:
+    parsed = urlsplit(str(value or "").strip())
+    host = (parsed.hostname or "").strip().lower().rstrip(".")
+    return (
+        parsed.scheme in {"http", "https"}
+        and bool(host)
+        and host not in {"localhost", "127.0.0.1", "0.0.0.0", "::1", "host.docker.internal"}
+        and not host.startswith("127.")
+        and not host.startswith("169.254.")
+    )
+
+
 def normalize_capability(value: str | None) -> str:
     capability = str(value or CAPABILITY_TEXT).strip().lower()
     if capability not in SUB2API_CAPABILITIES:
@@ -270,7 +286,8 @@ def save_sub2api_groups(groups: list[dict[str, Any]], *, activate: bool = False)
 
 
 def get_sub2api_groups(*, masked: bool = False) -> list[dict[str, Any]]:
-    raw = get_model_gateway_settings().get("sub2api_groups", "")
+    settings = get_model_gateway_settings()
+    raw = settings.get("sub2api_groups", "")
     try:
         groups = json.loads(raw) if raw else []
     except json.JSONDecodeError:
@@ -300,7 +317,8 @@ def get_sub2api_groups(*, masked: bool = False) -> list[dict[str, Any]]:
             continue
         item = dict(group)
         if masked:
-            item["apiKeyPreview"] = mask_secret(str(item.pop("apiKey", "")))
+            secret = str(item.pop("apiKey", ""))
+            item["apiKeyPreview"] = mask_secret(secret)
         result.append(item)
     return result
 
@@ -552,6 +570,106 @@ def _write_many(values: dict[str, str]) -> None:
         raise
     finally:
         conn.close()
+
+
+def _migrate_third_party_gateway_settings() -> None:
+    """Atomically migrate legacy gateway settings without deleting their source."""
+    if not _uses_ce_gateway_settings():
+        return
+    conn = _connect()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        current = {
+            str(row["key"]): str(row["value"])
+            for row in conn.execute("SELECT key, value FROM runtime_settings").fetchall()
+        }
+        if current.get(THIRD_PARTY_MIGRATION_VERSION_KEY) == THIRD_PARTY_MIGRATION_VERSION:
+            conn.commit()
+            return
+        groups: list[dict[str, Any]] = []
+        warnings: list[str] = []
+        migration_failed = False
+        if THIRD_PARTY_GROUPS_KEY in current:
+            try:
+                existing = json.loads(current[THIRD_PARTY_GROUPS_KEY])
+                groups = existing if isinstance(existing, list) else []
+            except json.JSONDecodeError:
+                # Preserve invalid canonical data and do not replace it.
+                groups = []
+        else:
+            raw_groups = current.get("sub2api_groups", "")
+            if raw_groups:
+                try:
+                    decoded = json.loads(raw_groups)
+                    if isinstance(decoded, list):
+                        groups = _normalize_sub2api_groups(decoded)
+                    else:
+                        raise ValueError("legacy group payload is not a list")
+                except (json.JSONDecodeError, ValueError):
+                    warnings.append("Some legacy gateway groups could not be migrated and were preserved.")
+                    migration_failed = True
+            if not groups:
+                base = normalize_sub2api_base_url(current.get("sub2api_base_url", ""))
+                for capability in SUB2API_CAPABILITIES:
+                    key = normalize_api_key(current.get(f"sub2api_api_key_{capability}", ""))
+                    if base and key:
+                        groups.append({"id": capability, "name": capability.title(), "protocol": "openai", "baseUrl": base, "apiKey": key, "capabilities": [capability], "modelMappings": [{"requestPattern": "*", "upstreamModel": "*"}]})
+            custom_url = str(current.get("custom_newapi_base_url", "")).strip()
+            custom_key = normalize_api_key(current.get("custom_newapi_api_key", ""))
+            if custom_url or custom_key:
+                if _is_external_http_url(custom_url) and custom_key:
+                    groups.append({"id": "legacy-custom-newapi", "name": "Custom gateway", "protocol": "openai", "baseUrl": normalize_sub2api_base_url(custom_url), "apiKey": custom_key, "capabilities": list(SUB2API_CAPABILITIES), "modelMappings": [{"requestPattern": "*", "upstreamModel": "*"}]})
+                else:
+                    warnings.append("Legacy Custom gateway endpoint was not migrated because it is local or incomplete.")
+        if any(current.get(key) for key in ("custom_newapi_provider_channels", "custom_newapi_media_model_mappings", "custom_newapi_embedding_model")):
+            warnings.append("Legacy provider-channel, media, or embedding admin settings are not portable; recreate them in the selected third-party gateway.")
+        now = _now_iso()
+        if migration_failed:
+            conn.execute("INSERT INTO runtime_settings(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at", (THIRD_PARTY_MIGRATION_WARNINGS_KEY, json.dumps(warnings, ensure_ascii=False), now))
+            conn.commit()
+            return
+        if THIRD_PARTY_GROUPS_KEY not in current:
+            conn.execute("INSERT INTO runtime_settings(key,value,updated_at) VALUES(?,?,?)", (THIRD_PARTY_GROUPS_KEY, json.dumps(groups, ensure_ascii=False, sort_keys=True, separators=(",", ":")), now))
+        mode = current.get("model_gateway_mode", "")
+        if mode == MODE_SUB2API:
+            conn.execute("UPDATE runtime_settings SET value=?, updated_at=? WHERE key='model_gateway_mode'", (MODE_CUSTOM, now))
+        for key, value in ((THIRD_PARTY_MIGRATION_VERSION_KEY, THIRD_PARTY_MIGRATION_VERSION), (THIRD_PARTY_MIGRATION_WARNINGS_KEY, json.dumps(warnings, ensure_ascii=False))):
+            conn.execute("INSERT INTO runtime_settings(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at", (key, value, now))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def get_third_party_gateway_groups(*, masked: bool = False) -> list[dict[str, Any]]:
+    _migrate_third_party_gateway_settings()
+    raw = _read_all().get(THIRD_PARTY_GROUPS_KEY, "[]")
+    try:
+        groups = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(groups, list):
+        return []
+    result = []
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        item = dict(group)
+        if masked:
+            secret = str(item.pop("apiKey", ""))
+            item["apiKeyPreview"] = mask_secret(secret)
+        result.append(item)
+    return result
+
+
+def save_third_party_gateway_groups(groups: list[dict[str, Any]], *, activate: bool = False) -> None:
+    normalized = _normalize_sub2api_groups(groups)
+    values = {THIRD_PARTY_GROUPS_KEY: json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":"))}
+    if activate:
+        values["model_gateway_mode"] = MODE_CUSTOM
+    _write_many(values)
 
 
 def set_model_gateway_mode(mode: str) -> None:
@@ -1475,6 +1593,8 @@ def save_media_relay_config(
 
 
 def get_model_gateway_settings() -> dict[str, str]:
+    if _uses_ce_gateway_settings():
+        _migrate_third_party_gateway_settings()
     data = _read_all() if _uses_ce_gateway_settings() else {}
     data.setdefault("model_gateway_mode", MODE_OFFICIAL)
     if _uses_ce_gateway_settings():
@@ -1565,6 +1685,21 @@ def get_ce_newapi_config_for_mode(
             image_edit_reference_format=str(group[2].get("imageEditFormat") or "images"),
         )
     if mode == MODE_CUSTOM:
+        groups = get_third_party_gateway_groups()
+        selected = _resolve_sub2api_group(capability=capability, model=model) if groups else None
+        if selected is not None:
+            group, upstream_model, mapping = selected
+            protocol = str(group.get("protocol") or "openai").strip().lower()
+            return EffectiveNewApiConfig(
+                mode=MODE_CUSTOM,
+                source="third_party",
+                base_url=_sub2api_openai_compat_base_url(group),
+                api_key=str(group.get("apiKey") or ""),
+                protocol=protocol,
+                model=upstream_model,
+                native_base_url=_sub2api_gemini_base_url(group) if protocol == "gemini" else "",
+                image_edit_reference_format=str(mapping.get("imageEditFormat") or "images"),
+            )
         return EffectiveNewApiConfig(
             mode=MODE_CUSTOM,
             source="custom",
@@ -1986,6 +2121,7 @@ def build_model_gateway_status(
         else ""
     )
     sub2api_groups = get_sub2api_groups(masked=True) if uses_ce_settings else []
+    third_party_groups = get_third_party_gateway_groups(masked=True) if uses_ce_settings else []
     sub2api_configured = bool(sub2api_groups)
     sub2api_text_configured = any(CAPABILITY_TEXT in group.get("capabilities", []) for group in sub2api_groups)
     effective = get_effective_newapi_config(
@@ -2080,6 +2216,14 @@ def build_model_gateway_status(
             "groups": sub2api_groups,
             "configured": sub2api_configured,
         },
+        "thirdParty": {
+            "groups": third_party_groups,
+            "configured": bool(third_party_groups),
+        },
+        "migrationWarnings": (
+            json.loads(settings.get(THIRD_PARTY_MIGRATION_WARNINGS_KEY, "[]"))
+            if uses_ce_settings else []
+        ),
     }
 
 

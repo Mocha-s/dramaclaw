@@ -65,6 +65,83 @@ from novelvideo.generators.video_generator import (
     NewApiVideoGenerator,
     newapi_video_backend_options,
 )
+
+
+def test_third_party_groups_migrate_sub2api_losslessly_and_normalize_mode(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    legacy = {
+        "id": "media",
+        "name": "Media gateway",
+        "protocol": "openai",
+        "baseUrl": "https://gateway.example/v1",
+        "apiKey": "sk-secret",
+        "capabilities": ["image"],
+        "modelMappings": [{"requestPattern": "img", "upstreamModel": "upstream", "imageEditFormat": "multipart"}],
+    }
+    model_gateway_settings._write_many(
+        {"sub2api_groups": json.dumps([legacy]), "model_gateway_mode": MODE_SUB2API}
+    )
+
+    groups = gateway_settings.get_third_party_gateway_groups()
+
+    assert groups == [legacy]
+    settings = gateway_settings.get_model_gateway_settings()
+    assert settings["model_gateway_mode"] == MODE_CUSTOM
+    assert settings["sub2api_groups"] == json.dumps([legacy])
+    assert gateway_settings.get_third_party_gateway_groups(masked=True)[0]["apiKeyPreview"] == "*********"
+
+
+def test_third_party_migration_is_idempotent_and_canonical_wins(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    canonical = [{"id": "canonical", "name": "Canonical", "protocol": "openai", "baseUrl": "https://one.example/v1", "apiKey": "key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "*", "upstreamModel": "*"}]}]
+    model_gateway_settings._write_many({"sub2api_groups": "[]", "third_party_gateway_groups": json.dumps(canonical)})
+    assert gateway_settings.get_third_party_gateway_groups() == canonical
+    first = gateway_settings.get_model_gateway_settings()
+    assert gateway_settings.get_third_party_gateway_groups() == canonical
+    assert gateway_settings.get_model_gateway_settings() == first
+
+
+def test_third_party_save_rejects_malformed_without_partial_write(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many({"sub2api_groups": "{malformed"})
+    assert gateway_settings.get_third_party_gateway_groups() == []
+    settings = gateway_settings.get_model_gateway_settings()
+    assert "third_party_gateway_groups" not in settings
+    assert "could not be migrated" in settings["third_party_gateway_migration_warnings"]
+
+
+def test_custom_newapi_external_endpoint_migrates_but_loopback_does_not(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many({"custom_newapi_base_url": "https://custom.example/v1", "custom_newapi_api_key": "custom-secret"})
+    groups = gateway_settings.get_third_party_gateway_groups()
+    assert groups[0]["baseUrl"] == "https://custom.example/v1"
+    assert groups[0]["protocol"] == "openai"
+    assert groups[0]["apiKey"] == "custom-secret"
+
+    _isolate_settings_db(monkeypatch, tmp_path / "loopback")
+    model_gateway_settings._write_many({"custom_newapi_base_url": "http://127.0.0.1:3000/v1", "custom_newapi_api_key": "local-secret"})
+    assert gateway_settings.get_third_party_gateway_groups() == []
+
+
+def test_migration_warning_is_non_secret_and_preserves_newapi_admin_data(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many({
+        "custom_newapi_base_url": "https://custom.example/v1",
+        "custom_newapi_api_key": "custom-secret",
+        "custom_newapi_provider_channels": json.dumps([{"provider": "openrouter", "upstreamKey": "provider-secret"}]),
+    })
+    status = gateway_settings.build_model_gateway_status()
+    warnings = status["migrationWarnings"]
+    assert warnings and all("secret" not in warning for warning in warnings)
+    assert "custom-secret" not in json.dumps(warnings)
+    assert "provider-secret" not in json.dumps(warnings)
+    assert gateway_settings.get_model_gateway_settings()["custom_newapi_provider_channels"]
 from novelvideo.newapi_provisioner import (
     _merge_channel_payload,
     AdminToken,
