@@ -22,7 +22,6 @@ from novelvideo.embedding_models import (
 from novelvideo.model_gateway_settings import (
     MODE_CUSTOM,
     MODE_OFFICIAL,
-    MODE_SUB2API,
     save_custom_newapi_gateway,
     save_newapi_embedding_model_config,
     save_official_newapi_key,
@@ -102,7 +101,7 @@ def test_project_model_keeps_its_gateway_after_active_mode_switch(monkeypatch, t
     assert custom == ("sk-custom", "http://new-api:3000/v1")
 
 
-def test_sub2api_embedding_binding_uses_embedding_capability_key(monkeypatch, tmp_path):
+def test_custom_embedding_binding_uses_embedding_capability_key(monkeypatch, tmp_path):
     _isolate_ce(monkeypatch, tmp_path)
     save_sub2api_gateway(
         base_url="https://sub2api.example/v1",
@@ -118,9 +117,9 @@ def test_sub2api_embedding_binding_uses_embedding_capability_key(monkeypatch, tm
 
     spec = embedding_model_spec(COGNEE_EMBEDDING_MODEL_LEGACY)
 
-    assert spec.gateway == MODE_SUB2API
+    assert spec.gateway == MODE_CUSTOM
     assert embedding_gateway_credentials(spec) == (
-        "sk-embedding",
+        "sk-text",
         "https://sub2api.example/v1",
     )
 

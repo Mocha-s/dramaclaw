@@ -157,6 +157,10 @@ CE_REVERSE_ENV_ALLOWLIST: tuple[tuple[re.Pattern[str], str], ...] = (
         "supply managed SQLite values, so these are intentionally absent from the public template.",
     ),
     (
+        re.compile(r"^NEWAPI_(?:ADMIN_BASE_URL|PROVISIONER_ENABLED|PROVISIONER_INIT_TIMEOUT_MS|RELAY_TOKEN_NAME)$"),
+        "Legacy NewAPI admin/provisioner settings are not part of the CE Compose setup contract.",
+    ),
+    (
         re.compile(
             r"^(?:ST_CONTROL_PLANE_DSN|ST_REDIS_URL|ST_TASK_BACKEND|ST_COOKIE_SECURE|ST_WORKER_.*)$"
         ),
