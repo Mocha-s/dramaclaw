@@ -337,7 +337,6 @@ DramaClaw รัน inference ทั้งหมดผ่าน **gateway ที
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
-git clone https://github.com/dramaclaw/dramaclaw-gateway.git   # bundled gateway, built from ../dramaclaw-gateway
 cd dramaclaw
 
 cp .env.example .env
@@ -346,7 +345,6 @@ cp .env.example .env
 docker compose up -d --build   # builds and starts three services: api / newapi (bundled gateway) / web
 ```
 
-checkout ทั้งสองเป็น git repo ธรรมดา: แก้ไข, `git pull`, สร้างใหม่ แก้แค่โค้ด DramaClaw? `docker compose up -d --build api web` แก้แค่ gateway? `docker compose up -d --build newapi` clone gateway ไว้ที่อื่น หรืออยากให้ Docker ดึงจาก git เอง? ตั้ง `DRAMACLAW_GATEWAY_SRC` ใน `.env` เป็น path นั้น หรือเป็น `https://github.com/dramaclaw/dramaclaw-gateway.git#main`
 
 **ไม่ต้อง build** — ดึง image ที่เผยแพร่แล้วแทน (ไม่ต้อง clone gateway):
 
@@ -364,7 +362,6 @@ docker compose -f docker-compose.release.yml up -d
 
 ปักหมุดเวอร์ชันหรือสลับ registry ได้ใน `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_GATEWAY_VERSION`, `DRAMACLAW_IMAGE_PREFIX`) — ค่าเหล่านี้มีผลเฉพาะโหมด image (`docker-compose.release.yml`) เท่านั้น จีนแผ่นดินใหญ่: ตั้ง `DRAMACLAW_IMAGE_PREFIX=claymore-registry.cn-chengdu.cr.aliyuncs.com/dramaclaw` และปักหมุดทั้งสองเวอร์ชัน (mirror ของ ACR มีเฉพาะ tag ที่ปักหมุดไว้)
 
-> ย้ายมาจาก checkout เวอร์ชันเก่า? สำหรับการสร้างจากซอร์ส ให้ `git clone https://github.com/dramaclaw/dramaclaw-gateway.git ../dramaclaw-gateway` ก่อน (ตอนนี้ gateway สร้างจาก checkout ข้างเคียงนั้น; ถ้าไม่มี การ build จะหยุดพร้อม `unable to prepare context`) `docker-compose.selfhosted.yml` / `docker-compose.selfhosted.release.yml` ถูกลบออกแล้ว — ใช้ `docker-compose.yml` (สร้างจากซอร์ส) / `docker-compose.release.yml` (image) แทน ชื่อบริการและ volume `ce-data` / `newapi-data` ไม่เปลี่ยน; ข้อมูลเดิมถูกนำมาใช้ต่อได้ทันที พอร์ตของ gateway ที่มาพร้อมกันตอนนี้ bind เฉพาะ `127.0.0.1` โดยค่าเริ่มต้น; ตั้ง `ST_NEWAPI_BIND=0.0.0.0` ใน `.env` ถ้าต้องการเข้าถึงจากระยะไกล
 
 ### การพัฒนาในเครื่อง (uv + Python 3.11+)
 

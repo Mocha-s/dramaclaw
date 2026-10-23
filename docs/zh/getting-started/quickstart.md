@@ -5,7 +5,7 @@
 
 > 本地跑起 DramaClaw,产出第一个结果。
 
-DramaClaw 是社区版(CE),单机运行、无需 PostgreSQL / Redis。默认 `docker compose` 起三个服务:`api`(创作后端,:8780)、`newapi`(内置网关,切到自定义/本地 + 官方混合模式前闲置)、`web`(浏览器界面,:8080);模型默认走 **DramaClaw 官方网关(RelayClaw)**,填一个 DC key 即用。
+DramaClaw 是社区版(CE),单机运行、无需 PostgreSQL / Redis。`docker compose` 启动 `api` 和 `web`;模型默认走 **DramaClaw 官方网关(RelayClaw)**,填一个 DC key 即用。自定义网关在设置页配置外部服务。
 
 ## 前置
 
@@ -17,7 +17,6 @@ DramaClaw 是社区版(CE),单机运行、无需 PostgreSQL / Redis。默认 `do
 ```bash
 # 1. 取得代码 —— DramaClaw 和内置网关并排放
 git clone https://github.com/dramaclaw/dramaclaw.git
-git clone https://github.com/dramaclaw/dramaclaw-gateway.git
 cd dramaclaw
 
 # 2. 准备配置

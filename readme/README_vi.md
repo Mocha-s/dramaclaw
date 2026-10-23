@@ -337,7 +337,6 @@ Mỗi GitHub Release đều phát hành image đa kiến trúc (amd64/arm64) lê
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
-git clone https://github.com/dramaclaw/dramaclaw-gateway.git   # gateway đi kèm, build từ ../dramaclaw-gateway
 cd dramaclaw
 
 cp .env.example .env
@@ -346,7 +345,6 @@ cp .env.example .env
 docker compose up -d --build   # build và khởi động ba dịch vụ: api / newapi (gateway đi kèm) / web
 ```
 
-Cả hai checkout đều là repo git bình thường: sửa, `git pull`, build lại. Chỉ mã DramaClaw thay đổi? `docker compose up -d --build api web`. Chỉ gateway? `docker compose up -d --build newapi`. Clone gateway ở nơi khác, hoặc muốn Docker tự lấy từ git? Đặt `DRAMACLAW_GATEWAY_SRC` trong `.env` thành đường dẫn đó hoặc `https://github.com/dramaclaw/dramaclaw-gateway.git#main`.
 
 **Không build** — kéo image đã phát hành thay thế (không cần clone gateway):
 
@@ -364,7 +362,6 @@ Các bước đầy đủ trong [Bắt đầu nhanh](../docs/en/getting-started/
 
 Ghim phiên bản hoặc đổi registry trong `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_GATEWAY_VERSION`, `DRAMACLAW_IMAGE_PREFIX`) — các giá trị này chỉ áp dụng cho chế độ image (`docker-compose.release.yml`). Trung Quốc đại lục: đặt `DRAMACLAW_IMAGE_PREFIX=claymore-registry.cn-chengdu.cr.aliyuncs.com/dramaclaw` và ghim cả hai phiên bản (mirror ACR chỉ có các tag đã ghim).
 
-> Di chuyển từ một checkout cũ? Với build từ mã nguồn, trước tiên `git clone https://github.com/dramaclaw/dramaclaw-gateway.git ../dramaclaw-gateway` (gateway giờ được build từ checkout kế bên đó; thiếu nó, build sẽ dừng với `unable to prepare context`). `docker-compose.selfhosted.yml` / `docker-compose.selfhosted.release.yml` đã bị gỡ — dùng `docker-compose.yml` (build từ mã nguồn) / `docker-compose.release.yml` (image). Tên dịch vụ và các volume `ce-data` / `newapi-data` không đổi; dữ liệu hiện có được dùng lại nguyên trạng. Cổng của gateway đi kèm giờ mặc định chỉ bind vào `127.0.0.1`; đặt `ST_NEWAPI_BIND=0.0.0.0` trong `.env` nếu bạn cần truy cập từ xa.
 
 ### Phát triển cục bộ (uv + Python 3.11+)
 

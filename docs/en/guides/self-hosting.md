@@ -20,7 +20,6 @@ Two compose files ship in the repo: `docker-compose.yml` builds all three servic
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
-git clone https://github.com/dramaclaw/dramaclaw-gateway.git   # only for the source build; image mode does not need it
 cd dramaclaw
 cp .env.example .env
 ```
@@ -29,7 +28,6 @@ Two files, already set for you, no changes needed:
 
 | File | Mode | Command |
 |---|---|---|
-| `docker-compose.yml` | Source build (default) — builds `api` and `web` from this checkout and the bundled gateway from `../dramaclaw-gateway` (override with `DRAMACLAW_GATEWAY_SRC`, a path or a git URL) | `docker compose up -d --build` |
 | `docker-compose.release.yml` | Image only — pulls published images, never builds | `docker compose -f docker-compose.release.yml up -d` |
 
 Key points shared by both (defined once in `docker-compose.release.yml`, reused by `docker-compose.yml` via `extends`):
@@ -40,7 +38,6 @@ Key points shared by both (defined once in `docker-compose.release.yml`, reused 
 | Images (release) | `${DRAMACLAW_IMAGE_PREFIX:-claymorelab}/...` | Pulled from Docker Hub; set `DRAMACLAW_IMAGE_PREFIX` in `.env` to use the ACR mirror (pinned tags only) |
 | Versions (release) | `DRAMACLAW_VERSION` (api/web), `DRAMACLAW_GATEWAY_VERSION` | Defaults: `2.0.2` / the gateway tag baked into the file |
 | Port | `8780:8780` | REST API |
-| Gateway admin port | `${ST_NEWAPI_BIND:-127.0.0.1}:${ST_NEWAPI_PORT:-3000}:3000` | Bound to `127.0.0.1` by default; set `ST_NEWAPI_BIND=0.0.0.0` in `.env` to widen it |
 | Enforced environment | `ST_EDITION=ce`, control-plane/Redis/Celery cleared | CE mode cannot be downgraded |
 | Data volume | `ce-data:/data` (output at `/data/output`) | Persists project databases, settings, and generated media |
 
@@ -109,12 +106,10 @@ docker run --rm -v dramaclaw-ce_newapi-data:/data -v "$PWD":/backup alpine \
 Source build (both checkouts):
 
 ```bash
-git -C ../dramaclaw-gateway pull   # first time after upgrading from an older checkout: git clone https://github.com/dramaclaw/dramaclaw-gateway.git ../dramaclaw-gateway
 git pull
 docker compose up -d --build
 ```
 
-`docker compose up -d --build` also rebuilds the bundled gateway from `../dramaclaw-gateway` (Go + bun, several minutes); `git pull` there too when you want a newer gateway. When only DramaClaw code changed, rebuild just the two local services: `docker compose up -d --build api web`; when only the gateway changed, `docker compose up -d --build newapi`.
 
 Image mode:
 
@@ -152,11 +147,7 @@ The script copies only missing files, never overwrites or deletes the source, an
 
 | Before | Now |
 |---|---|
-| `docker compose up -d --build` (official gateway, source build) | Same command, **after** `git clone https://github.com/dramaclaw/dramaclaw-gateway.git ../dramaclaw-gateway` (or `DRAMACLAW_GATEWAY_SRC=https://github.com/dramaclaw/dramaclaw-gateway.git#main` in `.env` to skip the clone); it now also builds the bundled gateway (host-only by default, idle until used). Without the clone the build stops with `unable to prepare context: path ".../dramaclaw-gateway" not found` |
 | `docker compose -f docker-compose.release.yml up -d` | Same command; the gateway image is now `claymorelab/dramaclaw-gateway` |
-| `docker compose -f docker-compose.selfhosted.yml up -d --build` | Clone the gateway as above, then `docker compose up -d --build`; the `newapi-data` volume is reused — back it up first (rc.21 → rc.24 only adds tables) |
-| `docker compose -f docker-compose.selfhosted.release.yml up -d` | Use `docker compose -f docker-compose.release.yml up -d` instead; same as above |
-| `.env`'s `NEWAPI_BASE_URL` / `NEWAPI_API_KEY` / `ST_*_PORT` / `INSTALL_WORLD` / `NEWAPI_PROVISIONER_ENABLED` | Unchanged, still effective |
 
 ## 7. Troubleshooting
 
@@ -164,7 +155,6 @@ The script copies only missing files, never overwrites or deletes the source, an
 |---|---|
 | Container won't start | `docker compose logs api`; usually the `.env` gateway address/key was not changed or is unreachable |
 | Port 8780 already in use | Change the left-hand value of `ports` in compose, e.g. `8888:8780` |
-| Port 3000 already in use (bundled gateway fails to start) | Set `ST_NEWAPI_PORT=<free port>` in `.env` and start the stack again. Note the gateway port is bound to `127.0.0.1` by default; `api` no longer waits on the gateway's health, so this does not block `api`. |
 | Model call errors | Confirm the gateway is reachable and that the `*_MODEL` names exist in the gateway backend |
 
 ## Related

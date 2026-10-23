@@ -333,20 +333,19 @@ DramaClaw runs all inference through an **OpenAI-compatible gateway** — either
 
 Every GitHub Release publishes multi-arch (amd64/arm64) images to Docker Hub.
 
-**Source build (default)** — clone DramaClaw and the bundled [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway) side by side; `docker compose up -d --build` builds all three services from those two checkouts.
+**Source build (default)** — clone DramaClaw; `docker compose up -d --build` builds the `api` and `web` services.
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
-git clone https://github.com/dramaclaw/dramaclaw-gateway.git   # bundled gateway, built from ../dramaclaw-gateway
 cd dramaclaw
 
 cp .env.example .env
 # Edit .env — set PROMPT_EXPORT_PASSWORD to a non-default value.
 
-docker compose up -d --build   # builds and starts three services: api / newapi (bundled gateway) / web
+docker compose up -d --build   # builds and starts api / web
 ```
 
-Both checkouts are plain git repos: edit, `git pull`, rebuild. Only DramaClaw code changed? `docker compose up -d --build api web`. Only the gateway? `docker compose up -d --build newapi`. Gateway clone somewhere else, or prefer Docker to fetch it from git? Set `DRAMACLAW_GATEWAY_SRC` in `.env` to that path or to `https://github.com/dramaclaw/dramaclaw-gateway.git#main`.
+The app connects to official or third-party gateways configured in Settings → Model Config.
 
 **No build** — pull published images instead (no gateway clone needed):
 
@@ -357,14 +356,13 @@ docker compose -f docker-compose.release.yml up -d
 Open the app at <http://localhost:8080>; the REST API is at <http://localhost:8780>. In **Settings → Model Config** pick one of:
 
 - **Official** — paste your DC key (get one at <https://api.aigcdo.top>); no model mapping needed. The bundled gateway stays idle.
-- **Custom** — one click initializes the bundled `newapi` gateway; then add your own upstream channels.
-- **Local + Official Hybrid** — official for the main pipeline, bundled gateway for extra channels.
+- **Custom** — configure one or more external third-party gateway groups.
+- **Hybrid** — use the official gateway alongside configured third-party groups.
 
 Full steps in the [Quick Start](docs/en/getting-started/quickstart.md).
 
-Pin versions or switch registry in `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_GATEWAY_VERSION`, `DRAMACLAW_IMAGE_PREFIX`) — these apply to the image mode (`docker-compose.release.yml`) only. Mainland China: set `DRAMACLAW_IMAGE_PREFIX=claymore-registry.cn-chengdu.cr.aliyuncs.com/dramaclaw` and pin both versions (the ACR mirror carries pinned tags only).
+Pin versions or switch registry in `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_IMAGE_PREFIX`) — these apply to image mode only.
 
-> Migrating from an older checkout? For the source build, first `git clone https://github.com/dramaclaw/dramaclaw-gateway.git ../dramaclaw-gateway` (the gateway is now built from that sibling checkout; without it the build stops with `unable to prepare context`). `docker-compose.selfhosted.yml` / `docker-compose.selfhosted.release.yml` have been removed — use `docker-compose.yml` (source build) / `docker-compose.release.yml` (images). Service names and the `ce-data` / `newapi-data` volumes are unchanged; existing data is reused as-is. The bundled gateway's port now binds only to `127.0.0.1` by default; set `ST_NEWAPI_BIND=0.0.0.0` in `.env` if you need remote access to it.
 
 ### Local development (uv + Python 3.11+)
 
@@ -385,16 +383,7 @@ safe source-checkout chat runtime. Source-built Docker images ship the patched C
 Server runtime and default to Codex. The pinned 2.0.4 release image uses Hermes. To run the API command directly, configure a supported chat backend
 first; do not rely on the stock Codex binary for gateway credentials.
 
-**Gateway.** In **Official** mode you need nothing else. For **Custom** or **Local + Official Hybrid** the API expects a gateway on `127.0.0.1:3000` whose SQLite file is `./state/newapi/one-api.db` (that is what "Initialize" in Settings writes to; `NEWAPI_ADMIN_BASE_URL` in `.env` already points there). Either run the published image with that directory mounted:
-
-```bash
-mkdir -p state/newapi
-docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
-  -v "$PWD/state/newapi:/data" \
-  claymorelab/dramaclaw-gateway:v1.0.0-rc.24-dramaclaw.1
-```
-
-or run the gateway from source in the sibling checkout (`make dev-api` / `make dev-web` in [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway#develop), or `go build` and start the binary with `SQLITE_PATH=<path to>/dramaclaw/state/newapi/one-api.db`).
+**Gateway.** In **Official** mode paste the DC key in Settings. For **Custom** or **Hybrid**, add an external OpenAI-compatible or Gemini-compatible endpoint under Settings → Model Config.
 
 <br/>
 
@@ -408,11 +397,6 @@ DramaClaw stays model-neutral — all text / image / video / audio models connec
 
 Full walkthrough in [Configuring Models](docs/en/getting-started/configuring-models.md).
 
-### The bundled gateway: dramaclaw-gateway
-
-The `newapi` service in `docker-compose.yml` is [**dramaclaw-gateway**](https://github.com/dramaclaw/dramaclaw-gateway), DramaClaw's own fork of [New API](https://github.com/QuantumNous/new-api). It speaks the **DC-Media** contract DramaClaw uses for image / video / audio (media roles, references, first / last frames) and converts each request into the provider's native API. Image: [`claymorelab/dramaclaw-gateway`](https://hub.docker.com/r/claymorelab/dramaclaw-gateway) on Docker Hub, pinned by `DRAMACLAW_GATEWAY_VERSION` in `.env`. It stays idle in Official mode and is only used once you switch to **Custom** or **Local + Official Hybrid**.
-
-Provider adapters shipped in the gateway today (see the [channel support matrix](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/docs/providers/en/README.md) for verification status): ComfyUI · MiniMax / Hailuo · VolcEngine Doubao / Seedance · fal.ai · Alibaba · Kling · Jimeng · Vertex AI · Gemini · OpenAI / Sora · Suno. Want another provider? The gateway has a [scaffold generator and contribution guide](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/CONTRIBUTING.md).
 
 | Stage                | Official mode (RelayClaw)                          | Custom / Hybrid mode (bundled gateway)                    |
 |----------------------|----------------------------------------------------|-----------------------------------------------------------|

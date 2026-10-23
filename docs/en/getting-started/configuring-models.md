@@ -309,7 +309,6 @@ Enter Cloud name, API Key, API Secret, and an optional folder. Find them under *
 | Adding a media model says its provider key is missing | The provider channel was not persisted to NewAPI. Save/update the channel before saving media models. |
 | NewAPI reports `No available channel for model ...` | Check the logical mapping, channel status, upstream model name, and group. |
 | Structured steps fail with `Exceeded maximum output retries` behind a Codex-backed relay (Codex2API etc.) | The relay drops `tool_calls` on `/v1/chat/completions`. Enable **ChatCompletions → Responses Compatibility** for that channel in the NewAPI admin. See the [troubleshooting guide](../guides/troubleshooting.md#model--gateway). |
-| Local NewAPI initialization fails | Check the NewAPI service, SQLite mount, directory permissions, and `NEWAPI_PROVISIONER_ENABLED`. |
 | A new model is absent from XiaHua | Verify it is enabled, has the correct media type, the complete configuration was saved, and the page was refreshed. |
 | Controls do not match model capabilities | Check the media model `config`, especially resolutions, ratios, modes, and reference limits. |
 | Knowledge-graph embedding fails | Check the key, upstream model, dimensions, and batch size. HTTP 429 means upstream rate limiting. |

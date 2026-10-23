@@ -32,7 +32,6 @@ DramaClaw CE 是单机服务,**无需 PostgreSQL / Redis**。Docker 起 `api` + 
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
-git clone https://github.com/dramaclaw/dramaclaw-gateway.git   # 内置网关，从 ../dramaclaw-gateway 构建
 cd dramaclaw
 cp .env.example .env        # 至少把 PROMPT_EXPORT_PASSWORD 改成非默认值
 docker compose up -d --build    # 用两个 checkout 从源码构建 api、web 与网关

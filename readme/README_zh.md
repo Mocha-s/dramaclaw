@@ -336,7 +336,6 @@ DramaClaw 的所有模型推理都走 **OpenAI 兼容网关** —— 要么是�
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
-git clone https://github.com/dramaclaw/dramaclaw-gateway.git   # 内置网关，从 ../dramaclaw-gateway 构建
 cd dramaclaw
 
 cp .env.example .env
@@ -345,7 +344,6 @@ cp .env.example .env
 docker compose up -d --build   # 构建并起三个服务：api / newapi（内置网关）/ web
 ```
 
-两个 checkout 都是普通 git 仓库：改代码、`git pull`、重建。只改了 DramaClaw 代码：`docker compose up -d --build api web`；只改了网关：`docker compose up -d --build newapi`。网关 clone 放在别处，或者想让 Docker 直接从 git 拉？在 `.env` 里把 `DRAMACLAW_GATEWAY_SRC` 设成那个路径或 `https://github.com/dramaclaw/dramaclaw-gateway.git#main`。
 
 **免构建** —— 改拉已发布镜像（不需要 clone 网关）：
 
@@ -363,7 +361,6 @@ docker compose -f docker-compose.release.yml up -d
 
 版本与镜像源在 `.env` 里钉：`DRAMACLAW_VERSION`、`DRAMACLAW_GATEWAY_VERSION`、`DRAMACLAW_IMAGE_PREFIX`——仅镜像模式（`docker-compose.release.yml`）生效。国内拉取慢：设 `DRAMACLAW_IMAGE_PREFIX=claymore-registry.cn-chengdu.cr.aliyuncs.com/dramaclaw` 并同时钉两个版本（ACR 镜像只有钉 tag，没有 latest）。
 
-> 从旧版本升级？源码构建的先 `git clone https://github.com/dramaclaw/dramaclaw-gateway.git ../dramaclaw-gateway`（网关现在从这个并排 checkout 构建，没有它会报 `unable to prepare context`）。`docker-compose.selfhosted.yml`、`docker-compose.selfhosted.release.yml` 已移除——改用 `docker-compose.yml`（源码构建）/ `docker-compose.release.yml`（镜像）。服务名与 `ce-data` / `newapi-data` 数据卷不变，已有数据原样复用。内置网关端口默认只绑 `127.0.0.1`，需要远程访问时在 `.env` 设 `ST_NEWAPI_BIND=0.0.0.0`。
 
 ### 本地开发（uv + Python 3.11+）
 

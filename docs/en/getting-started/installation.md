@@ -5,7 +5,7 @@
 
 > Set up the runtime environment for DramaClaw CE on macOS / Windows / Linux. If you just want the fastest path to running it, go straight to [Quickstart](quickstart.md); this guide covers per-platform prerequisites and the two installation methods (Docker and local development).
 
-DramaClaw CE is a single-machine service that needs **no PostgreSQL / Redis**. Docker brings up `api` + the bundled `newapi` gateway + `web`; models are served through the DramaClaw official gateway RelayClaw by default, or through the bundled gateway once you switch to Custom mode in Settings. Nothing runs models on your machine, so an ordinary machine is enough.
+DramaClaw CE is a single-machine service that needs **no PostgreSQL / Redis**. Docker brings up `api` + `web`; models are served through the DramaClaw official gateway RelayClaw by default, or through an external gateway configured in Settings. Nothing runs models on your machine, so an ordinary machine is enough.
 
 ## Pick one of two installation methods
 
@@ -32,7 +32,6 @@ Once installed:
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
-git clone https://github.com/dramaclaw/dramaclaw-gateway.git   # bundled gateway, built from ../dramaclaw-gateway
 cd dramaclaw
 cp .env.example .env        # at minimum, change PROMPT_EXPORT_PASSWORD to a non-default value
 docker compose up -d --build    # builds api, web and the gateway from the two checkouts
@@ -112,13 +111,12 @@ curl http://localhost:8780/api/v1/config   # a 200 response means it's working
 
 ### 4. Gateway (only for Custom / Local + Official Hybrid mode)
 
-Official mode needs nothing else. For the other two modes the API expects a gateway on `127.0.0.1:3000` (the `NEWAPI_ADMIN_BASE_URL` default in `.env`) whose SQLite file is `./state/newapi/one-api.db`, which is what **Initialize** in Settings writes to. Run the published image with that directory mounted:
+For Custom or Hybrid mode, configure a reachable third-party gateway endpoint in Settings → Model Configuration.
 
 ```bash
 mkdir -p state/newapi
 docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
   -v "$PWD/state/newapi:/data" \
-  claymorelab/dramaclaw-gateway:v1.0.0-rc.24-dramaclaw.1
 ```
 
 or build and run the gateway from the sibling `dramaclaw-gateway` checkout with `SQLITE_PATH` pointing at that file. See [Configuring Models](configuring-models.md) for the mode setup.
