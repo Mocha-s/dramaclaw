@@ -1,6 +1,8 @@
 """Non-secret official defaults used when no local .env is present."""
 
-OFFICIAL_NEWAPI_BASE_URL = "https://relayclaw.cdnfg.com/v1"
+PLATFORM_GATEWAY_BASE_URL = "https://api.aigcdo.top/v1"
+# Internal import alias retained while gateway terminology is being normalized.
+OFFICIAL_NEWAPI_BASE_URL = PLATFORM_GATEWAY_BASE_URL
 
 DEFAULT_COGNEE_LLM_PROVIDER = "newapi"
 DEFAULT_COGNEE_LLM_MODEL = "DC-cognee-LLM"

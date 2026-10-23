@@ -1295,7 +1295,7 @@ def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
             upstream_model = str(mapping.get("upstreamModel") or "").strip()
             if not request_model or request_model.endswith("*") or not upstream_model:
                 continue
-            api_model = request_model if capability == CAPABILITY_IMAGE else f"newapi_{request_model}"
+            api_model = request_model
             if capability == CAPABILITY_IMAGE:
                 request = {
                     "endpoint": "images/generations",

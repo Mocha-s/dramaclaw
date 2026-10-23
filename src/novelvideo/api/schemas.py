@@ -13,7 +13,7 @@ from novelvideo.freezone.slots import PushTarget
 
 ProjectStatus = Literal["active", "archived", "deleted"]
 ProjectStatusFilter = Literal["all", "active", "archived", "deleted", "visible"]
-FREEZONE_DEFAULT_IMAGE_SELECTION = "newapi_gpt_image2"
+FREEZONE_DEFAULT_IMAGE_SELECTION = "gpt-image-2"
 FREEZONE_DEFAULT_IMAGE_MODEL = FREEZONE_DEFAULT_IMAGE_SELECTION
 CANVAS_MAX_NODES = 50_000
 CANVAS_MAX_EDGES = 200_000
@@ -229,7 +229,7 @@ class GlobalOptimizeRequest(BaseModel):
 
 class VideoGenerateRequest(BaseModel):
     resolution: str = "720x1280"
-    video_backend: str = "newapi_seedance-1.0-pro-fast"
+    video_backend: str = "seedance-1.0-pro-fast"
     use_director_render: bool = False
 
 
@@ -353,7 +353,7 @@ class InsertManualShotRequest(BaseModel):
 
 class SingleVideoRequest(BaseModel):
     resolution: str = "720x1280"
-    video_backend: str = "newapi_seedance-1.0-pro-fast"
+    video_backend: str = "seedance-1.0-pro-fast"
     use_director_render: bool = False
     seedance2_config_json: Optional[str] = None
     mode: Optional[str] = None

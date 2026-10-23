@@ -42,6 +42,7 @@ from novelvideo.model_gateway_settings import (
     get_effective_media_relay_config,
     get_effective_newapi_config,
     get_ce_media_model_catalog,
+    get_sub2api_media_model_catalog,
     get_newapi_embedding_model_config,
     get_official_media_model_catalog,
     get_newapi_media_model_mappings,
@@ -78,6 +79,59 @@ from novelvideo.newapi_provisioner import (
     update_provider_channel_credentials,
     upsert_channel,
 )
+
+
+def test_platform_gateway_defaults_to_owned_endpoint_and_neutral_identity(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_official_newapi_key(api_key="sk-owned-platform", activate=True)
+
+    effective = get_effective_newapi_config(capability=CAPABILITY_TEXT, model="writer")
+
+    assert OFFICIAL_NEWAPI_BASE_URL == "https://api.aigcdo.top/v1"
+    assert effective.base_url == "https://api.aigcdo.top/v1"
+    assert effective.api_key == "sk-owned-platform"
+
+
+def test_sub2api_media_catalog_keeps_custom_logical_names_without_newapi_prefix(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "owned-media",
+                "name": "Owned media",
+                "protocol": "openai",
+                "baseUrl": "https://api.aigcdo.top/v1",
+                "apiKey": "sk-owned-media",
+                "capabilities": ["image", "video"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "poster-main",
+                        "upstreamModel": "gpt-image-2",
+                    },
+                    {
+                        "requestPattern": "trailer-fast",
+                        "upstreamModel": "seedance-2.0-fast",
+                        "videoEndpoint": "videos",
+                    },
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image = get_sub2api_media_model_catalog("image")
+    video = get_sub2api_media_model_catalog("video")
+
+    assert image[0]["id"] == "poster-main"
+    assert image[0]["apiModel"] == "poster-main"
+    assert image[0]["gatewayModel"] == "gpt-image-2"
+    video_entry = next(item for item in video if item["id"] == "trailer-fast")
+    assert video_entry["apiModel"] == "trailer-fast"
+    assert video_entry["gatewayModel"] == "seedance-2.0-fast"
 
 
 @pytest.mark.parametrize("failures", [1, 3])

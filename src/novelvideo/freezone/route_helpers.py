@@ -32,7 +32,7 @@ from novelvideo.task_identity import task_state_key
 
 logger = logging.getLogger(__name__)
 
-FREEZONE_DEFAULT_IMAGE_SELECTION = "newapi_gpt_image2"
+FREEZONE_DEFAULT_IMAGE_SELECTION = "gpt-image-2"
 FREEZONE_DEFAULT_IMAGE_MODEL = FREEZONE_DEFAULT_IMAGE_SELECTION
 SUPPORTED_FREEZONE_IMAGE_PROVIDERS = {"huimeng", "newapi", "openrouter", "openai"}
 FREEZONE_IMAGE_CAMERA_OPTIONS = {
