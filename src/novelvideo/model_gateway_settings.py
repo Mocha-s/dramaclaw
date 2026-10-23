@@ -780,6 +780,21 @@ def save_custom_newapi_gateway(
     if activate:
         values["model_gateway_mode"] = MODE_CUSTOM
     _write_many(values)
+    endpoint = normalize_relay_base_url(base_url)
+    key = normalize_api_key(api_key)
+    if _is_external_http_url(endpoint) and key:
+        groups = get_third_party_gateway_groups()
+        legacy_group = {
+            "id": "legacy-custom-newapi",
+            "name": "Custom gateway",
+            "protocol": "openai",
+            "baseUrl": normalize_sub2api_base_url(endpoint),
+            "apiKey": key,
+            "capabilities": list(SUB2API_CAPABILITIES),
+            "modelMappings": [{"requestPattern": "*", "upstreamModel": "*"}],
+        }
+        groups = [group for group in groups if group.get("id") != legacy_group["id"]]
+        save_third_party_gateway_groups([*groups, legacy_group])
 
 
 def save_sub2api_gateway(
@@ -1714,6 +1729,14 @@ def get_ce_newapi_config_for_mode(
         # It may be loopback/container-local and is retained only for
         # rollback/audit, not as a third-party credential source.
         if THIRD_PARTY_GROUPS_KEY in settings:
+            return EffectiveNewApiConfig(
+                mode=MODE_CUSTOM,
+                source="custom",
+                base_url="",
+                api_key="",
+                image_edit_reference_format="dc-media",
+            )
+        if THIRD_PARTY_MIGRATION_WARNINGS_KEY in settings:
             return EffectiveNewApiConfig(
                 mode=MODE_CUSTOM,
                 source="custom",

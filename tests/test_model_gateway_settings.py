@@ -227,6 +227,36 @@ def test_custom_newapi_external_endpoint_migrates_but_loopback_does_not(
     assert gateway_settings.get_third_party_gateway_groups() == []
 
 
+def test_legacy_custom_save_updates_empty_canonical_groups(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many({"third_party_gateway_groups": "[]"})
+
+    save_custom_newapi_gateway(
+        base_url="https://legacy-save.example/v1", api_key="saved-secret"
+    )
+
+    effective = get_effective_newapi_config(model="some-model")
+    assert (effective.source, effective.base_url, effective.api_key) == (
+        "third_party", "https://legacy-save.example/v1", "saved-secret"
+    )
+    assert gateway_settings.get_model_gateway_settings()["custom_newapi_api_key"] == "saved-secret"
+
+
+def test_malformed_legacy_migration_cannot_resolve_preserved_custom_endpoint(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many({
+        "sub2api_groups": "{malformed",
+        "custom_newapi_base_url": "http://127.0.0.1:4000/v1",
+        "custom_newapi_api_key": "local-secret",
+        "model_gateway_mode": MODE_CUSTOM,
+    })
+
+    effective = get_effective_newapi_config(model="some-model")
+
+    assert effective.base_url == ""
+    assert effective.api_key == ""
+
+
 def test_migration_warning_is_non_secret_and_preserves_newapi_admin_data(
     monkeypatch, tmp_path
 ):
