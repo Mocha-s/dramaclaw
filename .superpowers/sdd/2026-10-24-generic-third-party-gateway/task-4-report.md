@@ -75,3 +75,25 @@ git diff --check
 - Added/retained Vietnamese third-party gateway translations and kept locale key parity green.
 - Kept NewAPI-specific initialization/channel-admin components out of the generic rendered path while retaining unrelated feature-model functionality.
 - Changed generated group fallback IDs from `sub2api-*` to `third-party-*`.
+
+## Keyboard double-toggle follow-up
+
+### RED
+Updated the disclosure regression to model native keyboard activation (Enter/Space keydown followed by the browser-synthesized click). Focused settings test failed before the production change: Enter performed the explicit keydown toggle and then the click toggle, leaving the group closed (`aria-expanded=false`).
+
+### GREEN
+Removed the manual `onKeyDown` handler from the disclosure button; native button keyboard semantics now produce the sole click, which updates the controlled state exactly once. Verification:
+
+```text
+corepack pnpm exec vitest run src/__tests__/components/settings/settings-dialog.test.tsx
+# 1 file passed, 36 tests passed
+
+corepack pnpm exec vitest run src/__tests__/components/settings/settings-dialog.test.tsx src/__tests__/lib/queries/model-gateway.test.tsx src/__tests__/i18n/locales-json.test.ts
+# 3 files passed, 54 tests passed
+
+corepack pnpm build:ce
+# completed successfully (existing large-chunk advisory only)
+
+git diff --check
+# clean
+```

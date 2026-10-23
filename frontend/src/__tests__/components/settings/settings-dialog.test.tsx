@@ -704,9 +704,11 @@ describe("SettingsDialog pages", () => {
     const one = screen.getByRole("button", { name: /One/ });
     const two = screen.getByRole("button", { name: /Two/ });
     fireEvent.keyDown(one, { key: "Enter", code: "Enter" });
+    fireEvent.click(one);
     expect(one).toHaveAttribute("aria-expanded", "true");
     expect(two).toHaveAttribute("aria-expanded", "false");
     fireEvent.keyDown(one, { key: " ", code: "Space" });
+    fireEvent.click(one);
     expect(one).toHaveAttribute("aria-expanded", "false");
   });
 

@@ -726,7 +726,7 @@ function ThirdPartyGroupCard({
   );
   return (
     <section role="group" className="rounded-md border border-border/70 p-3">
-      <button type="button" aria-expanded={expanded} onClick={() => onExpandedChange(!expanded)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onExpandedChange(!expanded); } }} className="w-full cursor-pointer text-left text-xs font-medium text-foreground">
+      <button type="button" aria-expanded={expanded} onClick={() => onExpandedChange(!expanded)} className="w-full cursor-pointer text-left text-xs font-medium text-foreground">
         {group.name || t("settings.modelConfig.thirdParty.newGroup")}
       </button>
       {expanded ? <div className="mt-3 space-y-3">
