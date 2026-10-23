@@ -34,8 +34,8 @@ Once installed:
 git clone https://github.com/dramaclaw/dramaclaw.git
 cd dramaclaw
 cp .env.example .env        # at minimum, change PROMPT_EXPORT_PASSWORD to a non-default value
-docker compose up -d --build    # builds api, web and the gateway from the two checkouts
-# no build? docker compose -f docker-compose.release.yml up -d   # pulls published images, no gateway clone needed
+docker compose up -d --build    # builds and starts api + web
+# published images? docker compose -f docker-compose.release.yml up -d
 ```
 
 After it's up, open **`http://localhost:8080`** in your browser (the app UI); the REST API is at `http://localhost:8780`. Go to Settings → Model Configuration → Official Channel, paste your DC key, save, and you're ready. For the full walkthrough see [Quickstart](quickstart.md); for start/stop/backup see the [Self-Hosting Handbook](../guides/self-hosting.md).
@@ -109,17 +109,14 @@ that isolates the current user's data directories through mounts.
 curl http://localhost:8780/api/v1/config   # a 200 response means it's working
 ```
 
-### 4. Gateway (only for Custom / Local + Official Hybrid mode)
+### 4. External gateway (Custom / Hybrid mode)
 
-For Custom or Hybrid mode, configure a reachable third-party gateway endpoint in Settings → Model Configuration.
-
-```bash
-mkdir -p state/newapi
-docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
-  -v "$PWD/state/newapi:/data" \
-```
-
-or build and run the gateway from the sibling `dramaclaw-gateway` checkout with `SQLITE_PATH` pointing at that file. See [Configuring Models](configuring-models.md) for the mode setup.
+The CE Compose stack does not bundle or provision a gateway. To use Custom or Hybrid,
+make an OpenAI-compatible or Gemini-compatible gateway reachable from the `api` container.
+In Settings → Model Configuration, add a group with its protocol, base URL, API key,
+capabilities, and upstream model mappings. Do not use `localhost` unless the gateway is
+running in the same container; for a host service, use an address reachable from Docker.
+See [Configuring Models](configuring-models.md) for details.
 
 ---
 

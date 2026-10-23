@@ -5,7 +5,7 @@
 
 > 在 macOS / Windows / Linux 上装好 DramaClaw CE 的运行环境。只想最快跑起来,直接看 [快速开始](quickstart.md);本篇覆盖各平台前置与本地开发两种装法。
 
-DramaClaw CE 是单机服务,**无需 PostgreSQL / Redis**。Docker 起 `api` + 内置 `newapi` 网关 + `web`;模型默认走 DramaClaw 官方网关 RelayClaw,在设置页切到自定义模式后走内置网关。本机不跑模型,普通机器即可。
+DramaClaw CE 是单机服务,**无需 PostgreSQL / Redis**。Docker 起 `api` + `web`;模型默认走 DramaClaw 官方网关 RelayClaw,也可以在设置页配置外部网关。本机不跑模型,普通机器即可。
 
 ## 两种装法选一
 
@@ -107,16 +107,7 @@ curl http://localhost:8780/api/v1/config   # 返回 200 即正常
 
 ### 4. 网关（仅自定义 / 本地 + 官方混合模式需要）
 
-官方模式什么都不用再跑。另外两种模式下，API 需要一个跑在 `127.0.0.1:3000` 的网关（`.env` 里 `NEWAPI_ADMIN_BASE_URL` 的默认值），且它的 SQLite 文件在 `./state/newapi/one-api.db`，设置页的「初始化」写的就是这个文件。用发布镜像并把这个目录挂进去：
-
-```bash
-mkdir -p state/newapi
-docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
-  -v "$PWD/state/newapi:/data" \
-  claymorelab/dramaclaw-gateway:v1.0.0-rc.24-dramaclaw.1
-```
-
-或者在旁边的 `dramaclaw-gateway` checkout 里构建并用 `SQLITE_PATH` 指向该文件来启动。模式配置见[配置模型供应商](configuring-models.md)。
+官方模式只需填写 DC key。自定义或混合模式请在设置中添加一个从 `api` 容器可访问的 OpenAI 兼容或 Gemini 兼容外部网关，填写协议、基础 URL、API key、能力和模型映射。模式配置见[配置模型供应商](configuring-models.md)。
 
 ---
 

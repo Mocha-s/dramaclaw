@@ -98,7 +98,7 @@ docker compose up -d
 
 It starts the DramaClaw API, web frontend, and bundled NewAPI. DramaClaw normally reaches NewAPI through the container network. The browser-facing host port may differ and does not need to replace the internal URL.
 
-The repository compose file enables the setup and channel-management features required by the settings UI. The bundled NewAPI SQLite database is stored in the Compose `newapi-data` volume. Its path is `/data/one-api.db` inside the NewAPI container, while the DramaClaw API manages it through the shared `/newapi-data/one-api.db` mount. Normally you do not enter a SQLite path or DSN manually.
+The settings UI stores generic gateway groups, credentials, capabilities, and model mappings in the CE settings database. No gateway SQLite path, admin URL, or provisioner configuration is required.
 
 ### 2. Initialize Local NewAPI
 

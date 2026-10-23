@@ -3,160 +3,81 @@
 
 # Self-Hosting Handbook (Docker)
 
-> Deploy, configure, upgrade, and back up DramaClaw CE with Docker.
+DramaClaw CE runs as two Compose services: `api` and `web`. It needs no PostgreSQL,
+Redis, or Celery; tasks run inline. Models use the official RelayClaw gateway by default,
+or a reachable external OpenAI-compatible or Gemini-compatible gateway configured in the
+app.
 
-CE ships three containers: `api` + `newapi` (the bundled DramaClaw gateway, idle until you switch to Custom or Local + Official Hybrid mode) + `web`, with **no PostgreSQL / no Redis / no Celery** (`ST_EDITION=ce`; tasks run inline within the process). Models go through the official DramaClaw gateway by default.
+## 1. Prerequisites and setup
 
-Two compose files ship in the repo: `docker-compose.yml` builds all three services from source (the default entry point — `docker compose up -d --build`), and `docker-compose.release.yml` only pulls published images (`docker compose -f docker-compose.release.yml up -d`). `docker-compose.yml` extends `docker-compose.release.yml` for the shared runtime definition (env / ports / volumes / healthchecks) and only adds `build:` plus local image names.
-
-## 1. Prerequisites
-
-- Docker + `docker compose`.
-- Docker Compose ≥ 2.24 (`docker compose version`).
-- Resources: ≥ 2 vCPU / 4GB recommended (excluding model inference, which runs through an external gateway).
-- A DC key (the default official gateway is RelayClaw, see <https://api.aigcdo.top>), or your own OpenAI-compatible gateway.
-
-## 2. Get the compose file and configuration
+- Docker with Compose >= 2.24.
+- At least 2 vCPU / 4 GB recommended.
+- A DC key, or an external OpenAI-compatible/Gemini-compatible gateway and its API key.
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
 cd dramaclaw
 cp .env.example .env
+docker compose up -d --build
 ```
 
-Two files, already set for you, no changes needed:
+For published images, use `docker compose -f docker-compose.release.yml up -d`.
+Both Compose files contain only `api` and `web`; source Compose builds those two images.
 
-| File | Mode | Command |
-|---|---|---|
-| `docker-compose.release.yml` | Image only — pulls published images, never builds | `docker compose -f docker-compose.release.yml up -d` |
+## 2. Configure a model gateway
 
-Key points shared by both (defined once in `docker-compose.release.yml`, reused by `docker-compose.yml` via `extends`):
+Open `http://localhost:8080` → Settings → Model Configuration.
 
-| Item | Value | Notes |
-|---|---|---|
-| Services | `api` + `newapi` + `web` | No PG/Redis; `newapi` is the bundled gateway |
-| Images (release) | `${DRAMACLAW_IMAGE_PREFIX:-claymorelab}/...` | Pulled from Docker Hub; set `DRAMACLAW_IMAGE_PREFIX` in `.env` to use the ACR mirror (pinned tags only) |
-| Versions (release) | `DRAMACLAW_VERSION` (api/web), `DRAMACLAW_GATEWAY_VERSION` | Defaults: `2.0.2` / the gateway tag baked into the file |
-| Port | `8780:8780` | REST API |
-| Enforced environment | `ST_EDITION=ce`, control-plane/Redis/Celery cleared | CE mode cannot be downgraded |
-| Data volume | `ce-data:/data` (output at `/data/output`) | Persists project databases, settings, and generated media |
+- **Official:** paste the DC key and save. No model mapping is required.
+- **Custom:** add one or more reachable external gateway groups. Select OpenAI-compatible
+  or Gemini-compatible protocol, enter that group's base URL and API key, choose its
+  capabilities, and map DramaClaw logical models to upstream model IDs.
+- **Hybrid:** configure the official key and at least one external group. Matching models
+  use the selected group; other requests use the official gateway.
 
-## 3. Configure `.env`
+Gateway groups and secrets are stored in the CE settings database, not in Compose.
+Never point a third-party group at the official endpoint or reuse the official key for it.
 
-> ⚠️ **Secret-type defaults (such as `PROMPT_EXPORT_PASSWORD=change_me`) must be changed.** For the model gateway, see [Model Configuration](#model-configuration).
-
-Groups (each item is commented inline in `.env.example`): local NewAPI provisioner, reference-media OSS relay (OSS_RELAY_*), Cognee knowledge graph, text/image/video/audio models, image and video base parameters, UI, and output directories. Channel selection, gateway address, and token are saved from the web UI to `settings.db`.
-
-### Model Configuration
-
-Recommended and alternative options (see [Configuring Model Providers](../getting-started/configuring-models.md) for details):
-
-- **A. DC official key (recommended)**: the default compose already uses the official gateway. After bringing the stack up, open `http://localhost:8080` → Settings → Model Configuration → Official Channel → paste your DC key and save to start using it, **no model mapping required**. Get a key at <https://api.aigcdo.top>.
-- **B. Local NewAPI**: the bundled gateway is already running; open Settings → Model Configuration → Custom, click Initialize, then configure upstream channels and model mappings from the Local NewAPI page.
-
-Local NewAPI must map DramaClaw's logical models to real upstream models. The reference-image feature needs `OSS_RELAY_AK/SK` (you can skip it for a text-only workflow).
-
-## 4. Start / Stop
+## 3. Start, stop, and data
 
 ```bash
-docker compose up -d --build                              # source build: start (builds on first run)
-docker compose -f docker-compose.release.yml up -d         # image mode: start (pulls images on first run)
-docker compose ps                                          # status
-docker compose logs -f api                                 # logs
-docker compose down                                        # stop (keeps the data volume)
+docker compose ps
+docker compose logs -f api
+docker compose down                 # stops services; keeps ce-data
 ```
 
-## 5. Where the data lives / Backup, restore & migrate
-
-- Project databases, settings, and generated media live in the named volume `ce-data` (`/data` inside the container); generated media is written to `/data/output`. Removing or rebuilding a container keeps this volume. Only an explicit `docker compose down -v` removes it.
-- Back up the data volume:
+Project databases, settings, and generated media are in the named `ce-data` volume at
+`/data`. Back it up before moving hosts or upgrading:
 
 ```bash
 docker run --rm -v dramaclaw-ce_ce-data:/data -v "$PWD":/backup alpine \
   tar czf /backup/ce-data-backup.tar.gz -C /data .
 ```
 
-(The volume name is prefixed with the compose project name; run `docker volume ls` to confirm the actual name.)
+An existing `newapi-data` Docker volume is **not** declared or mounted by current CE
+Compose. Compose changes do not delete or prune it. Keep it only for manual rollback or
+recovery of legacy data; it is outside the normal two-service deployment path.
 
-- Restore, or move to a new machine — copy `ce-data-backup.tar.gz` to the target host, then unpack it back into the data volume (the `-v` mount creates the volume if it does not exist yet):
-
-```bash
-docker run --rm -v dramaclaw-ce_ce-data:/data -v "$PWD":/backup alpine \
-  tar xzf /backup/ce-data-backup.tar.gz -C /data
-```
-
-Then bring the stack up as usual (`docker compose up -d`). The volume backup already includes generated media; back up `.env` separately.
-
-- The `newapi-data` volume holds the bundled gateway's SQLite database (upstream channels, keys, tokens) and is not regenerable — back it up the same way:
-
-```bash
-docker run --rm -v dramaclaw-ce_newapi-data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/newapi-data.tgz -C /data .
-```
-
-Restore it the same way, into the target volume:
-
-```bash
-docker run --rm -v dramaclaw-ce_newapi-data:/data -v "$PWD":/backup alpine \
-  tar xzf /backup/newapi-data.tgz -C /data
-```
-
-## 6. Upgrades
-
-Source build (both checkouts):
+## 4. Upgrades
 
 ```bash
 git pull
 docker compose up -d --build
 ```
 
+For release images, update `DRAMACLAW_VERSION`, then run `pull` and `up` with the release
+Compose file. The `ce-data` volume and legacy settings keys remain in place. Existing
+NewAPI data is not migrated into a bundled service; configure equivalent external groups
+manually when needed. Do not remove or prune `newapi-data` as part of an application
+upgrade.
 
-Image mode:
-
-```bash
-# edit .env: DRAMACLAW_VERSION=2.1.0 (and DRAMACLAW_GATEWAY_VERSION if the release notes say so)
-docker compose -f docker-compose.release.yml pull
-docker compose -f docker-compose.release.yml up -d
-```
-
-Your `.env` is never touched by the upgrade. The `ce-data` and `newapi-data` volumes are reused.
-
-The `DRAMACLAW_VERSION` / `DRAMACLAW_GATEWAY_VERSION` defaults baked into `docker-compose.release.yml` are kept current by the release packaging workflow: after each packaging run that publishes a compose bundle it opens a PR here pinning both defaults to that release's CE and gateway tags, so pulling `main` picks up the latest defaults even if your `.env` sets nothing.
-
-If an older release wrote media to `/app/output` inside the container, run the one-time migration **before** starting the new version (zip users: download `scripts/migrate_docker_output.py` from GitHub instead of `git pull`):
-
-```bash
-git pull
-docker compose exec -T api python - < scripts/migrate_docker_output.py
-docker compose up -d
-```
-
-On Windows PowerShell:
-
-```powershell
-git pull
-Get-Content scripts/migrate_docker_output.py -Raw | docker compose exec -T api python -
-docker compose up -d
-```
-
-The script copies only missing files, never overwrites or deletes the source, and backs up `projects.db` before updating project paths. Files that existed only in an already-removed container layer cannot be recovered from the data volume.
-
-### Upgrading from a previous checkout
-
-`docker-compose.selfhosted.yml` and `docker-compose.selfhosted.release.yml` have been removed. Use the two files above instead — service names and the `ce-data` / `newapi-data` volumes are unchanged, so existing data carries over as-is.
-
-| Before | Now |
-|---|---|
-| `docker compose -f docker-compose.release.yml up -d` | Same command; the gateway image is now `claymorelab/dramaclaw-gateway` |
-
-## 7. Troubleshooting
+## Troubleshooting
 
 | Symptom | What to check |
 |---|---|
-| Container won't start | `docker compose logs api`; usually the `.env` gateway address/key was not changed or is unreachable |
-| Port 8780 already in use | Change the left-hand value of `ports` in compose, e.g. `8888:8780` |
-| Model call errors | Confirm the gateway is reachable and that the `*_MODEL` names exist in the gateway backend |
+| Container will not start | `docker compose logs api` and `docker compose config --quiet` |
+| Port 8780 is busy | Change the host-side API port in Compose or use another project name |
+| Model call errors | Confirm the selected external base URL, API key, protocol, capabilities, and upstream model mapping |
+| External gateway unreachable | Ensure the URL is reachable from the `api` container and is not a loopback-only host address |
 
-## Related
-
-- [Quickstart](../getting-started/quickstart.md) ｜ [Configuring Model Providers](../getting-started/configuring-models.md)
+See [Quickstart](../getting-started/quickstart.md) and [Configuring Model Providers](../getting-started/configuring-models.md).

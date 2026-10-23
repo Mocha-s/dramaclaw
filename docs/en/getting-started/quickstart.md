@@ -15,7 +15,7 @@ DramaClaw is the Community Edition (CE): it runs on a single machine with no Pos
 ## Steps
 
 ```bash
-# 1. Get the code — DramaClaw and the bundled gateway, side by side
+# 1. Get the code
 git clone https://github.com/dramaclaw/dramaclaw.git
 cd dramaclaw
 
@@ -25,8 +25,8 @@ cp .env.example .env
 #    Configure the model channel and key in the web UI, not in .env.
 
 # 3. Start — brings up api / web
-docker compose up -d --build   # builds api, web (this checkout) and the gateway (../dramaclaw-gateway) from source
-# no build? docker compose -f docker-compose.release.yml up -d   # pulls published images, no gateway clone needed
+docker compose up -d --build   # builds and starts api / web
+# published images? docker compose -f docker-compose.release.yml up -d
 
 # 4. Confirm it's up
 docker compose ps   # api and web should be running

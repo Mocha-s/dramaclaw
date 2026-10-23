@@ -310,7 +310,7 @@ The edge isn't "more generation" — it's organizing the whole short-drama produ
 
 ## System Requirements
 
-DramaClaw runs all inference through an **OpenAI-compatible gateway** — either the official RelayClaw service or the bundled [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway) routing to providers you configure. Nothing runs models on your machine, so the local footprint is light. An ordinary laptop or a small VPS is enough.
+DramaClaw runs all inference through an **OpenAI-compatible gateway** — either the official RelayClaw service or an external third-party gateway configured in Settings. Nothing runs models on your machine, so the local footprint is light. An ordinary laptop or a small VPS is enough.
 
 | Item | Requirement |
 |---|---|
@@ -355,7 +355,7 @@ docker compose -f docker-compose.release.yml up -d
 
 Open the app at <http://localhost:8080>; the REST API is at <http://localhost:8780>. In **Settings → Model Config** pick one of:
 
-- **Official** — paste your DC key (get one at <https://api.aigcdo.top>); no model mapping needed. The bundled gateway stays idle.
+- **Official** — paste your DC key (get one at <https://api.aigcdo.top>); no model mapping needed.
 - **Custom** — configure one or more external third-party gateway groups.
 - **Hybrid** — use the official gateway alongside configured third-party groups.
 
@@ -392,18 +392,18 @@ first; do not rely on the stock Codex binary for gateway credentials.
 DramaClaw stays model-neutral — all text / image / video / audio models connect through an **OpenAI-compatible gateway**. Pick the mode in **Settings → Model Config**:
 
 - **Official (recommended)** — paste your DC key (get one at <https://api.aigcdo.top>), save, done. RelayClaw already ships every model mapping DramaClaw needs; nothing to configure.
-- **Custom** — one click initializes the bundled `dramaclaw-gateway`, then add your own provider channels (API keys, model IDs) in its admin UI. Every model DramaClaw calls goes through your channels.
-- **Local + Official Hybrid** — keep the official models for the main pipeline and add extra channels (for example a local ComfyUI video workflow) through the bundled gateway.
+- **Custom** — configure external third-party gateway groups (API keys, capabilities, and model IDs) in Settings.
+- **Hybrid** — keep official models for the main pipeline and add external third-party groups for additional capabilities.
 
 Full walkthrough in [Configuring Models](docs/en/getting-started/configuring-models.md).
 
 
-| Stage                | Official mode (RelayClaw)                          | Custom / Hybrid mode (bundled gateway)                    |
+| Stage                | Official mode (RelayClaw)                          | Custom / Hybrid mode (external groups)                    |
 |----------------------|----------------------------------------------------|-----------------------------------------------------------|
 | **Text / LLM**       | `DC-*-LLM` models, no mapping needed               | any OpenAI-compatible chat channel                        |
-| **Image**            | gpt-image · nano-banana                            | any image channel registered in the gateway              |
-| **Video**            | Seedance 1.0 / 1.5 / 2.0 series · happyhorse       | any DC-Media video adapter (Seedance, Hailuo, Kling, ComfyUI, …) |
-| **Voice-over**       | IndexTTS2                                          | any audio channel registered in the gateway              |
+| **Image**            | gpt-image · nano-banana                            | any image capability exposed by the external group       |
+| **Video**            | Seedance 1.0 / 1.5 / 2.0 series · happyhorse       | any video capability exposed by the external group       |
+| **Voice-over**       | IndexTTS2                                          | any audio capability exposed by the external group       |
 | **Story graph**      | Cognee (`DC-cognee-embedding`)                     | any embedding channel                                     |
 | **Task runtime**     | in-process inline (no Ray / Redis / Celery)        | same                                                      |
 | **Storage**          | local filesystem                                   | same                                                      |

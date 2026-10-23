@@ -10,12 +10,12 @@ DramaClaw 是社区版(CE),单机运行、无需 PostgreSQL / Redis。`docker co
 ## 前置
 
 - Docker(Desktop 或 Engine),支持 `docker compose`。
-- 一个 **DC key** —— 到 <https://api.aigcdo.top> 注册 / 购买；也可以改用 CE 随附的本地 NewAPI。
+- 一个 **DC key** —— 到 <https://api.aigcdo.top> 注册 / 购买；也可以在设置中配置外部兼容网关。
 
 ## 步骤
 
 ```bash
-# 1. 取得代码 —— DramaClaw 和内置网关并排放
+# 1. 取得代码
 git clone https://github.com/dramaclaw/dramaclaw.git
 cd dramaclaw
 
@@ -24,12 +24,12 @@ cp .env.example .env
 #    打开 .env,至少把 PROMPT_EXPORT_PASSWORD 改成非默认值。
 #    模型渠道和 key 在下一步通过网页配置，不写入 .env。
 
-# 3. 启动 —— 起 api / newapi / web 三个服务
-docker compose up -d --build   # 从源码构建 api、web（本仓）与网关（../dramaclaw-gateway）
-# 免构建：docker compose -f docker-compose.release.yml up -d   # 拉已发布镜像，不需要 clone 网关
+# 3. 启动 —— 起 api / web
+docker compose up -d --build   # 从源码构建并启动 api、web
+# 已发布镜像：docker compose -f docker-compose.release.yml up -d
 
 # 4. 确认已起
-docker compose ps   # api、newapi、web 均应 running
+docker compose ps   # api、web 均应 running
 ```
 
 ## 填入 DC key(必做一次)
@@ -42,7 +42,7 @@ docker compose ps   # api、newapi、web 均应 running
 
 ## 想使用自己的模型渠道？
 
-内置 NewAPI 随 `docker compose up -d` 一起启动。在「设置 → 模型配置 → 自定义」中初始化并填写上游 key、保存模型映射。地址和 runtime token 会写入本机 `settings.db`，不写入 `.env`。详见[配置模型供应商](configuring-models.md)。
+在「设置 → 模型配置 → 自定义」中添加可从 `api` 容器访问的 OpenAI 兼容或 Gemini 兼容网关组，填写协议、基础 URL、API key、能力和上游模型映射。详见[配置模型供应商](configuring-models.md)。
 
 ## 下一步
 

@@ -94,7 +94,7 @@ docker compose up -d
 
 它会启动 DramaClaw API、Web 和内置 NewAPI。默认情况下 DramaClaw 在容器网络中访问 NewAPI；浏览器访问的宿主机端口可以不同，不需要把内部地址改成浏览器地址。
 
-仓库编排已经启用设置页所需的初始化和渠道管理能力。内置 NewAPI 的 SQLite 数据保存在 Compose 的 `newapi-data` 卷中；NewAPI 容器内路径是 `/data/one-api.db`，DramaClaw API 通过共享卷中的 `/newapi-data/one-api.db` 管理它。通常不需要手动填写 SQLite 路径或数据库 DSN。
+设置页会把通用网关组、凭据、能力和模型映射保存到 CE 设置数据库。不需要配置网关 SQLite 路径、管理地址或 provisioner。
 
 ### 2. 初始化本地 NewAPI
 

@@ -310,7 +310,7 @@ Lợi thế không phải là "sinh nội dung nhiều hơn" — mà là tổ ch
 
 ## Yêu cầu hệ thống
 
-DramaClaw chạy toàn bộ suy luận qua một **gateway tương thích OpenAI** — hoặc dịch vụ RelayClaw chính thức, hoặc [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway) đi kèm để định tuyến tới các nhà cung cấp bạn cấu hình. Không có model nào chạy trên máy của bạn, nên tài nguyên cục bộ cần rất ít. Một chiếc laptop bình thường hoặc một VPS nhỏ là đủ.
+DramaClaw chạy toàn bộ suy luận qua một **gateway tương thích OpenAI** — hoặc dịch vụ RelayClaw chính thức, hoặc gateway bên ngoài do bạn cấu hình. Không có model nào chạy trên máy của bạn, nên tài nguyên cục bộ cần rất ít. Một chiếc laptop bình thường hoặc một VPS nhỏ là đủ.
 
 | Hạng mục | Yêu cầu |
 |---|---|
@@ -333,7 +333,7 @@ DramaClaw chạy toàn bộ suy luận qua một **gateway tương thích OpenAI
 
 Mỗi GitHub Release đều phát hành image đa kiến trúc (amd64/arm64) lên Docker Hub.
 
-**Build từ mã nguồn (mặc định)** — clone DramaClaw và [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway) đi kèm cạnh nhau; `docker compose up -d --build` sẽ build cả ba dịch vụ từ hai checkout đó.
+**Build từ mã nguồn (mặc định)** — clone DramaClaw; `docker compose up -d --build` build và khởi động `api` và `web`.
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
@@ -342,7 +342,7 @@ cd dramaclaw
 cp .env.example .env
 # Sửa .env — đặt PROMPT_EXPORT_PASSWORD thành giá trị khác mặc định.
 
-docker compose up -d --build   # build và khởi động ba dịch vụ: api / newapi (gateway đi kèm) / web
+docker compose up -d --build   # build và khởi động api / web
 ```
 
 
@@ -354,13 +354,13 @@ docker compose -f docker-compose.release.yml up -d
 
 Mở ứng dụng tại <http://localhost:8080>; REST API ở <http://localhost:8780>. Trong **Settings → Model Config** chọn một trong:
 
-- **Official** — dán DC key của bạn (lấy tại <https://api.aigcdo.top>); không cần ánh xạ model. Gateway đi kèm ở trạng thái chờ.
-- **Custom** — một cú bấm khởi tạo gateway `newapi` đi kèm; sau đó thêm các kênh upstream của riêng bạn.
-- **Local + Official Hybrid** — official cho pipeline chính, gateway đi kèm cho các kênh bổ sung.
+- **Official** — dán DC key của bạn (lấy tại <https://api.aigcdo.top>); không cần ánh xạ model.
+- **Custom** — cấu hình các nhóm gateway bên thứ ba có thể truy cập từ `api`.
+- **Hybrid** — dùng gateway official cùng các nhóm bên thứ ba đã cấu hình.
 
 Các bước đầy đủ trong [Bắt đầu nhanh](../docs/en/getting-started/quickstart.md).
 
-Ghim phiên bản hoặc đổi registry trong `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_GATEWAY_VERSION`, `DRAMACLAW_IMAGE_PREFIX`) — các giá trị này chỉ áp dụng cho chế độ image (`docker-compose.release.yml`). Trung Quốc đại lục: đặt `DRAMACLAW_IMAGE_PREFIX=claymore-registry.cn-chengdu.cr.aliyuncs.com/dramaclaw` và ghim cả hai phiên bản (mirror ACR chỉ có các tag đã ghim).
+Ghim phiên bản hoặc đổi registry trong `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_IMAGE_PREFIX`) — chỉ áp dụng cho chế độ image.
 
 
 ### Phát triển cục bộ (uv + Python 3.11+)
@@ -377,46 +377,18 @@ uv run novelvideo api --port 8780   # khởi động REST API (CE mặc định 
 
 Frontend ở một terminal thứ hai: `cd frontend && pnpm install && pnpm dev`.
 
-**Gateway.** Ở chế độ **Official** bạn không cần gì thêm. Với **Custom** hoặc **Local + Official Hybrid**, API cần một gateway ở `127.0.0.1:3000` với file SQLite là `./state/newapi/one-api.db` (đó là nơi nút "Initialize" trong Settings ghi vào; `NEWAPI_ADMIN_BASE_URL` trong `.env` đã trỏ sẵn tới đó). Hoặc chạy image đã phát hành với thư mục đó được mount:
-
-```bash
-mkdir -p state/newapi
-docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
-  -v "$PWD/state/newapi:/data" \
-  claymorelab/dramaclaw-gateway:v1.0.0-rc.24-dramaclaw.1
-```
-
-hoặc chạy gateway từ mã nguồn trong checkout kế bên (`make dev-api` / `make dev-web` trong [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway#develop), hoặc `go build` rồi khởi động binary với `SQLITE_PATH=<đường dẫn tới>/dramaclaw/state/newapi/one-api.db`).
-
-<br/>
+**Gateway.** Configure an external OpenAI-compatible or Gemini-compatible gateway in Settings with a base URL, key, capabilities, and model mappings reachable from the `api` container.
 
 ## Model & nhà cung cấp được hỗ trợ
 
 DramaClaw giữ trung lập về model — mọi model text / ảnh / video / âm thanh đều kết nối qua một **gateway tương thích OpenAI**. Chọn chế độ trong **Settings → Model Config**:
 
 - **Official (khuyến nghị)** — dán DC key của bạn (lấy tại <https://api.aigcdo.top>), lưu, xong. RelayClaw đã có sẵn mọi ánh xạ model mà DramaClaw cần; không phải cấu hình gì.
-- **Custom** — một cú bấm khởi tạo `dramaclaw-gateway` đi kèm, rồi thêm các kênh nhà cung cấp của riêng bạn (API key, model ID) trong giao diện quản trị của nó. Mọi model DramaClaw gọi đều đi qua kênh của bạn.
+- **Custom** — cấu hình nhóm gateway bên thứ ba bên ngoài (API key, model ID và capabilities) trong Settings.
 - **Local + Official Hybrid** — giữ các model official cho pipeline chính và thêm các kênh bổ sung (ví dụ một workflow video ComfyUI cục bộ) qua gateway đi kèm.
 
 Hướng dẫn đầy đủ trong [Cấu hình model](../docs/en/getting-started/configuring-models.md).
 
-### Gateway đi kèm: dramaclaw-gateway
-
-Dịch vụ `newapi` trong `docker-compose.yml` là [**dramaclaw-gateway**](https://github.com/dramaclaw/dramaclaw-gateway), fork riêng của DramaClaw từ [New API](https://github.com/QuantumNous/new-api). Nó hiểu giao thức **DC-Media** mà DramaClaw dùng cho ảnh / video / âm thanh (vai trò media, tham chiếu, khung hình đầu / cuối) và chuyển đổi mỗi yêu cầu sang API gốc của nhà cung cấp. Image: [`claymorelab/dramaclaw-gateway`](https://hub.docker.com/r/claymorelab/dramaclaw-gateway) trên Docker Hub, ghim bởi `DRAMACLAW_GATEWAY_VERSION` trong `.env`. Nó ở trạng thái chờ trong chế độ Official và chỉ được dùng khi bạn chuyển sang **Custom** hoặc **Local + Official Hybrid**.
-
-Các adapter nhà cung cấp có sẵn trong gateway hiện nay (xem [ma trận hỗ trợ kênh](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/docs/providers/en/README.md) để biết trạng thái xác minh): ComfyUI · MiniMax / Hailuo · VolcEngine Doubao / Seedance · fal.ai · Alibaba · Kling · Jimeng · Vertex AI · Gemini · OpenAI / Sora · Suno. Muốn thêm nhà cung cấp khác? Gateway có [trình tạo scaffold và hướng dẫn đóng góp](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/CONTRIBUTING.md).
-
-| Giai đoạn            | Chế độ Official (RelayClaw)                        | Chế độ Custom / Hybrid (gateway đi kèm)                   |
-|----------------------|----------------------------------------------------|-----------------------------------------------------------|
-| **Text / LLM**       | các model `DC-*-LLM`, không cần ánh xạ             | bất kỳ kênh chat tương thích OpenAI nào                   |
-| **Ảnh**              | gpt-image · nano-banana                            | bất kỳ kênh ảnh nào đăng ký trong gateway                 |
-| **Video**            | dòng Seedance 1.0 / 1.5 / 2.0 · happyhorse         | bất kỳ adapter video DC-Media nào (Seedance, Hailuo, Kling, ComfyUI, …) |
-| **Lồng tiếng**       | IndexTTS2                                          | bất kỳ kênh âm thanh nào đăng ký trong gateway            |
-| **Story graph**      | Cognee (`DC-cognee-embedding`)                     | bất kỳ kênh embedding nào                                 |
-| **Runtime tác vụ**   | inline trong tiến trình (không Ray / Redis / Celery) | như trên                                                |
-| **Lưu trữ**          | hệ thống file cục bộ                               | như trên                                                  |
-
-<br/>
 
 ## <a name="documentation"></a>Tài liệu
 

@@ -310,7 +310,7 @@ Xia Director แปลงบรีฟสร้างสรรค์ด้วย�
 
 ## ความต้องการของระบบ
 
-DramaClaw รัน inference ทั้งหมดผ่าน **gateway ที่เข้ากันได้กับ OpenAI** — ไม่ว่าจะเป็นบริการ RelayClaw อย่างเป็นทางการ หรือ [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway) ที่มาพร้อมกันซึ่งส่งต่อไปยังผู้ให้บริการที่คุณกำหนด ไม่มี model ใดรันบนเครื่องของคุณ ดังนั้นการใช้ทรัพยากรในเครื่องจึงเบา แล็ปท็อปธรรมดาหรือ VPS ขนาดเล็กก็เพียงพอ
+DramaClaw รัน inference ทั้งหมดผ่าน **gateway ที่เข้ากันได้กับ OpenAI** — ไม่ว่าจะเป็นบริการ RelayClaw อย่างเป็นทางการ หรือ [gateway ภายนอกที่คุณกำหนด ไม่มี model ใดรันบนเครื่องของคุณ ดังนั้นการใช้ทรัพยากรในเครื่องจึงเบา แล็ปท็อปธรรมดาหรือ VPS ขนาดเล็กก็เพียงพอ
 
 | รายการ | ความต้องการ |
 |---|---|
@@ -333,7 +333,7 @@ DramaClaw รัน inference ทั้งหมดผ่าน **gateway ที
 
 ทุก GitHub Release เผยแพร่ image แบบ multi-arch (amd64/arm64) ไปยัง Docker Hub
 
-**สร้างจากซอร์ส (ค่าเริ่มต้น)** — clone DramaClaw และ [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway) ที่มาพร้อมกันไว้ข้างกัน; `docker compose up -d --build` จะสร้างทั้งสามบริการจาก checkout สองชุดนั้น
+**สร้างจากซอร์ส (ค่าเริ่มต้น)** — clone DramaClaw; `docker compose up -d --build` จะสร้างและเริ่ม `api` กับ `web`
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
@@ -342,7 +342,7 @@ cd dramaclaw
 cp .env.example .env
 # Edit .env — set PROMPT_EXPORT_PASSWORD to a non-default value.
 
-docker compose up -d --build   # builds and starts three services: api / newapi (bundled gateway) / web
+docker compose up -d --build   # builds and starts api / web
 ```
 
 
@@ -354,13 +354,13 @@ docker compose -f docker-compose.release.yml up -d
 
 เปิดแอปที่ <http://localhost:8080>; REST API อยู่ที่ <http://localhost:8780> ใน **Settings → Model Config** เลือกหนึ่งอย่าง:
 
-- **Official** — วาง DC key ของคุณ (รับได้ที่ <https://api.aigcdo.top>); ไม่ต้อง map model gateway ที่มาพร้อมกันจะอยู่เฉย ๆ
-- **Custom** — คลิกเดียวเพื่อเริ่มต้น gateway `newapi` ที่มาพร้อมกัน; จากนั้นเพิ่ม upstream channel ของคุณเอง
-- **Local + Official Hybrid** — ใช้ official สำหรับสายการผลิตหลัก ใช้ gateway ที่มาพร้อมกันสำหรับ channel เพิ่มเติม
+- **Official** — วาง DC key ของคุณ (รับได้ที่ <https://api.aigcdo.top>); ไม่ต้อง map model
+- **Custom** — ตั้งค่ากลุ่ม gateway ภายนอกที่ `api` เข้าถึงได้
+- **Hybrid** — ใช้ gateway official ร่วมกับกลุ่ม gateway ภายนอกที่ตั้งค่าไว้
 
 ขั้นตอนฉบับเต็มอยู่ใน [เริ่มต้นอย่างรวดเร็ว](../docs/en/getting-started/quickstart.md)
 
-ปักหมุดเวอร์ชันหรือสลับ registry ได้ใน `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_GATEWAY_VERSION`, `DRAMACLAW_IMAGE_PREFIX`) — ค่าเหล่านี้มีผลเฉพาะโหมด image (`docker-compose.release.yml`) เท่านั้น จีนแผ่นดินใหญ่: ตั้ง `DRAMACLAW_IMAGE_PREFIX=claymore-registry.cn-chengdu.cr.aliyuncs.com/dramaclaw` และปักหมุดทั้งสองเวอร์ชัน (mirror ของ ACR มีเฉพาะ tag ที่ปักหมุดไว้)
+ปักหมุดเวอร์ชันหรือสลับ registry ได้ใน `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_IMAGE_PREFIX`) — มีผลเฉพาะโหมด image
 
 
 ### การพัฒนาในเครื่อง (uv + Python 3.11+)
@@ -377,46 +377,18 @@ uv run novelvideo api --port 8780   # start the REST API (CE defaults to inline 
 
 รัน frontend ในเทอร์มินัลที่สอง: `cd frontend && pnpm install && pnpm dev`
 
-**Gateway** ในโหมด **Official** คุณไม่ต้องทำอะไรเพิ่ม สำหรับ **Custom** หรือ **Local + Official Hybrid** API คาดหวัง gateway ที่ `127.0.0.1:3000` ซึ่งมีไฟล์ SQLite อยู่ที่ `./state/newapi/one-api.db` (นั่นคือสิ่งที่ปุ่ม "Initialize" ใน Settings เขียนลงไป; `NEWAPI_ADMIN_BASE_URL` ใน `.env` ชี้ไปที่นั่นอยู่แล้ว) จะรัน image ที่เผยแพร่แล้วโดย mount ไดเรกทอรีนั้น:
-
-```bash
-mkdir -p state/newapi
-docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
-  -v "$PWD/state/newapi:/data" \
-  claymorelab/dramaclaw-gateway:v1.0.0-rc.24-dramaclaw.1
-```
-
-หรือรัน gateway จากซอร์สใน checkout ข้างเคียงก็ได้ (`make dev-api` / `make dev-web` ใน [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway#develop) หรือ `go build` แล้วสตาร์ท binary ด้วย `SQLITE_PATH=<path to>/dramaclaw/state/newapi/one-api.db`)
-
-<br/>
+**Gateway.** Configure an external OpenAI-compatible or Gemini-compatible gateway in Settings with a base URL, key, capabilities, and model mappings reachable from the `api` container.
 
 ## Model และผู้ให้บริการที่รองรับ
 
 DramaClaw เป็นกลางเรื่อง model — model ข้อความ / ภาพ / วิดีโอ / เสียงทั้งหมดเชื่อมต่อผ่าน **gateway ที่เข้ากันได้กับ OpenAI** เลือกโหมดใน **Settings → Model Config**:
 
 - **Official (แนะนำ)** — วาง DC key ของคุณ (รับได้ที่ <https://api.aigcdo.top>) บันทึก เสร็จ RelayClaw มี model mapping ทุกตัวที่ DramaClaw ต้องการอยู่แล้ว; ไม่ต้องตั้งค่าอะไรเลย
-- **Custom** — คลิกเดียวเพื่อเริ่มต้น `dramaclaw-gateway` ที่มาพร้อมกัน จากนั้นเพิ่ม channel ของผู้ให้บริการของคุณเอง (API key, model ID) ใน admin UI ของมัน ทุก model ที่ DramaClaw เรียกจะผ่าน channel ของคุณ
+- **Custom** — ตั้งค่ากลุ่ม gateway ภายนอก (API key, capabilities และ model ID) ใน Settings
 - **Local + Official Hybrid** — ใช้ model official สำหรับสายการผลิตหลัก และเพิ่ม channel อื่น (เช่นเวิร์กโฟลว์วิดีโอ ComfyUI ในเครื่อง) ผ่าน gateway ที่มาพร้อมกัน
 
 คำแนะนำฉบับเต็มอยู่ใน [การตั้งค่า Model](../docs/en/getting-started/configuring-models.md)
 
-### gateway ที่มาพร้อมกัน: dramaclaw-gateway
-
-บริการ `newapi` ใน `docker-compose.yml` คือ [**dramaclaw-gateway**](https://github.com/dramaclaw/dramaclaw-gateway) fork ของ [New API](https://github.com/QuantumNous/new-api) ที่ DramaClaw ดูแลเอง มันพูดสัญญา **DC-Media** ที่ DramaClaw ใช้สำหรับภาพ / วิดีโอ / เสียง (media role, ภาพอ้างอิง, เฟรมแรก / เฟรมสุดท้าย) และแปลงแต่ละคำขอเป็น API ดั้งเดิมของผู้ให้บริการ image: [`claymorelab/dramaclaw-gateway`](https://hub.docker.com/r/claymorelab/dramaclaw-gateway) บน Docker Hub ปักหมุดด้วย `DRAMACLAW_GATEWAY_VERSION` ใน `.env` มันอยู่เฉย ๆ ในโหมด Official และจะถูกใช้ก็ต่อเมื่อคุณสลับไป **Custom** หรือ **Local + Official Hybrid**
-
-adapter ของผู้ให้บริการที่มากับ gateway ในวันนี้ (ดูสถานะการตรวจสอบใน [ตารางรองรับ channel](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/docs/providers/en/README.md)): ComfyUI · MiniMax / Hailuo · VolcEngine Doubao / Seedance · fal.ai · Alibaba · Kling · Jimeng · Vertex AI · Gemini · OpenAI / Sora · Suno อยากได้ผู้ให้บริการอื่น? gateway มี [scaffold generator และคู่มือการมีส่วนร่วม](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/CONTRIBUTING.md)
-
-| ขั้นตอน              | โหมด Official (RelayClaw)                          | โหมด Custom / Hybrid (gateway ที่มาพร้อมกัน)                    |
-|----------------------|----------------------------------------------------|-----------------------------------------------------------|
-| **ข้อความ / LLM**       | model `DC-*-LLM` ไม่ต้อง map               | chat channel ใดก็ได้ที่เข้ากันได้กับ OpenAI                        |
-| **ภาพ**            | gpt-image · nano-banana                            | image channel ใดก็ได้ที่ลงทะเบียนใน gateway              |
-| **วิดีโอ**            | Seedance 1.0 / 1.5 / 2.0 series · happyhorse       | DC-Media video adapter ใดก็ได้ (Seedance, Hailuo, Kling, ComfyUI, …) |
-| **เสียงพากย์**       | IndexTTS2                                          | audio channel ใดก็ได้ที่ลงทะเบียนใน gateway              |
-| **Story graph**      | Cognee (`DC-cognee-embedding`)                     | embedding channel ใดก็ได้                                     |
-| **Task runtime**     | inline ใน process (ไม่มี Ray / Redis / Celery)        | เหมือนกัน                                                      |
-| **Storage**          | ระบบไฟล์ในเครื่อง                                   | เหมือนกัน                                                      |
-
-<br/>
 
 ## <a name="documentation"></a>เอกสาร
 

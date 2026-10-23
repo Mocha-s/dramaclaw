@@ -309,7 +309,7 @@ DramaClaw 是一条**源码可见的 AI 漫剧工业化生产线** —— 而且
 
 ## 系统要求
 
-DramaClaw 的所有模型推理都走 **OpenAI 兼容网关** —— 要么是官方 RelayClaw 服务，要么是内置的 [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway) 转发到你自己配置的模型供应商。本机不跑模型，所以本地占用很低，一台普通笔记本或小 VPS 就够用。
+DramaClaw 的所有模型推理都走 **OpenAI 兼容网关** —— 使用官方 RelayClaw 或在设置中配置的外部第三方网关。本机不跑模型，所以本地占用很低，一台普通笔记本或小 VPS 就够用。
 
 | 项目 | 要求 |
 |---|---|
@@ -332,7 +332,7 @@ DramaClaw 的所有模型推理都走 **OpenAI 兼容网关** —— 要么是�
 
 每次 GitHub Release 都会发布 amd64/arm64 多架构镜像到 Docker Hub。
 
-**源码构建（默认）** —— 把 DramaClaw 和内置的 [dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway) 并排 clone，`docker compose up -d --build` 用这两个 checkout 构建全部三个服务。
+**源码构建（默认）** —— clone DramaClaw，`docker compose up -d --build` 构建并启动 `api` 和 `web`。
 
 ```bash
 git clone https://github.com/dramaclaw/dramaclaw.git
@@ -341,7 +341,7 @@ cd dramaclaw
 cp .env.example .env
 # 编辑 .env —— 把 PROMPT_EXPORT_PASSWORD 改成非默认值。
 
-docker compose up -d --build   # 构建并起三个服务：api / newapi（内置网关）/ web
+docker compose up -d --build   # 构建并启动 api / web
 ```
 
 
@@ -353,13 +353,13 @@ docker compose -f docker-compose.release.yml up -d
 
 浏览器打开 <http://localhost:8080>；REST API 在 <http://localhost:8780>。到**设置 → 模型配置**三选一：
 
-- **官方** —— 粘贴 DC key（到 <https://api.aigcdo.top> 获取），无需映射模型，内置网关闲置待命。
-- **自定义** —— 一键初始化内置 `newapi` 网关，再自行配上游渠道。
-- **本地 + 官方混合** —— 主链路走官方，额外渠道走内置网关。
+- **官方** —— 粘贴 DC key（到 <https://api.aigcdo.top> 获取），无需映射模型。
+- **自定义** —— 在设置中配置可访问的第三方网关组。
+- **混合** —— 官方网关与已配置的第三方网关组共同使用。
 
 完整步骤见 [快速开始](../docs/zh/getting-started/quickstart.md)。
 
-版本与镜像源在 `.env` 里钉：`DRAMACLAW_VERSION`、`DRAMACLAW_GATEWAY_VERSION`、`DRAMACLAW_IMAGE_PREFIX`——仅镜像模式（`docker-compose.release.yml`）生效。国内拉取慢：设 `DRAMACLAW_IMAGE_PREFIX=claymore-registry.cn-chengdu.cr.aliyuncs.com/dramaclaw` 并同时钉两个版本（ACR 镜像只有钉 tag，没有 latest）。
+版本与镜像源在 `.env` 里配置：`DRAMACLAW_VERSION`、`DRAMACLAW_IMAGE_PREFIX`——仅镜像模式生效。
 
 
 ### 本地开发（uv + Python 3.11+）
@@ -376,16 +376,7 @@ uv run novelvideo api --port 8780   # 启动 REST API（CE 默认 inline 任务�
 
 另开一个终端起前端：`cd frontend && pnpm install && pnpm dev`。
 
-**网关。** **官方**模式什么都不用再跑。**自定义**或**本地 + 官方混合**模式下，API 需要一个跑在 `127.0.0.1:3000` 的网关，且它的 SQLite 文件在 `./state/newapi/one-api.db`（设置页的「初始化」写的就是这个文件；`.env` 里的 `NEWAPI_ADMIN_BASE_URL` 默认已指向这个地址）。要么用发布镜像并把这个目录挂进去：
-
-```bash
-mkdir -p state/newapi
-docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
-  -v "$PWD/state/newapi:/data" \
-  claymorelab/dramaclaw-gateway:v1.0.0-rc.24-dramaclaw.1
-```
-
-要么在旁边的 checkout 里从源码跑网关（[dramaclaw-gateway](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/README.zh_CN.md#开发) 的 `make dev-api` / `make dev-web`，或者 `go build` 后用 `SQLITE_PATH=<路径>/dramaclaw/state/newapi/one-api.db` 启动二进制）。
+**网关。** 官方模式粘贴 DC key 即可。自定义或混合模式请在设置中添加可从 `api` 容器访问的 OpenAI 兼容或 Gemini 兼容网关，填写基础 URL、密钥和模型映射。
 
 <br/>
 
@@ -394,28 +385,11 @@ docker run -d --name dramaclaw-gateway -p 127.0.0.1:3000:3000 \
 DramaClaw 对模型侧保持中立 —— 所有文本 / 图片 / 视频 / 音频模型都经一个 **OpenAI 兼容网关**接入。到**设置 → 模型配置**三选一：
 
 - **官方（推荐）** —— 粘贴 DC key（到 <https://api.aigcdo.top> 获取）保存即用。RelayClaw 已经配好 DramaClaw 需要的全部模型映射，什么都不用调。
-- **自定义** —— 一键初始化内置的 `dramaclaw-gateway`，然后在它的管理页里添加你自己的供应商渠道（API key、模型 ID）。DramaClaw 调用的每一个模型都走你的渠道。
+- **自定义** —— 在设置中配置可访问的外部第三方网关组（API key、模型 ID 和能力）。
 - **本地 + 官方混合** —— 主链路继续用官方模型，额外渠道（比如本地 ComfyUI 视频工作流）走内置网关。
 
 完整步骤见 [配置模型供应商](../docs/zh/getting-started/configuring-models.md)。
 
-### 内置网关：dramaclaw-gateway
-
-`docker-compose.yml` 里的 `newapi` 服务就是 [**dramaclaw-gateway**](https://github.com/dramaclaw/dramaclaw-gateway)，DramaClaw 自己维护的 [New API](https://github.com/QuantumNous/new-api) 分支。它实现了 DramaClaw 图片 / 视频 / 音频所用的 **DC-Media** 协议（媒体角色、参考图、首尾帧），并把每个请求转换成各供应商的原生接口。镜像在 Docker Hub：[`claymorelab/dramaclaw-gateway`](https://hub.docker.com/r/claymorelab/dramaclaw-gateway)，版本由 `.env` 里的 `DRAMACLAW_GATEWAY_VERSION` 钉住。官方模式下它只是常驻待命，切到**自定义**或**本地 + 官方混合**后才会被使用。
-
-网关目前自带的供应商适配器（验证状态见 [渠道支持矩阵](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/docs/providers/README.md)）：ComfyUI · MiniMax / 海螺 · 火山引擎豆包 / Seedance · fal.ai · 阿里 · 可灵 · 即梦 · Vertex AI · Gemini · OpenAI / Sora · Suno。想接别的供应商？网关提供了[适配器脚手架和贡献指南](https://github.com/dramaclaw/dramaclaw-gateway/blob/main/CONTRIBUTING.zh_CN.md)。
-
-| 环节              | 官方模式（RelayClaw）                          | 自定义 / 混合模式（内置网关）                            |
-|-------------------|------------------------------------------------|----------------------------------------------------------|
-| **文本 / 大模型** | `DC-*-LLM` 系列，无需映射                       | 任意 OpenAI 兼容对话渠道                                  |
-| **图像**          | gpt-image · nano-banana                        | 网关里注册的任意图片渠道                                  |
-| **视频**          | Seedance 1.0 / 1.5 / 2.0 系列 · happyhorse     | 任意 DC-Media 视频适配器（Seedance、海螺、可灵、ComfyUI 等） |
-| **配音**          | IndexTTS2                                      | 网关里注册的任意音频渠道                                  |
-| **故事图谱**      | Cognee（`DC-cognee-embedding`）                | 任意 embedding 渠道                                       |
-| **任务运行时**    | 进程内 inline（无需 Ray / Redis / Celery）      | 同左                                                      |
-| **存储**          | 本地文件系统                                   | 同左                                                      |
-
-<br/>
 
 ## <a name="documentation"></a>文档
 
