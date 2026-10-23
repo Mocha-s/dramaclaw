@@ -41,14 +41,6 @@ from novelvideo.model_gateway_settings import (
     get_sub2api_groups,
     save_third_party_gateway_groups,
     get_third_party_gateway_groups,
-    save_newapi_database_config,
-    save_newapi_embedding_model_config,
-    save_newapi_media_model_mappings,
-    get_newapi_media_model_mappings,
-    get_newapi_embedding_model_config,
-    save_newapi_provider_channels,
-    get_newapi_provider_channel,
-    get_newapi_provider_channels,
     set_model_gateway_mode,
     set_custom_llm_mode,
 )
@@ -725,12 +717,33 @@ async def save_third_party_gateway_config(body: Sub2ApiGatewayBody) -> dict[str,
         group["apiKey"] = api_key
         # Image edit request shape is protocol-derived for new/rewritten groups;
         # unchanged legacy group data keeps its hidden compatibility value.
-        if not previous or base_url != str(previous.get("baseUrl") or "").rstrip("/"):
-            group["modelMappings"] = [
-                {key: value for key, value in mapping.items() if key != "imageEditFormat"}
-                for mapping in group.get("modelMappings", [])
-                if isinstance(mapping, dict)
-            ]
+        previous_mappings = previous.get("modelMappings", []) if previous else []
+        previous_by_pattern = {
+            str(mapping.get("requestPattern") or ""): mapping
+            for mapping in previous_mappings
+            if isinstance(mapping, dict)
+        }
+        preserve_legacy_shape = bool(
+            previous
+            and base_url == str(previous.get("baseUrl") or "").rstrip("/")
+            and protocol == str(previous.get("protocol") or "").lower()
+        )
+        rewritten_mappings = []
+        for mapping in group.get("modelMappings", []):
+            if not isinstance(mapping, dict):
+                continue
+            previous_mapping = previous_by_pattern.get(str(mapping.get("requestPattern") or ""))
+            unchanged = (
+                preserve_legacy_shape
+                and previous_mapping is not None
+                and mapping.get("upstreamModel") == previous_mapping.get("upstreamModel")
+            )
+            rewritten_mappings.append(
+                dict(mapping)
+                if unchanged
+                else {key: value for key, value in mapping.items() if key != "imageEditFormat"}
+            )
+        group["modelMappings"] = rewritten_mappings
         groups.append(group)
     try:
         save_third_party_gateway_groups(groups, activate=False)
@@ -797,14 +810,14 @@ async def fetch_third_party_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
             for _page in range(10):
                 response = client.get(endpoint, headers=headers, params=params)
                 if response.status_code >= 400:
-                    raise HTTPException(status_code=502, detail="Sub2API rejected model discovery")
+                    raise HTTPException(status_code=502, detail="Third-party gateway rejected model discovery")
                 try:
                     payload = response.json()
                 except ValueError:
-                    raise HTTPException(status_code=502, detail="Sub2API returned an invalid model list") from None
+                    raise HTTPException(status_code=502, detail="Third-party gateway returned an invalid model list") from None
                 raw_models = payload.get("data") if protocol == "openai" else payload.get("models")
                 if not isinstance(raw_models, list):
-                    raise HTTPException(status_code=502, detail="Sub2API returned an invalid model list")
+                    raise HTTPException(status_code=502, detail="Third-party gateway returned an invalid model list")
                 for item in raw_models:
                     if not isinstance(item, dict):
                         continue
@@ -830,7 +843,7 @@ async def fetch_third_party_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
     except HTTPException:
         raise
     except httpx.HTTPError:
-        raise HTTPException(status_code=502, detail="Could not reach Sub2API model discovery") from None
+        raise HTTPException(status_code=502, detail="Could not reach third-party gateway model discovery") from None
     return {"ok": True, "data": {"models": models}}
 
 

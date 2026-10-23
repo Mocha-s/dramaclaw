@@ -222,6 +222,76 @@ def test_custom_migration_rejects_private_or_local_addresses(monkeypatch, tmp_pa
     model_gateway_settings._write_many({"custom_newapi_base_url": url, "custom_newapi_api_key": "local-key"})
 
     assert gateway_settings.get_third_party_gateway_groups() == []
+
+
+def test_hybrid_llm_uses_text_mapping_and_official_fallback(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    group = {"id": "text", "name": "Text", "protocol": "openai", "baseUrl": "https://text.example/v1", "apiKey": "third-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "DC-agent-*", "upstreamModel": "gpt-6"}]}
+    model_gateway_settings._write_many({"third_party_gateway_groups": json.dumps([group]), "model_gateway_mode": MODE_HYBRID, "platform_gateway_api_key": "official-key"})
+
+    mapped = gateway_settings.get_effective_llm_config(model="DC-agent-one")
+    fallback = gateway_settings.get_effective_llm_config(model="unmapped")
+
+    assert (mapped.source, mapped.api_key, mapped.model, mapped.is_brainclaw) == ("third_party", "third-key", "gpt-6", False)
+    assert (fallback.source, fallback.api_key, fallback.is_brainclaw) == ("hybrid", "official-key", True)
+
+
+def test_exact_mapping_beats_arbitrarily_long_prefix(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model = "a" * 1_000_001
+    groups = [
+        {"id": "exact", "name": "Exact", "protocol": "openai", "baseUrl": "https://exact.example/v1", "apiKey": "exact-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": model, "upstreamModel": "exact-upstream"}]},
+        {"id": "prefix", "name": "Prefix", "protocol": "openai", "baseUrl": "https://prefix.example/v1", "apiKey": "prefix-key", "capabilities": ["text"], "modelMappings": [{"requestPattern": "a" * 1_000_000 + "*", "upstreamModel": "prefix-upstream"}]},
+    ]
+    gateway_settings.save_third_party_gateway_groups(groups, activate=True)
+
+    effective = gateway_settings.get_effective_newapi_config(model=model)
+
+    assert effective.api_key == "exact-key"
+
+
+def test_rewriting_mapping_drops_legacy_image_format_same_endpoint(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    old = {"id": "image", "name": "Image", "protocol": "openai", "baseUrl": "https://image.example/v1", "apiKey": "secret", "capabilities": ["image"], "modelMappings": [{"requestPattern": "image-model", "upstreamModel": "old", "imageEditFormat": "multipart"}]}
+    gateway_settings.save_third_party_gateway_groups([old])
+
+    response = TestClient(app).post("/model-gateway/third-party/config", json={"groups": [{**old, "modelMappings": [{"requestPattern": "image-model", "upstreamModel": "new", "imageEditFormat": "multipart"}]}]})
+
+    assert response.status_code == 200
+    saved = gateway_settings.get_third_party_gateway_groups()[0]
+    assert "imageEditFormat" not in saved["modelMappings"][0]
+
+
+@pytest.mark.parametrize("method,path", [
+    ("post", "/model-gateway/custom/newapi/init"),
+    ("post", "/model-gateway/custom/newapi/provider-channels"),
+    ("delete", "/model-gateway/custom/newapi/comfyui"),
+    ("get", "/model-gateway/custom/newapi/channel-types"),
+    ("post", "/model-gateway/custom/newapi/provider-channel/models"),
+    ("post", "/model-gateway/custom/newapi/provider-channel/sync"),
+    ("post", "/model-gateway/custom/newapi/channels"),
+    ("post", "/model-gateway/custom/newapi/channels/batch"),
+    ("post", "/model-gateway/custom/newapi/embedding-model"),
+    ("post", "/model-gateway/custom/newapi/media-models"),
+])
+def test_legacy_newapi_admin_routes_return_410(monkeypatch, tmp_path, method, path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    client = TestClient(app)
+    response = client.post(path, json={}) if method == "post" else getattr(client, method)(path)
+    assert response.status_code == 410
+    assert "not portable" in response.text.lower()
+
+
+def test_generic_model_discovery_errors_do_not_name_sub2api(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+    response = TestClient(app).post("/model-gateway/third-party/models", json={"id": "missing", "protocol": "openai", "baseUrl": "https://gateway.example/v1", "apiKey": "key"})
+    assert "Sub2API" not in response.text
 from novelvideo.newapi_provisioner import (
     _merge_channel_payload,
     AdminToken,

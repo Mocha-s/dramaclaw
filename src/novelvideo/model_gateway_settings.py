@@ -329,7 +329,7 @@ def _resolve_sub2api_group(
 ) -> dict[str, Any] | None:
     capability = normalize_capability(capability)
     wanted_model = str(model or "").strip()
-    matches: list[tuple[int, dict[str, Any], str]] = []
+    matches: list[tuple[tuple[int, int], dict[str, Any], str]] = []
     resolved_groups = groups if groups is not None else get_sub2api_groups()
     for group in resolved_groups:
         if capability not in group.get("capabilities", []):
@@ -344,18 +344,18 @@ def _resolve_sub2api_group(
             if not pattern or not upstream_model:
                 continue
             if pattern == "*":
-                matches.append((0, group, wanted_model if upstream_model == "*" else upstream_model))
+                matches.append(((0, 0), group, wanted_model if upstream_model == "*" else upstream_model))
             elif pattern.endswith("*") and wanted_model.startswith(pattern[:-1]):
                 matches.append(
                     (
-                        len(pattern) - 1,
+                        (1, len(pattern) - 1),
                         group,
                         wanted_model if upstream_model == "*" else upstream_model,
                     )
                 )
             elif pattern == wanted_model:
                 matches.append(
-                    (10**9, group, wanted_model if upstream_model == "*" else upstream_model)
+                    ((2, len(pattern)), group, wanted_model if upstream_model == "*" else upstream_model)
                 )
     if not matches and not wanted_model:
         defaults = [
@@ -1778,6 +1778,23 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
     settings = get_model_gateway_settings()
     gateway_mode = normalize_gateway_mode(settings.get("model_gateway_mode"))
     custom_llm_mode = normalize_custom_llm_mode(settings.get("custom_llm_mode"))
+    if gateway_mode == MODE_HYBRID:
+        selected_model = str(model or os.environ.get("CODEX_MODEL", "DC-codex-agent-LLM") or "").strip()
+        selected = _resolve_sub2api_group(
+            capability=CAPABILITY_TEXT,
+            model=selected_model,
+            groups=get_third_party_gateway_groups(),
+        )
+        if selected is not None:
+            group, upstream_model, _mapping = selected
+            return EffectiveLlmConfig(
+                mode=MODE_HYBRID,
+                source="third_party",
+                base_url=_sub2api_openai_compat_base_url(group),
+                api_key=str(group.get("apiKey") or ""),
+                model=upstream_model,
+                is_brainclaw=False,
+            )
     if gateway_mode in {MODE_OFFICIAL, MODE_HYBRID}:
         return EffectiveLlmConfig(
             mode=gateway_mode,
@@ -1787,7 +1804,7 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
             model="brainclaw",
             is_brainclaw=True,
         )
-    if gateway_mode == MODE_SUB2API:
+    if gateway_mode == MODE_CUSTOM and settings.get("model_gateway_mode") == MODE_SUB2API:
         backend = (
             os.environ.get("DRAMACLAW_CHAT_BACKEND")
             or os.environ.get("SUPERTALE_CHAT_BACKEND")

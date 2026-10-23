@@ -19,3 +19,13 @@
 
 - The broader suite remains red and should be reconciled with the updated spec before merge. In particular old tests covering NewAPI provisioner handlers need replacement with explicit HTTP 410 assertions, while unrelated legacy runtime paths need their intended coverage preserved.
 - Existing dependency deprecation warnings were emitted by installed Cognee/Pydantic/FastAPI code.
+
+## Review fix pass
+
+- Added Hybrid text/LLM mapping coverage and routed `get_effective_llm_config()` through the same canonical mapping resolver, with official fallback and no request retry behavior.
+- Added exact-vs-extremely-long-prefix coverage; mapping precedence now uses ordered `(kind, specificity)` ranks so exact always wins.
+- Added same-endpoint mapping rewrite coverage; hidden legacy `imageEditFormat` survives only when the mapping and protocol are unchanged, while rewritten mappings use protocol defaults.
+- Audited base NewAPI admin routes: all ten existing `/custom/newapi/*` paths now have explicit HTTP 410 compatibility handlers/assertions. Generic discovery errors no longer mention Sub2API.
+- RED: review-fix tests failed for Hybrid LLM routing, exact precedence, mapping rewrite cleanup, and generic error wording (route assertion invocation was also corrected before implementation verification).
+- GREEN: focused review-fix tests passed: 14 passed. Direct affected gateway suites passed: `tests/test_newapi_text_gateway.py tests/test_newapi_image_gateway.py tests/test_freezone_image_backend.py` — 369 passed.
+- Required broad command now reports 29 failures / 212 passed in the model-gateway-inclusive run; the 29 are spec-obsolete NewAPI admin CRUD/sync expectations (now intentionally 410), stale Sub2API mode expectations, and one pre-existing SQLite retry-count expectation changed by required migration reads. No failures occurred in the directly affected text/image/freezone suites.
