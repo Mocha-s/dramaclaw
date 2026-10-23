@@ -79,3 +79,16 @@ docker compose config --quiet — passed
 ```
 
 Targeted operator-doc grep found no bundled-service, three-service, sibling-checkout, port-3000-admin, or local-admin instructions. Remaining matches are explanatory compatibility/legacy notes and the clearly marked historical design/spec files, not setup instructions.
+
+## Final configuring-models cleanup
+
+Replaced the last English and Chinese troubleshooting rows that referred to persisting provider channels to NewAPI or resolving NewAPI channel mappings. They now direct operators to check the external group's Base URL, protocol, API key, capability, app-owned logical model mapping, upstream model ID, and reachability from `api`.
+
+Fresh verification:
+
+```text
+git diff --check — passed
+uv run pytest tests/test_docker_persistence_config.py -q — 15 passed
+docker compose config --quiet — passed
+targeted stale-instruction grep — no matches
+```

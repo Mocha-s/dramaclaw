@@ -143,8 +143,8 @@ Enter Cloud name, API Key, API Secret, and an optional folder. Find them under *
 | Symptom | What to check |
 |---|---|
 | No “Saved” badge after saving a key | The value may still be a browser draft. Save/update that channel or reapply the complete profile, and ensure the running image contains the latest code. |
-| Adding a media model says its provider key is missing | The provider channel was not persisted to NewAPI. Save/update the channel before saving media models. |
-| NewAPI reports `No available channel for model ...` | Check the logical mapping, channel status, upstream model name, and group. |
+| Adding a media model says its provider key is missing | Check the external group's Base URL, protocol, API key, and required media capability; verify the gateway is reachable from the `api` container. |
+| A model reports `No available model ...` | Check the app-owned logical model mapping, external gateway capability, and upstream model ID. |
 | Structured steps fail with `Exceeded maximum output retries` behind a Codex-backed relay (Codex2API etc.) | The relay may drop `tool_calls` on `/v1/chat/completions`. Check the selected external gateway's compatibility options and enable its Responses compatibility mode if available. See the [troubleshooting guide](../guides/troubleshooting.md#model--gateway). |
 | A new model is absent from XiaHua | Verify it is enabled, has the correct media type, the complete configuration was saved, and the page was refreshed. |
 | Controls do not match model capabilities | Check the media model `config`, especially resolutions, ratios, modes, and reference limits. |
