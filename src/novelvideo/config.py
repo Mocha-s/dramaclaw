@@ -1150,12 +1150,12 @@ IMAGE_GENERATION_SELECTIONS: dict[str, dict[str, str]] = {
     },
     "gpt-image-2": {
         "label": "LingShan-G2",
-        "provider": "platform",
+        "provider": "newapi",
         "model": NEWAPI_IMAGE_MODEL,
     },
     "nano-banana-2": {
         "label": "LingShan-NB-2",
-        "provider": "platform",
+        "provider": "newapi",
         "model": NEWAPI_NANOBANANA2_MODEL,
     },
 }
