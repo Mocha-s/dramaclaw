@@ -693,6 +693,46 @@ def _isolate_settings_db(monkeypatch: pytest.MonkeyPatch, tmp_path):
         monkeypatch.delenv(key, raising=False)
 
 
+def test_ce_image_selection_options_and_generation_use_configured_media_groups(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": MODE_CUSTOM,
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "image-gateway",
+                        "name": "Image gateway",
+                        "protocol": "openai",
+                        "baseUrl": "https://images.example/v1",
+                        "apiKey": "sk-image",
+                        "capabilities": ["image"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "custom-image-v1",
+                                "upstreamModel": "upstream-image-v1",
+                            }
+                        ],
+                    }
+                ]
+            ),
+        }
+    )
+
+    options = config.image_generation_selection_options()
+    image_config = config.get_grid_generation_config(
+        selection_override="custom-image-v1"
+    )
+
+    assert options == {"custom-image-v1": "Image gateway · custom-image-v1"}
+    assert image_config["provider"] == "newapi"
+    assert image_config["api_key"] == "sk-image"
+    assert image_config["base_url"] == "https://images.example/v1"
+    assert image_config["model"] == "upstream-image-v1"
+
+
 
 
 def test_effective_newapi_config_uses_request_scoped_explicit_config_without_writes(
