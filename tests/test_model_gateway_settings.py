@@ -735,6 +735,58 @@ def test_ce_image_selection_options_and_generation_use_configured_media_groups(
     assert config.normalize_character_image_selection("custom-image-v1") == "custom-image-v1"
 
 
+def test_custom_text_tasks_without_specific_mapping_reuse_text_writer_group(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": MODE_CUSTOM,
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "gpt-text",
+                        "name": "GPT text",
+                        "protocol": "openai",
+                        "baseUrl": "https://text.example/v1",
+                        "apiKey": "sk-text",
+                        "capabilities": ["text"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "DC-freezone-text-writer-LLM",
+                                "upstreamModel": "gpt-6.1-sol",
+                            }
+                        ],
+                    },
+                    {
+                        "id": "claude-text",
+                        "name": "Claude text",
+                        "protocol": "openai",
+                        "baseUrl": "https://claude.example/v1",
+                        "apiKey": "sk-claude",
+                        "capabilities": ["text"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "claude-sonnet-5-5",
+                                "upstreamModel": "claude-sonnet-5-5",
+                            }
+                        ],
+                    },
+                ]
+            ),
+        }
+    )
+
+    llm = gateway_settings.get_effective_llm_config(
+        model="DC-literal-beat-meta-LLM"
+    )
+
+    assert llm.source == "third_party"
+    assert llm.base_url == "https://text.example/v1"
+    assert llm.api_key == "sk-text"
+    assert llm.model == "gpt-6.1-sol"
+
+
 
 
 def test_effective_newapi_config_uses_request_scoped_explicit_config_without_writes(
