@@ -7658,7 +7658,7 @@
       },
       "thirdParty": {
         "title": "Third-party gateway",
-        "description": "Configure one or more OpenAI- or Gemini-compatible gateway groups. Each group has its own endpoint, key, capabilities, and model mappings.",
+        "description": "Configure one or more OpenAI, Gemini, or Claude/Anthropic gateway groups. Each group has its own endpoint, key, capabilities, and models.",
         "newGroup": "New gateway group", "addGroup": "Add gateway group", "removeGroup": "Remove group",
         "groupName": "Group name", "protocol": "Protocol", "baseUrl": "Base URL", "apiKey": "API Key",
         "capabilitiesLabel": "Capabilities", "models": "Model mappings", "requestModel": "DramaClaw model pattern", "upstreamModel": "Upstream model",
@@ -7667,7 +7667,8 @@
         "fetchFailed": "Could not fetch models. Check the URL, protocol, and API key, or enter model names manually.", "keyPlaceholder": "Enter API Key", "keyHint": "Keys are masked; enter a new key only when changing the endpoint.",
         "save": "Save third-party gateway settings", "saved": "Third-party gateway groups saved.", "missingFields": "Complete each group name, Base URL, key, capability, and model mapping.",
         "warning": "Some legacy settings could not be migrated. Recreate them manually in your selected third-party gateway.",
-        "capabilities": { "text": "Text / Vision", "embedding": "Embedding", "image": "Image", "video": "Video", "audio": "Audio" }
+        "capabilities": { "text": "Text / Vision", "embedding": "Embedding", "image": "Image", "video": "Video", "audio": "Audio" },
+        "capabilityDefaults": { "title": "Capability defaults", "description": "Xiahua text and visual features share the text gateway; Embedding and media models come from configured third-party groups.", "text": "Text / vision model", "embedding": "Embedding model" }
       },
       "agent": {
         "title": "Agent model",

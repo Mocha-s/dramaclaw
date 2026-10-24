@@ -788,6 +788,7 @@ describe("SettingsDialog pages", () => {
   });
 
   it("saves per-model image and video protocol overrides for Sub2API", async () => {
+    const user = userEvent.setup();
     modelGatewayMocks.config = {
       mode: "official",
       effective: { source: "official", baseUrl: "", apiKeyPreview: "", configured: false },
@@ -817,8 +818,9 @@ describe("SettingsDialog pages", () => {
     await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(1));
     fireEvent.click(group.getByLabelText("gpt-image-2.5"));
     fireEvent.click(group.getByLabelText("sd17-seedance-2.5-2"));
-    const videoEndpoints = group.getAllByLabelText("视频任务接口");
-    fireEvent.change(videoEndpoints[1], { target: { value: "video/generations" } });
+    const videoEndpoints = group.getAllByRole("combobox", { name: "视频任务接口" });
+    await user.click(videoEndpoints[1]);
+    await user.click(screen.getByRole("option", { name: "旧版 /video/generations" }));
     fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[0], { target: { value: "gpt-image-2.5" } });
     fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[1], { target: { value: "sd17-seedance-2.5-2" } });
     fireEvent.click(screen.getByRole("button", { name: "保存第三方网关配置" }));

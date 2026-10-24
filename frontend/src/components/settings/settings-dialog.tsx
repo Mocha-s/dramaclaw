@@ -809,7 +809,7 @@ function ThirdPartyGroupCard({
             variant="outline"
             size="sm"
             onClick={onFetchModels}
-            disabled={fetchPending || !group.baseUrl.trim()}
+             disabled={fetchPending || !group.baseUrl.trim() || (!group.apiKey.trim() && !group.apiKeyPreview)}
           >
             {fetchPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
             {t("settings.modelConfig.thirdParty.fetchModels")}
@@ -871,22 +871,25 @@ function ThirdPartyGroupCard({
               <div className="grid grid-cols-2 gap-2">
                 {group.capabilities.includes("image") ? <span /> : null}
                 {group.capabilities.includes("video") ? (
-                  <label className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
-                    <span>{t("settings.modelConfig.thirdParty.videoEndpoint")}</span>
-                    <select
-                      aria-label={t("settings.modelConfig.thirdParty.videoEndpoint")}
-                      className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm text-foreground"
-                      value={mapping.videoEndpoint ?? "videos"}
-                      onChange={(event) => onChange({
-                        ...group,
-                        modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
-                          ? { ...item, videoEndpoint: event.target.value as ThirdPartyVideoEndpoint }
-                          : item),
-                      })}
-                    >
-                      <option value="videos">{t("settings.modelConfig.thirdParty.videoEndpoints.videos")}</option>
-                      <option value="video/generations">{t("settings.modelConfig.thirdParty.videoEndpoints.legacy")}</option>
-                    </select>
+                    <label className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
+                      <span>{t("settings.modelConfig.thirdParty.videoEndpoint")}</span>
+                     <Select
+                       value={mapping.videoEndpoint ?? "videos"}
+                       onValueChange={(videoEndpoint) => onChange({
+                         ...group,
+                         modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
+                           ? { ...item, videoEndpoint: videoEndpoint as ThirdPartyVideoEndpoint }
+                           : item),
+                       })}
+                     >
+                       <SelectTrigger size="sm" className="h-9 w-full" aria-label={t("settings.modelConfig.thirdParty.videoEndpoint")}>
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent alignItemWithTrigger={false}>
+                         <SelectItem value="videos">{t("settings.modelConfig.thirdParty.videoEndpoints.videos")}</SelectItem>
+                         <SelectItem value="video/generations">{t("settings.modelConfig.thirdParty.videoEndpoints.legacy")}</SelectItem>
+                       </SelectContent>
+                     </Select>
                   </label>
                 ) : null}
               </div>
