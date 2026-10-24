@@ -1950,6 +1950,17 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
             groups=groups,
         )
         if selected is None:
+            # Advanced CE task aliases are intentionally compatibility names;
+            # operators should only need to map one generic text writer model
+            # unless they want a task-specific upstream. This keeps an
+            # unmapped workflow alias from silently dropping to empty
+            # environment credentials when several text groups exist.
+            selected = _resolve_sub2api_group(
+                capability=CAPABILITY_TEXT,
+                model="DC-freezone-text-writer-LLM",
+                groups=groups,
+            )
+        if selected is None:
             candidates = [
                 (group, mapping)
                 for group in groups
