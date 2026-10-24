@@ -750,6 +750,20 @@ def get_capability_defaults() -> dict[str, str]:
 
 
 def save_capability_defaults(*, text_model: str = "", embedding_model: str = "") -> None:
+    groups = get_third_party_gateway_groups()
+    for capability, model in ((CAPABILITY_TEXT, text_model), (CAPABILITY_EMBEDDING, embedding_model)):
+        clean = str(model or "").strip()
+        if not clean:
+            continue
+        if not any(
+            capability in group.get("capabilities", [])
+            and any(
+                str(mapping.get("upstreamModel") or "").strip() == clean
+                for mapping in group.get("modelMappings", [])
+            )
+            for group in groups
+        ):
+            raise ValueError(f"{capability} capability model is not configured: {clean}")
     values = {
         key: str(model or "").strip()
         for key, model in (("textModel", text_model), ("embeddingModel", embedding_model))

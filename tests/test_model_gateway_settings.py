@@ -423,6 +423,37 @@ def test_generic_model_discovery_errors_do_not_name_sub2api(monkeypatch, tmp_pat
     app.include_router(model_gateway.router)
     response = TestClient(app).post("/model-gateway/third-party/models", json={"id": "missing", "protocol": "openai", "baseUrl": "https://gateway.example/v1", "apiKey": "key"})
     assert "Sub2API" not in response.text
+
+
+@respx.mock
+def test_anthropic_model_discovery_uses_native_headers(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    route = respx.get("https://api.anthropic.com/v1/models").mock(
+        return_value=Response(
+            200,
+            json={"data": [{"id": "claude-sonnet-5-5"}]},
+        )
+    )
+    app = FastAPI()
+    app.include_router(model_gateway.router)
+
+    response = TestClient(app).post(
+        "/model-gateway/third-party/models",
+        json={
+            "id": "claude",
+            "protocol": "anthropic",
+            "baseUrl": "https://api.anthropic.com",
+            "apiKey": "sk-ant-test",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["models"] == ["claude-sonnet-5-5"]
+    assert route.called
+    request = route.calls[0].request
+    assert request.headers["x-api-key"] == "sk-ant-test"
+    assert request.headers["anthropic-version"] == "2023-06-01"
+    assert "authorization" not in request.headers
 from novelvideo.newapi_provisioner import (
     _merge_channel_payload,
     AdminToken,

@@ -786,10 +786,13 @@ async def save_capability_defaults_route(body: CapabilityDefaultsBody) -> dict[s
         require_ce_gateway_settings_management()
     except PermissionError as exc:
         raise _permission_error(exc) from exc
-    save_capability_defaults(
-        text_model=body.text_model or "",
-        embedding_model=body.embedding_model or "",
-    )
+    try:
+        save_capability_defaults(
+            text_model=body.text_model or "",
+            embedding_model=body.embedding_model or "",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     runtime = _refresh_runtime_after_gateway_write()
     return {
         "ok": True,
