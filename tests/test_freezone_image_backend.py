@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from novelvideo.api.routes import freezone as freezone_routes
+from novelvideo import config, model_gateway_settings
 from novelvideo.api.routes.freezone import (
     FREEZONE_DEFAULT_IMAGE_MODEL,
     _build_erase_prompt,
@@ -50,6 +51,13 @@ from novelvideo.shared.billing_errors import (
 from novelvideo.stage_asset_tasks import resolve_scene_360_image_model
 from novelvideo.task_backend.limits import ProjectUserTaskLimitExceeded
 from novelvideo.task_state import get_task_manager
+
+
+@pytest.fixture(autouse=True)
+def _configure_official_media_catalog_for_freezone_tests(monkeypatch, tmp_path):
+    """Make the explicit official-catalog test fixture match the new contract."""
+    monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "state"))
+    model_gateway_settings._write_many({"platform_gateway_api_key": "test-official-key"})
 
 
 @pytest.mark.asyncio

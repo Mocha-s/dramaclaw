@@ -266,7 +266,7 @@ def test_hermes_default_model_resolves_custom_group_without_env_override(
 
     assert agent_gateway.api_key == "sk-hermes"
     assert agent_gateway.base_url == "https://sub2api.example/v1"
-    assert agent_gateway.model == ""
+    assert agent_gateway.model == "gpt-6.1-sol"
 
 
 def test_codex_rotation_stops_owner_recorded_by_another_worker(

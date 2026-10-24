@@ -4836,7 +4836,10 @@ def newapi_video_backend_options(
         try:
             from novelvideo.model_gateway_settings import (
                 get_newapi_media_model_mappings,
-                get_sub2api_media_model_catalog,
+                get_official_media_model_catalog,
+                get_model_gateway_settings,
+                get_third_party_media_model_catalog,
+                normalize_api_key,
             )
 
             for model, mapping in get_newapi_media_model_mappings().items():
@@ -4848,7 +4851,19 @@ def newapi_video_backend_options(
                     and model not in models
                 ):
                     models.append(model)
-            for entry in get_sub2api_media_model_catalog("video"):
+            settings = get_model_gateway_settings()
+            mode = str(settings.get("model_gateway_mode") or "official").strip().lower()
+            official_configured = bool(
+                normalize_api_key(settings.get("platform_gateway_api_key", ""))
+            )
+            if mode in {"official", "hybrid"} and official_configured:
+                models.extend(
+                    str(entry.get("id") or "").strip()
+                    for entry in get_official_media_model_catalog("video")
+                    if str(entry.get("id") or "").strip()
+                )
+            catalog = get_third_party_media_model_catalog("video")
+            for entry in catalog:
                 model = str(entry.get("id") or "").strip()
                 if model and model not in models:
                     models.append(model)

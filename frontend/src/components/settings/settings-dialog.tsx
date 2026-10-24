@@ -829,7 +829,7 @@ function ThirdPartyGroupCard({
                       ? [
                           ...group.modelMappings,
                           {
-                            requestPattern: "",
+                             requestPattern: model,
                             upstreamModel: model,
                             videoEndpoint: "videos",
                           },
@@ -909,6 +909,9 @@ function CustomLlmSettings({
   useEffect(() => {
     if (config?.custom?.llmMode) setLlmMode(config.custom.llmMode);
   }, [config?.custom?.llmMode]);
+  const automaticThirdPartyTextRoute = Boolean(
+    config?.thirdParty?.groups.some((group) => group.capabilities.includes("text")),
+  );
   const onModeChange = async (value: string) => {
     const next = value as CustomLlmMode;
     setLlmMode(next);
@@ -923,7 +926,13 @@ function CustomLlmSettings({
         </TabsList>
       </Tabs>
       {llmMode === "relayclaw_brainclaw" ? (
-        <BrainClawGatewayPanel config={config} loading={loading} />
+        automaticThirdPartyTextRoute ? (
+          <p role="status" className="rounded-md border border-primary/25 bg-primary/[0.04] px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+            {t("settings.modelConfig.brainclaw.autoDescription")}
+          </p>
+        ) : (
+          <BrainClawGatewayPanel config={config} loading={loading} />
+        )
       ) : (
         <FeatureModelsBlock
           newApiBaseUrl=""
@@ -1189,13 +1198,14 @@ function OfficialGatewayPanel({
   useEffect(() => {
     if (
       automaticCatalogCheckStarted.current ||
+      !official?.configured ||
       !mediaCatalog?.autoUpdate ||
       checkMediaCatalog.isPending
     )
       return;
     automaticCatalogCheckStarted.current = true;
     void runMediaCatalogCheck(false);
-  }, [mediaCatalog?.autoUpdate, checkMediaCatalog.isPending]);
+  }, [official?.configured, mediaCatalog?.autoUpdate, checkMediaCatalog.isPending]);
 
   const handleMediaCatalogAutoUpdate = async () => {
     const next = !mediaCatalog?.autoUpdate;
@@ -1300,7 +1310,7 @@ function OfficialGatewayPanel({
         </a>
       </p>
 
-      <div className="rounded-md border border-border/70 px-3 py-3">
+      {official?.configured ? <div className="rounded-md border border-border/70 px-3 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-medium text-foreground">
@@ -1369,7 +1379,7 @@ function OfficialGatewayPanel({
             />
           </button>
         </div>
-      </div>
+      </div> : null}
 
       <div className="space-y-2.5">
         <div className="grid grid-cols-[120px_1fr] items-center gap-3">

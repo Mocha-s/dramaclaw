@@ -13,6 +13,7 @@ from novelvideo.graph_preview import (
     load_graph_preview,
     write_graph_preview,
 )
+from novelvideo import config, model_gateway_settings
 from novelvideo.models import CharacterIdentity, NovelCharacter, NovelEpisode, NovelProp, NovelScene
 from novelvideo.project_context import ProjectContext
 
@@ -243,6 +244,8 @@ def m06_client_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
 
     store = _M06Store()
+    monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "gateway-state"))
+    model_gateway_settings._write_many({"platform_gateway_api_key": "m06-official-key"})
     project_dir = tmp_path / "output" / _USER / _PROJECT
     state_dir = tmp_path / "state" / _USER / _PROJECT
     runtime_dir = tmp_path / "runtime" / _USER / _PROJECT

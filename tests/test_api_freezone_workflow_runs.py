@@ -36,6 +36,7 @@ def _valid_draft_compiled() -> dict:
 
 @pytest.fixture()
 def workflow_run_client(monkeypatch, tmp_path):
+    from novelvideo import config, model_gateway_settings
     from novelvideo.api.auth import get_api_user
     from novelvideo.api.routes import freezone
     from novelvideo.freezone.agent_workflows import catalog
@@ -69,6 +70,8 @@ def workflow_run_client(monkeypatch, tmp_path):
         requester_user_id="u-alice",
         enqueued_tasks=[],
     )
+    monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "gateway-state"))
+    model_gateway_settings._write_many({"platform_gateway_api_key": "workflow-official-key"})
 
     class FakeTaskBackend:
         async def enqueue_project_task(self, _ctx, **kwargs):

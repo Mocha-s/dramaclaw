@@ -25,6 +25,7 @@ from novelvideo.api.routes import freezone as freezone_routes
 from novelvideo.api.routes import model_gateway
 from novelvideo.official_defaults import OFFICIAL_NEWAPI_BASE_URL
 from novelvideo.model_gateway_settings import (
+    CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
     EffectiveMediaRelayConfig,
     EffectiveNewApiConfig,
     MODE_CUSTOM,
@@ -809,6 +810,87 @@ async def test_custom_catalog_disabled_mapping_removes_official_model(
 
     assert catalog is not None
     assert all(item.get("id") != "LingShan-G2" for item in catalog)
+
+
+@pytest.mark.asyncio
+async def test_custom_catalog_uses_configured_third_party_media_groups_only(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "image-gateway",
+                        "name": "Image gateway",
+                        "protocol": "openai",
+                        "baseUrl": "https://images.example/v1",
+                        "apiKey": "sk-image-secret",
+                        "capabilities": ["image"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "gpt-image-2",
+                                "upstreamModel": "gpt-image-2",
+                            }
+                        ],
+                    }
+                ]
+            ),
+            "model_gateway_mode": MODE_CUSTOM,
+        }
+    )
+
+    catalog = await freezone_routes._ee_media_model_catalog("image")
+
+    assert [item["id"] for item in catalog or []] == ["gpt-image-2"]
+    assert all(item["id"] != "LingShan-G2" for item in catalog or [])
+    assert catalog[0]["gatewayModel"] == "gpt-image-2"
+
+
+@pytest.mark.asyncio
+async def test_official_catalog_is_empty_without_official_key(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    set_model_gateway_mode(MODE_OFFICIAL)
+
+    catalog = await freezone_routes._ee_media_model_catalog("image")
+
+    assert catalog == []
+
+
+def test_custom_llm_uses_configured_third_party_text_group(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "text-gateway",
+                        "name": "Text gateway",
+                        "protocol": "openai",
+                        "baseUrl": "https://text.example/v1",
+                        "apiKey": "sk-text-secret",
+                        "capabilities": ["text"],
+                        "modelMappings": [
+                            {"requestPattern": "*", "upstreamModel": "qwen-max"}
+                        ],
+                    }
+                ]
+            ),
+            "model_gateway_mode": MODE_CUSTOM,
+            "custom_llm_mode": CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
+        }
+    )
+
+    llm = gateway_settings.get_effective_llm_config(model="DC-codex-agent-LLM")
+
+    assert llm.source == "third_party"
+    assert llm.base_url == "https://text.example/v1"
+    assert llm.api_key == "sk-text-secret"
+    assert llm.model == "qwen-max"
+    assert llm.is_brainclaw is False
 
 
 def test_provider_channel_partial_save_preserves_unmentioned_channels(

@@ -26,6 +26,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from novelvideo.api.app import create_app
+from novelvideo import config, model_gateway_settings
 from novelvideo.api.routes import freezone as freezone_routes
 from novelvideo.project_context import ProjectContext
 from novelvideo.task_backend.limits import (
@@ -35,6 +36,12 @@ from novelvideo.task_backend.limits import (
     ProjectUserTaskLimitExceeded,
     UserTaskLimitExceeded,
 )
+
+
+@pytest.fixture(autouse=True)
+def _configure_official_media_catalog(monkeypatch, tmp_path):
+    monkeypatch.setattr(config, "STATE_DIR", str(tmp_path / "gateway-state"))
+    model_gateway_settings._write_many({"platform_gateway_api_key": "limit-test-key"})
 
 # ---------------------------------------------------------------------------
 # 1. 异常形状：与 limits.py:46-101 的三个现有类同族

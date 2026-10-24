@@ -1501,6 +1501,72 @@ def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
     return catalog
 
 
+def get_third_party_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
+    """Expose configured third-party media mappings to Freezone catalogs.
+
+    ``newapi`` remains the internal media adapter name for compatibility with
+    the existing request pipeline; the endpoint and upstream model come from
+    the canonical third-party group mapping, never from the bundled gateway.
+    Wildcard mappings are intentionally omitted because a media catalog needs
+    a concrete selectable model identifier.
+    """
+    capability = str(media_type or "").strip().lower()
+    if capability not in {CAPABILITY_IMAGE, CAPABILITY_VIDEO}:
+        return []
+    catalog: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for group in get_third_party_gateway_groups():
+        if capability not in group.get("capabilities", []):
+            continue
+        group_name = str(group.get("name") or group.get("id") or "third-party")
+        protocol = str(group.get("protocol") or "openai").strip().lower()
+        for mapping in group.get("modelMappings", []):
+            request_model = str(mapping.get("requestPattern") or "").strip()
+            upstream_model = str(mapping.get("upstreamModel") or "").strip()
+            if not request_model or request_model.endswith("*") or not upstream_model:
+                continue
+            if request_model in seen:
+                continue
+            seen.add(request_model)
+            if capability == CAPABILITY_IMAGE:
+                request = {
+                    "endpoint": "images/generations",
+                    "referenceFormat": "images",
+                    "parameters": [],
+                }
+            else:
+                request = {
+                    "endpoint": mapping.get("videoEndpoint") or "videos",
+                    "parameters": [],
+                }
+            catalog_entry: dict[str, Any] = {
+                "catalogId": request_model,
+                "catalog_id": request_model,
+                "id": request_model,
+                "providerId": "newapi",
+                "provider": "newapi",
+                "apiModel": request_model,
+                "api_model": request_model,
+                "gatewayModel": upstream_model,
+                "gateway_model": upstream_model,
+                "upstreamModel": upstream_model,
+                "upstream_model": upstream_model,
+                "label": f"{group_name} · {request_model}",
+                "mediaType": capability,
+                "sortOrder": len(catalog),
+                "request": request,
+                "gatewayGroupId": str(group.get("id") or ""),
+                "gatewayProtocol": protocol,
+            }
+            if capability == CAPABILITY_IMAGE and (
+                "gpt-image" in request_model.lower()
+                or "gpt-image" in upstream_model.lower()
+            ):
+                catalog_entry["referenceImageMax"] = 9
+            catalog.append(catalog_entry)
+    return catalog
+
+
 def get_newapi_embedding_model_config() -> dict[str, Any]:
     settings = get_model_gateway_settings()
     return _decode_embedding_model_config(settings.get("custom_newapi_embedding_model"))
@@ -1830,6 +1896,79 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
                 model=upstream_model,
                 is_brainclaw=False,
             )
+    # An explicitly configured BrainClaw endpoint remains authoritative for
+    # backward compatibility. Otherwise Custom mode can reuse the canonical
+    # third-party text group automatically.
+    if (
+        gateway_mode == MODE_CUSTOM
+        and custom_llm_mode == CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW
+        and (
+            settings.get("brainclaw_newapi_base_url", "")
+            or settings.get("brainclaw_newapi_api_key", "")
+        )
+    ):
+        brainclaw_base_url = normalize_relay_base_url(
+            settings.get("brainclaw_newapi_base_url", "")
+            or OFFICIAL_NEWAPI_BASE_URL
+        )
+        brainclaw_api_key = normalize_api_key(
+            settings.get("brainclaw_newapi_api_key", "")
+            or (
+                settings.get("platform_gateway_api_key", "")
+                if _is_official_relay_url(brainclaw_base_url)
+                else ""
+            )
+        )
+        return EffectiveLlmConfig(
+            mode=CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
+            source="custom",
+            base_url=brainclaw_base_url,
+            api_key=brainclaw_api_key,
+            model="brainclaw",
+            is_brainclaw=True,
+        )
+    if gateway_mode == MODE_CUSTOM:
+        backend = (
+            os.environ.get("DRAMACLAW_CHAT_BACKEND")
+            or os.environ.get("SUPERTALE_CHAT_BACKEND")
+            or "codex"
+        ).strip().lower()
+        selected_model = str(model or "").strip() or (
+            str(os.environ.get("HERMES_MODEL", "DC-hermes-LLM") or "DC-hermes-LLM").strip()
+            if backend == "hermes"
+            else str(os.environ.get("CODEX_MODEL", "DC-codex-agent-LLM") or "").strip()
+        )
+        groups = get_third_party_gateway_groups()
+        selected = _resolve_sub2api_group(
+            capability=CAPABILITY_TEXT,
+            model=selected_model,
+            groups=groups,
+        )
+        if selected is None:
+            candidates = [
+                (group, mapping)
+                for group in groups
+                if CAPABILITY_TEXT in group.get("capabilities", [])
+                for mapping in group.get("modelMappings", [])
+                if str(mapping.get("upstreamModel") or "").strip()
+            ]
+            if len(candidates) == 1:
+                group, mapping = candidates[0]
+                selected = (
+                    group,
+                    str(mapping.get("upstreamModel") or "").strip(),
+                    mapping,
+                )
+        if selected is not None:
+            group, upstream_model, _mapping = selected
+            return EffectiveLlmConfig(
+                mode=MODE_CUSTOM,
+                source="third_party",
+                base_url=_sub2api_openai_compat_base_url(group),
+                api_key=str(group.get("apiKey") or ""),
+                model=upstream_model,
+                is_brainclaw=False,
+            )
     if gateway_mode in {MODE_OFFICIAL, MODE_HYBRID}:
         return EffectiveLlmConfig(
             mode=gateway_mode,
@@ -1862,35 +2001,6 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
             api_key=gateway.api_key,
             model=gateway.model,
             is_brainclaw=False,
-        )
-    if custom_llm_mode == CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW:
-        brainclaw_base_url = normalize_relay_base_url(
-            settings.get("brainclaw_newapi_base_url", "")
-            or OFFICIAL_NEWAPI_BASE_URL
-        )
-        # The official key may only be reused when the endpoint is the official
-        # one. Falling back unconditionally sends a RelayClaw credential to
-        # whatever host the operator typed — a third party, or a local gateway
-        # that logs it — and nothing in the request looks wrong: billing,
-        # audit and tenant attribution all follow a key the operator never
-        # meant to expose there.
-        brainclaw_api_key = normalize_api_key(
-            settings.get("brainclaw_newapi_api_key", "")
-            or (settings.get("platform_gateway_api_key", "")
-                if _is_official_relay_url(brainclaw_base_url) else "")
-        )
-        return EffectiveLlmConfig(
-            mode=CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
-            source=(
-                "custom"
-                if settings.get("brainclaw_newapi_base_url", "")
-                or settings.get("brainclaw_newapi_api_key", "")
-                else "official"
-            ),
-            base_url=brainclaw_base_url,
-            api_key=brainclaw_api_key,
-            model="brainclaw",
-            is_brainclaw=True,
         )
     custom = get_ce_newapi_config_for_mode(MODE_CUSTOM)
     return EffectiveLlmConfig(
@@ -2202,10 +2312,9 @@ def build_model_gateway_status(
         if uses_ce_settings
         else ""
     )
-    sub2api_groups = get_sub2api_groups(masked=True) if uses_ce_settings else []
     third_party_groups = get_third_party_gateway_groups(masked=True) if uses_ce_settings else []
     sub2api_configured = bool(third_party_groups)
-    sub2api_text_configured = any(CAPABILITY_TEXT in group.get("capabilities", []) for group in sub2api_groups)
+    sub2api_text_configured = any(CAPABILITY_TEXT in group.get("capabilities", []) for group in third_party_groups)
     effective = get_effective_newapi_config(
         official_base_url=official_base_url,
         official_api_key=official_api_key,
@@ -2295,7 +2404,7 @@ def build_model_gateway_status(
             "tokenId": settings.get("custom_newapi_token_id", ""),
         },
         "sub2api": {
-            "groups": sub2api_groups,
+            "groups": third_party_groups,
             "configured": sub2api_configured,
         },
         "thirdParty": {

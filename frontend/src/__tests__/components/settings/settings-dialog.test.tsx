@@ -228,11 +228,13 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.sub2api.capabilities.audio": "音频",
         "settings.modelConfig.official.description": "官方渠道说明",
         "settings.modelConfig.official.registerLink": "注册",
+        "settings.modelConfig.official.mediaCatalogTitle": "官方媒体模型列表",
         "settings.modelConfig.official.save": "保存并启用",
         "settings.modelConfig.brainclaw.tab": "虾驿 BrainClaw（推荐）",
         "settings.modelConfig.brainclaw.advancedTab": "高级自定义",
         "settings.modelConfig.brainclaw.title": "虾脑 BrainClaw（推荐）",
         "settings.modelConfig.brainclaw.description": "虾脑仅通过虾驿提供",
+        "settings.modelConfig.brainclaw.autoDescription": "已自动使用第三方文本网关组，无需重复配置地址和 API Key。",
         "settings.modelConfig.brainclaw.model": "固定模型",
         "settings.modelConfig.brainclaw.save": "保存并启用 BrainClaw",
         "settings.modelConfig.agent.title": "Agent 模型",
@@ -568,7 +570,6 @@ describe("SettingsDialog pages", () => {
     await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(1));
     fireEvent.change(openaiGroup.getByLabelText("筛选模型"), { target: { value: "gpt-5" } });
     fireEvent.click(openaiGroup.getByLabelText("gpt-5"));
-    fireEvent.change(openaiGroup.getByLabelText("DramaClaw 模型规则"), { target: { value: "DC-codex-agent-LLM" } });
     fireEvent.click(openaiGroup.getByLabelText("文本 / 视觉"));
     fireEvent.click(openaiGroup.getByLabelText("图片"));
 
@@ -581,7 +582,6 @@ describe("SettingsDialog pages", () => {
     fireEvent.click(geminiGroup.getByLabelText("文本 / 视觉"));
     fireEvent.click(geminiGroup.getByLabelText("Embedding"));
     fireEvent.click(geminiGroup.getByLabelText("gemini-embedding-001"));
-    fireEvent.change(geminiGroup.getByLabelText("DramaClaw 模型规则"), { target: { value: "DC-cognee-embedding" } });
     fireEvent.click(screen.getByRole("button", { name: "保存第三方网关配置" }));
 
     await waitFor(() => {
@@ -595,7 +595,7 @@ describe("SettingsDialog pages", () => {
             apiKey: "sk-openai",
             capabilities: ["image"],
             modelMappings: [{
-              requestPattern: "DC-codex-agent-LLM",
+               requestPattern: "gpt-5",
               upstreamModel: "gpt-5",
             }],
           },
@@ -606,7 +606,7 @@ describe("SettingsDialog pages", () => {
             baseUrl: "https://sub2api.example/v1beta",
             apiKey: "sk-gemini",
             capabilities: ["embedding"],
-            modelMappings: [{ requestPattern: "DC-cognee-embedding", upstreamModel: "gemini-embedding-001" }],
+             modelMappings: [{ requestPattern: "gemini-embedding-001", upstreamModel: "gemini-embedding-001" }],
           },
         ],
       });
@@ -665,6 +665,39 @@ describe("SettingsDialog pages", () => {
     expect(screen.getByRole("tab", { name: "高级自定义" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
     expect(screen.getByText("业务模型映射")).toBeInTheDocument();
+  });
+
+  it("uses a configured third-party text group for BrainClaw without duplicate endpoint fields", () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "third_party", baseUrl: "https://text.example/v1", apiKeyPreview: "sk-...", configured: true, model: "qwen-max", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "relayclaw_brainclaw", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [
+        { id: "text", name: "Text gateway", protocol: "openai", baseUrl: "https://text.example/v1", apiKeyPreview: "sk-...", capabilities: ["text"], modelMappings: [{ requestPattern: "*", upstreamModel: "qwen-max" }] },
+      ] },
+    };
+    renderSettingsDialog();
+
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    expect(screen.getByText("已自动使用第三方文本网关组，无需重复配置地址和 API Key。")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("https://text.example/v1")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "网关地址" })).not.toBeInTheDocument();
+  });
+
+  it("does not show the official media catalog before an official key is configured", () => {
+    modelGatewayMocks.config = {
+      mode: "official",
+      effective: { source: "official", baseUrl: "", apiKeyPreview: "", configured: false },
+      llmEffective: { mode: "official", source: "official", baseUrl: "", apiKeyPreview: "", configured: false, model: "", brainclaw: true },
+      official: { source: "database", baseUrl: "https://api.example/v1", apiKeyPreview: "", configured: false, environment: { baseUrl: "https://api.example/v1", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: false },
+      thirdParty: { configured: false, groups: [] },
+    };
+    renderSettingsDialog();
+
+    expect(screen.queryByText("官方媒体模型列表")).not.toBeInTheDocument();
   });
 
   it("uses a generic fallback identifier for a newly created gateway group", () => {

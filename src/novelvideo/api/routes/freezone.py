@@ -9248,7 +9248,7 @@ def _start_freezone_image_reverse_prompt_task(
 
 
 async def _ee_media_model_catalog(media_type: str) -> list[dict[str, Any]] | None:
-    """Use EE catalog or the CE-local catalog when custom NewAPI is active."""
+    """Return only models exposed by the active, configured gateway routes."""
     from novelvideo.ports.registry import PortNotRegistered, get_port
 
     try:
@@ -9257,34 +9257,27 @@ async def _ee_media_model_catalog(media_type: str) -> list[dict[str, Any]] | Non
         from novelvideo.model_gateway_settings import (
             MODE_CUSTOM,
             MODE_HYBRID,
-            MODE_SUB2API,
-            get_ce_media_model_catalog,
+            get_model_gateway_settings,
             get_effective_newapi_config,
+            get_third_party_media_model_catalog,
             get_official_media_model_catalog,
-            get_sub2api_media_model_catalog,
+            normalize_api_key,
         )
         from novelvideo.shared.runtime_env import is_ce_effective
 
         if is_ce_effective():
             mode = get_effective_newapi_config().mode
+            settings = get_model_gateway_settings()
+            official_configured = bool(
+                normalize_api_key(settings.get("platform_gateway_api_key", ""))
+            )
+            third_party = get_third_party_media_model_catalog(media_type)
             if mode == MODE_CUSTOM:
-                return _merge_media_model_catalog_defaults(
-                    _static_media_model_catalog(media_type),
-                    get_ce_media_model_catalog(media_type, include_disabled=True),
-                )
+                return third_party
             if mode == MODE_HYBRID:
-                local = get_ce_media_model_catalog(
-                    media_type,
-                    provider="comfyui",
-                    include_disabled=True,
-                )
-                return _merge_media_model_catalog_defaults(
-                    _static_media_model_catalog(media_type),
-                    local,
-                )
-            if mode == MODE_SUB2API:
-                return get_sub2api_media_model_catalog(media_type)
-            return get_official_media_model_catalog(media_type)
+                official = get_official_media_model_catalog(media_type) if official_configured else []
+                return _merge_media_model_catalog_defaults(official, third_party)
+            return get_official_media_model_catalog(media_type) if official_configured else []
         return None
     return await catalog.list_models(media_type)
 
