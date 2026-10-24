@@ -39,28 +39,28 @@ function read(state: UseFreezoneImageModelsResult) {
 }
 
 describe("useCatalogImageModels 的空目录语义", () => {
-  it("拉取失败：hook 已经塞了兜底列表，照常可用，不算空", () => {
+  it("拉取失败：不伪造官方模型，显示不可用状态", () => {
     const result = read({
-      models: SHARED_MODELS,
+      models: [],
       isLoading: false,
       isFallback: true,
       error: new Error("boom"),
     });
     expect(result.isEmpty).toBe(false);
-    expect(result.models.length).toBe(SHARED_MODELS.length);
-    expect(result.getModel(null)).toBeDefined();
+    expect(result.models).toEqual([]);
+    expect(result.getModel(null)).toBeUndefined();
   });
 
-  it("加载中：先用兜底撑住，别闪一下「无可用模型」", () => {
+  it("加载中：不显示尚未配置的硬编码模型", () => {
     const result = read({
-      models: SHARED_MODELS,
+      models: [],
       isLoading: true,
       isFallback: true,
       error: null,
     });
     expect(result.isEmpty).toBe(false);
     expect(result.isLoading).toBe(true);
-    expect(result.models.length).toBeGreaterThan(0);
+    expect(result.models).toEqual([]);
   });
 
   it("接口成功但返回空列表：这是后台的权威答案，不许拿硬编码模型盖掉", () => {

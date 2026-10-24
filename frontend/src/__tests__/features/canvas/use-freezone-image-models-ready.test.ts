@@ -54,4 +54,14 @@ describe('waitForFreezoneImageModels', () => {
     });
     expect(fetchFreezoneImageModels).toHaveBeenCalledWith('project-catalog-loading');
   });
+
+  it('does not expose hardcoded models when the project catalog request fails', async () => {
+    fetchFreezoneImageModels.mockRejectedValueOnce(new Error('catalog unavailable'));
+
+    await expect(waitForFreezoneImageModels('project-catalog-failed')).resolves.toMatchObject({
+      models: [],
+      isLoading: false,
+      isFallback: true,
+    });
+  });
 });
