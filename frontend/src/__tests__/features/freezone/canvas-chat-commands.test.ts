@@ -3800,16 +3800,10 @@ describe("canvas chat commands", () => {
       (action) => action.action === "run_outpaint_tool",
     );
     expect(upscaleAction?.parameters?.parameter_schema).toMatchObject({
-      model: {
-        type: "enum",
-        options: expect.arrayContaining(["gpt-image-2"]),
-      },
+      model: { type: "enum", options: [] },
     });
     expect(outpaintAction?.parameters?.parameter_schema).toMatchObject({
-      model: {
-        type: "enum",
-        options: expect.arrayContaining(["gpt-image-2"]),
-      },
+      model: { type: "enum", options: [] },
     });
     expect(context).toContain("action_summary_json");
     expect(context).toContain(

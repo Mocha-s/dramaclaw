@@ -155,19 +155,39 @@ def _image_selection_cost_model(selection: str) -> str:
 
     from novelvideo.config import (
         IMAGE_GENERATION_SELECTIONS,
-        character_image_selection_options,
+        configured_image_generation_selection_options,
     )
 
-    options = character_image_selection_options()
+    options = configured_image_generation_selection_options()
     clean_selection = _resolve_labeled_value(
         clean_selection,
         options,
         label_name="image selection",
     )
 
-    if clean_selection not in IMAGE_GENERATION_SELECTIONS:
+    if clean_selection in IMAGE_GENERATION_SELECTIONS:
+        return IMAGE_GENERATION_SELECTIONS[clean_selection]["model"]
+    try:
+        from novelvideo.model_gateway_settings import get_third_party_media_model_catalog
+
+        entry = next(
+            (
+                item
+                for item in get_third_party_media_model_catalog("image")
+                if str(item.get("id") or "").strip() == clean_selection
+            ),
+            None,
+        )
+    except Exception:
+        entry = None
+    pricing_model = str(
+        (entry or {}).get("gatewayModel")
+        or (entry or {}).get("apiModel")
+        or ""
+    ).strip()
+    if not pricing_model:
         raise HTTPException(status_code=400, detail="invalid image selection")
-    return IMAGE_GENERATION_SELECTIONS[clean_selection]["model"]
+    return pricing_model
 
 
 def _video_backend_cost_model(backend: str) -> str:

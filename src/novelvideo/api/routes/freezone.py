@@ -118,7 +118,7 @@ from novelvideo.api.task_start_errors import handle_task_start_runtime_error
 from novelvideo.api.upload_workers import run_asset_upload_operation
 from novelvideo.config import (
     IMAGE_GENERATION_SELECTIONS,
-    image_generation_selection_options,
+    configured_image_generation_selection_options,
     infer_image_generation_selection,
 )
 from novelvideo.director_world import DirectorWorldService
@@ -9914,7 +9914,7 @@ async def freezone_image_models(
     )
     if catalog is not None:
         return {"ok": True, "data": _public_media_model_catalog(catalog)}
-    options = image_generation_selection_options()
+    options = configured_image_generation_selection_options()
     data = []
     for key, label in options.items():
         entry = IMAGE_GENERATION_SELECTIONS.get(key, {})

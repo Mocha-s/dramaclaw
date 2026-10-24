@@ -46,8 +46,7 @@ from novelvideo.api.schemas import (
     CharacterVoiceTrimRequest,
 )
 from novelvideo.config import (
-    image_generation_selection_options,
-    character_image_selection_options,
+    configured_image_generation_selection_options,
     get_character_image_selection,
     normalize_image_generation_selection,
     normalize_character_image_selection,
@@ -178,7 +177,7 @@ async def _character_project_scope(
 
 
 def _character_image_selection_payload(username: str, project: str) -> dict:
-    options = character_image_selection_options()
+    options = configured_image_generation_selection_options()
     config = load_project_config_file(username, project)
     saved_selection = str(
         config.get(CHARACTER_IMAGE_SELECTION_CONFIG_KEY) or ""
@@ -193,7 +192,7 @@ def _character_image_selection_payload(username: str, project: str) -> dict:
 
 
 def _asset_image_source_selection_payload(username: str, project: str, asset_kind: str) -> dict:
-    options = image_generation_selection_options()
+    options = configured_image_generation_selection_options()
     config_key = ASSET_IMAGE_SELECTION_CONFIG_KEYS[asset_kind]
     if asset_kind == "character":
         selection = _character_image_selection_payload(username, project)["character_image_selection"]
@@ -228,11 +227,32 @@ def _resolve_character_image_model(
 def _character_image_billing_metadata(
     model: str, *, image_role: str = "character"
 ) -> dict:
-    from novelvideo.config import IMAGE_GENERATION_SELECTIONS
+    from novelvideo.config import IMAGE_GENERATION_SELECTIONS, configured_image_generation_selection_options
 
     selection = normalize_character_image_selection(model)
     model_cfg = IMAGE_GENERATION_SELECTIONS.get(selection) or {}
     pricing_model = str(model_cfg.get("model") or "").strip()
+    if not pricing_model and selection in configured_image_generation_selection_options():
+        try:
+            from novelvideo.model_gateway_settings import get_third_party_media_model_catalog
+
+            entry = next(
+                (
+                    item
+                    for item in get_third_party_media_model_catalog("image")
+                    if str(item.get("id") or "").strip() == selection
+                ),
+                None,
+            )
+            pricing_model = str(
+                (entry or {}).get("gatewayModel")
+                or (entry or {}).get("apiModel")
+                or ""
+            ).strip()
+            if entry:
+                model_cfg = entry
+        except Exception:
+            pricing_model = ""
     if not pricing_model:
         return {}
     from novelvideo.api.routes.model_credits import _image_selection_billing_params
@@ -953,7 +973,7 @@ async def update_project_character_image_selection(
         await _resolve_character_project(project, user)
     )
     selection = str(body.character_image_selection or "").strip()
-    options = character_image_selection_options()
+    options = configured_image_generation_selection_options()
     if selection not in options:
         return JSONResponse(
             status_code=400,
@@ -1013,7 +1033,7 @@ async def update_project_asset_image_source_selection(
         await _resolve_character_project(project, user)
     )
     selection = str(body.image_source_selection or "").strip()
-    options = image_generation_selection_options()
+    options = configured_image_generation_selection_options()
     if selection not in options:
         return JSONResponse(
             status_code=400,

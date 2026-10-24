@@ -100,7 +100,6 @@ function validateModelAndModeFields(
     const fieldSchema = schema[field];
     if (fieldSchema?.type !== "enum") continue;
     const options = fieldSchema.options ?? [];
-    if (options.length === 0 && field === "model") continue;
     if (options.some((option) => Object.is(option, value))) continue;
     addIssue(
       issues,

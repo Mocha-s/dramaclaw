@@ -25,7 +25,6 @@ import { useFreezoneImageModels } from '@/features/canvas/hooks/useFreezoneImage
 import {
   DEFAULT_SHARED_MODEL_ID,
   ProviderModelPicker,
-  SHARED_MODELS,
 } from '@/features/canvas/ui/ProviderModelPicker';
 import { useCanvasStore } from '@/stores/canvasStore';
 
@@ -96,8 +95,7 @@ export function useUpscaleEditor({ node, onCancel }: UseUpscaleEditorOptions): U
   const { models: availableModels } = useFreezoneImageModels();
   const selectedModel =
     availableModels.find((m) => m.id === modelId)
-    ?? availableModels[0]
-    ?? SHARED_MODELS.find((m) => m.id === modelId);
+    ?? availableModels[0];
 
   const onModelChange = useCallback(
     (next: string) => updateNodeData(node.id, { upscaleModelId: next }),
@@ -113,12 +111,12 @@ export function useUpscaleEditor({ node, onCancel }: UseUpscaleEditorOptions): U
   );
 
   const onSubmit = useCallback(() => {
-    if (isSubmitting) return;
+    if (isSubmitting || !selectedModel?.apiModel) return;
     const completion = submitImageUpscale(node.id, {
       sourceUrl,
       scaleFactor,
       imageSize,
-      model: selectedModel?.apiModel ?? modelId,
+      model: selectedModel.apiModel,
     });
     if (!completion) return;
     setIsSubmitting(true);

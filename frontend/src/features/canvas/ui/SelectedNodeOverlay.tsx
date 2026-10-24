@@ -63,13 +63,11 @@ import { Scene360Overlay } from './Scene360Overlay';
 import { UpscaleEditorOverlay } from './UpscaleEditorOverlay';
 import { VideoUpscaleEditorOverlay } from './VideoUpscaleEditorOverlay';
 import {
-  getFreezoneImageModelsSnapshot,
   waitForFreezoneImageModels,
 } from '@/features/canvas/hooks/useFreezoneImageModels';
 import {
   DEFAULT_SHARED_MODEL_ID,
   DEFAULT_UPSCALE_MODEL_ID,
-  SHARED_MODELS,
 } from '@/features/canvas/ui/ProviderModelPicker';
 import { OutpaintEditorOverlay } from './OutpaintEditorOverlay';
 import { RotateEditorOverlay } from './RotateEditorOverlay';
@@ -666,17 +664,19 @@ export const SelectedNodeOverlay = memo(() => {
 
         void (async () => {
           try {
-            const imageModels = getFreezoneImageModelsSnapshot(project).models;
+            const imageModels = (await waitForFreezoneImageModels(project)).models;
             const selectedModel =
               imageModels.find((model) => model.id === DEFAULT_SHARED_MODEL_ID)
               ?? imageModels[0]
-              ?? SHARED_MODELS.find((model) => model.id === DEFAULT_SHARED_MODEL_ID);
+            if (!selectedModel?.apiModel) {
+              throw new Error(t('modelParams.noModelsAvailable'));
+            }
             const ref = await submitFreezoneOutpaint(project, {
               sourceUrl: imageSource.split('?')[0],
               targetAspectRatio: DEFAULT_OUTPAINT_ASPECT_RATIO,
               numImages: 1,
               imageSize: DEFAULT_OUTPAINT_IMAGE_SIZE,
-              model: selectedModel?.apiModel ?? DEFAULT_SHARED_MODEL_ID,
+              model: selectedModel.apiModel,
             });
             useCanvasStore.getState().updateNodeData(nextNodeId, generationTaskDescriptor(ref));
             const completed = await awaitTaskCompletion(ref.task_key, project);
@@ -755,15 +755,18 @@ export const SelectedNodeOverlay = memo(() => {
 
         void (async () => {
           try {
-            const imageModels = getFreezoneImageModelsSnapshot(project).models;
+            const imageModels = (await waitForFreezoneImageModels(project)).models;
             const selectedModel =
               imageModels.find((model) => model.id === DEFAULT_UPSCALE_MODEL_ID)
               ?? imageModels[0];
+            if (!selectedModel?.apiModel) {
+              throw new Error(t('modelParams.noModelsAvailable'));
+            }
             const ref = await submitFreezoneUpscale(project, {
               sourceUrl: imageSource.split('?')[0],
               scaleFactor: 2,
               imageSize: '2K',
-              model: selectedModel?.apiModel ?? DEFAULT_UPSCALE_MODEL_ID,
+              model: selectedModel.apiModel,
             });
             useCanvasStore.getState().updateNodeData(nextNodeId, generationTaskDescriptor(ref));
             const completed = await awaitTaskCompletion(ref.task_key, project);

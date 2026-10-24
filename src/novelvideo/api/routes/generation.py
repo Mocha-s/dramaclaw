@@ -234,6 +234,7 @@ def _image_selection_billing_metadata(
 ) -> dict:
     from novelvideo.config import (
         IMAGE_GENERATION_SELECTIONS,
+        configured_image_generation_selection_options,
         normalize_image_generation_selection,
     )
     from novelvideo.api.routes.model_credits import _image_selection_billing_params
@@ -241,6 +242,27 @@ def _image_selection_billing_metadata(
     selection = normalize_image_generation_selection(image_selection)
     model_cfg = IMAGE_GENERATION_SELECTIONS.get(selection) or {}
     pricing_model = str(model_cfg.get("model") or "").strip()
+    if not pricing_model and selection in configured_image_generation_selection_options():
+        try:
+            from novelvideo.model_gateway_settings import get_third_party_media_model_catalog
+
+            entry = next(
+                (
+                    item
+                    for item in get_third_party_media_model_catalog("image")
+                    if str(item.get("id") or "").strip() == selection
+                ),
+                None,
+            )
+            pricing_model = str(
+                (entry or {}).get("gatewayModel")
+                or (entry or {}).get("apiModel")
+                or ""
+            ).strip()
+            if entry:
+                model_cfg = entry
+        except Exception:
+            pricing_model = ""
     if not pricing_model:
         return {}
     pricing_params = _image_selection_billing_params(
@@ -304,12 +326,12 @@ def _resolve_render_bool_setting(
 
 
 def _render_settings_payload(username: str, project: str) -> dict:
-    from novelvideo.config import image_generation_selection_options
+    from novelvideo.config import configured_image_generation_selection_options
 
     project_config = load_project_config(username, project)
     return {
         "render_image_selection": _resolve_render_image_selection(project_config),
-        "options": image_generation_selection_options(),
+        "options": configured_image_generation_selection_options(),
         "sketch_aspect_padding": _resolve_render_bool_setting(
             project_config,
             "sketch_aspect_padding",
@@ -320,12 +342,12 @@ def _render_settings_payload(username: str, project: str) -> dict:
 
 
 def _sketch_settings_payload(username: str, project: str) -> dict:
-    from novelvideo.config import image_generation_selection_options
+    from novelvideo.config import configured_image_generation_selection_options
 
     project_config = load_project_config(username, project)
     return {
         "sketch_image_selection": _resolve_sketch_image_selection(project_config),
-        "options": image_generation_selection_options(),
+        "options": configured_image_generation_selection_options(),
     }
 
 
@@ -1771,7 +1793,7 @@ async def update_render_settings(
     user: dict = Depends(get_api_user),
 ):
     """Persist Render-stage image model and sizing settings."""
-    from novelvideo.config import image_generation_selection_options
+    from novelvideo.config import configured_image_generation_selection_options
 
     resolved = await _resolve_generation_project(project, user, required_role="editor")
     username = resolved.username
@@ -1780,7 +1802,7 @@ async def update_render_settings(
 
     if body.render_image_selection is not None:
         selection = str(body.render_image_selection or "").strip()
-        if selection not in image_generation_selection_options():
+        if selection not in configured_image_generation_selection_options():
             return JSONResponse(
                 status_code=400,
                 content={
@@ -1817,7 +1839,7 @@ async def update_sketch_settings(
     user: dict = Depends(get_api_user),
 ):
     """Persist Sketch-stage image model settings."""
-    from novelvideo.config import image_generation_selection_options
+    from novelvideo.config import configured_image_generation_selection_options
 
     resolved = await _resolve_generation_project(project, user, required_role="editor")
     username = resolved.username
@@ -1826,7 +1848,7 @@ async def update_sketch_settings(
 
     if body.sketch_image_selection is not None:
         selection = str(body.sketch_image_selection or "").strip()
-        if selection not in image_generation_selection_options():
+        if selection not in configured_image_generation_selection_options():
             return JSONResponse(
                 status_code=400,
                 content={

@@ -7,10 +7,7 @@ import {
   type FreezoneImageModelInfo,
 } from "@/api/ops";
 import { readUrl } from "@/lib/url-params";
-import {
-  SHARED_MODELS,
-  type ModelOption,
-} from "@/features/canvas/ui/ProviderModelPicker";
+import type { ModelOption } from "@/features/canvas/ui/ProviderModelPicker";
 
 export interface UseFreezoneImageModelsResult {
   models: ModelOption[];
@@ -28,16 +25,11 @@ const listeners = new Map<string, Set<() => void>>();
 const inFlightProjects = new Set<string>();
 const pendingRefreshProjects = new Set<string>();
 
-// Lazy singleton — must NOT touch `SHARED_MODELS` at module top level
-// because we have a circular import with `ProviderModelPicker.tsx` (the
-// picker imports this hook). Reading SHARED_MODELS during this module's
-// top-level evaluation would hit a TDZ. Reading it lazily inside a
-// function dodges that.
 let noProjectStateMemo: UseFreezoneImageModelsResult | null = null;
 function getNoProjectState(): UseFreezoneImageModelsResult {
   if (!noProjectStateMemo) {
     noProjectStateMemo = {
-      models: SHARED_MODELS,
+      models: [],
       isLoading: false,
       isFallback: true,
       error: null,
@@ -72,7 +64,7 @@ function ensureLoaded(project: string, force = false) {
   states.set(project, current
     ? { ...current, isLoading: true, error: null }
     : {
-        models: SHARED_MODELS,
+        models: [],
         isLoading: true,
         isFallback: true,
         error: null,
@@ -90,11 +82,11 @@ function ensureLoaded(project: string, force = false) {
       const normalized =
         error instanceof Error ? error : new Error(String(error));
       console.warn(
-        "[freezone] image models fetch failed, using hardcoded fallback:",
+        "[freezone] image models fetch failed; no catalog is available:",
         normalized.message,
       );
       writeState(project, {
-        models: SHARED_MODELS,
+        models: [],
         isLoading: false,
         isFallback: true,
         error: normalized,
@@ -130,10 +122,9 @@ export function getFreezoneImageModelsSnapshot(
 /**
  * Read the project's image catalog after its first load settles.
  *
- * Synchronous snapshot consumers may receive the hardcoded fallback while the
- * request is still in flight. Submission paths that must use the active model
- * catalog should await this function instead of accidentally sending a stale
- * fallback model.
+ * Synchronous snapshot consumers receive an empty list while the request is in
+ * flight. Submission paths that must use the active model catalog should await
+ * this function instead of accidentally sending a stale model.
  */
 export function waitForFreezoneImageModels(
   projectOverride?: string | null,
@@ -200,7 +191,7 @@ function subscribe(project: string | null, callback: () => void) {
  * `GET /api/v1/projects/{project}/freezone/image/models`. All subsequent
  * consumers (any picker on any panel) read the same cached snapshot and
  * re-render together when the fetch resolves. Failures fall back to the
- * hardcoded `SHARED_MODELS`; a successful empty EE catalog remains empty.
+ * no hardcoded model; a successful empty catalog remains empty.
  *
  * Returning focus to the tab refreshes the catalog so Admin changes become
  * visible without rebuilding the canvas.

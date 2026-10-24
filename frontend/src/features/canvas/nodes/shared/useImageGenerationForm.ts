@@ -37,7 +37,6 @@ import {
   backendErrorToastMessage,
 } from '@/lib/api-errors';
 import { readUrl } from '@/lib/url-params';
-import { SHARED_MODELS } from '@/features/canvas/ui/ProviderModelPicker';
 import { extractRequestId } from '@/features/canvas/application/generationErrorReport';
 import { useFreezoneImageModels } from '@/features/canvas/hooks/useFreezoneImageModels';
 import { describeCameraSelection } from '@/features/canvas/nodes/CameraPickerPopover';
@@ -210,14 +209,9 @@ export function useImageGenerationForm(
   // displayed id and the submit apiModel from this one object, so they can
   // never diverge.
   //
-  // The node's default `data.model` is seeded to the static
-  // `DEFAULT_SHARED_MODEL_ID` (`huimeng/gpt-image-2`), which is normally NOT in
-  // the live `/freezone/image/models` list. Trusting it blindly is the bug:
-  // ProviderModelPicker silently falls back to showing `availableModels[0]`
-  // (e.g. LingShan-G2) when the id isn't found, while submit resolves the stale
-  // id through SHARED_MODELS to `huimeng_gpt_image2` — display ≠ value sent.
-  // Reconciling here keeps them in lockstep: an unknown persisted id falls back
-  // to the first live model (exactly what the picker shows).
+  // The node's default `data.model` is a legacy id and may not be present in
+  // the live project catalog. Reconcile it against the catalog so the picker
+  // and submit path always use the same configured model.
   const selectedModel = useMemo(() => {
     const persisted =
       typeof data.model === 'string' && data.model.length > 0 ? data.model : null;
@@ -509,10 +503,17 @@ export function useImageGenerationForm(
 
     // apiModel comes from the SAME reconciled model the picker displays, so the
     // backend always receives the model the user actually sees.
-    const apiModel =
-      selectedModel?.apiModel
-      ?? SHARED_MODELS.find((m) => m.id === modelId)?.apiModel
-      ?? modelId;
+    const apiModel = selectedModel?.apiModel;
+    if (!apiModel) {
+      updateNodeData(id, {
+        isGenerating: false,
+        generationStartedAt: null,
+        generationError: t('modelParams.noModelsAvailable'),
+        generationErrorDetails: t('modelParams.noModelsAvailable'),
+        generationErrorRequestId: null,
+      });
+      return undefined;
+    }
     // 自身参考图（用户手动上传） + 所有上游图片/视频 URL，去重 —— 与 @图片N
     // 编号共用同一份有序列表（orderedReferenceUrls），后端按位置解释 图片N。
     // 后端 reference_urls 接受 image / video 混合数组。

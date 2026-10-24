@@ -1232,6 +1232,53 @@ def character_image_selection_options() -> dict[str, str]:
     return image_generation_selection_options()
 
 
+def configured_image_generation_selection_options() -> dict[str, str]:
+    """Return the active CE image catalog, preserving legacy options outside it."""
+    configured = _configured_third_party_image_selection_options()
+    if configured is not None:
+        return configured
+    return image_generation_selection_options()
+
+
+def _configured_third_party_image_selection_options() -> dict[str, str] | None:
+    """Return the CE image catalog, or ``None`` outside canonical CE config.
+
+    A canonical third-party settings key is an explicit declaration that CE
+    owns the image model list. In that state, the legacy ``LingShan-*``
+    selection table must not leak into asset selectors or character-image
+    generation. ``None`` preserves the environment-backed compatibility path
+    used by EE and older deployments that have not migrated settings yet.
+    """
+    if not uses_local_ce_runtime():
+        return None
+    try:
+        from novelvideo.model_gateway_settings import (
+            THIRD_PARTY_GROUPS_KEY,
+            get_model_gateway_settings,
+            get_third_party_media_model_catalog,
+        )
+
+        settings = get_model_gateway_settings()
+        if THIRD_PARTY_GROUPS_KEY not in settings:
+            return None
+        options = {
+            str(entry.get("id") or "").strip(): str(
+                entry.get("label") or entry.get("id") or ""
+            ).strip()
+            for entry in get_third_party_media_model_catalog("image")
+            if str(entry.get("id") or "").strip()
+        }
+        # Keep the legacy compatibility table for installations that have an
+        # empty canonical catalog. A populated canonical image catalog is the
+        # authoritative source and replaces the old fixed selections.
+        return options or None
+    except Exception:
+        # Configuration reads must not make the module unusable. The caller
+        # still receives the legacy compatibility table, while the runtime
+        # gateway remains responsible for rejecting an unavailable model.
+        return None
+
+
 def _visible_image_generation_selection(value: str | None) -> str:
     candidate = str(value or "").strip()
     if (
@@ -1267,6 +1314,17 @@ def normalize_image_generation_selection(
     *,
     fallback: str | None = None,
 ) -> str:
+    configured = _configured_third_party_image_selection_options()
+    candidate = str(value or "").strip()
+    if configured is not None:
+        if candidate in configured:
+            return candidate
+        fallback_candidate = str(fallback or "").strip()
+        if fallback_candidate in configured:
+            return fallback_candidate
+        if configured:
+            return next(iter(configured))
+        return ""
     selection = _visible_image_generation_selection(value)
     if selection:
         return selection
@@ -1277,11 +1335,22 @@ def image_generation_selection_label(
     value: str | None, *, fallback: str | None = None
 ) -> str:
     selection = normalize_image_generation_selection(value, fallback=fallback)
+    configured = _configured_third_party_image_selection_options()
+    if configured is not None and selection in configured:
+        return configured[selection]
     return IMAGE_GENERATION_SELECTIONS[selection]["label"]
 
 
 def get_character_image_selection() -> str:
     """Return the configured character/identity image source selection."""
+    configured = _configured_third_party_image_selection_options()
+    if configured is not None:
+        candidate = str(CHARACTER_IMAGE_SELECTION or "").strip()
+        if candidate in configured:
+            return candidate
+        if configured:
+            return next(iter(configured))
+        return ""
     candidate = _visible_image_generation_selection(CHARACTER_IMAGE_SELECTION)
     if candidate:
         return candidate
@@ -1298,6 +1367,10 @@ def get_character_image_selection() -> str:
 
 
 def normalize_character_image_selection(value: str | None) -> str:
+    configured = _configured_third_party_image_selection_options()
+    candidate = str(value or "").strip()
+    if configured is not None and candidate in configured:
+        return candidate
     candidate = _visible_image_generation_selection(value)
     if candidate:
         return candidate
@@ -1312,6 +1385,19 @@ def infer_image_generation_selection(
 ) -> str:
     provider_norm = str(provider or "").strip().lower()
     model_norm = str(model or "").strip()
+    configured = _configured_third_party_image_selection_options()
+    if configured is not None:
+        try:
+            from novelvideo.model_gateway_settings import get_third_party_media_model_catalog
+
+            for entry in get_third_party_media_model_catalog("image"):
+                if model_norm in {
+                    str(entry.get("apiModel") or "").strip(),
+                    str(entry.get("gatewayModel") or "").strip(),
+                }:
+                    return str(entry.get("id") or "").strip()
+        except Exception:
+            pass
     for key, entry in IMAGE_GENERATION_SELECTIONS.items():
         if entry["provider"] == provider_norm and entry["model"] == model_norm:
             return key
@@ -1336,10 +1422,20 @@ def _image_provider_config(
     selection_override: str | None = None,
 ) -> dict:
     if selection_override:
-        selection = normalize_image_generation_selection(selection_override)
-        entry = IMAGE_GENERATION_SELECTIONS[selection]
-        provider = entry["provider"]
-        model = model_override or entry["model"]
+        configured = _configured_third_party_image_selection_options()
+        raw_selection = str(selection_override or "").strip()
+        selection = (
+            raw_selection
+            if configured is not None and raw_selection in configured
+            else normalize_image_generation_selection(raw_selection)
+        )
+        if configured is not None and selection in configured:
+            provider = "newapi"
+            model = model_override or selection
+        else:
+            entry = IMAGE_GENERATION_SELECTIONS[selection]
+            provider = entry["provider"]
+            model = model_override or entry["model"]
     else:
         provider = (provider or "openrouter").lower()
         model = model_override or ""

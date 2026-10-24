@@ -18,7 +18,6 @@ import { type CanvasNode } from '@/features/canvas/domain/canvasNodes';
 import { useFreezoneImageModels } from '@/features/canvas/hooks/useFreezoneImageModels';
 import {
   DEFAULT_SHARED_MODEL_ID,
-  SHARED_MODELS,
 } from '@/features/canvas/ui/ProviderModelPicker';
 import { useCanvasStore } from '@/stores/canvasStore';
 
@@ -135,13 +134,11 @@ export function useAssetBoardImageEditActions({
 
   const { models: imageModels } = useFreezoneImageModels();
   // 模型选择优先级同工作流 UpscaleEditorOverlay / OutpaintEditorOverlay：优先取
-  // 默认共享模型（DEFAULT_SHARED_MODEL_ID），可用列表里没有再退到首个可用模型，
-  // 都拿不到才退到硬编码 SHARED_MODELS 兜底。
+  // 默认共享模型，可用列表里没有再取目录首个模型；目录失败时保持不可用。
   const selectedModelId =
     (imageModels.find((model) => model.id === DEFAULT_SHARED_MODEL_ID)
-      ?? imageModels[0]
-      ?? SHARED_MODELS.find((model) => model.id === DEFAULT_SHARED_MODEL_ID))?.id
-    ?? DEFAULT_SHARED_MODEL_ID;
+      ?? imageModels[0])?.id
+    ?? '';
 
   // 与工作流 NodeActionToolbar 同源的显隐语义：preset_managed（主线投影锁定）节点
   // 隐藏「原地改写源图」的入口——高清与旋转都是 updateNodeData 回写，会破坏

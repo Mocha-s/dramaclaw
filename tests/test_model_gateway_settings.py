@@ -721,7 +721,7 @@ def test_ce_image_selection_options_and_generation_use_configured_media_groups(
         }
     )
 
-    options = config.image_generation_selection_options()
+    options = config.configured_image_generation_selection_options()
     image_config = config.get_grid_generation_config(
         selection_override="custom-image-v1"
     )
@@ -731,6 +731,8 @@ def test_ce_image_selection_options_and_generation_use_configured_media_groups(
     assert image_config["api_key"] == "sk-image"
     assert image_config["base_url"] == "https://images.example/v1"
     assert image_config["model"] == "upstream-image-v1"
+    assert config.normalize_image_generation_selection("missing") == "custom-image-v1"
+    assert config.normalize_character_image_selection("custom-image-v1") == "custom-image-v1"
 
 
 
