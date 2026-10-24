@@ -94,6 +94,51 @@ def test_custom_third_party_text_group_takes_precedence_over_legacy_brainclaw(
     assert llm.is_brainclaw is False
 
 
+def test_custom_third_party_model_factory_sends_upstream_model_name(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": "custom",
+            "custom_llm_mode": CUSTOM_LLM_MODE_ADVANCED,
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "gpt-text",
+                        "name": "GPT text",
+                        "protocol": "openai",
+                        "baseUrl": "https://text.example/v1",
+                        "apiKey": "sk-text",
+                        "capabilities": ["text"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "DC-freezone-text-writer-LLM",
+                                "upstreamModel": "gpt-6.1-sol",
+                            }
+                        ],
+                    }
+                ]
+            ),
+        }
+    )
+    captured: dict[str, object] = {}
+
+    def fake_model(model_name, **kwargs):
+        captured.update(model_name=model_name, **kwargs)
+        return "model"
+
+    monkeypatch.setattr(config, "_newapi_text_openai_model", fake_model)
+
+    result = config.get_newapi_text_pydantic_model(
+        "EPISODE_PROP_PLANNER_MODEL",
+        model_name_override="DC-episode-prop-planner-LLM",
+    )
+
+    assert result == "model"
+    assert captured["model_name"] == "gpt-6.1-sol"
+
+
 def test_mixed_mode_routes_llm_to_relayclaw_without_changing_media(
     monkeypatch, tmp_path
 ):
