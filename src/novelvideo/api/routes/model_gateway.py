@@ -40,6 +40,7 @@ from novelvideo.model_gateway_settings import (
     get_sub2api_groups,
     save_third_party_gateway_groups,
     get_third_party_gateway_groups,
+    save_capability_defaults,
     set_model_gateway_mode,
     set_custom_llm_mode,
 )
@@ -53,6 +54,7 @@ from novelvideo.model_gateway_protocols import (
     normalize_gateway_protocol,
     normalize_protocol_base_url,
     validate_protocol_capabilities,
+    validate_gateway_protocol,
 )
 from novelvideo.service_operation_gate import (
     ServiceOperationExcluded,
@@ -204,6 +206,11 @@ class BrainClawGatewayBody(BaseModel):
 
 class Sub2ApiGatewayBody(BaseModel):
     groups: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class CapabilityDefaultsBody(BaseModel):
+    text_model: str | None = Field(default=None, alias="textModel")
+    embedding_model: str | None = Field(default=None, alias="embeddingModel")
 
 
 class Sub2ApiModelsBody(BaseModel):
@@ -701,7 +708,10 @@ async def save_third_party_gateway_config(body: Sub2ApiGatewayBody) -> dict[str,
     groups: list[dict[str, Any]] = []
     for submitted in body.groups:
         group = dict(submitted)
-        protocol = normalize_gateway_protocol(group.get("protocol"))
+        try:
+            protocol = validate_gateway_protocol(group.get("protocol"))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         if protocol not in SUB2API_PROTOCOLS:
             raise HTTPException(status_code=400, detail="protocol must be openai, gemini, or anthropic")
         base_url = str(group.get("baseUrl") or "").strip().rstrip("/")
@@ -770,6 +780,27 @@ async def save_third_party_gateway_config(body: Sub2ApiGatewayBody) -> dict[str,
     }
 
 
+@router.post("/capability-defaults")
+async def save_capability_defaults_route(body: CapabilityDefaultsBody) -> dict[str, Any]:
+    try:
+        require_ce_gateway_settings_management()
+    except PermissionError as exc:
+        raise _permission_error(exc) from exc
+    save_capability_defaults(
+        text_model=body.text_model or "",
+        embedding_model=body.embedding_model or "",
+    )
+    runtime = _refresh_runtime_after_gateway_write()
+    return {
+        "ok": True,
+        "data": build_model_gateway_status(
+            official_base_url=app_config.OFFICIAL_NEWAPI_BASE_URL,
+            official_api_key=app_config.NEWAPI_API_KEY,
+        ),
+        "runtime": runtime,
+    }
+
+
 @router.post("/sub2api/config")
 async def save_sub2api_gateway_config(body: Sub2ApiGatewayBody) -> dict[str, Any]:
     """Compatibility alias for the generic third-party configuration route."""
@@ -782,7 +813,10 @@ async def fetch_third_party_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
         require_ce_gateway_settings_management()
     except PermissionError as exc:
         raise _permission_error(exc) from exc
-    protocol = normalize_gateway_protocol(body.protocol)
+    try:
+        protocol = validate_gateway_protocol(body.protocol)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if protocol not in SUB2API_PROTOCOLS:
         raise HTTPException(status_code=400, detail="protocol must be openai, gemini, or anthropic")
     base_url = str(body.base_url or "").strip().rstrip("/")

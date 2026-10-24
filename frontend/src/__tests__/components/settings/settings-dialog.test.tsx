@@ -93,6 +93,7 @@ vi.mock("@/lib/queries/model-gateway", () => ({
   }),
   useSaveThirdPartyGatewayConfig: () => ({ mutateAsync: modelGatewayMocks.saveSub2Api, isPending: false }),
   useFetchThirdPartyModels: () => ({ mutateAsync: modelGatewayMocks.fetchSub2ApiModels, isPending: false }),
+  useSaveCapabilityDefaults: () => ({ mutateAsync: vi.fn().mockResolvedValue({ ok: true }), isPending: false }),
   useFetchSub2ApiModels: () => ({ mutateAsync: modelGatewayMocks.fetchSub2ApiModels, isPending: false }),
   useSetCustomLlmMode: () => ({
     mutateAsync: modelGatewayMocks.setCustomLlmMode,
@@ -585,7 +586,7 @@ describe("SettingsDialog pages", () => {
     fireEvent.click(geminiGroup.getByLabelText("文本 / 视觉"));
     fireEvent.click(geminiGroup.getByLabelText("Embedding"));
     fireEvent.click(geminiGroup.getByLabelText("gemini-embedding-001"));
-    fireEvent.click(screen.getByRole("button", { name: "保存第三方网关配置" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
 
     await waitFor(() => {
       expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
@@ -823,7 +824,7 @@ describe("SettingsDialog pages", () => {
     await user.click(screen.getByRole("option", { name: "旧版 /video/generations" }));
     fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[0], { target: { value: "gpt-image-2.5" } });
     fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[1], { target: { value: "sd17-seedance-2.5-2" } });
-    fireEvent.click(screen.getByRole("button", { name: "保存第三方网关配置" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
 
     await waitFor(() =>
       expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({

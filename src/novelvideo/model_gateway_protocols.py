@@ -21,6 +21,14 @@ def normalize_gateway_protocol(value: str | None) -> str:
     return "openai"
 
 
+def validate_gateway_protocol(value: str | None) -> str:
+    raw = str(value or "").strip().lower()
+    normalized = normalize_gateway_protocol(raw)
+    if raw not in {"openai", "gemini", "google", "anthropic", "claude"}:
+        raise ValueError(f"unsupported gateway protocol: {value}")
+    return normalized
+
+
 def normalize_protocol_base_url(protocol: str, value: str | None) -> str:
     base_url = str(value or "").strip().rstrip("/")
     normalized = normalize_gateway_protocol(protocol)

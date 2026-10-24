@@ -70,6 +70,7 @@ import {
   useSaveBrainClawConfig,
   useSaveThirdPartyGatewayConfig,
   useFetchThirdPartyModels,
+  useSaveCapabilityDefaults,
   useInitCustomNewApi,
   useSaveCustomChannel,
   useSaveCustomChannelsBatch,
@@ -949,6 +950,7 @@ function CustomLlmSettings({
 
 function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig | undefined }) {
   const { t } = useTranslation();
+  const saveDefaults = useSaveCapabilityDefaults();
   const textModels = useMemo(
     () => Array.from(new Set(
       (config?.thirdParty?.groups ?? [])
@@ -967,6 +969,20 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
     )),
     [config?.thirdParty?.groups],
   );
+  const [textModel, setTextModel] = useState(config?.capabilityDefaults?.textModel ?? config?.llmEffective.model ?? textModels[0] ?? "");
+  const [embeddingModel, setEmbeddingModel] = useState(config?.capabilityDefaults?.embeddingModel ?? embeddingModels[0] ?? "");
+  useEffect(() => {
+    setTextModel(config?.capabilityDefaults?.textModel ?? config?.llmEffective.model ?? textModels[0] ?? "");
+    setEmbeddingModel(config?.capabilityDefaults?.embeddingModel ?? embeddingModels[0] ?? "");
+  }, [config?.capabilityDefaults, config?.llmEffective.model, textModels, embeddingModels]);
+  const save = async () => {
+    const response = await saveDefaults.mutateAsync({
+      textModel: textModel || undefined,
+      embeddingModel: embeddingModel || undefined,
+    });
+    if (!response.ok) toast.error(t("settings.modelConfig.requestFailed"));
+    else toast.success(t("settings.modelConfig.thirdParty.saved"));
+  };
 
   return (
     <section className="mt-4 rounded-md border border-border/70 p-3">
@@ -981,13 +997,22 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
           label={t("settings.modelConfig.capabilityDefaults.text", { defaultValue: "文本 / 视觉模型" })}
           model={config?.llmEffective.model || textModels[0] || ""}
           available={textModels}
+          value={textModel}
+          onChange={setTextModel}
         />
         <CapabilityDefaultRow
           label={t("settings.modelConfig.capabilityDefaults.embedding", { defaultValue: "Embedding 模型" })}
           model={embeddingModels[0] || ""}
           available={embeddingModels}
           optional
+          value={embeddingModel}
+          onChange={setEmbeddingModel}
         />
+      </div>
+      <div className="mt-3 flex justify-end">
+        <Button type="button" size="sm" onClick={save} disabled={saveDefaults.isPending || textModels.length === 0}>
+          {t("settings.modelConfig.thirdParty.save")}
+        </Button>
       </div>
     </section>
   );
@@ -998,18 +1023,27 @@ function CapabilityDefaultRow({
   model,
   available,
   optional = false,
+  value,
+  onChange,
 }: {
   label: string;
   model: string;
   available: string[];
   optional?: boolean;
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <div className="rounded-md border border-border/60 px-3 py-2.5">
       <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="mt-1 font-mono text-xs text-foreground">
-        {model || (optional ? "未配置（可选）" : "未配置")}
-      </div>
+      {available.length > 0 ? (
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger size="sm" className="mt-1 h-8 w-full font-mono text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            {available.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      ) : <div className="mt-1 font-mono text-xs text-foreground">{model || (optional ? "未配置（可选）" : "未配置")}</div>}
       {available.length > 1 ? (
         <div className="mt-1 text-[10px] text-muted-foreground">已发现 {available.length} 个上游模型</div>
       ) : null}

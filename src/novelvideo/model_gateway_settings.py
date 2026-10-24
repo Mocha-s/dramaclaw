@@ -61,6 +61,7 @@ SUB2API_IMAGE_EDIT_FORMATS = {
 }
 SUB2API_VIDEO_ENDPOINTS = {"videos", "video/generations"}
 THIRD_PARTY_GROUPS_KEY = "third_party_gateway_groups"
+CAPABILITY_DEFAULTS_KEY = "third_party_capability_defaults"
 THIRD_PARTY_MIGRATION_VERSION_KEY = "third_party_gateway_migration_version"
 THIRD_PARTY_MIGRATION_WARNINGS_KEY = "third_party_gateway_migration_warnings"
 THIRD_PARTY_MIGRATION_VERSION = "1"
@@ -441,9 +442,13 @@ def resolve_capability_default(
     """
     normalized = normalize_capability(capability)
     groups = get_third_party_gateway_groups()
-    requested_model = (
-        "DC-freezone-text-writer-LLM" if normalized == CAPABILITY_TEXT else ""
-    )
+    defaults = get_capability_defaults()
+    requested_model = str(
+        (defaults.get("textModel") if normalized == CAPABILITY_TEXT else defaults.get("embeddingModel"))
+        or ""
+    ).strip()
+    if not requested_model and normalized == CAPABILITY_TEXT:
+        requested_model = "DC-freezone-text-writer-LLM"
     selected = _resolve_sub2api_group(
         capability=normalized,
         model=requested_model,
@@ -733,6 +738,24 @@ def save_third_party_gateway_groups(groups: list[dict[str, Any]], *, activate: b
     if activate:
         values["model_gateway_mode"] = MODE_CUSTOM
     _write_many(values)
+
+
+def get_capability_defaults() -> dict[str, str]:
+    raw = get_model_gateway_settings().get(CAPABILITY_DEFAULTS_KEY, "{}")
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def save_capability_defaults(*, text_model: str = "", embedding_model: str = "") -> None:
+    values = {
+        key: str(model or "").strip()
+        for key, model in (("textModel", text_model), ("embeddingModel", embedding_model))
+        if str(model or "").strip()
+    }
+    _write_many({CAPABILITY_DEFAULTS_KEY: json.dumps(values, ensure_ascii=False, sort_keys=True)})
 
 
 def set_model_gateway_mode(mode: str) -> None:
@@ -2483,6 +2506,7 @@ def build_model_gateway_status(
             "groups": third_party_groups,
             "configured": bool(third_party_groups),
         },
+        "capabilityDefaults": get_capability_defaults() if uses_ce_settings else {},
         "migrationWarnings": (
             json.loads(settings.get(THIRD_PARTY_MIGRATION_WARNINGS_KEY, "[]"))
             if uses_ce_settings else []

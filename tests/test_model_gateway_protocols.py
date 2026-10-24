@@ -42,3 +42,14 @@ def test_anthropic_catalog_rejects_media_capabilities() -> None:
         assert "text" in str(exc)
     else:
         raise AssertionError("Anthropic media capability validation did not fail")
+
+
+def test_invalid_gateway_protocol_is_rejected() -> None:
+    from novelvideo.model_gateway_protocols import validate_gateway_protocol
+
+    try:
+        validate_gateway_protocol("not-a-protocol")
+    except ValueError as exc:
+        assert "unsupported gateway protocol" in str(exc)
+    else:
+        raise AssertionError("invalid protocol was accepted")

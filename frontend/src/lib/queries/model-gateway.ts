@@ -199,6 +199,10 @@ export interface ModelGatewayConfig {
   migrationWarnings?: string[];
   provisioner?: ModelGatewayProvisionerConfig;
   mediaRelay?: MediaRelayConfig;
+  capabilityDefaults?: {
+    textModel?: string;
+    embeddingModel?: string;
+  };
 }
 
 export interface OfficialMediaCatalogStatus {
@@ -640,6 +644,18 @@ export function useFetchThirdPartyModels() {
         timeout: 30_000,
         throwHttpErrors: false,
       }).json<OkResponse<FetchThirdPartyModelsResult> | ErrorResponse>(),
+  });
+}
+
+export function useSaveCapabilityDefaults() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { textModel?: string; embeddingModel?: string }) =>
+      api.post("api/v1/model-gateway/capability-defaults", {
+        json: input,
+        throwHttpErrors: false,
+      }).json<OkResponse<ModelGatewayConfig> | ErrorResponse>(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.modelGateway() }),
   });
 }
 

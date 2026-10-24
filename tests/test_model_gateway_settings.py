@@ -823,6 +823,58 @@ def test_capability_default_returns_upstream_model_without_dc_alias(
     assert gateway_settings.resolve_capability_default("embedding") is None
 
 
+def test_capability_defaults_are_persisted_and_select_text_upstream_model(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": MODE_CUSTOM,
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "one",
+                        "name": "One",
+                        "protocol": "openai",
+                        "baseUrl": "https://one.example/v1",
+                        "apiKey": "sk-one",
+                        "capabilities": ["text"],
+                        "modelMappings": [{"requestPattern": "one", "upstreamModel": "one"}],
+                    },
+                    {
+                        "id": "two",
+                        "name": "Two",
+                        "protocol": "openai",
+                        "baseUrl": "https://two.example/v1",
+                        "apiKey": "sk-two",
+                        "capabilities": ["text"],
+                        "modelMappings": [{"requestPattern": "two", "upstreamModel": "two"}],
+                    },
+                ]
+            ),
+        }
+    )
+    gateway_settings.save_capability_defaults(text_model="two")
+
+    assert gateway_settings.get_capability_defaults() == {"textModel": "two"}
+    assert gateway_settings.resolve_capability_default("text").model == "two"
+
+
+def test_gateway_status_exposes_saved_capability_defaults(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings.save_capability_defaults(
+        text_model="gpt-6.1-sol",
+        embedding_model="text-embedding-3-large",
+    )
+
+    status = model_gateway_settings.build_model_gateway_status()
+
+    assert status["capabilityDefaults"] == {
+        "textModel": "gpt-6.1-sol",
+        "embeddingModel": "text-embedding-3-large",
+    }
+
+
 
 
 def test_effective_newapi_config_uses_request_scoped_explicit_config_without_writes(
