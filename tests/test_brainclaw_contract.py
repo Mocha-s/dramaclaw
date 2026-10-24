@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -32,6 +33,7 @@ from novelvideo.model_gateway_settings import (
     set_custom_llm_mode,
     set_model_gateway_mode,
 )
+from novelvideo import model_gateway_settings
 from novelvideo.official_defaults import (
     ADVANCED_TEXT_MODEL_BY_ENV,
     DEFAULT_COGNEE_LLM_MODEL,
@@ -52,6 +54,44 @@ def _configure_custom_media() -> None:
         api_key="sk-custom-media-secret",
         activate=True,
     )
+
+
+def test_custom_third_party_text_group_takes_precedence_over_legacy_brainclaw(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    _configure_custom_media()
+    save_relayclaw_brainclaw_key(
+        api_key="sk-legacy-brainclaw",
+        base_url="https://legacy-brainclaw.example/v1",
+    )
+    model_gateway_settings._write_many(
+        {
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "text-gateway",
+                        "name": "Text gateway",
+                        "protocol": "openai",
+                        "baseUrl": "https://text.example/v1",
+                        "apiKey": "sk-third-party",
+                        "capabilities": ["text"],
+                        "modelMappings": [
+                            {"requestPattern": "DC-codex-agent-LLM", "upstreamModel": "qwen-max"}
+                        ],
+                    }
+                ]
+            )
+        }
+    )
+
+    llm = get_effective_llm_config(model="DC-codex-agent-LLM")
+
+    assert llm.source == "third_party"
+    assert llm.base_url == "https://text.example/v1"
+    assert llm.api_key == "sk-third-party"
+    assert llm.model == "qwen-max"
+    assert llm.is_brainclaw is False
 
 
 def test_mixed_mode_routes_llm_to_relayclaw_without_changing_media(

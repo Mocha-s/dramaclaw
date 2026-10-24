@@ -1896,38 +1896,44 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
                 model=upstream_model,
                 is_brainclaw=False,
             )
-    # An explicitly configured BrainClaw endpoint remains authoritative for
-    # backward compatibility. Otherwise Custom mode can reuse the canonical
-    # third-party text group automatically.
-    if (
-        gateway_mode == MODE_CUSTOM
-        and custom_llm_mode == CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW
-        and (
-            settings.get("brainclaw_newapi_base_url", "")
-            or settings.get("brainclaw_newapi_api_key", "")
-        )
-    ):
-        brainclaw_base_url = normalize_relay_base_url(
-            settings.get("brainclaw_newapi_base_url", "")
-            or OFFICIAL_NEWAPI_BASE_URL
-        )
-        brainclaw_api_key = normalize_api_key(
-            settings.get("brainclaw_newapi_api_key", "")
-            or (
-                settings.get("platform_gateway_api_key", "")
-                if _is_official_relay_url(brainclaw_base_url)
-                else ""
-            )
-        )
-        return EffectiveLlmConfig(
-            mode=CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
-            source="custom",
-            base_url=brainclaw_base_url,
-            api_key=brainclaw_api_key,
-            model="brainclaw",
-            is_brainclaw=True,
-        )
     if gateway_mode == MODE_CUSTOM:
+        groups = get_third_party_gateway_groups()
+        has_configured_text_group = any(
+            CAPABILITY_TEXT in group.get("capabilities", [])
+            and str(group.get("id") or "") != "legacy-custom-newapi"
+            for group in groups
+        )
+        # A dedicated legacy BrainClaw endpoint remains authoritative when it
+        # is the only compatibility route. Once a real third-party text group
+        # exists, that canonical group supersedes the old duplicate settings.
+        if (
+            custom_llm_mode == CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW
+            and not has_configured_text_group
+            and (
+                settings.get("brainclaw_newapi_base_url", "")
+                or settings.get("brainclaw_newapi_api_key", "")
+            )
+        ):
+            brainclaw_base_url = normalize_relay_base_url(
+                settings.get("brainclaw_newapi_base_url", "")
+                or OFFICIAL_NEWAPI_BASE_URL
+            )
+            brainclaw_api_key = normalize_api_key(
+                settings.get("brainclaw_newapi_api_key", "")
+                or (
+                    settings.get("platform_gateway_api_key", "")
+                    if _is_official_relay_url(brainclaw_base_url)
+                    else ""
+                )
+            )
+            return EffectiveLlmConfig(
+                mode=CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
+                source="custom",
+                base_url=brainclaw_base_url,
+                api_key=brainclaw_api_key,
+                model="brainclaw",
+                is_brainclaw=True,
+            )
         backend = (
             os.environ.get("DRAMACLAW_CHAT_BACKEND")
             or os.environ.get("SUPERTALE_CHAT_BACKEND")
@@ -1938,7 +1944,6 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
             if backend == "hermes"
             else str(os.environ.get("CODEX_MODEL", "DC-codex-agent-LLM") or "").strip()
         )
-        groups = get_third_party_gateway_groups()
         selected = _resolve_sub2api_group(
             capability=CAPABILITY_TEXT,
             model=selected_model,
