@@ -87,6 +87,11 @@ from novelvideo.sqlite_store import SQLiteStore
 
 logger = logging.getLogger("novelvideo.api.characters")
 
+# Keep module-level seams for route-contract tests and older integrations while
+# sourcing the actual values from the canonical third-party catalog.
+character_image_selection_options = configured_image_generation_selection_options
+image_generation_selection_options = configured_image_generation_selection_options
+
 router = APIRouter()
 
 CHARACTER_IMAGE_SELECTION_CONFIG_KEY = "character_image_selection"
@@ -177,7 +182,7 @@ async def _character_project_scope(
 
 
 def _character_image_selection_payload(username: str, project: str) -> dict:
-    options = configured_image_generation_selection_options()
+    options = character_image_selection_options()
     config = load_project_config_file(username, project)
     saved_selection = str(
         config.get(CHARACTER_IMAGE_SELECTION_CONFIG_KEY) or ""
@@ -192,7 +197,7 @@ def _character_image_selection_payload(username: str, project: str) -> dict:
 
 
 def _asset_image_source_selection_payload(username: str, project: str, asset_kind: str) -> dict:
-    options = configured_image_generation_selection_options()
+    options = image_generation_selection_options()
     config_key = ASSET_IMAGE_SELECTION_CONFIG_KEYS[asset_kind]
     if asset_kind == "character":
         selection = _character_image_selection_payload(username, project)["character_image_selection"]
@@ -973,7 +978,7 @@ async def update_project_character_image_selection(
         await _resolve_character_project(project, user)
     )
     selection = str(body.character_image_selection or "").strip()
-    options = configured_image_generation_selection_options()
+    options = character_image_selection_options()
     if selection not in options:
         return JSONResponse(
             status_code=400,
@@ -1033,7 +1038,7 @@ async def update_project_asset_image_source_selection(
         await _resolve_character_project(project, user)
     )
     selection = str(body.image_source_selection or "").strip()
-    options = configured_image_generation_selection_options()
+    options = image_generation_selection_options()
     if selection not in options:
         return JSONResponse(
             status_code=400,
