@@ -891,6 +891,38 @@ def test_capability_defaults_are_persisted_and_select_text_upstream_model(
     assert gateway_settings.resolve_capability_default("text").model == "two"
 
 
+def test_effective_llm_uses_saved_capability_default_for_unmapped_feature(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    groups = [
+        {
+            "id": group_id,
+            "name": group_id,
+            "protocol": "openai",
+            "baseUrl": f"https://{group_id}.example/v1",
+            "apiKey": f"sk-{group_id}",
+            "capabilities": ["text"],
+            "modelMappings": [{"requestPattern": model_id, "upstreamModel": upstream}],
+        }
+        for group_id, model_id, upstream in (
+            ("one", "one-alias", "one-upstream"),
+            ("two", "two-alias", "two-upstream"),
+        )
+    ]
+    model_gateway_settings._write_many({
+        "model_gateway_mode": MODE_CUSTOM,
+        "third_party_gateway_groups": json.dumps(groups),
+    })
+    gateway_settings.save_capability_defaults(text_group_id="two", text_model="two-upstream")
+
+    llm = gateway_settings.get_effective_llm_config(model="DC-episode-prop-planner-LLM")
+
+    assert llm.source == "third_party"
+    assert llm.model == "two-upstream"
+    assert llm.base_url == "https://two.example/v1"
+
+
 def test_capability_default_group_id_disambiguates_duplicate_upstream_models(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ):

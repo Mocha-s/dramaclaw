@@ -748,7 +748,13 @@ function ThirdPartyGroupCard({
         <Label htmlFor={`${modelsId}-protocol`} className="text-[11px] text-muted-foreground uppercase">{t("settings.modelConfig.thirdParty.protocol")}</Label>
         <Select
           value={group.protocol}
-          onValueChange={(protocol) => onChange({ ...group, protocol: protocol as ThirdPartyGroupDraft["protocol"] })}
+          onValueChange={(protocol) => onChange({
+            ...group,
+            protocol: protocol as ThirdPartyGroupDraft["protocol"],
+            ...(protocol === "anthropic" && !group.baseUrl.trim()
+              ? { baseUrl: "https://api.anthropic.com" }
+              : {}),
+          })}
         >
           <SelectTrigger id={`${modelsId}-protocol`} size="sm" className="h-9 w-full">
             <SelectValue />
@@ -974,8 +980,10 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
   const [textModel, setTextModel] = useState(config?.capabilityDefaults?.textGroupId && config.capabilityDefaults.textModel ? `${config.capabilityDefaults.textGroupId}::${config.capabilityDefaults.textModel}` : textModels[0]?.value ?? "");
   const [embeddingModel, setEmbeddingModel] = useState(config?.capabilityDefaults?.embeddingGroupId && config.capabilityDefaults.embeddingModel ? `${config.capabilityDefaults.embeddingGroupId}::${config.capabilityDefaults.embeddingModel}` : embeddingModels[0]?.value ?? "");
   useEffect(() => {
-    setTextModel(config?.capabilityDefaults?.textGroupId && config.capabilityDefaults.textModel ? `${config.capabilityDefaults.textGroupId}::${config.capabilityDefaults.textModel}` : textModels[0]?.value ?? "");
-    setEmbeddingModel(config?.capabilityDefaults?.embeddingGroupId && config.capabilityDefaults.embeddingModel ? `${config.capabilityDefaults.embeddingGroupId}::${config.capabilityDefaults.embeddingModel}` : embeddingModels[0]?.value ?? "");
+    const savedText = config?.capabilityDefaults?.textGroupId && config.capabilityDefaults.textModel ? `${config.capabilityDefaults.textGroupId}::${config.capabilityDefaults.textModel}` : "";
+    const savedEmbedding = config?.capabilityDefaults?.embeddingGroupId && config.capabilityDefaults.embeddingModel ? `${config.capabilityDefaults.embeddingGroupId}::${config.capabilityDefaults.embeddingModel}` : "";
+    setTextModel(textModels.some((item) => item.value === savedText) ? savedText : textModels[0]?.value ?? "");
+    setEmbeddingModel(embeddingModels.some((item) => item.value === savedEmbedding) ? savedEmbedding : embeddingModels[0]?.value ?? "");
   }, [config?.capabilityDefaults, config?.llmEffective.model, textModels, embeddingModels]);
   const save = async () => {
     const [textGroupId, selectedTextModel] = textModel.split("::");

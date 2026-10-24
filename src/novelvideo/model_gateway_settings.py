@@ -2106,6 +2106,18 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
                 groups=groups,
             )
         if selected is None:
+            capability_default = resolve_capability_default(CAPABILITY_TEXT)
+            if capability_default is not None:
+                return EffectiveLlmConfig(
+                    mode=MODE_CUSTOM,
+                    source="third_party",
+                    base_url=capability_default.base_url,
+                    api_key=capability_default.api_key,
+                    model=capability_default.model,
+                    is_brainclaw=False,
+                    protocol=capability_default.protocol,
+                )
+        if selected is None:
             candidates = [
                 (group, mapping)
                 for group in groups
