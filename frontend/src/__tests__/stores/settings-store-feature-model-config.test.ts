@@ -17,6 +17,19 @@ import {
 type QuickProfile = Parameters<typeof syncQuickProfileFromAdvancedSettings>[0];
 
 describe("Custom settings feature model visibility", () => {
+  it("defines the six Xiahua product features as one text capability", () => {
+    const xiahua = FEATURE_MODEL_PRODUCT_GROUPS.find((group) => group.key === "xiahua");
+    expect(xiahua?.features.map((feature) => feature.id)).toEqual([
+      "FREEZONE_TRANSLATION",
+      "FREEZONE_TEXT_WRITER",
+      "FREEZONE_STORY_SCRIPT",
+      "FREEZONE_RECIPE_COMPILER",
+      "FREEZONE_VISION",
+      "STAGING_PROP",
+    ]);
+    expect(xiahua?.features.every((feature) => feature.capability === "text")).toBe(true);
+  });
+
   it("includes character extraction among the displayed text model rows", () => {
     const textFeatures = FEATURE_MODEL_PRODUCT_GROUPS.flatMap((group) =>
       group.features.filter((feature) => !feature.requiresVision && feature.id !== "COGNEE"),
@@ -24,6 +37,7 @@ describe("Custom settings feature model visibility", () => {
     expect(textFeatures).toContainEqual({
       id: "CHARACTER_BUILD",
       defaultModel: "DC-character-builder-LLM",
+      capability: "text",
     });
   });
 

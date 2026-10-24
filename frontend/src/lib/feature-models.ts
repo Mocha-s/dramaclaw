@@ -11,6 +11,8 @@ export interface FeatureModelDef {
   defaultModel: string;
   /** 该功能会向上游 LLM 发送图片，需要选择支持视觉输入的模型。 */
   requiresVision?: boolean;
+  /** All current text and visual-input features use the shared text gateway capability. */
+  capability: "text";
 }
 
 export interface FeatureModelGroup {
@@ -22,7 +24,7 @@ export interface FeatureModelGroup {
 export const FEATURE_MODEL_GROUPS: readonly FeatureModelGroup[] = [
   {
     key: "chat",
-    features: [{ id: "HERMES", defaultModel: "DC-hermes-LLM" }],
+    features: [{ id: "HERMES", defaultModel: "DC-hermes-LLM", capability: "text" }],
   },
   {
     key: "shot",
@@ -31,8 +33,9 @@ export const FEATURE_MODEL_GROUPS: readonly FeatureModelGroup[] = [
         id: "GLOBAL_VIDEO_OPTIMIZER",
         defaultModel: "DC-video-prompt-optimizer-LLM",
         requiresVision: true,
+        capability: "text",
       },
-      { id: "SEEDANCE2_PROMPT_COMPOSER", defaultModel: "DC-seedance2-prompt-composer-LLM" },
+      { id: "SEEDANCE2_PROMPT_COMPOSER", defaultModel: "DC-seedance2-prompt-composer-LLM", capability: "text" },
     ],
   },
   {
@@ -42,38 +45,40 @@ export const FEATURE_MODEL_GROUPS: readonly FeatureModelGroup[] = [
         id: "GLOBAL_VIDEO_IDENTITY_DETECTOR",
         defaultModel: "DC-video-identity-detector-LLM",
         requiresVision: true,
+        capability: "text",
       },
     ],
   },
   {
     key: "episode",
     features: [
-      { id: "IDENTITY_PLANNER_CAST", defaultModel: "DC-identity-cast-planner-LLM" },
-      { id: "IDENTITY_PLANNER_ANALYSIS", defaultModel: "DC-identity-analysis-planner-LLM" },
-      { id: "IDENTITY_PLANNER_APPEARANCE", defaultModel: "DC-identity-appearance-writer-LLM" },
-      { id: "LITERAL_BEAT_META", defaultModel: "DC-literal-beat-meta-LLM" },
-      { id: "EPISODE_SCENE_PLANNER", defaultModel: "DC-episode-scene-planner-LLM" },
-      { id: "EPISODE_PROP_PLANNER", defaultModel: "DC-episode-prop-planner-LLM" },
+      { id: "IDENTITY_PLANNER_CAST", defaultModel: "DC-identity-cast-planner-LLM", capability: "text" },
+      { id: "IDENTITY_PLANNER_ANALYSIS", defaultModel: "DC-identity-analysis-planner-LLM", capability: "text" },
+      { id: "IDENTITY_PLANNER_APPEARANCE", defaultModel: "DC-identity-appearance-writer-LLM", capability: "text" },
+      { id: "LITERAL_BEAT_META", defaultModel: "DC-literal-beat-meta-LLM", capability: "text" },
+      { id: "EPISODE_SCENE_PLANNER", defaultModel: "DC-episode-scene-planner-LLM", capability: "text" },
+      { id: "EPISODE_PROP_PLANNER", defaultModel: "DC-episode-prop-planner-LLM", capability: "text" },
     ],
   },
   {
     key: "sceneLibrary",
     features: [
-      { id: "CHARACTER_BUILD", defaultModel: "DC-character-builder-LLM" },
-      { id: "SCENE_BUILD", defaultModel: "DC-scene-builder-LLM" },
+      { id: "CHARACTER_BUILD", defaultModel: "DC-character-builder-LLM", capability: "text" },
+      { id: "SCENE_BUILD", defaultModel: "DC-scene-builder-LLM", capability: "text" },
     ],
   },
   {
     key: "freezone",
     features: [
-      { id: "FREEZONE_TRANSLATION", defaultModel: "DC-freezone-translator-LLM" },
-      { id: "FREEZONE_TEXT_WRITER", defaultModel: "DC-freezone-text-writer-LLM" },
-      { id: "FREEZONE_STORY_SCRIPT", defaultModel: "DC-freezone-story-script-writer-LLM" },
-      { id: "FREEZONE_RECIPE_COMPILER", defaultModel: "DC-freezone-recipe-compiler-LLM" },
+      { id: "FREEZONE_TRANSLATION", defaultModel: "DC-freezone-translator-LLM", capability: "text" },
+      { id: "FREEZONE_TEXT_WRITER", defaultModel: "DC-freezone-text-writer-LLM", capability: "text" },
+      { id: "FREEZONE_STORY_SCRIPT", defaultModel: "DC-freezone-story-script-writer-LLM", capability: "text" },
+      { id: "FREEZONE_RECIPE_COMPILER", defaultModel: "DC-freezone-recipe-compiler-LLM", capability: "text" },
       {
         id: "FREEZONE_VISION",
         defaultModel: "DC-freezone-vision-LLM",
         requiresVision: true,
+        capability: "text",
       },
     ],
   },
@@ -84,31 +89,32 @@ export const FEATURE_MODEL_GROUPS: readonly FeatureModelGroup[] = [
         id: "STYLE_ANALYZER",
         defaultModel: "DC-style-analyzer-LLM",
         requiresVision: true,
+        capability: "text",
       },
     ],
   },
   {
     key: "contentRewrite",
-    features: [{ id: "CONTENT_REWRITER", defaultModel: "DC-content-rewriter-LLM" }],
+    features: [{ id: "CONTENT_REWRITER", defaultModel: "DC-content-rewriter-LLM", capability: "text" }],
   },
   {
     key: "screenplay",
-    features: [{ id: "SCREENPLAY_NORMALIZER", defaultModel: "DC-screenplay-normalizer-LLM" }],
+    features: [{ id: "SCREENPLAY_NORMALIZER", defaultModel: "DC-screenplay-normalizer-LLM", capability: "text" }],
   },
   {
     key: "assetCompile",
     features: [
-      { id: "EPISODE_SCENE_RECONCILE", defaultModel: "DC-episode-scene-reconciler-LLM" },
-      { id: "NARRATED_SCENE_ASSET", defaultModel: "DC-narrated-scene-asset-planner-LLM" },
+      { id: "EPISODE_SCENE_RECONCILE", defaultModel: "DC-episode-scene-reconciler-LLM", capability: "text" },
+      { id: "NARRATED_SCENE_ASSET", defaultModel: "DC-narrated-scene-asset-planner-LLM", capability: "text" },
     ],
   },
   {
     key: "directorWorld",
-    features: [{ id: "STAGING_PROP", defaultModel: "DC-staging-prop-planner-LLM" }],
+    features: [{ id: "STAGING_PROP", defaultModel: "DC-staging-prop-planner-LLM", capability: "text" }],
   },
   {
     key: "novelImport",
-    features: [{ id: "COGNEE", defaultModel: "DC-cognee-LLM" }],
+    features: [{ id: "COGNEE", defaultModel: "DC-cognee-LLM", capability: "text" }],
   },
 ];
 

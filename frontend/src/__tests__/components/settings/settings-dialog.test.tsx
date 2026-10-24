@@ -648,7 +648,7 @@ describe("SettingsDialog pages", () => {
     expect(screen.getByRole("button", { name: /Primary/ })).toBeInTheDocument();
   });
 
-  it("retains Custom BrainClaw and provider feature model settings", () => {
+  it("shows capability defaults instead of the removed NewAPI feature model editor", () => {
     modelGatewayMocks.config = {
       mode: "custom",
       effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
@@ -664,7 +664,8 @@ describe("SettingsDialog pages", () => {
     expect(screen.getByRole("tab", { name: "虾驿 BrainClaw（推荐）" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "高级自定义" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
-    expect(screen.getByText("业务模型映射")).toBeInTheDocument();
+    expect(screen.getByText("能力默认模型")).toBeInTheDocument();
+    expect(screen.queryByText("业务模型映射")).not.toBeInTheDocument();
   });
 
   it("uses a configured third-party text group for BrainClaw without duplicate endpoint fields", () => {
@@ -684,6 +685,26 @@ describe("SettingsDialog pages", () => {
     expect(screen.getByText("已自动使用第三方文本网关组，无需重复配置地址和 API Key。")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("https://text.example/v1")).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "网关地址" })).not.toBeInTheDocument();
+  });
+
+  it("renders one configured text default instead of DC feature mappings", () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "third_party", baseUrl: "https://text.example/v1", apiKeyPreview: "sk-...", configured: true, model: "gpt-6.1-sol", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [
+        { id: "text", name: "Text gateway", protocol: "openai", baseUrl: "https://text.example/v1", apiKeyPreview: "sk-...", capabilities: ["text"], modelMappings: [{ requestPattern: "DC-freezone-text-writer-LLM", upstreamModel: "gpt-6.1-sol" }] },
+      ] },
+    };
+    renderSettingsDialog();
+
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
+    expect(screen.getByText("gpt-6.1-sol")).toBeInTheDocument();
+    expect(screen.queryByText("业务模型映射")).not.toBeInTheDocument();
+    expect(screen.queryByText("DC-freezone-text-writer-LLM")).not.toBeInTheDocument();
   });
 
   it("does not show the official media catalog before an official key is configured", () => {

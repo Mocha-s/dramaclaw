@@ -934,15 +934,78 @@ function CustomLlmSettings({
           <BrainClawGatewayPanel config={config} loading={loading} />
         )
       ) : (
-        <FeatureModelsBlock
-          newApiBaseUrl=""
-          database={undefined}
-          channelTypesEnabled={false}
-          savedProviderChannels={config?.provisioner?.providerChannels ?? []}
-          savedEmbeddingModel={config?.provisioner?.embeddingModel}
-          savedMediaModels={config?.provisioner?.mediaModels ?? {}}
-        />
+        <CapabilityModelDefaultsBlock config={config} />
       )}
+    </div>
+  );
+}
+
+function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig | undefined }) {
+  const { t } = useTranslation();
+  const textModels = useMemo(
+    () => Array.from(new Set(
+      (config?.thirdParty?.groups ?? [])
+        .filter((group) => group.capabilities.includes("text"))
+        .flatMap((group) => group.modelMappings.map((mapping) => mapping.upstreamModel.trim()))
+        .filter(Boolean),
+    )),
+    [config?.thirdParty?.groups],
+  );
+  const embeddingModels = useMemo(
+    () => Array.from(new Set(
+      (config?.thirdParty?.groups ?? [])
+        .filter((group) => group.capabilities.includes("embedding"))
+        .flatMap((group) => group.modelMappings.map((mapping) => mapping.upstreamModel.trim()))
+        .filter(Boolean),
+    )),
+    [config?.thirdParty?.groups],
+  );
+
+  return (
+    <section className="mt-4 rounded-md border border-border/70 p-3">
+      <h4 className="text-xs font-medium text-foreground">
+        {t("settings.modelConfig.capabilityDefaults.title", { defaultValue: "能力默认模型" })}
+      </h4>
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+        {t("settings.modelConfig.capabilityDefaults.description", { defaultValue: "虾集文本和视觉功能共用文本网关模型；Embedding 和媒体模型从已配置的第三方组读取。" })}
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <CapabilityDefaultRow
+          label={t("settings.modelConfig.capabilityDefaults.text", { defaultValue: "文本 / 视觉模型" })}
+          model={config?.llmEffective.model || textModels[0] || ""}
+          available={textModels}
+        />
+        <CapabilityDefaultRow
+          label={t("settings.modelConfig.capabilityDefaults.embedding", { defaultValue: "Embedding 模型" })}
+          model={embeddingModels[0] || ""}
+          available={embeddingModels}
+          optional
+        />
+      </div>
+    </section>
+  );
+}
+
+function CapabilityDefaultRow({
+  label,
+  model,
+  available,
+  optional = false,
+}: {
+  label: string;
+  model: string;
+  available: string[];
+  optional?: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-border/60 px-3 py-2.5">
+      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className="mt-1 font-mono text-xs text-foreground">
+        {model || (optional ? "未配置（可选）" : "未配置")}
+      </div>
+      {available.length > 1 ? (
+        <div className="mt-1 text-[10px] text-muted-foreground">已发现 {available.length} 个上游模型</div>
+      ) : null}
     </div>
   );
 }
