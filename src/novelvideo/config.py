@@ -406,7 +406,9 @@ def get_newapi_text_pydantic_model(
             "No Sub2API text group matches DramaClaw model "
             f"'{request_model_name}'. Add a mapping from this request model to an upstream model."
         )
-    if llm_config.mode == "sub2api" and llm_config.model:
+    if llm_config.model and (
+        llm_config.mode == "sub2api" or llm_config.source == "third_party"
+    ):
         model_name = llm_config.model
     timeout_seconds = (
         float(timeout_seconds_override)

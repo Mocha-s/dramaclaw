@@ -113,6 +113,17 @@ class EffectiveLlmConfig:
 
 
 @dataclass(frozen=True)
+class CapabilityGatewayDefault:
+    capability: str
+    group_id: str
+    group_name: str
+    protocol: str
+    base_url: str
+    api_key: str
+    model: str
+
+
+@dataclass(frozen=True)
 class EffectiveMediaRelayConfig:
     source: str
     provider: str
@@ -416,6 +427,39 @@ def _resolve_sub2api_group(
         {},
     )
     return selected_group, selected_model, dict(selected_mapping)
+
+
+def resolve_capability_default(
+    capability: str,
+) -> CapabilityGatewayDefault | None:
+    """Resolve one configured capability to a real upstream model.
+
+    Text uses the stable writer route as its default so feature-specific
+    legacy aliases do not need one mapping per task. Other capabilities use a
+    wildcard or single unambiguous mapping when one exists.
+    """
+    normalized = normalize_capability(capability)
+    groups = get_third_party_gateway_groups()
+    requested_model = (
+        "DC-freezone-text-writer-LLM" if normalized == CAPABILITY_TEXT else ""
+    )
+    selected = _resolve_sub2api_group(
+        capability=normalized,
+        model=requested_model,
+        groups=groups,
+    )
+    if selected is None:
+        return None
+    group, upstream_model, _mapping = selected
+    return CapabilityGatewayDefault(
+        capability=normalized,
+        group_id=str(group.get("id") or ""),
+        group_name=str(group.get("name") or group.get("id") or ""),
+        protocol=str(group.get("protocol") or "openai").strip().lower(),
+        base_url=_sub2api_openai_compat_base_url(group),
+        api_key=str(group.get("apiKey") or ""),
+        model=str(upstream_model or "").strip(),
+    )
 
 
 def normalize_custom_llm_mode(value: str | None) -> str:

@@ -787,6 +787,42 @@ def test_custom_text_tasks_without_specific_mapping_reuse_text_writer_group(
     assert llm.model == "gpt-6.1-sol"
 
 
+def test_capability_default_returns_upstream_model_without_dc_alias(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": MODE_CUSTOM,
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "gpt-text",
+                        "name": "GPT text",
+                        "protocol": "openai",
+                        "baseUrl": "https://text.example/v1",
+                        "apiKey": "sk-text",
+                        "capabilities": ["text"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "DC-freezone-text-writer-LLM",
+                                "upstreamModel": "gpt-6.1-sol",
+                            }
+                        ],
+                    }
+                ]
+            ),
+        }
+    )
+
+    default = gateway_settings.resolve_capability_default("text")
+
+    assert default is not None
+    assert default.model == "gpt-6.1-sol"
+    assert not default.model.startswith("DC-")
+    assert gateway_settings.resolve_capability_default("embedding") is None
+
+
 
 
 def test_effective_newapi_config_uses_request_scoped_explicit_config_without_writes(
