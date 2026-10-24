@@ -200,7 +200,9 @@ export interface ModelGatewayConfig {
   provisioner?: ModelGatewayProvisionerConfig;
   mediaRelay?: MediaRelayConfig;
   capabilityDefaults?: {
+    textGroupId?: string;
     textModel?: string;
+    embeddingGroupId?: string;
     embeddingModel?: string;
   };
 }
@@ -650,7 +652,7 @@ export function useFetchThirdPartyModels() {
 export function useSaveCapabilityDefaults() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { textModel?: string; embeddingModel?: string }) =>
+    mutationFn: (input: { textGroupId?: string; textModel?: string; embeddingGroupId?: string; embeddingModel?: string }) =>
       api.post("api/v1/model-gateway/capability-defaults", {
         json: input,
         throwHttpErrors: false,

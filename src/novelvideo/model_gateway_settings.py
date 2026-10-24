@@ -443,10 +443,41 @@ def resolve_capability_default(
     normalized = normalize_capability(capability)
     groups = get_third_party_gateway_groups()
     defaults = get_capability_defaults()
-    requested_model = str(
-        (defaults.get("textModel") if normalized == CAPABILITY_TEXT else defaults.get("embeddingModel"))
-        or ""
-    ).strip()
+    model_key = "textModel" if normalized == CAPABILITY_TEXT else "embeddingModel"
+    group_key = "textGroupId" if normalized == CAPABILITY_TEXT else "embeddingGroupId"
+    configured_model = str(defaults.get(model_key) or "").strip()
+    configured_group_id = str(defaults.get(group_key) or "").strip()
+    if configured_model and configured_group_id:
+        group = next(
+            (
+                item
+                for item in groups
+                if str(item.get("id") or "") == configured_group_id
+                and normalized in item.get("capabilities", [])
+            ),
+            None,
+        )
+        if group:
+            mapping = next(
+                (
+                    item
+                    for item in group.get("modelMappings", [])
+                    if str(item.get("upstreamModel") or "").strip() == configured_model
+                ),
+                None,
+            )
+            if mapping:
+                return CapabilityGatewayDefault(
+                    capability=normalized,
+                    group_id=configured_group_id,
+                    group_name=str(group.get("name") or configured_group_id),
+                    protocol=str(group.get("protocol") or "openai").strip().lower(),
+                    base_url=_group_protocol_base_url(group),
+                    api_key=str(group.get("apiKey") or ""),
+                    model=configured_model,
+                )
+
+    requested_model = configured_model
     if not requested_model and normalized == CAPABILITY_TEXT:
         requested_model = "DC-freezone-text-writer-LLM"
     selected = _resolve_sub2api_group(
@@ -454,6 +485,12 @@ def resolve_capability_default(
         model=requested_model,
         groups=groups,
     )
+    if selected is None and normalized == CAPABILITY_TEXT and requested_model != "DC-freezone-text-writer-LLM":
+        selected = _resolve_sub2api_group(
+            capability=normalized,
+            model="DC-freezone-text-writer-LLM",
+            groups=groups,
+        )
     if selected is None:
         return None
     group, upstream_model, _mapping = selected
@@ -749,14 +786,25 @@ def get_capability_defaults() -> dict[str, str]:
     return value if isinstance(value, dict) else {}
 
 
-def save_capability_defaults(*, text_model: str = "", embedding_model: str = "") -> None:
+def save_capability_defaults(
+    *,
+    text_group_id: str = "",
+    text_model: str = "",
+    embedding_group_id: str = "",
+    embedding_model: str = "",
+) -> None:
     groups = get_third_party_gateway_groups()
-    for capability, model in ((CAPABILITY_TEXT, text_model), (CAPABILITY_EMBEDDING, embedding_model)):
+    for capability, group_id, model in (
+        (CAPABILITY_TEXT, text_group_id, text_model),
+        (CAPABILITY_EMBEDDING, embedding_group_id, embedding_model),
+    ):
         clean = str(model or "").strip()
+        clean_group_id = str(group_id or "").strip()
         if not clean:
             continue
         if not any(
-            capability in group.get("capabilities", [])
+            str(group.get("id") or "") == clean_group_id
+            and capability in group.get("capabilities", [])
             and any(
                 str(mapping.get("upstreamModel") or "").strip() == clean
                 for mapping in group.get("modelMappings", [])
@@ -765,9 +813,14 @@ def save_capability_defaults(*, text_model: str = "", embedding_model: str = "")
         ):
             raise ValueError(f"{capability} capability model is not configured: {clean}")
     values = {
-        key: str(model or "").strip()
-        for key, model in (("textModel", text_model), ("embeddingModel", embedding_model))
-        if str(model or "").strip()
+        key: value
+        for key, value in (
+            ("textGroupId", str(text_group_id or "").strip()),
+            ("textModel", str(text_model or "").strip()),
+            ("embeddingGroupId", str(embedding_group_id or "").strip()),
+            ("embeddingModel", str(embedding_model or "").strip()),
+        )
+        if value
     }
     _write_many({CAPABILITY_DEFAULTS_KEY: json.dumps(values, ensure_ascii=False, sort_keys=True)})
 

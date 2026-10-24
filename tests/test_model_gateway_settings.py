@@ -885,23 +885,88 @@ def test_capability_defaults_are_persisted_and_select_text_upstream_model(
             ),
         }
     )
-    gateway_settings.save_capability_defaults(text_model="two")
+    gateway_settings.save_capability_defaults(text_group_id="two", text_model="two")
 
-    assert gateway_settings.get_capability_defaults() == {"textModel": "two"}
+    assert gateway_settings.get_capability_defaults() == {"textGroupId": "two", "textModel": "two"}
     assert gateway_settings.resolve_capability_default("text").model == "two"
+
+
+def test_capability_default_group_id_disambiguates_duplicate_upstream_models(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    groups = [
+        {
+            "id": group_id,
+            "name": group_id,
+            "protocol": "openai",
+            "baseUrl": f"https://{group_id}.example/v1",
+            "apiKey": f"sk-{group_id}",
+            "capabilities": ["text"],
+            "modelMappings": [{"requestPattern": model_id, "upstreamModel": "same-model"}],
+        }
+        for group_id, model_id in (("one", "one-alias"), ("two", "two-alias"))
+    ]
+    model_gateway_settings._write_many(
+        {"model_gateway_mode": MODE_CUSTOM, "third_party_gateway_groups": json.dumps(groups)}
+    )
+    gateway_settings.save_capability_defaults(
+        text_group_id="two", text_model="same-model"
+    )
+
+    resolved = gateway_settings.resolve_capability_default("text")
+
+    assert resolved.group_id == "two"
+    assert resolved.base_url == "https://two.example/v1"
+
+
+def test_capability_default_falls_back_when_saved_group_disappears(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": MODE_CUSTOM,
+            "third_party_gateway_groups": json.dumps([
+                {
+                    "id": "remaining",
+                    "name": "Remaining",
+                    "protocol": "openai",
+                    "baseUrl": "https://remaining.example/v1",
+                    "apiKey": "sk-remain",
+                    "capabilities": ["text"],
+                    "modelMappings": [{"requestPattern": "DC-freezone-text-writer-LLM", "upstreamModel": "remaining-model"}],
+                }
+            ]),
+        }
+    )
+    model_gateway_settings._write_many(
+        {"third_party_capability_defaults": json.dumps({"textGroupId": "removed", "textModel": "old-model"})}
+    )
+
+    resolved = gateway_settings.resolve_capability_default("text")
+
+    assert resolved.group_id == "remaining"
+    assert resolved.model == "remaining-model"
 
 
 def test_gateway_status_exposes_saved_capability_defaults(monkeypatch: pytest.MonkeyPatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
-    model_gateway_settings.save_capability_defaults(
-        text_model="gpt-6.1-sol",
-        embedding_model="text-embedding-3-large",
-    )
+    model_gateway_settings._write_many({
+        "third_party_capability_defaults": json.dumps({
+            "textGroupId": "gpt",
+            "textModel": "gpt-6.1-sol",
+            "embeddingGroupId": "embeddings",
+            "embeddingModel": "text-embedding-3-large",
+        })
+    })
 
     status = model_gateway_settings.build_model_gateway_status()
 
     assert status["capabilityDefaults"] == {
+        "textGroupId": "gpt",
         "textModel": "gpt-6.1-sol",
+        "embeddingGroupId": "embeddings",
         "embeddingModel": "text-embedding-3-large",
     }
 

@@ -691,7 +691,7 @@ describe("SettingsDialog pages", () => {
     expect(screen.queryByRole("textbox", { name: "网关地址" })).not.toBeInTheDocument();
   });
 
-  it("renders one configured text default instead of DC feature mappings", () => {
+  it("renders one configured text default instead of DC feature mappings", async () => {
     modelGatewayMocks.config = {
       mode: "custom",
       effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
@@ -706,7 +706,10 @@ describe("SettingsDialog pages", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
     fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
-    expect(screen.getByText("gpt-6.1-sol")).toBeInTheDocument();
+    expect(screen.getByText("能力默认模型")).toBeInTheDocument();
+    const capabilitySelectors = screen.getAllByRole("combobox");
+    await userEvent.setup().click(capabilitySelectors[0]);
+    expect(screen.getByRole("option", { name: "gpt-6.1-sol · Text gateway" })).toBeInTheDocument();
     expect(screen.queryByText("业务模型映射")).not.toBeInTheDocument();
     expect(screen.queryByText("DC-freezone-text-writer-LLM")).not.toBeInTheDocument();
   });

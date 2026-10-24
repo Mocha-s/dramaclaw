@@ -209,7 +209,9 @@ class Sub2ApiGatewayBody(BaseModel):
 
 
 class CapabilityDefaultsBody(BaseModel):
+    text_group_id: str | None = Field(default=None, alias="textGroupId")
     text_model: str | None = Field(default=None, alias="textModel")
+    embedding_group_id: str | None = Field(default=None, alias="embeddingGroupId")
     embedding_model: str | None = Field(default=None, alias="embeddingModel")
 
 
@@ -788,7 +790,9 @@ async def save_capability_defaults_route(body: CapabilityDefaultsBody) -> dict[s
         raise _permission_error(exc) from exc
     try:
         save_capability_defaults(
+            text_group_id=body.text_group_id or "",
             text_model=body.text_model or "",
+            embedding_group_id=body.embedding_group_id or "",
             embedding_model=body.embedding_model or "",
         )
     except ValueError as exc:

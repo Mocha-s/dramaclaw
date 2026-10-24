@@ -32,6 +32,24 @@ def test_anthropic_model_catalog_extracts_names() -> None:
     ]
 
 
+def test_anthropic_text_factory_constructs_native_messages_model() -> None:
+    from pydantic_ai.models.anthropic import AnthropicModel
+
+    from novelvideo.model_gateway_protocols import create_anthropic_text_model
+
+    model = create_anthropic_text_model(
+        "claude-sonnet-5-5",
+        api_key="sk-ant-test",
+        base_url="https://claude.example/v1",
+    )
+
+    assert isinstance(model, AnthropicModel)
+    assert model.__dict__["_model_name"] == "claude-sonnet-5-5"
+    provider = model.__dict__["_provider"]
+    assert provider.name == "anthropic"
+    assert str(provider.client.base_url).rstrip("/") == "https://claude.example/v1"
+
+
 def test_anthropic_catalog_rejects_media_capabilities() -> None:
     from novelvideo.model_gateway_protocols import validate_protocol_capabilities
 

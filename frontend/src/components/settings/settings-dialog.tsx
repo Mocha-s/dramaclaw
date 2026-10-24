@@ -952,33 +952,39 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
   const { t } = useTranslation();
   const saveDefaults = useSaveCapabilityDefaults();
   const textModels = useMemo(
-    () => Array.from(new Set(
-      (config?.thirdParty?.groups ?? [])
-        .filter((group) => group.capabilities.includes("text"))
-        .flatMap((group) => group.modelMappings.map((mapping) => mapping.upstreamModel.trim()))
-        .filter(Boolean),
-    )),
+    () => (config?.thirdParty?.groups ?? [])
+      .filter((group) => group.capabilities.includes("text"))
+      .flatMap((group) => group.modelMappings.map((mapping) => ({
+        value: `${group.id}::${mapping.upstreamModel.trim()}`,
+        label: `${mapping.upstreamModel.trim()} · ${group.name}`,
+      })))
+      .filter((item) => item.label.trim().length > 0),
     [config?.thirdParty?.groups],
   );
   const embeddingModels = useMemo(
-    () => Array.from(new Set(
-      (config?.thirdParty?.groups ?? [])
-        .filter((group) => group.capabilities.includes("embedding"))
-        .flatMap((group) => group.modelMappings.map((mapping) => mapping.upstreamModel.trim()))
-        .filter(Boolean),
-    )),
+    () => (config?.thirdParty?.groups ?? [])
+      .filter((group) => group.capabilities.includes("embedding"))
+      .flatMap((group) => group.modelMappings.map((mapping) => ({
+        value: `${group.id}::${mapping.upstreamModel.trim()}`,
+        label: `${mapping.upstreamModel.trim()} · ${group.name}`,
+      })))
+      .filter((item) => item.label.trim().length > 0),
     [config?.thirdParty?.groups],
   );
-  const [textModel, setTextModel] = useState(config?.capabilityDefaults?.textModel ?? config?.llmEffective.model ?? textModels[0] ?? "");
-  const [embeddingModel, setEmbeddingModel] = useState(config?.capabilityDefaults?.embeddingModel ?? embeddingModels[0] ?? "");
+  const [textModel, setTextModel] = useState(config?.capabilityDefaults?.textGroupId && config.capabilityDefaults.textModel ? `${config.capabilityDefaults.textGroupId}::${config.capabilityDefaults.textModel}` : textModels[0]?.value ?? "");
+  const [embeddingModel, setEmbeddingModel] = useState(config?.capabilityDefaults?.embeddingGroupId && config.capabilityDefaults.embeddingModel ? `${config.capabilityDefaults.embeddingGroupId}::${config.capabilityDefaults.embeddingModel}` : embeddingModels[0]?.value ?? "");
   useEffect(() => {
-    setTextModel(config?.capabilityDefaults?.textModel ?? config?.llmEffective.model ?? textModels[0] ?? "");
-    setEmbeddingModel(config?.capabilityDefaults?.embeddingModel ?? embeddingModels[0] ?? "");
+    setTextModel(config?.capabilityDefaults?.textGroupId && config.capabilityDefaults.textModel ? `${config.capabilityDefaults.textGroupId}::${config.capabilityDefaults.textModel}` : textModels[0]?.value ?? "");
+    setEmbeddingModel(config?.capabilityDefaults?.embeddingGroupId && config.capabilityDefaults.embeddingModel ? `${config.capabilityDefaults.embeddingGroupId}::${config.capabilityDefaults.embeddingModel}` : embeddingModels[0]?.value ?? "");
   }, [config?.capabilityDefaults, config?.llmEffective.model, textModels, embeddingModels]);
   const save = async () => {
+    const [textGroupId, selectedTextModel] = textModel.split("::");
+    const [embeddingGroupId, selectedEmbeddingModel] = embeddingModel.split("::");
     const response = await saveDefaults.mutateAsync({
-      textModel: textModel || undefined,
-      embeddingModel: embeddingModel || undefined,
+      textGroupId: textGroupId || undefined,
+      textModel: selectedTextModel || undefined,
+      embeddingGroupId: embeddingGroupId || undefined,
+      embeddingModel: selectedEmbeddingModel || undefined,
     });
     if (!response.ok) toast.error(t("settings.modelConfig.requestFailed"));
     else toast.success(t("settings.modelConfig.thirdParty.saved"));
@@ -995,14 +1001,14 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <CapabilityDefaultRow
           label={t("settings.modelConfig.capabilityDefaults.text", { defaultValue: "文本 / 视觉模型" })}
-          model={config?.llmEffective.model || textModels[0] || ""}
+          model={textModels[0]?.label || ""}
           available={textModels}
           value={textModel}
           onChange={setTextModel}
         />
         <CapabilityDefaultRow
           label={t("settings.modelConfig.capabilityDefaults.embedding", { defaultValue: "Embedding 模型" })}
-          model={embeddingModels[0] || ""}
+          model={embeddingModels[0]?.label || ""}
           available={embeddingModels}
           optional
           value={embeddingModel}
@@ -1028,7 +1034,7 @@ function CapabilityDefaultRow({
 }: {
   label: string;
   model: string;
-  available: string[];
+  available: Array<{ value: string; label: string }>;
   optional?: boolean;
   value: string;
   onChange: (value: string) => void;
@@ -1037,10 +1043,10 @@ function CapabilityDefaultRow({
     <div className="rounded-md border border-border/60 px-3 py-2.5">
       <div className="text-[11px] text-muted-foreground">{label}</div>
       {available.length > 0 ? (
-        <Select value={value} onValueChange={onChange}>
+        <Select value={value} onValueChange={(next) => { if (next) onChange(next); }}>
           <SelectTrigger size="sm" className="mt-1 h-8 w-full font-mono text-xs"><SelectValue /></SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>
-            {available.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
+            {available.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
           </SelectContent>
         </Select>
       ) : <div className="mt-1 font-mono text-xs text-foreground">{model || (optional ? "未配置（可选）" : "未配置")}</div>}
