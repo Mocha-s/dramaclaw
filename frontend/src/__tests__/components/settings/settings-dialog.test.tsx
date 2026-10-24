@@ -2,6 +2,7 @@
 // Copyright (c) 2026 ClaymoreLab
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "sonner";
 
@@ -540,6 +541,7 @@ describe("SettingsDialog pages", () => {
   });
 
   it("lets users create partial OpenAI and Gemini groups", async () => {
+    const user = userEvent.setup();
     modelGatewayMocks.config = {
       mode: "official",
       effective: { source: "official", baseUrl: "", apiKeyPreview: "", configured: false },
@@ -574,7 +576,8 @@ describe("SettingsDialog pages", () => {
     fireEvent.click(openaiGroup.getByLabelText("图片"));
 
     fireEvent.change(geminiGroup.getByLabelText("账号组名称"), { target: { value: "Gemini embedding" } });
-    fireEvent.change(geminiGroup.getByLabelText("协议"), { target: { value: "gemini" } });
+    await user.click(geminiGroup.getByRole("combobox", { name: "协议" }));
+    await user.click(screen.getByRole("option", { name: "Gemini" }));
     fireEvent.change(geminiGroup.getByLabelText("Base URL"), { target: { value: "https://sub2api.example/v1beta" } });
     fireEvent.change(geminiGroup.getByLabelText("API Key"), { target: { value: "sk-gemini" } });
     fireEvent.click(geminiGroup.getByRole("button", { name: "拉取模型列表" }));
@@ -740,6 +743,24 @@ describe("SettingsDialog pages", () => {
     } finally {
       Object.defineProperty(globalThis, "crypto", { configurable: true, value: originalCrypto });
     }
+  });
+
+  it("offers Claude Anthropic as a styled protocol option", () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: false },
+      llmEffective: { mode: "custom", source: "custom", baseUrl: "", apiKeyPreview: "", configured: false, model: "", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: false },
+      thirdParty: { configured: false, groups: [] },
+    };
+    renderSettingsDialog();
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    fireEvent.click(screen.getByRole("button", { name: "添加第三方网关组" }));
+
+    expect(screen.queryByRole("combobox", { name: /协议/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("combobox", { name: /协议/ }));
+    expect(screen.getByRole("option", { name: "Claude / Anthropic" })).toBeInTheDocument();
   });
 
   it("opens and closes each saved gateway disclosure independently with keyboard activation", () => {

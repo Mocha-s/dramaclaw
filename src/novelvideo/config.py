@@ -419,6 +419,15 @@ def get_newapi_text_pydantic_model(
         )
     )
     profile = _get_newapi_text_model_profile(model_name)
+    if llm_config.protocol == "anthropic" and llm_config.source == "third_party":
+        from novelvideo.model_gateway_protocols import create_anthropic_text_model
+
+        return create_anthropic_text_model(
+            model_name,
+            api_key=llm_config.api_key,
+            base_url=llm_config.base_url,
+            profile=profile,
+        )
     # CE resolves its own route from the settings database, so it knows when
     # Advanced mode should stay clean. EE only hands a logical alias to NewAPI
     # and cannot know which upstream NewAPI maps it to, so it always declares

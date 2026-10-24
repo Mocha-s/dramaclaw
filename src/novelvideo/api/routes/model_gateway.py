@@ -29,7 +29,6 @@ from novelvideo.model_gateway_settings import (
     get_official_media_catalog_update_status,
     normalize_relay_base_url,
     normalize_api_key,
-    normalize_sub2api_gemini_base_url,
     parse_comfyui_channel_workflows,
     save_media_relay_config,
     save_agent_llm_config,
@@ -48,6 +47,13 @@ from novelvideo.official_media_catalog_remote import (
     check_official_media_catalog_update,
 )
 from novelvideo.model_gateway_runtime import refresh_model_gateway_runtime
+from novelvideo.model_gateway_protocols import (
+    extract_model_names,
+    model_discovery_request,
+    normalize_gateway_protocol,
+    normalize_protocol_base_url,
+    validate_protocol_capabilities,
+)
 from novelvideo.service_operation_gate import (
     ServiceOperationExcluded,
     require_legacy_local_service_operation,
@@ -695,9 +701,9 @@ async def save_third_party_gateway_config(body: Sub2ApiGatewayBody) -> dict[str,
     groups: list[dict[str, Any]] = []
     for submitted in body.groups:
         group = dict(submitted)
-        protocol = str(group.get("protocol") or "").strip().lower()
+        protocol = normalize_gateway_protocol(group.get("protocol"))
         if protocol not in SUB2API_PROTOCOLS:
-            raise HTTPException(status_code=400, detail="protocol must be openai or gemini")
+            raise HTTPException(status_code=400, detail="protocol must be openai, gemini, or anthropic")
         base_url = str(group.get("baseUrl") or "").strip().rstrip("/")
         parsed_base_url = urlsplit(base_url)
         if parsed_base_url.scheme not in {"http", "https"} or not parsed_base_url.netloc:
@@ -714,6 +720,10 @@ async def save_third_party_gateway_config(body: Sub2ApiGatewayBody) -> dict[str,
             api_key = str(previous.get("apiKey") or "")
         if not api_key:
             raise HTTPException(status_code=400, detail=f"API Key is required for {group_id or 'new group'}")
+        try:
+            validate_protocol_capabilities(protocol, list(group.get("capabilities") or []))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         group["apiKey"] = api_key
         # Image edit request shape is protocol-derived for new/rewritten groups;
         # unchanged legacy group data keeps its hidden compatibility value.
@@ -772,9 +782,9 @@ async def fetch_third_party_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
         require_ce_gateway_settings_management()
     except PermissionError as exc:
         raise _permission_error(exc) from exc
-    protocol = body.protocol.strip().lower()
+    protocol = normalize_gateway_protocol(body.protocol)
     if protocol not in SUB2API_PROTOCOLS:
-        raise HTTPException(status_code=400, detail="protocol must be openai or gemini")
+        raise HTTPException(status_code=400, detail="protocol must be openai, gemini, or anthropic")
     base_url = str(body.base_url or "").strip().rstrip("/")
     parsed_base_url = urlsplit(base_url)
     if parsed_base_url.scheme not in {"http", "https"} or not parsed_base_url.netloc:
@@ -789,16 +799,7 @@ async def fetch_third_party_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
     if not api_key:
         raise HTTPException(status_code=400, detail="API Key is required to fetch models")
 
-    if protocol == "gemini":
-        endpoint = f"{normalize_sub2api_gemini_base_url(base_url)}/models"
-    else:
-        endpoint = base_url if base_url.endswith("/models") else f"{base_url}/models"
-    headers = (
-        {"Authorization": f"Bearer {api_key}"}
-        if protocol == "openai"
-        else {"x-goog-api-key": api_key}
-    )
-    params: dict[str, str | int] = {"pageSize": 1000} if protocol == "gemini" else {"limit": 1000}
+    endpoint, headers, params = model_discovery_request(protocol, base_url, api_key)
     models: list[str] = []
     seen: set[str] = set()
     try:
@@ -815,28 +816,14 @@ async def fetch_third_party_models(body: Sub2ApiModelsBody) -> dict[str, Any]:
                     payload = response.json()
                 except ValueError:
                     raise HTTPException(status_code=502, detail="Third-party gateway returned an invalid model list") from None
-                raw_models = payload.get("data") if protocol == "openai" else payload.get("models")
-                if not isinstance(raw_models, list):
-                    raise HTTPException(status_code=502, detail="Third-party gateway returned an invalid model list")
-                for item in raw_models:
-                    if not isinstance(item, dict):
-                        continue
-                    model = str(
-                        item.get("id")
-                        if protocol == "openai"
-                        else item.get("baseModelId") or item.get("name") or ""
-                    ).strip()
-                    if model.startswith("models/"):
-                        model = model.removeprefix("models/")
-                    if (
-                        not model
-                        or len(model) > 255
-                        or model in seen
-                        or any(char.isspace() or ord(char) < 32 or ord(char) == 127 for char in model)
-                    ):
-                        continue
-                    seen.add(model)
-                    models.append(model)
+                try:
+                    page_models = extract_model_names(protocol, payload)
+                except ValueError as exc:
+                    raise HTTPException(status_code=502, detail=str(exc)) from exc
+                for model in page_models:
+                    if model not in seen:
+                        seen.add(model)
+                        models.append(model)
                 if protocol != "gemini" or not payload.get("nextPageToken"):
                     break
                 params = {"pageSize": 1000, "pageToken": str(payload["nextPageToken"])}

@@ -52,7 +52,7 @@ SUB2API_CAPABILITIES = (
     CAPABILITY_VIDEO,
     CAPABILITY_AUDIO,
 )
-SUB2API_PROTOCOLS = {"openai", "gemini"}
+SUB2API_PROTOCOLS = {"openai", "gemini", "anthropic"}
 SUB2API_IMAGE_EDIT_FORMATS = {
     "dc-media",
     "images",
@@ -110,6 +110,7 @@ class EffectiveLlmConfig:
     api_key: str
     model: str
     is_brainclaw: bool
+    protocol: str = "openai"
 
 
 @dataclass(frozen=True)
@@ -456,7 +457,7 @@ def resolve_capability_default(
         group_id=str(group.get("id") or ""),
         group_name=str(group.get("name") or group.get("id") or ""),
         protocol=str(group.get("protocol") or "openai").strip().lower(),
-        base_url=_sub2api_openai_compat_base_url(group),
+        base_url=_group_protocol_base_url(group),
         api_key=str(group.get("apiKey") or ""),
         model=str(upstream_model or "").strip(),
     )
@@ -494,6 +495,15 @@ def _sub2api_openai_compat_base_url(group: dict[str, Any]) -> str:
     if base_url.endswith(("/v1", "/v3", "/api/v1", "/api/v3")):
         return base_url
     return f"{base_url}/v1"
+
+
+def _group_protocol_base_url(group: dict[str, Any]) -> str:
+    protocol = str(group.get("protocol") or "openai").strip().lower()
+    if protocol == "anthropic":
+        from novelvideo.model_gateway_protocols import normalize_protocol_base_url
+
+        return normalize_protocol_base_url(protocol, str(group.get("baseUrl") or ""))
+    return _sub2api_openai_compat_base_url(group)
 
 
 def _sub2api_image_protocol(group: dict[str, Any], model: str) -> str:
@@ -1827,7 +1837,7 @@ def get_ce_newapi_config_for_mode(
             return EffectiveNewApiConfig(
                 mode=MODE_CUSTOM,
                 source="third_party",
-                base_url=_sub2api_openai_compat_base_url(group),
+                base_url=_group_protocol_base_url(group),
                 api_key=str(group.get("apiKey") or ""),
                 protocol=protocol,
                 model=upstream_model,
@@ -1870,7 +1880,7 @@ def get_ce_newapi_config_for_mode(
             return EffectiveNewApiConfig(
                 mode=MODE_HYBRID,
                 source="third_party",
-                base_url=_sub2api_openai_compat_base_url(group),
+                base_url=_group_protocol_base_url(group),
                 api_key=str(group.get("apiKey") or ""),
                 protocol=protocol,
                 model=upstream_model,
@@ -1935,10 +1945,11 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
             return EffectiveLlmConfig(
                 mode=MODE_HYBRID,
                 source="third_party",
-                base_url=_sub2api_openai_compat_base_url(group),
+                base_url=_group_protocol_base_url(group),
                 api_key=str(group.get("apiKey") or ""),
                 model=upstream_model,
                 is_brainclaw=False,
+                protocol=str(group.get("protocol") or "openai").strip().lower(),
             )
     if gateway_mode == MODE_CUSTOM:
         groups = get_third_party_gateway_groups()
@@ -2024,10 +2035,11 @@ def get_effective_llm_config(*, model: str = "") -> EffectiveLlmConfig:
             return EffectiveLlmConfig(
                 mode=MODE_CUSTOM,
                 source="third_party",
-                base_url=_sub2api_openai_compat_base_url(group),
+                base_url=_group_protocol_base_url(group),
                 api_key=str(group.get("apiKey") or ""),
                 model=upstream_model,
                 is_brainclaw=False,
+                protocol=str(group.get("protocol") or "openai").strip().lower(),
             )
     if gateway_mode in {MODE_OFFICIAL, MODE_HYBRID}:
         return EffectiveLlmConfig(

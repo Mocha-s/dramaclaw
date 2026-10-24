@@ -745,15 +745,19 @@ function ThirdPartyGroupCard({
       />
       <div className="grid grid-cols-[120px_1fr] items-center gap-3">
         <Label htmlFor={`${modelsId}-protocol`} className="text-[11px] text-muted-foreground uppercase">{t("settings.modelConfig.thirdParty.protocol")}</Label>
-        <select
-          id={`${modelsId}-protocol`}
-          className="h-9 rounded-md border border-input/80 bg-transparent px-2 text-sm"
+        <Select
           value={group.protocol}
-          onChange={(event) => onChange({ ...group, protocol: event.target.value as "openai" | "gemini" })}
+          onValueChange={(protocol) => onChange({ ...group, protocol: protocol as ThirdPartyGroupDraft["protocol"] })}
         >
-          <option value="openai">OpenAI</option>
-          <option value="gemini">Gemini</option>
-        </select>
+          <SelectTrigger id={`${modelsId}-protocol`} size="sm" className="h-9 w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false}>
+            <SelectItem value="openai">OpenAI</SelectItem>
+            <SelectItem value="gemini">Gemini</SelectItem>
+            <SelectItem value="anthropic">Claude / Anthropic</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <FieldRow
         label={t("settings.modelConfig.thirdParty.baseUrl")}

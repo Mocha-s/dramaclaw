@@ -139,6 +139,53 @@ def test_custom_third_party_model_factory_sends_upstream_model_name(
     assert captured["model_name"] == "gpt-6.1-sol"
 
 
+def test_anthropic_group_uses_native_text_model_factory(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": "custom",
+            "custom_llm_mode": CUSTOM_LLM_MODE_ADVANCED,
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "claude-text",
+                        "name": "Claude text",
+                        "protocol": "anthropic",
+                        "baseUrl": "https://api.anthropic.com",
+                        "apiKey": "sk-ant-test",
+                        "capabilities": ["text"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "DC-freezone-text-writer-LLM",
+                                "upstreamModel": "claude-sonnet-5-5",
+                            }
+                        ],
+                    }
+                ]
+            ),
+        }
+    )
+    captured: dict[str, object] = {}
+
+    def fake_anthropic(model_name, **kwargs):
+        captured.update(model_name=model_name, **kwargs)
+        return "anthropic-model"
+
+    monkeypatch.setattr(
+        "novelvideo.model_gateway_protocols.create_anthropic_text_model",
+        fake_anthropic,
+    )
+
+    result = config.get_newapi_text_pydantic_model(
+        "FREEZONE_TEXT_WRITER_MODEL",
+        model_name_override="DC-freezone-text-writer-LLM",
+    )
+
+    assert result == "anthropic-model"
+    assert captured["model_name"] == "claude-sonnet-5-5"
+    assert captured["api_key"] == "sk-ant-test"
+
+
 def test_mixed_mode_routes_llm_to_relayclaw_without_changing_media(
     monkeypatch, tmp_path
 ):

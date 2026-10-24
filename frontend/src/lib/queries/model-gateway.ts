@@ -57,7 +57,7 @@ export interface Sub2ApiModelMapping {
 export interface Sub2ApiAccountGroup {
   id: string;
   name: string;
-  protocol: "openai" | "gemini";
+  protocol: "openai" | "gemini" | "anthropic";
   baseUrl: string;
   apiKeyPreview: string;
   capabilities: Sub2ApiCapability[];
@@ -232,7 +232,7 @@ export type SaveThirdPartyGatewayConfigInput = SaveSub2ApiConfigInput;
 
 export interface FetchSub2ApiModelsInput {
   id?: string;
-  protocol: "openai" | "gemini";
+  protocol: "openai" | "gemini" | "anthropic";
   baseUrl: string;
   apiKey?: string;
 }
