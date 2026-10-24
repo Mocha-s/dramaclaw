@@ -7373,6 +7373,12 @@
           "image": "Ảnh",
           "video": "Video",
           "audio": "Âm thanh"
+        },
+        "capabilityDefaults": {
+          "title": "Model mặc định theo năng lực",
+          "description": "Các tính năng văn bản và thị giác của Xiahua dùng chung gateway văn bản; Embedding và media lấy từ các nhóm bên thứ ba đã cấu hình.",
+          "text": "Model văn bản / thị giác",
+          "embedding": "Model Embedding"
         }
       },
       "quick": {

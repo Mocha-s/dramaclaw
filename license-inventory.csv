@@ -2980,3 +2980,8 @@ uv.lock,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/features/canvas/selected-node-overlay-template-model.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/features/canvas/use-freezone-image-models-ready.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 .superpowers/sdd/2026-10-24-generic-third-party-gateway/final-suite-fix-report.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+docs/虾画token优化.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+docs/superpowers/plans/2026-10-24-capability-model-routing-claude-protocol.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+docs/superpowers/specs/2026-10-24-capability-based-model-routing-design.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+src/novelvideo/model_gateway_protocols.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+tests/test_model_gateway_protocols.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
