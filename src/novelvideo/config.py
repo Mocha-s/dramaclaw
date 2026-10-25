@@ -161,11 +161,7 @@ def get_effective_newapi_text_model_name(
     model_name_override: str | None = None,
 ) -> str:
     """Resolve one text route without silently falling back across editions."""
-    from novelvideo.model_gateway_settings import (
-        get_effective_llm_config,
-        get_saved_text_reasoning_effort,
-        normalize_text_reasoning_effort,
-    )
+    from novelvideo.model_gateway_settings import get_effective_llm_config
     from novelvideo.official_defaults import ADVANCED_TEXT_MODEL_BY_ENV
 
     explicit_model = str(model_name_override or "").strip()
@@ -508,7 +504,11 @@ def get_newapi_structured_output_model_settings() -> dict:
     # value. Keep thinking enabled at a valid default and allow operators to
     # choose the supported effort globally without changing every agent call
     # site. Native Anthropic requests do not use this OpenAI-only parameter.
-    from novelvideo.model_gateway_settings import get_effective_llm_config
+    from novelvideo.model_gateway_settings import (
+        get_effective_llm_config,
+        get_saved_text_reasoning_effort,
+        normalize_text_reasoning_effort,
+    )
 
     try:
         llm_config = get_effective_llm_config()
@@ -521,8 +521,15 @@ def get_newapi_structured_output_model_settings() -> dict:
                 or os.environ.get("MODEL_REASONING_EFFORT", "")
                 or "low"
             )
+            try:
+                normalized_effort = normalize_text_reasoning_effort(effort)
+            except ValueError as exc:
+                raise ValueError(
+                    "unsupported NEWAPI_TEXT_REASONING_EFFORT="
+                    f"{effort!r}; expected one of: low, medium, high, xhigh, max"
+                ) from exc
             return {
-                "openai_reasoning_effort": normalize_text_reasoning_effort(effort)
+                "openai_reasoning_effort": normalized_effort
             }
     except ValueError:
         raise

@@ -92,6 +92,7 @@ import {
   type SavedProviderChannelConfig,
   type ThirdPartyCapability,
   type ThirdPartyGatewayGroup,
+  type ThirdPartyModelMapping,
   type ThirdPartyVideoEndpoint,
 } from "@/lib/queries/model-gateway";
 import {
@@ -829,15 +830,18 @@ function ThirdPartyGroupCard({
                 onChange({ ...group, modelMappings: exactMappings });
                 return;
               }
+              const nextWildcardMapping: ThirdPartyModelMapping = {
+                requestPattern: "*",
+                upstreamModel: String(value),
+                ...(wildcardMapping?.videoEndpoint
+                  ? { videoEndpoint: wildcardMapping.videoEndpoint }
+                  : {}),
+              };
               onChange({
                 ...group,
                 modelMappings: [
                   ...exactMappings,
-                  {
-                    ...(wildcardMapping ?? {}),
-                    requestPattern: "*",
-                    upstreamModel: value,
-                  },
+                  nextWildcardMapping,
                 ],
               });
             }}

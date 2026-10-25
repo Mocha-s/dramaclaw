@@ -740,10 +740,11 @@ describe("SettingsDialog pages", () => {
     fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
     const reasoning = screen.getByRole("combobox", { name: "文本思考级别" });
     await user.click(reasoning);
-    expect(screen.getByRole("option", { name: "high" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "high" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "none" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("option", { name: "high" }));
-    fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" }).at(-1)!);
+    const saveButtons = screen.getAllByRole("button", { name: "保存第三方网关配置" });
+    fireEvent.click(saveButtons[saveButtons.length - 1]);
 
     await waitFor(() => expect(modelGatewayMocks.saveCapabilityDefaults).toHaveBeenCalledWith({
       textGroupId: "text",
@@ -790,7 +791,8 @@ describe("SettingsDialog pages", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
 
     await waitFor(() => {
-      const groups = modelGatewayMocks.saveSub2Api.mock.calls.at(-1)?.[0]?.groups;
+      const calls = modelGatewayMocks.saveSub2Api.mock.calls;
+      const groups = calls[calls.length - 1]?.[0]?.groups;
       expect(groups[0].modelMappings).toEqual([
         { requestPattern: "DC-freezone-text-writer-LLM", upstreamModel: "gpt-6.1-sol" },
         { requestPattern: "DC-codex-agent-LLM", upstreamModel: "gpt-6.1-sol" },
