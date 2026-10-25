@@ -221,6 +221,70 @@ def test_configured_image_selection_resolves_third_party_credentials_and_upstrea
     assert gateway.model == "configured-image-model"
 
 
+@pytest.mark.parametrize("reference_format", ["images", "input_reference", "multipart"])
+def test_resolve_third_party_image_request_preserves_canvas_request_metadata(
+    monkeypatch, reference_format
+):
+    from novelvideo import model_gateway_settings
+
+    request_schema = {
+        "endpoint": "images/generations",
+        "referenceFormat": reference_format,
+        "parameters": [],
+    }
+    catalog = [
+        {
+            "id": "gpt-image-2",
+            "apiModel": "gpt-image-2",
+            "gatewayModel": "configured-image-model",
+            "request": request_schema,
+            "modelParams": {"quality": "high"},
+            "gatewayGroupId": "image",
+        }
+    ]
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_media_model_catalog",
+        lambda _media_type: catalog,
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_gateway_groups",
+        lambda: [
+            {
+                "id": "image",
+                "baseUrl": "https://images.example/v1",
+                "apiKey": "sk-image",
+                "protocol": "openai",
+            }
+        ],
+    )
+
+    resolved = model_gateway_settings.resolve_third_party_image_request("gpt-image-2")
+
+    assert resolved["upstream_model"] == "configured-image-model"
+    assert resolved["reference_image_format"] == reference_format
+    assert resolved["endpoint"] == "images/generations"
+    assert resolved["request_schema"] == request_schema
+    assert resolved["model_params"] == {"quality": "high"}
+    assert resolved["base_url"] == "https://images.example/v1"
+    assert resolved["api_key"] == "sk-image"
+
+
+def test_resolve_third_party_image_request_returns_none_without_canonical_catalog(
+    monkeypatch,
+):
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_media_model_catalog",
+        lambda _media_type: [],
+    )
+
+    assert model_gateway_settings.resolve_third_party_image_request("gpt-image-2") is None
+
+
 def test_newapi_sketch_config_defaults_to_dc_image2_low_quality(monkeypatch):
     import httpx
     import novelvideo.config as config

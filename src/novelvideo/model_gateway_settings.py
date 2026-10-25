@@ -1742,6 +1742,49 @@ def get_third_party_media_model_catalog(media_type: str) -> list[dict[str, Any]]
     return catalog
 
 
+def resolve_third_party_image_request(model: str) -> dict[str, Any] | None:
+    """Resolve canvas-compatible request metadata for one logical image model."""
+    requested = str(model or "").strip()
+    if not requested:
+        return None
+    entry = next(
+        (
+            item
+            for item in get_third_party_media_model_catalog(CAPABILITY_IMAGE)
+            if str(item.get("apiModel") or item.get("id") or "").strip() == requested
+        ),
+        None,
+    )
+    if not isinstance(entry, dict):
+        return None
+    request_schema = dict(entry.get("request") or {})
+    group_id = str(entry.get("gatewayGroupId") or "").strip()
+    group = next(
+        (
+            item
+            for item in get_third_party_gateway_groups()
+            if str(item.get("id") or "").strip() == group_id
+        ),
+        {},
+    )
+    return {
+        "request_schema": request_schema,
+        "model_params": dict(entry.get("modelParams") or entry.get("model_params") or {}),
+        "reference_image_format": str(
+            request_schema.get("referenceFormat") or "dc-media"
+        ).strip().lower(),
+        "endpoint": str(request_schema.get("endpoint") or "images/generations").strip(),
+        "upstream_model": str(
+            entry.get("gatewayModel") or entry.get("upstreamModel") or requested
+        ).strip(),
+        "protocol": str(entry.get("gatewayProtocol") or group.get("protocol") or "openai")
+        .strip()
+        .lower(),
+        "base_url": str(group.get("baseUrl") or "").strip().rstrip("/"),
+        "api_key": str(group.get("apiKey") or "").strip(),
+    }
+
+
 def get_newapi_embedding_model_config() -> dict[str, Any]:
     settings = get_model_gateway_settings()
     return _decode_embedding_model_config(settings.get("custom_newapi_embedding_model"))
