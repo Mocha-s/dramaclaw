@@ -7661,7 +7661,7 @@
         "description": "Configure one or more OpenAI, Gemini, or Claude/Anthropic gateway groups. Each group has its own endpoint, key, capabilities, and models.",
         "newGroup": "New gateway group", "addGroup": "Add gateway group", "removeGroup": "Remove group",
         "groupName": "Group name", "protocol": "Protocol", "baseUrl": "Base URL", "apiKey": "API Key",
-        "capabilitiesLabel": "Capabilities", "models": "Model mappings", "requestModel": "DramaClaw model pattern", "upstreamModel": "Upstream model",
+        "capabilitiesLabel": "Capabilities", "models": "Model mappings", "requestModel": "DramaClaw model pattern", "upstreamModel": "Upstream model", "unifiedRoute": "Unified text route", "unifiedRouteNone": "No unified route", "unifiedRouteHint": "Saves * → upstream model; exact rules take precedence.",
         "videoEndpoint": "Video task endpoint", "videoEndpoints": { "videos": "Modern /videos", "legacy": "Legacy /video/generations" },
         "modelsHint": "Map request model patterns to upstream models; exact matches take precedence.", "modelSearch": "Filter models", "fetchModels": "Fetch models", "availableModels": "Available models", "noModels": "No matching models",
         "fetchFailed": "Could not fetch models. Check the URL, protocol, and API key, or enter model names manually.", "keyPlaceholder": "Enter API Key", "keyHint": "Keys are masked; enter a new key only when changing the endpoint.",

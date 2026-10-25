@@ -175,6 +175,9 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.thirdParty.models": "模型匹配规则",
         "settings.modelConfig.thirdParty.requestModel": "DramaClaw 模型规则",
         "settings.modelConfig.thirdParty.upstreamModel": "上游模型",
+        "settings.modelConfig.thirdParty.unifiedRoute": "统一文本路由",
+        "settings.modelConfig.thirdParty.unifiedRouteNone": "不使用统一路由",
+        "settings.modelConfig.thirdParty.unifiedRouteHint": "保存为 * → 上游模型；精确规则优先。",
         "settings.modelConfig.thirdParty.videoEndpoint": "视频任务接口",
         "settings.modelConfig.thirdParty.videoEndpoints.videos": "现代 /videos",
         "settings.modelConfig.thirdParty.videoEndpoints.legacy": "旧版 /video/generations",
@@ -749,6 +752,53 @@ describe("SettingsDialog pages", () => {
       embeddingModel: undefined,
       textReasoningEffort: "high",
     }));
+  });
+
+  it("adds a unified wildcard route while retaining exact text mappings", async () => {
+    const user = userEvent.setup();
+    modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: {} });
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "third_party", baseUrl: "https://text.example/v1", apiKeyPreview: "sk-...", configured: true, model: "gpt-6.1-sol", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [
+        {
+          id: "text",
+          name: "Text gateway",
+          protocol: "openai",
+          baseUrl: "https://text.example/v1",
+          apiKeyPreview: "sk-...",
+          capabilities: ["text"],
+          modelMappings: [
+            { requestPattern: "DC-freezone-text-writer-LLM", upstreamModel: "gpt-6.1-sol" },
+            { requestPattern: "DC-codex-agent-LLM", upstreamModel: "gpt-6.1-sol" },
+            { requestPattern: "DC-hermes-LLM", upstreamModel: "gpt-6.1-sol" },
+            { requestPattern: "DC-episode-prop-planner-LLM", upstreamModel: "gpt-6.1-sol" },
+          ],
+        },
+      ] },
+    };
+    renderSettingsDialog();
+
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    fireEvent.click(screen.getByRole("button", { name: "Text gateway" }));
+    const unifiedRoute = screen.getByRole("combobox", { name: "统一文本路由" });
+    await user.click(unifiedRoute);
+    await user.click(screen.getByRole("option", { name: "gpt-6.1-sol" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
+
+    await waitFor(() => {
+      const groups = modelGatewayMocks.saveSub2Api.mock.calls.at(-1)?.[0]?.groups;
+      expect(groups[0].modelMappings).toEqual([
+        { requestPattern: "DC-freezone-text-writer-LLM", upstreamModel: "gpt-6.1-sol" },
+        { requestPattern: "DC-codex-agent-LLM", upstreamModel: "gpt-6.1-sol" },
+        { requestPattern: "DC-hermes-LLM", upstreamModel: "gpt-6.1-sol" },
+        { requestPattern: "DC-episode-prop-planner-LLM", upstreamModel: "gpt-6.1-sol" },
+        { requestPattern: "*", upstreamModel: "gpt-6.1-sol" },
+      ]);
+    });
   });
 
   it("does not show the official media catalog before an official key is configured", () => {

@@ -381,6 +381,33 @@ def test_exact_mapping_beats_arbitrarily_long_prefix(monkeypatch, tmp_path):
     assert effective.api_key == "exact-key"
 
 
+def test_exact_mapping_beats_wildcard_mapping(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    group = {
+        "id": "text",
+        "name": "Text",
+        "protocol": "openai",
+        "baseUrl": "https://text.example/v1",
+        "apiKey": "text-key",
+        "capabilities": ["text"],
+        "modelMappings": [
+            {"requestPattern": "*", "upstreamModel": "generic-model"},
+            {"requestPattern": "DC-freezone-text-writer-LLM", "upstreamModel": "gpt-6.1-sol"},
+        ],
+    }
+    model_gateway_settings._write_many(
+        {"third_party_gateway_groups": json.dumps([group]), "model_gateway_mode": MODE_CUSTOM}
+    )
+
+    exact = gateway_settings.get_effective_newapi_config(
+        model="DC-freezone-text-writer-LLM"
+    )
+    wildcard = gateway_settings.get_effective_newapi_config(model="DC-hermes-LLM")
+
+    assert exact.model == "gpt-6.1-sol"
+    assert wildcard.model == "generic-model"
+
+
 def test_rewriting_mapping_drops_legacy_image_format_same_endpoint(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     app = FastAPI()

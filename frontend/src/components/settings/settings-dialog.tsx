@@ -725,6 +725,16 @@ function ThirdPartyGroupCard({
   const filteredModels = availableModels.filter((model) =>
     model.toLowerCase().includes(modelSearch.trim().toLowerCase()),
   );
+  const textRouteOptions = Array.from(
+    new Set([
+      ...group.modelMappings.map((mapping) => mapping.upstreamModel.trim()),
+      ...availableModels,
+    ]),
+  ).filter(Boolean);
+  const wildcardMapping = group.modelMappings.find(
+    (mapping) => mapping.requestPattern.trim() === "*",
+  );
+  const noUnifiedRoute = "__no_unified_text_route__";
   return (
     <section role="group" className="rounded-md border border-border/70 p-3">
       <button type="button" aria-expanded={expanded} onClick={() => onExpandedChange(!expanded)} className="w-full cursor-pointer text-left text-xs font-medium text-foreground">
@@ -802,6 +812,65 @@ function ThirdPartyGroupCard({
           ))}
         </div>
       </div>
+      {group.capabilities.includes("text") ? (
+        <div className="space-y-1.5 rounded-md border border-primary/20 bg-primary/[0.03] px-2.5 py-2">
+          <Label className="text-[11px] text-muted-foreground">
+            {t("settings.modelConfig.thirdParty.unifiedRoute", {
+              defaultValue: "统一文本路由",
+            })}
+          </Label>
+          <Select
+            value={wildcardMapping?.upstreamModel.trim() || noUnifiedRoute}
+            onValueChange={(value) => {
+              const exactMappings = group.modelMappings.filter(
+                (mapping) => mapping.requestPattern.trim() !== "*",
+              );
+              if (value === noUnifiedRoute) {
+                onChange({ ...group, modelMappings: exactMappings });
+                return;
+              }
+              onChange({
+                ...group,
+                modelMappings: [
+                  ...exactMappings,
+                  {
+                    ...(wildcardMapping ?? {}),
+                    requestPattern: "*",
+                    upstreamModel: value,
+                  },
+                ],
+              });
+            }}
+          >
+            <SelectTrigger
+              aria-label={t("settings.modelConfig.thirdParty.unifiedRoute", {
+                defaultValue: "统一文本路由",
+              })}
+              size="sm"
+              className="h-8 w-full"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectItem value={noUnifiedRoute}>
+                {t("settings.modelConfig.thirdParty.unifiedRouteNone", {
+                  defaultValue: "不使用统一路由",
+                })}
+              </SelectItem>
+              {textRouteOptions.map((model) => (
+                <SelectItem key={model} value={model}>
+                  {model}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[10px] leading-relaxed text-muted-foreground">
+            {t("settings.modelConfig.thirdParty.unifiedRouteHint", {
+              defaultValue: "保存为 * → 上游模型；精确规则优先。",
+            })}
+          </p>
+        </div>
+      ) : null}
       <div className="space-y-1.5">
         <Label htmlFor={modelsId} className="text-[11px] text-muted-foreground">{t("settings.modelConfig.thirdParty.models")}</Label>
         <div className="flex gap-2">

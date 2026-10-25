@@ -7661,7 +7661,7 @@
         "description": "配置一个或多个 OpenAI、Gemini 或 Claude/Anthropic 网关组。每组独立设置端点、密钥、能力和模型。",
         "newGroup": "新网关组", "addGroup": "添加网关组", "removeGroup": "删除组",
         "groupName": "组名称", "protocol": "协议", "baseUrl": "Base URL", "apiKey": "API Key",
-        "capabilitiesLabel": "支持能力", "models": "模型映射", "requestModel": "DramaClaw 模型规则", "upstreamModel": "上游模型",
+        "capabilitiesLabel": "支持能力", "models": "模型映射", "requestModel": "DramaClaw 模型规则", "upstreamModel": "上游模型", "unifiedRoute": "统一文本路由", "unifiedRouteNone": "不使用统一路由", "unifiedRouteHint": "保存为 * → 上游模型；精确规则优先。",
         "videoEndpoint": "视频任务接口", "videoEndpoints": { "videos": "现代 /videos", "legacy": "旧版 /video/generations" },
         "modelsHint": "将请求模型规则映射到上游模型；精确匹配优先。", "modelSearch": "筛选模型", "fetchModels": "拉取模型列表", "availableModels": "可用模型列表", "noModels": "没有匹配的模型",
         "fetchFailed": "拉取模型失败，请检查地址、协议和 API Key，或手动填写模型名。", "keyPlaceholder": "输入 API Key", "keyHint": "密钥保持隐藏；仅在更换端点时需要重新输入密钥。",

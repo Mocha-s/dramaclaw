@@ -7350,6 +7350,9 @@
         "models": "Ánh xạ model",
         "requestModel": "Mẫu model DramaClaw",
         "upstreamModel": "Model upstream",
+        "unifiedRoute": "Tuyến văn bản thống nhất",
+        "unifiedRouteNone": "Không dùng tuyến thống nhất",
+        "unifiedRouteHint": "Lưu * → model upstream; quy tắc khớp chính xác được ưu tiên.",
         "videoEndpoint": "Endpoint tác vụ video",
         "videoEndpoints": {
           "videos": "Hiện đại /videos",
