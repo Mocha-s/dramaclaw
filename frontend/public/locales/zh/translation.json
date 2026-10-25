@@ -7649,7 +7649,7 @@
         "advancedTab": "高级自定义",
         "title": "虾脑 BrainClaw（推荐）",
         "description": "BrainClaw 会统一处理文本理解、内容生成、结构化输出、工具调用和视觉理解请求。已配置第三方文本网关时会自动复用对应的模型组，无需重复填写地址和 API Key。",
-        "autoDescription": "已自动使用第三方文本网关组，无需重复配置地址和 API Key。",
+        "autoDescription": "已自动使用第三方文本 / 视觉理解网关；图像、视频、音频使用独立媒体组，无需重复配置地址和 API Key。",
         "model": "固定模型",
         "save": "保存并选用 BrainClaw",
         "enabled": "已选用虾驿 BrainClaw，自定义模式下生效。",
@@ -7668,7 +7668,7 @@
         "save": "保存第三方网关配置", "saved": "第三方网关组已保存。", "missingFields": "请填写每组的名称、Base URL、密钥、能力和模型映射。",
         "warning": "部分旧配置无法迁移，请在所选第三方网关中手动重建。",
         "capabilities": { "text": "文本 / 视觉", "embedding": "Embedding", "image": "图片", "video": "视频", "audio": "音频" },
-        "capabilityDefaults": { "title": "能力默认模型", "description": "虾集文本和视觉功能共用文本网关模型；Embedding 和媒体模型从已配置的第三方组读取。", "text": "文本 / 视觉模型", "embedding": "Embedding 模型" }
+        "capabilityDefaults": { "title": "能力默认模型", "description": "文本和视觉理解共用文本网关模型；图像、视频、音频使用已配置的独立媒体组。", "text": "文本 / 视觉模型", "reasoning": "文本思考级别", "reasoningHint": "仅作用于第三方文本 / 视觉理解请求。", "embedding": "Embedding 模型" }
       },
       "agent": {
         "title": "Agent 模型",

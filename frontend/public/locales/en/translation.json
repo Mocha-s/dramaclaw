@@ -7649,7 +7649,7 @@
         "advancedTab": "Advanced Custom",
         "title": "BrainClaw by RelayClaw (Recommended)",
         "description": "BrainClaw handles text understanding, generation, structured output, tool calling, and vision tasks. When a third-party text gateway group is configured, it is reused automatically without entering another endpoint or API key.",
-        "autoDescription": "The configured third-party text gateway group is used automatically; no duplicate endpoint or API key is required.",
+        "autoDescription": "Text / visual understanding uses the configured third-party text gateway; image, video, and audio use independent media groups. No duplicate endpoint or API key is required.",
         "model": "Fixed model",
         "save": "Save and use BrainClaw",
         "enabled": "BrainClaw selected; it applies while Custom mode is active.",
@@ -7668,7 +7668,7 @@
         "save": "Save third-party gateway settings", "saved": "Third-party gateway groups saved.", "missingFields": "Complete each group name, Base URL, key, capability, and model mapping.",
         "warning": "Some legacy settings could not be migrated. Recreate them manually in your selected third-party gateway.",
         "capabilities": { "text": "Text / Vision", "embedding": "Embedding", "image": "Image", "video": "Video", "audio": "Audio" },
-        "capabilityDefaults": { "title": "Capability defaults", "description": "Xiahua text and visual features share the text gateway; Embedding and media models come from configured third-party groups.", "text": "Text / vision model", "embedding": "Embedding model" }
+        "capabilityDefaults": { "title": "Capability defaults", "description": "Text and visual understanding share the text gateway; image, video, and audio use configured independent media groups.", "text": "Text / vision model", "reasoning": "Text reasoning effort", "reasoningHint": "Applies only to third-party text / visual understanding requests.", "embedding": "Embedding model" }
       },
       "agent": {
         "title": "Agent model",

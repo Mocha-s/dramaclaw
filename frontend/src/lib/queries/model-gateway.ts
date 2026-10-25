@@ -202,6 +202,7 @@ export interface ModelGatewayConfig {
   capabilityDefaults?: {
     textGroupId?: string;
     textModel?: string;
+    textReasoningEffort?: "low" | "medium" | "high" | "xhigh" | "max";
     embeddingGroupId?: string;
     embeddingModel?: string;
   };
@@ -652,7 +653,13 @@ export function useFetchThirdPartyModels() {
 export function useSaveCapabilityDefaults() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { textGroupId?: string; textModel?: string; embeddingGroupId?: string; embeddingModel?: string }) =>
+    mutationFn: (input: {
+      textGroupId?: string;
+      textModel?: string;
+      textReasoningEffort?: "low" | "medium" | "high" | "xhigh" | "max";
+      embeddingGroupId?: string;
+      embeddingModel?: string;
+    }) =>
       api.post("api/v1/model-gateway/capability-defaults", {
         json: input,
         throwHttpErrors: false,

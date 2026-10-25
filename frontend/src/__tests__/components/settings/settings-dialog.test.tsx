@@ -15,6 +15,7 @@ const modelGatewayMocks = vi.hoisted(() => ({
   saveBrainClaw: vi.fn(),
   saveSub2Api: vi.fn(),
   saveThirdParty: vi.fn(),
+  saveCapabilityDefaults: vi.fn(),
   fetchSub2ApiModels: vi.fn(),
   setCustomLlmMode: vi.fn(),
   saveMediaRelay: vi.fn(),
@@ -93,7 +94,7 @@ vi.mock("@/lib/queries/model-gateway", () => ({
   }),
   useSaveThirdPartyGatewayConfig: () => ({ mutateAsync: modelGatewayMocks.saveSub2Api, isPending: false }),
   useFetchThirdPartyModels: () => ({ mutateAsync: modelGatewayMocks.fetchSub2ApiModels, isPending: false }),
-  useSaveCapabilityDefaults: () => ({ mutateAsync: vi.fn().mockResolvedValue({ ok: true }), isPending: false }),
+  useSaveCapabilityDefaults: () => ({ mutateAsync: modelGatewayMocks.saveCapabilityDefaults, isPending: false }),
   useFetchSub2ApiModels: () => ({ mutateAsync: modelGatewayMocks.fetchSub2ApiModels, isPending: false }),
   useSetCustomLlmMode: () => ({
     mutateAsync: modelGatewayMocks.setCustomLlmMode,
@@ -236,7 +237,7 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.brainclaw.advancedTab": "高级自定义",
         "settings.modelConfig.brainclaw.title": "虾脑 BrainClaw（推荐）",
         "settings.modelConfig.brainclaw.description": "虾脑仅通过虾驿提供",
-        "settings.modelConfig.brainclaw.autoDescription": "已自动使用第三方文本网关组，无需重复配置地址和 API Key。",
+        "settings.modelConfig.brainclaw.autoDescription": "已自动使用第三方文本 / 视觉理解网关；图像、视频、音频使用独立媒体组，无需重复配置地址和 API Key。",
         "settings.modelConfig.brainclaw.model": "固定模型",
         "settings.modelConfig.brainclaw.save": "保存并启用 BrainClaw",
         "settings.modelConfig.agent.title": "Agent 模型",
@@ -458,6 +459,8 @@ beforeEach(() => {
   modelGatewayMocks.fetchSub2ApiModels.mockReset();
   modelGatewayMocks.setCustomLlmMode.mockReset();
   modelGatewayMocks.saveMediaRelay.mockReset();
+  modelGatewayMocks.saveCapabilityDefaults.mockReset();
+  modelGatewayMocks.saveCapabilityDefaults.mockResolvedValue({ ok: true });
   modelGatewayMocks.setCustomLlmMode.mockResolvedValue({ ok: true });
   freezoneAgentConfigMocks.delete.mockReset();
   freezoneAgentConfigMocks.exportBundle.mockReset();
@@ -686,7 +689,7 @@ describe("SettingsDialog pages", () => {
     renderSettingsDialog();
 
     fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
-    expect(screen.getByText("已自动使用第三方文本网关组，无需重复配置地址和 API Key。")).toBeInTheDocument();
+    expect(screen.getByText("已自动使用第三方文本 / 视觉理解网关；图像、视频、音频使用独立媒体组，无需重复配置地址和 API Key。")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("https://text.example/v1")).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "网关地址" })).not.toBeInTheDocument();
   });
@@ -701,6 +704,7 @@ describe("SettingsDialog pages", () => {
       thirdParty: { configured: true, groups: [
         { id: "text", name: "Text gateway", protocol: "openai", baseUrl: "https://text.example/v1", apiKeyPreview: "sk-...", capabilities: ["text"], modelMappings: [{ requestPattern: "DC-freezone-text-writer-LLM", upstreamModel: "gpt-6.1-sol" }] },
       ] },
+      capabilityDefaults: { textGroupId: "text", textModel: "gpt-6.1-sol", textReasoningEffort: "low" },
     };
     renderSettingsDialog();
 
@@ -712,6 +716,39 @@ describe("SettingsDialog pages", () => {
     expect(screen.getByRole("option", { name: "gpt-6.1-sol · Text gateway" })).toBeInTheDocument();
     expect(screen.queryByText("业务模型映射")).not.toBeInTheDocument();
     expect(screen.queryByText("DC-freezone-text-writer-LLM")).not.toBeInTheDocument();
+  });
+
+  it("saves an explicit third-party text reasoning effort without offering none", async () => {
+    const user = userEvent.setup();
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "third_party", baseUrl: "https://text.example/v1", apiKeyPreview: "sk-...", configured: true, model: "gpt-6.1-sol", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [
+        { id: "text", name: "Text gateway", protocol: "openai", baseUrl: "https://text.example/v1", apiKeyPreview: "sk-...", capabilities: ["text"], modelMappings: [{ requestPattern: "*", upstreamModel: "gpt-6.1-sol" }] },
+      ] },
+      capabilityDefaults: { textGroupId: "text", textModel: "gpt-6.1-sol", textReasoningEffort: "low" },
+    };
+    renderSettingsDialog();
+
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
+    const reasoning = screen.getByRole("combobox", { name: "文本思考级别" });
+    await user.click(reasoning);
+    expect(screen.getByRole("option", { name: "high" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "none" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("option", { name: "high" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" }).at(-1)!);
+
+    await waitFor(() => expect(modelGatewayMocks.saveCapabilityDefaults).toHaveBeenCalledWith({
+      textGroupId: "text",
+      textModel: "gpt-6.1-sol",
+      embeddingGroupId: undefined,
+      embeddingModel: undefined,
+      textReasoningEffort: "high",
+    }));
   });
 
   it("does not show the official media catalog before an official key is configured", () => {

@@ -7378,6 +7378,8 @@
           "title": "Model mặc định theo năng lực",
           "description": "Các tính năng văn bản và thị giác của Xiahua dùng chung gateway văn bản; Embedding và media lấy từ các nhóm bên thứ ba đã cấu hình.",
           "text": "Model văn bản / thị giác",
+          "reasoning": "Mức suy luận văn bản",
+          "reasoningHint": "Chỉ áp dụng cho yêu cầu hiểu văn bản / thị giác từ gateway bên thứ ba.",
           "embedding": "Model Embedding"
         }
       },
@@ -7638,7 +7640,7 @@
         "advancedTab": "Tuỳ chỉnh nâng cao",
         "title": "BrainClaw của RelayClaw (Khuyến nghị)",
         "description": "BrainClaw xử lý văn bản, tạo nội dung, đầu ra có cấu trúc, gọi công cụ và tác vụ thị giác. Khi đã cấu hình nhóm gateway văn bản bên thứ ba, hệ thống sẽ tự động dùng lại nhóm đó mà không cần nhập lại endpoint hoặc API key.",
-        "autoDescription": "Đã tự động dùng nhóm gateway văn bản bên thứ ba; không cần nhập lại endpoint hoặc API key.",
+        "autoDescription": "Hiểu văn bản / thị giác dùng gateway văn bản bên thứ ba đã cấu hình; ảnh, video và âm thanh dùng các nhóm media riêng. Không cần nhập lại endpoint hoặc API key.",
         "model": "Model cố định",
         "save": "Lưu và sử dụng BrainClaw",
         "enabled": "Đã chọn BrainClaw; lựa chọn này có hiệu lực khi chế độ Tuỳ chỉnh đang bật.",

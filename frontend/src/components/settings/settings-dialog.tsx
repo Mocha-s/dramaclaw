@@ -957,6 +957,7 @@ function CustomLlmSettings({
 function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig | undefined }) {
   const { t } = useTranslation();
   const saveDefaults = useSaveCapabilityDefaults();
+  const textReasoningEfforts = ["low", "medium", "high", "xhigh", "max"] as const;
   const textModels = useMemo(
     () => (config?.thirdParty?.groups ?? [])
       .filter((group) => group.capabilities.includes("text"))
@@ -978,11 +979,15 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
     [config?.thirdParty?.groups],
   );
   const [textModel, setTextModel] = useState(config?.capabilityDefaults?.textGroupId && config.capabilityDefaults.textModel ? `${config.capabilityDefaults.textGroupId}::${config.capabilityDefaults.textModel}` : textModels[0]?.value ?? "");
+  const [textReasoningEffort, setTextReasoningEffort] = useState<
+    (typeof textReasoningEfforts)[number]
+  >(config?.capabilityDefaults?.textReasoningEffort ?? "low");
   const [embeddingModel, setEmbeddingModel] = useState(config?.capabilityDefaults?.embeddingGroupId && config.capabilityDefaults.embeddingModel ? `${config.capabilityDefaults.embeddingGroupId}::${config.capabilityDefaults.embeddingModel}` : embeddingModels[0]?.value ?? "");
   useEffect(() => {
     const savedText = config?.capabilityDefaults?.textGroupId && config.capabilityDefaults.textModel ? `${config.capabilityDefaults.textGroupId}::${config.capabilityDefaults.textModel}` : "";
     const savedEmbedding = config?.capabilityDefaults?.embeddingGroupId && config.capabilityDefaults.embeddingModel ? `${config.capabilityDefaults.embeddingGroupId}::${config.capabilityDefaults.embeddingModel}` : "";
     setTextModel(textModels.some((item) => item.value === savedText) ? savedText : textModels[0]?.value ?? "");
+    setTextReasoningEffort(config?.capabilityDefaults?.textReasoningEffort ?? "low");
     setEmbeddingModel(embeddingModels.some((item) => item.value === savedEmbedding) ? savedEmbedding : embeddingModels[0]?.value ?? "");
   }, [config?.capabilityDefaults, config?.llmEffective.model, textModels, embeddingModels]);
   const save = async () => {
@@ -991,6 +996,7 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
     const response = await saveDefaults.mutateAsync({
       textGroupId: textGroupId || undefined,
       textModel: selectedTextModel || undefined,
+      textReasoningEffort,
       embeddingGroupId: embeddingGroupId || undefined,
       embeddingModel: selectedEmbeddingModel || undefined,
     });
@@ -1014,6 +1020,43 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
           value={textModel}
           onChange={setTextModel}
         />
+        <div className="rounded-md border border-border/60 px-3 py-2.5">
+          <div className="text-[11px] text-muted-foreground">
+            {t("settings.modelConfig.capabilityDefaults.reasoning", {
+              defaultValue: "文本思考级别",
+            })}
+          </div>
+          <Select
+            value={textReasoningEffort}
+            onValueChange={(value) => {
+              if (textReasoningEfforts.includes(value as (typeof textReasoningEfforts)[number])) {
+                setTextReasoningEffort(value as (typeof textReasoningEfforts)[number]);
+              }
+            }}
+          >
+            <SelectTrigger
+              aria-label={t("settings.modelConfig.capabilityDefaults.reasoning", {
+                defaultValue: "文本思考级别",
+              })}
+              size="sm"
+              className="mt-1 h-8 w-full font-mono text-xs"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              {textReasoningEfforts.map((effort) => (
+                <SelectItem key={effort} value={effort}>
+                  {effort}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="mt-1 text-[10px] text-muted-foreground">
+            {t("settings.modelConfig.capabilityDefaults.reasoningHint", {
+              defaultValue: "仅作用于第三方文本 / 视觉理解请求。",
+            })}
+          </div>
+        </div>
         <CapabilityDefaultRow
           label={t("settings.modelConfig.capabilityDefaults.embedding", { defaultValue: "Embedding 模型" })}
           model={embeddingModels[0]?.label || ""}
