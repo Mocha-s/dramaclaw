@@ -163,6 +163,34 @@ def test_configured_image_selection_uses_catalog_request_model_for_scene_and_pro
     )
 
 
+def test_scene_image_source_defaults_to_catalog_only_for_canonical_ce(
+    monkeypatch,
+):
+    import novelvideo.config as config
+    from novelvideo.task_backend.runners import scene_reference as scene_reference_runner
+
+    monkeypatch.setattr(
+        config,
+        "_configured_third_party_image_selection_options",
+        lambda: {"gpt-image-2": "Configured image"},
+    )
+
+    assert scene_reference_runner._scene_image_source(None) == (
+        "newapi",
+        "gpt-image-2",
+    )
+
+    monkeypatch.setattr(
+        config,
+        "_configured_third_party_image_selection_options",
+        lambda: None,
+    )
+    assert scene_reference_runner._scene_image_source(None) == (
+        "newapi",
+        "LingShan-G2",
+    )
+
+
 def test_configured_image_selection_resolves_third_party_credentials_and_upstream(
     monkeypatch, tmp_path
 ):
