@@ -117,6 +117,15 @@ async def run_freezone_gen(
             model_override=model,
             image_size_override=image_size,
         )
+        if str(cfg.get("provider") or "").strip().lower() == "newapi":
+            from novelvideo.config import get_effective_newapi_gateway_config
+
+            gateway = get_effective_newapi_gateway_config(
+                capability="image", model=model or str(cfg.get("model") or "")
+            )
+            cfg["api_key"] = gateway.api_key or cfg.get("api_key", "")
+            cfg["base_url"] = gateway.base_url or cfg.get("base_url", "")
+            cfg["model"] = gateway.model or cfg.get("model", "")
     cfg["newapi_model_params"] = model_params or {}
     cfg["newapi_request_schema"] = request_schema or {}
     if reference_paths:
