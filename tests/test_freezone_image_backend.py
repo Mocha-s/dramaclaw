@@ -3452,6 +3452,13 @@ def test_split_provider_and_model_accepts_newapi_selection_key() -> None:
     assert model == NEWAPI_IMAGE_MODEL
 
 
+def test_split_provider_and_model_preserves_catalog_model_with_explicit_provider() -> None:
+    provider, model = _split_provider_and_model("newapi", "gpt-image-2")
+
+    assert provider == "newapi"
+    assert model == "gpt-image-2"
+
+
 def test_freezone_defaults_to_newapi_gpt_image2() -> None:
     assert FREEZONE_DEFAULT_IMAGE_MODEL == "gpt-image-2"
     assert _resolve_freezone_image_provider(None) == "newapi"
@@ -7905,7 +7912,7 @@ async def test_skill_run_scene_360_uses_reverse_master_and_scene_slot_target(
     assert captured["payload"]["scene_name"] == "小区"
     assert captured["payload"]["step"] == "pano_from_master"
     assert captured["payload"]["params"]["provider"] == "newapi"
-    assert captured["payload"]["params"]["model"] == NEWAPI_IMAGE_MODEL
+    assert captured["payload"]["params"]["model"] == "gpt-image-2"
     assert resolve_scene_360_image_model(
         provider=captured["payload"]["params"]["provider"],
         model=captured["payload"]["params"]["model"],

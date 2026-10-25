@@ -242,13 +242,16 @@ def split_provider_and_model(
 ) -> tuple[Optional[str], Optional[str]]:
     """解析 Freezone 图片模型。"""
     model_text = str(model or "").strip()
+    if provider and provider.strip():
+        # Catalog-backed IDs can overlap legacy static selection keys. Once a
+        # provider is supplied by the authoritative catalog, preserve its
+        # model ID instead of translating it through IMAGE_GENERATION_SELECTIONS.
+        return provider, model_text or fallback_model
     if model_text:
         if model_text in IMAGE_GENERATION_SELECTIONS:
             entry = IMAGE_GENERATION_SELECTIONS[model_text]
             return entry["provider"], entry["model"]
 
-    if provider:
-        return provider, model_text or fallback_model
     if model_text and "/" in model_text:
         provider_token, model_token = model_text.split("/", 1)
         if provider_token in SUPPORTED_FREEZONE_IMAGE_PROVIDERS:
