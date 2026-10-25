@@ -46,9 +46,7 @@ async def _run_scene_reference_asset(
     from novelvideo.cognee import CogneeStore
     from novelvideo.config import (
         IMAGE_DEFAULT_STYLE,
-        IMAGE_GENERATION_SELECTIONS,
         get_style_preset,
-        normalize_image_generation_selection,
     )
     from novelvideo.generators.scene_reference_images import generate_scene_reference_image
     from novelvideo.generators.nanobanana_grid import scene_reference_feature_billing
@@ -110,10 +108,7 @@ async def _run_scene_reference_asset(
         provider = None
         model = None
         if model_selection:
-            normalized_selection = normalize_image_generation_selection(model_selection)
-            selected_image_source = IMAGE_GENERATION_SELECTIONS[normalized_selection]
-            provider = selected_image_source["provider"]
-            model = selected_image_source["model"]
+            provider, model = _scene_image_source(model_selection)
         with scene_reference_feature_billing():
             output_path = await generate_scene_reference_image(
                 project_dir=output_dir,
@@ -140,6 +135,13 @@ async def _run_scene_reference_asset(
         }
     finally:
         await store.close()
+
+
+def _scene_image_source(selection: str | None) -> tuple[str, str]:
+    """Resolve a scene image selection through the canonical image catalog."""
+    from novelvideo.config import resolve_image_generation_source
+
+    return resolve_image_generation_source(selection)
 
 
 register_project_task_runner("scene_reference_asset", run_scene_reference_asset)

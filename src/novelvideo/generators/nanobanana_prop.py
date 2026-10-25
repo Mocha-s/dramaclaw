@@ -19,14 +19,13 @@ from pathlib import Path
 from typing import Optional
 
 from novelvideo.config import (
-    IMAGE_GENERATION_SELECTIONS,
     get_grid_generation_config,
     get_style_preset,
     IMAGE_DEFAULT_STYLE,
     NEWAPI_IMAGE_MODEL,
     PROP_REF_IMAGE_MODEL,
     PROP_REF_IMAGE_PROVIDER,
-    normalize_image_generation_selection,
+    resolve_image_generation_source,
 )
 from novelvideo.shared.billing_errors import is_fatal_billing_error
 from novelvideo.generators.nanobanana_grid import (
@@ -48,6 +47,11 @@ PROP_REF_IMAGE_SIZE = "0.5K"
 
 def resolve_prop_reference_image_model() -> str:
     """Return the model used by prop reference generation."""
+    from novelvideo.config import _configured_third_party_image_selection_options
+
+    if _configured_third_party_image_selection_options() is not None:
+        _provider, configured_model = resolve_image_generation_source(None)
+        return configured_model
     config = get_grid_generation_config()
     prop_provider = (PROP_REF_IMAGE_PROVIDER or "").strip().lower()
     provider = prop_provider or str(config.get("provider") or "google").strip().lower()
@@ -60,9 +64,8 @@ def _prop_reference_image_source(selection: str | None) -> tuple[str | None, str
     selection = str(selection or "").strip()
     if not selection:
         return None, None
-    normalized = normalize_image_generation_selection(selection)
-    image_source = IMAGE_GENERATION_SELECTIONS[normalized]
-    return image_source["provider"], image_source["model"]
+    provider, model = resolve_image_generation_source(selection)
+    return provider, model
 
 
 def build_prop_reference_prompt(

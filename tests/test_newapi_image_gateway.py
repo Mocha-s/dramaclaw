@@ -124,6 +124,90 @@ def test_fixed_asset_image_providers_default_to_newapi_when_env_is_empty(monkeyp
     assert scene_reference_images._scene_image_provider("reverse_master", None) == "newapi"
 
 
+def test_configured_image_selection_uses_catalog_request_model_for_scene_and_prop(
+    monkeypatch,
+):
+    import novelvideo.config as config
+    import novelvideo.model_gateway_settings as gateway_settings
+    from novelvideo.generators import nanobanana_prop
+    from novelvideo.task_backend.runners import scene_reference as scene_reference_runner
+
+    monkeypatch.setattr(
+        config,
+        "_configured_third_party_image_selection_options",
+        lambda: {"gpt-image-2": "Configured image"},
+    )
+    monkeypatch.setattr(
+        gateway_settings,
+        "get_third_party_media_model_catalog",
+        lambda _media_type: [
+            {
+                "id": "gpt-image-2",
+                "apiModel": "gpt-image-2",
+                "gatewayModel": "configured-image-model",
+            }
+        ],
+    )
+
+    assert config.resolve_image_generation_source("gpt-image-2") == (
+        "newapi",
+        "gpt-image-2",
+    )
+    assert nanobanana_prop._prop_reference_image_source("gpt-image-2") == (
+        "newapi",
+        "gpt-image-2",
+    )
+    assert scene_reference_runner._scene_image_source("gpt-image-2") == (
+        "newapi",
+        "gpt-image-2",
+    )
+
+
+def test_configured_image_selection_resolves_third_party_credentials_and_upstream(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    monkeypatch.delenv("ST_CONTROL_PLANE_DSN", raising=False)
+    monkeypatch.setenv("ST_EDITION", "ce")
+
+    import json
+
+    from novelvideo import config
+    from novelvideo import model_gateway_settings
+
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": "custom",
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "image",
+                        "name": "Image",
+                        "protocol": "openai",
+                        "baseUrl": "https://images.example/v1",
+                        "apiKey": "sk-image",
+                        "capabilities": ["image"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "gpt-image-2",
+                                "upstreamModel": "configured-image-model",
+                            }
+                        ],
+                    }
+                ]
+            ),
+        }
+    )
+
+    gateway = config.get_effective_newapi_gateway_config(
+        capability="image", model="gpt-image-2"
+    )
+
+    assert gateway.api_key == "sk-image"
+    assert gateway.base_url == "https://images.example/v1"
+    assert gateway.model == "configured-image-model"
+
+
 def test_newapi_sketch_config_defaults_to_dc_image2_low_quality(monkeypatch):
     import httpx
     import novelvideo.config as config

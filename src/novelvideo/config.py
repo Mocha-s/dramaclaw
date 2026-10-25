@@ -1376,6 +1376,25 @@ def normalize_image_generation_selection(
     return _default_image_generation_selection(fallback)
 
 
+def resolve_image_generation_source(selection: str | None) -> tuple[str, str]:
+    """Resolve an image selection to its provider and logical request model.
+
+    Canonical CE image groups use their request-model IDs as the logical
+    selection. The image gateway resolver then maps that request model to the
+    configured upstream model and credentials. Legacy deployments retain the
+    static provider/model compatibility table.
+    """
+    configured = _configured_third_party_image_selection_options()
+    if configured is not None:
+        selected = normalize_image_generation_selection(selection)
+        if selected:
+            return "newapi", selected
+
+    normalized = normalize_image_generation_selection(selection)
+    image_source = IMAGE_GENERATION_SELECTIONS[normalized]
+    return image_source["provider"], image_source["model"]
+
+
 def image_generation_selection_label(
     value: str | None, *, fallback: str | None = None
 ) -> str:
