@@ -120,11 +120,18 @@ async def run_freezone_gen(
         from novelvideo.model_gateway_settings import resolve_third_party_image_request
 
         catalog_request = resolve_third_party_image_request(model or str(cfg.get("model") or ""))
-        if catalog_request and not str(provider or "").strip():
-            cfg["provider"] = "newapi"
-            cfg["api_key"] = catalog_request["api_key"]
-            cfg["base_url"] = catalog_request["base_url"]
-            cfg["model"] = catalog_request["upstream_model"] or cfg.get("model", "")
+        if catalog_request and (
+            not str(provider or "").strip()
+            or str(cfg.get("provider") or "").strip().lower() == "newapi"
+        ):
+            if not str(provider or "").strip():
+                cfg["provider"] = "newapi"
+            if catalog_request.get("api_key"):
+                cfg["api_key"] = catalog_request["api_key"]
+            if not cfg.get("base_url") and catalog_request.get("base_url"):
+                cfg["base_url"] = catalog_request["base_url"]
+            if catalog_request.get("upstream_model"):
+                cfg["model"] = catalog_request["upstream_model"]
         if str(cfg.get("provider") or "").strip().lower() == "newapi":
             from novelvideo.config import get_effective_newapi_gateway_config
 

@@ -5332,6 +5332,77 @@ async def test_run_freezone_gen_refreshes_ce_gateway_credentials_for_newapi(
 
 
 @pytest.mark.asyncio
+async def test_run_freezone_gen_uses_catalog_credentials_when_provider_is_already_newapi(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from novelvideo import config as novelvideo_config
+    from novelvideo.freezone import jobs as freezone_jobs
+    from novelvideo.generators import nanobanana_grid
+
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(
+        novelvideo_config,
+        "get_grid_generation_config",
+        lambda **_kwargs: {
+            "provider": "newapi",
+            "model": "gpt-image-2",
+            "api_key": "",
+            "base_url": "",
+        },
+    )
+    monkeypatch.setattr(
+        novelvideo_config,
+        "get_effective_newapi_gateway_config",
+        lambda **_kwargs: type(
+            "Gateway",
+            (),
+            {"api_key": "", "base_url": "", "model": "gpt-image-2"},
+        )(),
+    )
+    monkeypatch.setattr(
+        "novelvideo.model_gateway_settings.resolve_third_party_image_request",
+        lambda _model: {
+            "upstream_model": "gpt-image-2",
+            "base_url": "https://catalog.example/v1",
+            "api_key": "catalog-key",
+            "reference_image_format": "images",
+            "request_schema": {
+                "endpoint": "images/generations",
+                "referenceFormat": "images",
+                "parameters": [],
+            },
+            "model_params": {},
+        },
+    )
+    base = tmp_path / "base.png"
+    _write_image(base, size=(64, 64))
+
+    async def fake_generate_reference_edit_image(**kwargs):
+        captured.update(kwargs)
+        Path(kwargs["output_path"]).parent.mkdir(parents=True, exist_ok=True)
+        Path(kwargs["output_path"]).write_bytes(b"")
+        return kwargs["output_path"]
+
+    monkeypatch.setattr(
+        nanobanana_grid,
+        "generate_reference_edit_image",
+        fake_generate_reference_edit_image,
+    )
+    await freezone_jobs.run_freezone_gen(
+        project_dir=tmp_path,
+        job_id="job_catalog_credentials",
+        prompt="generate",
+        reference_paths=[str(base)],
+        provider="newapi",
+        model="gpt-image-2",
+    )
+
+    assert captured["config"]["api_key"] == "catalog-key"
+    assert captured["config"]["base_url"] == "https://catalog.example/v1"
+
+
+@pytest.mark.asyncio
 async def test_run_freezone_gen_derives_newapi_provider_from_catalog_model(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
