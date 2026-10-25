@@ -891,6 +891,29 @@ def test_capability_defaults_are_persisted_and_select_text_upstream_model(
     assert gateway_settings.resolve_capability_default("text").model == "two"
 
 
+def test_capability_defaults_persist_text_reasoning_effort(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+
+    gateway_settings.save_capability_defaults(text_reasoning_effort="high")
+
+    assert gateway_settings.get_capability_defaults() == {
+        "textReasoningEffort": "high"
+    }
+    assert gateway_settings.get_saved_text_reasoning_effort() == "high"
+
+
+@pytest.mark.parametrize("value", ["none", "xhigh-ish"])
+def test_capability_defaults_reject_invalid_text_reasoning_effort(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, value: str
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+
+    with pytest.raises(ValueError, match="low, medium, high, xhigh, max"):
+        gateway_settings.save_capability_defaults(text_reasoning_effort=value)
+
+
 def test_effective_llm_uses_saved_capability_default_for_unmapped_feature(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ):
@@ -990,6 +1013,7 @@ def test_gateway_status_exposes_saved_capability_defaults(monkeypatch: pytest.Mo
             "textModel": "gpt-6.1-sol",
             "embeddingGroupId": "embeddings",
             "embeddingModel": "text-embedding-3-large",
+            "textReasoningEffort": "medium",
         })
     })
 
@@ -1000,6 +1024,7 @@ def test_gateway_status_exposes_saved_capability_defaults(monkeypatch: pytest.Mo
         "textModel": "gpt-6.1-sol",
         "embeddingGroupId": "embeddings",
         "embeddingModel": "text-embedding-3-large",
+        "textReasoningEffort": "medium",
     }
 
 

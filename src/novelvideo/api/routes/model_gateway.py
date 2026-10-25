@@ -213,6 +213,9 @@ class CapabilityDefaultsBody(BaseModel):
     text_model: str | None = Field(default=None, alias="textModel")
     embedding_group_id: str | None = Field(default=None, alias="embeddingGroupId")
     embedding_model: str | None = Field(default=None, alias="embeddingModel")
+    text_reasoning_effort: str | None = Field(
+        default=None, alias="textReasoningEffort"
+    )
 
 
 class Sub2ApiModelsBody(BaseModel):
@@ -794,6 +797,7 @@ async def save_capability_defaults_route(body: CapabilityDefaultsBody) -> dict[s
             text_model=body.text_model or "",
             embedding_group_id=body.embedding_group_id or "",
             embedding_model=body.embedding_model or "",
+            text_reasoning_effort=body.text_reasoning_effort or "",
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

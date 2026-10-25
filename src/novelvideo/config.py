@@ -161,7 +161,11 @@ def get_effective_newapi_text_model_name(
     model_name_override: str | None = None,
 ) -> str:
     """Resolve one text route without silently falling back across editions."""
-    from novelvideo.model_gateway_settings import get_effective_llm_config
+    from novelvideo.model_gateway_settings import (
+        get_effective_llm_config,
+        get_saved_text_reasoning_effort,
+        normalize_text_reasoning_effort,
+    )
     from novelvideo.official_defaults import ADVANCED_TEXT_MODEL_BY_ENV
 
     explicit_model = str(model_name_override or "").strip()
@@ -512,17 +516,14 @@ def get_newapi_structured_output_model_settings() -> dict:
             if getattr(llm_config, "protocol", "openai") == "anthropic":
                 return {}
             effort = (
-                os.environ.get("NEWAPI_TEXT_REASONING_EFFORT", "")
+                get_saved_text_reasoning_effort()
+                or os.environ.get("NEWAPI_TEXT_REASONING_EFFORT", "")
                 or os.environ.get("MODEL_REASONING_EFFORT", "")
                 or "low"
-            ).strip().lower()
-            allowed = {"low", "medium", "high", "xhigh", "max"}
-            if effort not in allowed:
-                raise ValueError(
-                    "unsupported NEWAPI_TEXT_REASONING_EFFORT="
-                    f"{effort!r}; expected one of: {', '.join(sorted(allowed))}"
-                )
-            return {"openai_reasoning_effort": effort}
+            )
+            return {
+                "openai_reasoning_effort": normalize_text_reasoning_effort(effort)
+            }
     except ValueError:
         raise
     except Exception:

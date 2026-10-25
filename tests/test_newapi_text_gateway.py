@@ -72,6 +72,68 @@ def test_structured_output_settings_accept_explicit_third_party_effort(monkeypat
     }
 
 
+def test_structured_output_settings_prefer_saved_third_party_effort(monkeypatch):
+    import novelvideo.config as config
+    import novelvideo.model_gateway_settings as gateway_settings
+    from novelvideo.model_gateway_settings import EffectiveLlmConfig
+
+    monkeypatch.setattr(
+        gateway_settings,
+        "get_effective_llm_config",
+        lambda **_: EffectiveLlmConfig(
+            mode="custom",
+            source="third_party",
+            base_url="https://gateway.example/v1",
+            api_key="sk-test",
+            model="gpt-6.1-sol",
+            is_brainclaw=False,
+        ),
+    )
+    monkeypatch.setattr(
+        gateway_settings,
+        "get_saved_text_reasoning_effort",
+        lambda: "max",
+        raising=False,
+    )
+    monkeypatch.delenv("NEWAPI_TEXT_REASONING_EFFORT", raising=False)
+    monkeypatch.delenv("MODEL_REASONING_EFFORT", raising=False)
+
+    assert config.get_newapi_structured_output_model_settings() == {
+        "openai_reasoning_effort": "max"
+    }
+
+
+def test_structured_output_settings_default_when_no_effort_is_configured(monkeypatch):
+    import novelvideo.config as config
+    import novelvideo.model_gateway_settings as gateway_settings
+    from novelvideo.model_gateway_settings import EffectiveLlmConfig
+
+    monkeypatch.setattr(
+        gateway_settings,
+        "get_effective_llm_config",
+        lambda **_: EffectiveLlmConfig(
+            mode="custom",
+            source="third_party",
+            base_url="https://gateway.example/v1",
+            api_key="sk-test",
+            model="gpt-6.1-sol",
+            is_brainclaw=False,
+        ),
+    )
+    monkeypatch.setattr(
+        gateway_settings,
+        "get_saved_text_reasoning_effort",
+        lambda: "",
+        raising=False,
+    )
+    monkeypatch.delenv("NEWAPI_TEXT_REASONING_EFFORT", raising=False)
+    monkeypatch.delenv("MODEL_REASONING_EFFORT", raising=False)
+
+    assert config.get_newapi_structured_output_model_settings() == {
+        "openai_reasoning_effort": "low"
+    }
+
+
 def test_structured_output_settings_reject_invalid_third_party_effort(monkeypatch):
     import pytest
     import novelvideo.config as config

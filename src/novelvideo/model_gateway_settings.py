@@ -52,6 +52,8 @@ SUB2API_CAPABILITIES = (
     CAPABILITY_VIDEO,
     CAPABILITY_AUDIO,
 )
+TEXT_REASONING_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+_TEXT_REASONING_EFFORT_SET = frozenset(TEXT_REASONING_EFFORTS)
 SUB2API_PROTOCOLS = {"openai", "gemini", "anthropic"}
 SUB2API_IMAGE_EDIT_FORMATS = {
     "dc-media",
@@ -786,12 +788,32 @@ def get_capability_defaults() -> dict[str, str]:
     return value if isinstance(value, dict) else {}
 
 
+def normalize_text_reasoning_effort(
+    value: str | None, *, default: str = "low"
+) -> str:
+    """Validate the reasoning effort accepted by third-party GPT gateways."""
+    clean = str(value or "").strip().lower() or str(default or "").strip().lower()
+    if clean not in _TEXT_REASONING_EFFORT_SET:
+        raise ValueError(
+            "unsupported text reasoning effort "
+            f"{clean!r}; expected one of: {', '.join(TEXT_REASONING_EFFORTS)}"
+        )
+    return clean
+
+
+def get_saved_text_reasoning_effort() -> str:
+    """Return the persisted third-party text reasoning effort, if present."""
+    value = str(get_capability_defaults().get("textReasoningEffort") or "").strip()
+    return normalize_text_reasoning_effort(value) if value else ""
+
+
 def save_capability_defaults(
     *,
     text_group_id: str = "",
     text_model: str = "",
     embedding_group_id: str = "",
     embedding_model: str = "",
+    text_reasoning_effort: str = "",
 ) -> None:
     groups = get_third_party_gateway_groups()
     for capability, group_id, model in (
@@ -822,6 +844,15 @@ def save_capability_defaults(
         )
         if value
     }
+    clean_reasoning_effort = str(text_reasoning_effort or "").strip()
+    if clean_reasoning_effort:
+        values["textReasoningEffort"] = normalize_text_reasoning_effort(
+            clean_reasoning_effort
+        )
+    else:
+        saved_reasoning_effort = get_saved_text_reasoning_effort()
+        if saved_reasoning_effort:
+            values["textReasoningEffort"] = saved_reasoning_effort
     _write_many({CAPABILITY_DEFAULTS_KEY: json.dumps(values, ensure_ascii=False, sort_keys=True)})
 
 
