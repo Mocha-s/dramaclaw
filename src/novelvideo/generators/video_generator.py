@@ -1998,6 +1998,13 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         self.resolution = resolution or NEWAPI_VIDEO_RESOLUTION
         self.model_params = model_params or {}
         self.request_schema = request_schema or {}
+        if not self.request_schema:
+            from novelvideo.model_gateway_settings import resolve_third_party_video_request
+
+            request_metadata = resolve_third_party_video_request(model or NEWAPI_VIDEO_MODEL)
+            if request_metadata:
+                self.request_schema = request_metadata["request_schema"]
+                self.model_params = request_metadata["model_params"]
         self.video_endpoint = str(
             self.request_schema.get("endpoint") or "video/generations"
         ).strip().strip("/")

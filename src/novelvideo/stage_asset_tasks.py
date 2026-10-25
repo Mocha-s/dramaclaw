@@ -257,6 +257,16 @@ def resolve_scene_360_image_model(provider: str = "", model: str = "") -> str:
     resolved_model = str(model or "").strip()
     if resolved_model:
         from novelvideo.config import IMAGE_GENERATION_SELECTIONS
+        from novelvideo.model_gateway_settings import get_third_party_media_model_catalog
+
+        if resolved_provider == "newapi":
+            configured_catalog = get_third_party_media_model_catalog("image")
+            configured_ids = {
+                str(item.get("apiModel") or item.get("id") or "").strip()
+                for item in configured_catalog
+            }
+            if resolved_model in configured_ids:
+                return resolved_model
 
         selection = IMAGE_GENERATION_SELECTIONS.get(resolved_model)
         if selection is not None:
@@ -287,6 +297,15 @@ def resolve_scene_360_image_model(provider: str = "", model: str = "") -> str:
         return os.environ.get("OPENAI_IMAGE_MODEL") or "gpt-image-2"
     if resolved_provider == "newapi":
         from novelvideo.config import NEWAPI_IMAGE_MODEL
+        from novelvideo.model_gateway_settings import get_third_party_media_model_catalog
+
+        configured_catalog = get_third_party_media_model_catalog("image")
+        if configured_catalog:
+            return str(
+                configured_catalog[0].get("apiModel")
+                or configured_catalog[0].get("id")
+                or ""
+            ).strip()
 
         return (
             os.environ.get("SCENE_360_IMAGE_MODEL")
@@ -1500,6 +1519,17 @@ def run_scene_360(
     # Claim and resolve here, then hand only the resolved credential across.
     egress_state = None
     child_env: dict[str, str] | None = None
+    if provider == "newapi" and not is_org:
+        from novelvideo.config import get_effective_newapi_gateway_config
+
+        parent_gateway = get_effective_newapi_gateway_config(
+            capability="image", model=resolved_model
+        )
+        if parent_gateway.api_key and parent_gateway.base_url:
+            child_env = os.environ.copy()
+            child_env["DRAMACLAW_SCENE_360_API_KEY"] = parent_gateway.api_key
+            child_env["DRAMACLAW_SCENE_360_BASE_URL"] = parent_gateway.base_url
+            child_env["DRAMACLAW_SCENE_360_MODEL"] = parent_gateway.model or resolved_model
     if is_org:
         from novelvideo.generators.nanobanana_grid import (
             _abandon_organization_image_egress,

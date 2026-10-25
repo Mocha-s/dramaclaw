@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from novelvideo.config import (
     IMAGE_GENERATION_SELECTIONS,
+    configured_image_generation_selection_options,
     get_character_image_selection,
     get_image_config,
     get_style_preset,
@@ -1246,7 +1247,8 @@ async def generate_character_reference_unified(
             print(f"[Character] NanoBanana 配置错误: {e}")
             return []
 
-    if model in IMAGE_GENERATION_SELECTIONS:
+    configured_image_selections = configured_image_generation_selection_options()
+    if model in IMAGE_GENERATION_SELECTIONS or model in configured_image_selections:
         try:
             from novelvideo.generators.nanobanana_character import NanoBananaCharacterGenerator
 

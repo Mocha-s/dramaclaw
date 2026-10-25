@@ -790,6 +790,11 @@ def _resolve_newapi_credentials(*, model: str = "") -> tuple[str, str, str]:
     from novelvideo.config import get_newapi_runtime_credentials
 
     if os.environ.get("ST_ORG_EGRESS_MODE") != "1":
+        injected_key = os.environ.get("DRAMACLAW_SCENE_360_API_KEY", "").strip()
+        injected_base_url = os.environ.get("DRAMACLAW_SCENE_360_BASE_URL", "").strip()
+        injected_model = os.environ.get("DRAMACLAW_SCENE_360_MODEL", "").strip()
+        if injected_key and injected_base_url:
+            return injected_key, injected_base_url, injected_model or model
         from novelvideo.config import get_effective_newapi_gateway_config
 
         gateway = get_effective_newapi_gateway_config(capability="image", model=model)
@@ -1046,17 +1051,31 @@ async def run(args: argparse.Namespace) -> int:
         api_key, base_url, model = _resolve_newapi_credentials(model=model)
         if not api_key:
             raise RuntimeError("NEWAPI_API_KEY is missing")
+        from novelvideo.model_gateway_settings import resolve_third_party_image_request
+
+        image_config = {
+            "aspect_ratio": "2:1",
+            "image_size": args.image_size,
+            "quality": args.quality,
+            "output_format": "png",
+        }
+        request_metadata = resolve_third_party_image_request(model)
+        if request_metadata:
+            image_config.update(
+                {
+                    "request_schema": request_metadata["request_schema"],
+                    "model_params": request_metadata["model_params"],
+                    "reference_image_format": request_metadata[
+                        "reference_image_format"
+                    ],
+                }
+            )
         image_bytes, _text, error = await _call_newapi_image_api(
             api_key=api_key,
             model=model,
             prompt=prompt,
             reference_images=reference_images,
-            image_config={
-                "aspect_ratio": "2:1",
-                "image_size": args.image_size,
-                "quality": args.quality,
-                "output_format": "png",
-            },
+            image_config=image_config,
             base_url=base_url,
             trace=provider_trace,
             delivery_path=result_path,

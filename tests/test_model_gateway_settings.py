@@ -1458,6 +1458,40 @@ def test_ee_platform_video_paths_do_not_call_ce_media_model_accessor(
     assert "seedance-2.0" in options
 
 
+def test_ce_video_generator_uses_third_party_video_catalog_schema(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_third_party_gateway_groups = model_gateway_settings.save_third_party_gateway_groups
+    save_third_party_gateway_groups(
+        [
+            {
+                "id": "video",
+                "name": "Video gateway",
+                "protocol": "openai",
+                "baseUrl": "https://video.example/v1",
+                "apiKey": "video-key",
+                "capabilities": ["video"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "seedance-custom",
+                        "upstreamModel": "upstream-video",
+                        "videoEndpoint": "videos",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    generator = NewApiVideoGenerator(model="seedance-custom")
+
+    assert generator.api_key == "video-key"
+    assert generator.base_url == "https://video.example/v1"
+    assert generator.model == "upstream-video"
+    assert generator.request_schema["endpoint"] == "videos"
+
+
 def test_ee_model_gateway_settings_reader_does_not_open_sqlite(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     monkeypatch.setenv("ST_EDITION", "ee")

@@ -161,3 +161,21 @@ def test_scene_360_default_model_reaches_builder_with_panorama_parameters(monkey
     )
     assert result["ok"] is True
     assert result["model"] == "LingShan-G2"
+
+
+def test_scene_360_defaults_to_configured_third_party_image_catalog(monkeypatch):
+    from novelvideo import stage_asset_tasks
+
+    monkeypatch.setattr(
+        stage_asset_tasks,
+        "resolve_scene_360_image_provider",
+        lambda _provider="": "newapi",
+    )
+    monkeypatch.setattr(
+        "novelvideo.model_gateway_settings.get_third_party_media_model_catalog",
+        lambda _media_type: [{"apiModel": "configured-pano-model", "id": "configured-pano-model"}],
+    )
+
+    assert stage_asset_tasks.resolve_scene_360_image_model(provider="newapi") == (
+        "configured-pano-model"
+    )

@@ -640,6 +640,29 @@ def test_child_without_org_mode_keeps_the_platform_resolution(
     )
 
 
+def test_child_uses_parent_resolved_ce_credential_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from novelvideo.director_world import scene_360_builder
+
+    monkeypatch.delenv("ST_ORG_EGRESS_MODE", raising=False)
+    monkeypatch.setenv("DRAMACLAW_SCENE_360_API_KEY", "ce-key")
+    monkeypatch.setenv("DRAMACLAW_SCENE_360_BASE_URL", "https://ce.example/v1")
+    monkeypatch.setenv("DRAMACLAW_SCENE_360_MODEL", "configured-image-model")
+    monkeypatch.setattr(
+        "novelvideo.config.get_effective_newapi_gateway_config",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("child must use parent-resolved override")
+        ),
+    )
+
+    assert scene_360_builder._resolve_newapi_credentials(model="gpt-image-2") == (
+        "ce-key",
+        "https://ce.example/v1",
+        "configured-image-model",
+    )
+
+
 # --- 参数穿透：只加形参不接实参就是假守卫（M6-P32）---------------------------------
 
 

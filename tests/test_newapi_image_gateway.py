@@ -221,6 +221,41 @@ def test_configured_image_selection_resolves_third_party_credentials_and_upstrea
     assert gateway.model == "configured-image-model"
 
 
+def test_character_generation_routes_arbitrary_canonical_image_selection_to_newapi(
+    monkeypatch, tmp_path
+):
+    from novelvideo.generators import image_generator
+
+    calls = []
+
+    class FakeCharacterGenerator:
+        def __init__(self, **kwargs):
+            calls.append(kwargs)
+
+        async def generate_character_portrait(self, **_kwargs):
+            return type("Result", (), {"success": True, "reference_paths": ["portrait.png"]})()
+
+    monkeypatch.setattr(image_generator, "configured_image_generation_selection_options", lambda: {"gpt-image-2.5": "Configured"})
+    monkeypatch.setattr(image_generator, "normalize_character_image_selection", lambda value: value)
+    monkeypatch.setattr(image_generator, "IMAGE_GENERATION_SELECTIONS", {})
+    monkeypatch.setattr(
+        "novelvideo.generators.nanobanana_character.NanoBananaCharacterGenerator",
+        FakeCharacterGenerator,
+    )
+
+    result = run_async(
+        image_generator.generate_character_reference_unified(
+            character_name="小圆",
+            appearance_prompt="人物",
+            output_dir=str(tmp_path),
+            model="gpt-image-2.5",
+        )
+    )
+
+    assert result == ["portrait.png"]
+    assert calls == [{"selection": "gpt-image-2.5", "egress_context": None}]
+
+
 @pytest.mark.parametrize("reference_format", ["images", "input_reference", "multipart"])
 def test_resolve_third_party_image_request_preserves_canvas_request_metadata(
     monkeypatch, reference_format

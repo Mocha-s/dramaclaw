@@ -1785,6 +1785,33 @@ def resolve_third_party_image_request(model: str) -> dict[str, Any] | None:
     }
 
 
+def resolve_third_party_video_request(model: str) -> dict[str, Any] | None:
+    """Resolve canvas-compatible request metadata for one logical video model."""
+    requested = str(model or "").strip()
+    if not requested:
+        return None
+    entry = next(
+        (
+            item
+            for item in get_third_party_media_model_catalog(CAPABILITY_VIDEO)
+            if str(item.get("apiModel") or item.get("id") or "").strip() == requested
+        ),
+        None,
+    )
+    if not isinstance(entry, dict):
+        return None
+    request_schema = dict(entry.get("request") or {})
+    return {
+        "request_schema": request_schema,
+        "model_params": dict(entry.get("modelParams") or entry.get("model_params") or {}),
+        "endpoint": str(request_schema.get("endpoint") or "videos").strip(),
+        "upstream_model": str(
+            entry.get("gatewayModel") or entry.get("upstreamModel") or requested
+        ).strip(),
+        "protocol": str(entry.get("gatewayProtocol") or "openai").strip().lower(),
+    }
+
+
 def get_newapi_embedding_model_config() -> dict[str, Any]:
     settings = get_model_gateway_settings()
     return _decode_embedding_model_config(settings.get("custom_newapi_embedding_model"))
