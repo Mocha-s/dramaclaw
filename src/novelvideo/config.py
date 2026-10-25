@@ -492,7 +492,7 @@ def get_newapi_text_pydantic_model(
 
 
 def get_newapi_structured_output_model_settings() -> dict:
-    """Disable reasoning for PydanticAI structured output requests.
+    """Resolve reasoning settings for PydanticAI structured output requests.
 
     DramaClaw sends opaque ``DC-*`` aliases through an OpenAI-compatible
     NewAPI endpoint.  PydanticAI cannot infer thinking capabilities from those
@@ -500,13 +500,46 @@ def get_newapi_structured_output_model_settings() -> dict:
     Use the explicit OpenAI-compatible wire contract that existing deployments
     already send when their task-level thinking setting is ``none``.
     """
+    # Third-party GPT-compatible upstreams reject OpenAI's explicit ``none``
+    # value. Keep thinking enabled at a valid default and allow operators to
+    # choose the supported effort globally without changing every agent call
+    # site. Native Anthropic requests do not use this OpenAI-only parameter.
+    from novelvideo.model_gateway_settings import get_effective_llm_config
+
+    try:
+        llm_config = get_effective_llm_config()
+        if llm_config.source == "third_party":
+            if getattr(llm_config, "protocol", "openai") == "anthropic":
+                return {}
+            effort = (
+                os.environ.get("NEWAPI_TEXT_REASONING_EFFORT", "")
+                or os.environ.get("MODEL_REASONING_EFFORT", "")
+                or "low"
+            ).strip().lower()
+            allowed = {"low", "medium", "high", "xhigh", "max"}
+            if effort not in allowed:
+                raise ValueError(
+                    "unsupported NEWAPI_TEXT_REASONING_EFFORT="
+                    f"{effort!r}; expected one of: {', '.join(sorted(allowed))}"
+                )
+            return {"openai_reasoning_effort": effort}
+    except ValueError:
+        raise
+    except Exception:
+        # Credential/model resolution errors are handled by the model factory;
+        # do not turn a settings helper into a new startup failure.
+        pass
     return {"openai_reasoning_effort": "none"}
 
 
 def get_newapi_structured_output_litellm_kwargs() -> dict:
-    """Disable reasoning for Cognee/Instructor calls routed through LiteLLM."""
+    """Resolve reasoning settings for Cognee/Instructor calls via LiteLLM."""
+    settings = get_newapi_structured_output_model_settings()
+    effort = settings.get("openai_reasoning_effort") or settings.get("reasoning_effort")
+    if not effort:
+        return {}
     return {
-        "reasoning_effort": "none",
+        "reasoning_effort": effort,
         "allowed_openai_params": ["reasoning_effort"],
     }
 

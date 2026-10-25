@@ -25,6 +25,77 @@ def test_structured_output_model_settings_force_reasoning_off(monkeypatch):
     assert IdentityPlanner._identity_model_settings() == {"openai_reasoning_effort": "none"}
 
 
+def test_structured_output_settings_use_valid_default_effort_for_third_party_upstream(monkeypatch):
+    import novelvideo.config as config
+    import novelvideo.model_gateway_settings as gateway_settings
+    from novelvideo.model_gateway_settings import EffectiveLlmConfig
+
+    monkeypatch.setattr(
+        gateway_settings,
+        "get_effective_llm_config",
+        lambda **_: EffectiveLlmConfig(
+            mode="custom",
+            source="third_party",
+            base_url="https://gateway.example/v1",
+            api_key="sk-test",
+            model="gpt-6.1-sol",
+            is_brainclaw=False,
+        ),
+    )
+
+    assert config.get_newapi_structured_output_model_settings() == {
+        "openai_reasoning_effort": "low"
+    }
+
+
+def test_structured_output_settings_accept_explicit_third_party_effort(monkeypatch):
+    import novelvideo.config as config
+    import novelvideo.model_gateway_settings as gateway_settings
+    from novelvideo.model_gateway_settings import EffectiveLlmConfig
+
+    monkeypatch.setattr(
+        gateway_settings,
+        "get_effective_llm_config",
+        lambda **_: EffectiveLlmConfig(
+            mode="custom",
+            source="third_party",
+            base_url="https://gateway.example/v1",
+            api_key="sk-test",
+            model="gpt-6.1-sol",
+            is_brainclaw=False,
+        ),
+    )
+    monkeypatch.setenv("NEWAPI_TEXT_REASONING_EFFORT", "high")
+
+    assert config.get_newapi_structured_output_model_settings() == {
+        "openai_reasoning_effort": "high"
+    }
+
+
+def test_structured_output_settings_reject_invalid_third_party_effort(monkeypatch):
+    import pytest
+    import novelvideo.config as config
+    import novelvideo.model_gateway_settings as gateway_settings
+    from novelvideo.model_gateway_settings import EffectiveLlmConfig
+
+    monkeypatch.setattr(
+        gateway_settings,
+        "get_effective_llm_config",
+        lambda **_: EffectiveLlmConfig(
+            mode="custom",
+            source="third_party",
+            base_url="https://gateway.example/v1",
+            api_key="sk-test",
+            model="gpt-6.1-sol",
+            is_brainclaw=False,
+        ),
+    )
+    monkeypatch.setenv("NEWAPI_TEXT_REASONING_EFFORT", "none")
+
+    with pytest.raises(ValueError, match="unsupported NEWAPI_TEXT_REASONING_EFFORT"):
+        config.get_newapi_structured_output_model_settings()
+
+
 def test_opaque_newapi_alias_sends_reasoning_effort_none(monkeypatch):
     import asyncio
     import json
