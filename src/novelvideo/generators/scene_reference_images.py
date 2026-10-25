@@ -661,6 +661,14 @@ async def generate_scene_reference_image(
     )
     provider = _scene_image_provider(kind, provider)
     selected_model = _scene_image_model(kind, provider, model)
+    logical_model = selected_model
+    from novelvideo.model_gateway_settings import resolve_third_party_image_request
+
+    request_metadata = (
+        resolve_third_party_image_request(logical_model)
+        if provider == "newapi"
+        else None
+    )
     organization_egress = await _prepare_organization_image_egress(
         egress_context=egress_context,
         provider="newapi" if provider == "newapi" else provider,
@@ -699,12 +707,23 @@ async def generate_scene_reference_image(
         else:
             api_key = organization_egress.credential.api_key
             base_url = organization_egress.credential.base_url
+        scene_image_config = _scene_image_config(selected_model)
+        if request_metadata:
+            scene_image_config.update(
+                {
+                    "request_schema": request_metadata["request_schema"],
+                    "model_params": request_metadata["model_params"],
+                    "reference_image_format": request_metadata[
+                        "reference_image_format"
+                    ],
+                }
+            )
         image_bytes, _text, error = await _call_newapi_image_api(
             api_key=api_key,
             model=selected_model,
             prompt=prompt,
             reference_images=references or None,
-            image_config=_scene_image_config(selected_model),
+            image_config=scene_image_config,
             base_url=base_url,
             trace=trace,
             delivery_path=output_path,

@@ -1931,6 +1931,63 @@ def test_newapi_identity_image_sends_portrait_then_costume_references(
     ]
 
 
+def test_newapi_identity_image_passes_shared_canvas_request_metadata(
+    monkeypatch, tmp_path
+):
+    from novelvideo import model_gateway_settings
+    from novelvideo.generators import nanobanana_character
+
+    captured = {}
+
+    async def fake_call_newapi_image_api(**kwargs):
+        captured.update(kwargs)
+        return b"identity-shared-schema", "", ""
+
+    monkeypatch.setattr(nanobanana_character, "_call_newapi_image_api", fake_call_newapi_image_api)
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "resolve_third_party_image_request",
+        lambda _model: {
+            "request_schema": {
+                "endpoint": "images/generations",
+                "referenceFormat": "images",
+                "parameters": [],
+            },
+            "model_params": {"quality": "high"},
+            "reference_image_format": "images",
+            "upstream_model": "configured-image-model",
+        },
+    )
+    generator = nanobanana_character.NanoBananaCharacterGenerator(
+        config={
+            "provider": "newapi",
+            "api_key": "newapi-token",
+            "model": "gpt-image-2",
+            "base_url": "http://newapi.test/v1",
+        }
+    )
+
+    output_path = tmp_path / "identity.png"
+    result = run_async(
+        generator._generate_with_reference(
+            client=None,
+            prompt="identity prompt",
+            reference_image=None,
+            output_path=str(output_path),
+            reference_image_bytes=b"portrait-bytes",
+            reference_image_name="portrait.jpg",
+            aspect_ratio="16:9",
+            image_size="1K",
+            additional_image_bytes=[b"costume-bytes"],
+            additional_image_names=["costume.png"],
+        )
+    )
+
+    assert result == b"identity-shared-schema"
+    assert captured["image_config"]["reference_image_format"] == "images"
+    assert captured["image_config"]["model_params"] == {"quality": "high"}
+
+
 @pytest.mark.parametrize(
     "InsufficientCreditsError",
     [
@@ -2057,6 +2114,50 @@ def test_newapi_scene_master_uses_text_only_nanobanana2(monkeypatch, tmp_path):
     }
     assert "SCENE NAME: 古董店" in captured["prompt"]
     assert "从店门可以直接看到收银台" in captured["prompt"]
+
+
+def test_scene_reference_passes_shared_canvas_request_metadata(monkeypatch, tmp_path):
+    from novelvideo import model_gateway_settings
+    from novelvideo.generators import scene_reference_images
+    from novelvideo.models import NovelScene
+
+    captured = {}
+
+    async def fake_call_newapi_image_api(**kwargs):
+        captured.update(kwargs)
+        return b"scene-shared-schema", "", ""
+
+    monkeypatch.setattr(scene_reference_images, "_call_newapi_image_api", fake_call_newapi_image_api)
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "resolve_third_party_image_request",
+        lambda _model: {
+            "request_schema": {
+                "endpoint": "images/generations",
+                "referenceFormat": "images",
+                "parameters": [],
+            },
+            "model_params": {"quality": "high"},
+            "reference_image_format": "images",
+            "upstream_model": "configured-image-model",
+        },
+    )
+    _patch_scene_newapi_gateway(monkeypatch)
+    monkeypatch.setattr(scene_reference_images, "SCENE_MASTER_IMAGE_PROVIDER", "newapi")
+    monkeypatch.setattr(scene_reference_images, "SCENE_MASTER_IMAGE_MODEL", "gpt-image-2")
+
+    output = run_async(
+        scene_reference_images.generate_scene_reference_image(
+            project_dir=tmp_path,
+            scene=NovelScene(name="共享场景", scene_type="interior", environment_prompt="室内"),
+            kind="master",
+        )
+    )
+
+    assert output.read_bytes() == b"scene-shared-schema"
+    assert captured["image_config"]["reference_image_format"] == "images"
+    assert captured["image_config"]["request_schema"]["endpoint"] == "images/generations"
+    assert captured["image_config"]["model_params"] == {"quality": "high"}
 
 
 @pytest.mark.asyncio
@@ -2363,6 +2464,47 @@ def test_newapi_prop_reference_gpt_image2_sends_quality_medium(monkeypatch, tmp_
     assert (posted["json"]["width"], posted["json"]["height"]) == (1088, 608)
     assert posted["json"]["metadata"] == {"ratio": "16:9", "resolution": "1k"}
     assert "extra_fields" not in posted["json"]
+
+
+def test_newapi_prop_reference_passes_shared_canvas_request_metadata(monkeypatch, tmp_path):
+    from novelvideo import model_gateway_settings
+    from novelvideo.generators import nanobanana_prop
+
+    captured = {}
+
+    async def fake_call_newapi_image_api(**kwargs):
+        captured.update(kwargs)
+        return b"prop-shared-schema", "", ""
+
+    monkeypatch.setattr(nanobanana_prop, "_call_newapi_image_api", fake_call_newapi_image_api)
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "resolve_third_party_image_request",
+        lambda _model: {
+            "request_schema": {
+                "endpoint": "images/generations",
+                "referenceFormat": "images",
+                "parameters": [],
+            },
+            "model_params": {"quality": "high"},
+            "reference_image_format": "images",
+            "upstream_model": "configured-image-model",
+        },
+    )
+
+    output = run_async(
+        nanobanana_prop._generate_via_newapi(
+            prompt="prop",
+            output_path=str(tmp_path / "prop.png"),
+            api_key="test-token",
+            model="gpt-image-2",
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert output == str(tmp_path / "prop.png")
+    assert captured["image_config"]["reference_image_format"] == "images"
+    assert captured["image_config"]["model_params"] == {"quality": "high"}
 
 
 def test_newapi_prop_reference_nanobanana2_omits_quality(monkeypatch, tmp_path):

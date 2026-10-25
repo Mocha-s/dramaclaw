@@ -204,6 +204,29 @@ class NanoBananaCharacterGenerator:
 
         print(f"[NanoBanana Character] Provider: {self.provider}, Model: {self.model}")
 
+    def _newapi_image_config(
+        self, *, aspect_ratio: str, image_size: str, quality: str
+    ) -> dict:
+        image_config = {
+            "aspect_ratio": aspect_ratio,
+            "image_size": image_size,
+            "quality": quality,
+        }
+        from novelvideo.model_gateway_settings import resolve_third_party_image_request
+
+        request_metadata = resolve_third_party_image_request(self.model)
+        if request_metadata:
+            image_config.update(
+                {
+                    "request_schema": request_metadata["request_schema"],
+                    "model_params": request_metadata["model_params"],
+                    "reference_image_format": request_metadata[
+                        "reference_image_format"
+                    ],
+                }
+            )
+        return image_config
+
     async def generate_character_portrait(
         self,
         character_name: str,
@@ -1258,13 +1281,13 @@ STRICT REQUIREMENTS (MUST AVOID):
                     model=self.model,
                     prompt=prompt,
                     reference_images=None,
-                    image_config={
-                        "aspect_ratio": aspect_ratio,
-                        "image_size": image_size,
-                        "quality": normalize_openai_quality(
+                    image_config=self._newapi_image_config(
+                        aspect_ratio=aspect_ratio,
+                        image_size=image_size,
+                        quality=normalize_openai_quality(
                             self.openai_image_quality, default="medium"
                         ),
-                    },
+                    ),
                     base_url=self.base_url,
                     delivery_path=output_path,
                     delivery_state=(image_delivery_state := {}),
@@ -1528,13 +1551,13 @@ STRICT REQUIREMENTS (MUST AVOID):
                     model=self.model,
                     prompt=prompt,
                     reference_images=ref_images or None,
-                    image_config={
-                        "aspect_ratio": aspect_ratio,
-                        "image_size": image_size,
-                        "quality": normalize_openai_quality(
+                    image_config=self._newapi_image_config(
+                        aspect_ratio=aspect_ratio,
+                        image_size=image_size,
+                        quality=normalize_openai_quality(
                             self.openai_image_quality, default="medium"
                         ),
-                    },
+                    ),
                     base_url=self.base_url,
                     delivery_path=output_path,
                     delivery_state=(image_delivery_state := {}),

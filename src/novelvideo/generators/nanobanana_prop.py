@@ -410,17 +410,29 @@ async def _generate_via_newapi(
 ) -> Optional[str]:
     """通过 newAPI 生成道具参考图。"""
 
+    from novelvideo.model_gateway_settings import resolve_third_party_image_request
+
     image_delivery_state: dict[str, bool] = {}
+    image_config = {
+        "aspect_ratio": PROP_REF_ASPECT_RATIO,
+        "image_size": normalize_image_size(PROP_REF_IMAGE_SIZE, provider="newapi"),
+        "quality": normalize_openai_quality(quality, default="medium"),
+        "output_format": "png",
+    }
+    request_metadata = resolve_third_party_image_request(model)
+    if request_metadata:
+        image_config.update(
+            {
+                "request_schema": request_metadata["request_schema"],
+                "model_params": request_metadata["model_params"],
+                "reference_image_format": request_metadata["reference_image_format"],
+            }
+        )
     image_bytes, _text_content, error_text = await _call_newapi_image_api(
         api_key=api_key,
         model=model,
         prompt=prompt,
-        image_config={
-            "aspect_ratio": PROP_REF_ASPECT_RATIO,
-            "image_size": normalize_image_size(PROP_REF_IMAGE_SIZE, provider="newapi"),
-            "quality": normalize_openai_quality(quality, default="medium"),
-            "output_format": "png",
-        },
+        image_config=image_config,
         base_url=base_url,
         delivery_path=output_path,
         delivery_state=image_delivery_state,
