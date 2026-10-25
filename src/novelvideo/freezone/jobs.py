@@ -117,15 +117,24 @@ async def run_freezone_gen(
             model_override=model,
             image_size_override=image_size,
         )
+        from novelvideo.model_gateway_settings import resolve_third_party_image_request
+
+        catalog_request = resolve_third_party_image_request(model or str(cfg.get("model") or ""))
+        if catalog_request and not str(provider or "").strip():
+            cfg["provider"] = "newapi"
+            cfg["api_key"] = catalog_request["api_key"]
+            cfg["base_url"] = catalog_request["base_url"]
+            cfg["model"] = catalog_request["upstream_model"] or cfg.get("model", "")
         if str(cfg.get("provider") or "").strip().lower() == "newapi":
             from novelvideo.config import get_effective_newapi_gateway_config
 
-            gateway = get_effective_newapi_gateway_config(
-                capability="image", model=model or str(cfg.get("model") or "")
-            )
-            cfg["api_key"] = gateway.api_key or cfg.get("api_key", "")
-            cfg["base_url"] = gateway.base_url or cfg.get("base_url", "")
-            cfg["model"] = gateway.model or cfg.get("model", "")
+            if not cfg.get("api_key") or not cfg.get("base_url"):
+                gateway = get_effective_newapi_gateway_config(
+                    capability="image", model=model or str(cfg.get("model") or "")
+                )
+                cfg["api_key"] = gateway.api_key or cfg.get("api_key", "")
+                cfg["base_url"] = gateway.base_url or cfg.get("base_url", "")
+                cfg["model"] = gateway.model or cfg.get("model", "")
     cfg["newapi_model_params"] = model_params or {}
     cfg["newapi_request_schema"] = request_schema or {}
     if reference_paths:
