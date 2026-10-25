@@ -1727,6 +1727,41 @@ def test_sub2api_media_catalog_defaults_to_verified_protocols_and_sd17_limits(
     assert video["resolutionOptions"] == ["720p"]
 
 
+def test_third_party_media_catalog_preserves_image_reference_format(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_third_party_gateway_groups = model_gateway_settings.save_third_party_gateway_groups
+    save_third_party_gateway_groups(
+        [
+            {
+                "id": "image",
+                "name": "Image gateway",
+                "protocol": "openai",
+                "baseUrl": "https://image.example/v1",
+                "apiKey": "image-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "image-custom",
+                        "upstreamModel": "image-custom-upstream",
+                        "imageEditFormat": "input_reference",
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image = next(
+        item
+        for item in model_gateway_settings.get_third_party_media_model_catalog("image")
+        if item["id"] == "image-custom"
+    )
+
+    assert image["request"]["referenceFormat"] == "input_reference"
+
+
 
 
 def test_gemini_sub2api_gateway_uses_native_v1beta_protocol(monkeypatch, tmp_path):

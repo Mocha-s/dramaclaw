@@ -1630,7 +1630,7 @@ def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
             if capability == CAPABILITY_IMAGE:
                 request = {
                     "endpoint": "images/generations",
-                    "referenceFormat": mapping.get("imageEditFormat") or "images",
+                    "referenceFormat": "images",
                     "parameters": [],
                 }
             else:
@@ -1706,7 +1706,7 @@ def get_third_party_media_model_catalog(media_type: str) -> list[dict[str, Any]]
             if capability == CAPABILITY_IMAGE:
                 request = {
                     "endpoint": "images/generations",
-                    "referenceFormat": "images",
+                    "referenceFormat": mapping.get("imageEditFormat") or "images",
                     "parameters": [],
                 }
             else:
