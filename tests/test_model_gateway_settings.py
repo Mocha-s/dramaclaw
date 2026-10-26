@@ -1761,6 +1761,43 @@ def test_sub2api_media_catalog_defaults_to_verified_protocols_and_sd17_limits(
     assert video["resolutionOptions"] == ["720p"]
 
 
+def test_media_model_mapping_preserves_generic_image_capabilities(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_third_party_gateway_groups = model_gateway_settings.save_third_party_gateway_groups
+    save_third_party_gateway_groups(
+        [
+            {
+                "id": "generic-image",
+                "name": "Generic image gateway",
+                "protocol": "openai",
+                "baseUrl": "https://image.example/v1",
+                "apiKey": "image-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "custom-image",
+                        "upstreamModel": "custom-image-upstream",
+                        "qualityOptions": ["low", "medium", "high", "xhigh", "max"],
+                        "resolutionOptions": ["1K", "2K"],
+                        "ratioOptions": ["1:1", "16:9"],
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    image = next(
+        item
+        for item in model_gateway_settings.get_third_party_media_model_catalog("image")
+        if item["id"] == "custom-image"
+    )
+
+    assert image["qualityOptions"] == ["low", "medium", "high", "xhigh", "max"]
+    assert image["resolutionOptions"] == ["1K", "2K"]
+    assert image["ratioOptions"] == ["1:1", "16:9"]
+
+
 def test_third_party_media_catalog_preserves_image_reference_format(
     monkeypatch, tmp_path
 ):

@@ -261,6 +261,12 @@ def _normalize_sub2api_groups(groups: list[dict[str, Any]]) -> list[dict[str, An
                             "unsupported Sub2API video endpoint: " + video_endpoint
                         )
                     mapping["videoEndpoint"] = video_endpoint
+                for option_key in ("qualityOptions", "resolutionOptions", "ratioOptions"):
+                    options = item.get(option_key)
+                    if isinstance(options, list):
+                        mapping[option_key] = [
+                            str(value).strip() for value in options if str(value).strip()
+                        ]
                 mappings.append(mapping)
         else:
             raise ValueError("Sub2API modelMappings must be a list")
@@ -1655,6 +1661,10 @@ def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
                     "sortOrder": 100,
                     "request": request,
                 }
+            for option_key in ("qualityOptions", "resolutionOptions", "ratioOptions"):
+                options = mapping.get(option_key)
+                if isinstance(options, list) and options:
+                    catalog_entry[option_key] = list(options)
             if capability == CAPABILITY_IMAGE and (
                 "gpt-image-2" in request_model.lower()
                 or "gpt-image-2" in upstream_model.lower()
@@ -1733,6 +1743,10 @@ def get_third_party_media_model_catalog(media_type: str) -> list[dict[str, Any]]
                 "gatewayGroupId": str(group.get("id") or ""),
                 "gatewayProtocol": protocol,
             }
+            for option_key in ("qualityOptions", "resolutionOptions", "ratioOptions"):
+                options = mapping.get(option_key)
+                if isinstance(options, list) and options:
+                    catalog_entry[option_key] = list(options)
             if capability == CAPABILITY_IMAGE and (
                 "gpt-image" in request_model.lower()
                 or "gpt-image" in upstream_model.lower()
