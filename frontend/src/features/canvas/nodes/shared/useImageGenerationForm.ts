@@ -16,6 +16,7 @@ import {
 import { buildImageFeatureBillingParams } from '@/features/canvas/domain/imageBilling';
 import {
   IMAGE_ASPECT_OPTIONS,
+  IMAGE_QUALITY_OPTIONS,
   IMAGE_SIZE_OPTIONS,
 } from '@/features/canvas/nodes/shared/imageGenerationOptions';
 import { isSystemManagedNodeData } from '@/features/canvas/domain/mainlineNodeFlags';
@@ -245,11 +246,8 @@ export function useImageGenerationForm(
     modelAspectOptions.map((item) => item.value),
     modelAspectOptions[0]?.value ?? '1:1',
   );
-  const qualityOptions = useMemo(
-    () => (selectedModel?.qualityOptions ?? []).map((item) => item.trim()).filter(Boolean),
-    [selectedModel],
-  );
-  const supportsImageQuality = qualityOptions.length > 0;
+  const qualityOptions = IMAGE_QUALITY_OPTIONS.map((option) => option.value);
+  const supportsImageQuality = true;
   const effectiveQuality =
     qualityOptions.find((option) => option.toLowerCase() === quality.toLowerCase())
     ?? qualityOptions.find((option) => option.toLowerCase() === DEFAULT_IMAGE_QUALITY)

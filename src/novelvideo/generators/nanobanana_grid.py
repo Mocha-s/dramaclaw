@@ -3918,9 +3918,7 @@ async def _call_newapi_image_api(
         except ValueError as exc:
             return None, "", str(exc)
         payload["size"] = size
-    include_quality = bool(
-        request_schema.get("includeQuality")
-    ) or _newapi_image_model_supports_quality(model)
+    include_quality = True
     if include_quality:
         quality = _normalize_newapi_image_quality(image_config.get("quality"))
     else:

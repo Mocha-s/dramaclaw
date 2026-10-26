@@ -9,8 +9,8 @@ import {
 /**
  * 图片生成的比例/分辨率/画质的**内置兜底选项**。
  *
- * 统一计费（#210）之后这三档优先由媒体目录（admin 后台可配的 `ratioOptions` /
- * `resolutionOptions` / `qualityOptions`）驱动，这里的常量只在目录没声明时兜底。
+ * 比例和分辨率优先由媒体目录驱动；画质是节点级全局参数，固定使用 Infinite
+ * Canvas 同款档位，不依赖具体模型目录。
  *
  * 放在独立模块而不是留在 `ImageGenerationForm` 里，是因为 `useImageGenerationForm`
  * 也要用同一份兜底来算 `effectiveImageSize` / `effectiveAspectRatio`——两边各拷一份
@@ -33,9 +33,12 @@ export const IMAGE_ASPECT_OPTIONS: ReadonlyArray<{ value: string; label: string 
 export const IMAGE_SIZE_OPTIONS: ReadonlyArray<ImageSize> = ['1K', '2K', '4K'];
 
 export const IMAGE_QUALITY_OPTIONS: ReadonlyArray<{ value: ImageQuality; label: string }> = [
-  { value: 'low', label: '低画质' },
-  { value: 'medium', label: '标准画质' },
-  { value: 'high', label: '高画质' },
+  { value: 'auto', label: 'auto' },
+  { value: 'low', label: 'low' },
+  { value: 'medium', label: 'medium' },
+  { value: 'high', label: 'high' },
+  { value: 'xhigh', label: 'xhigh' },
+  { value: 'max', label: 'max' },
 ];
 
 /**

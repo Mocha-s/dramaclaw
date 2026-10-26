@@ -453,7 +453,7 @@ def test_newapi_sketch_config_can_use_dc_banana2_without_quality(monkeypatch):
     assert image_bytes == b"sketch"
     assert error == ""
     assert posted["json"]["model"] == "LingShan-NB-2"
-    assert "quality" not in posted["json"]
+    assert posted["json"]["quality"] == "low"
     assert posted["json"]["size"] == "688x1024"
     assert posted["json"]["metadata"] == {"ratio": "2:3", "resolution": "1k"}
     assert "extra_fields" not in posted["json"]
@@ -817,6 +817,53 @@ def test_newapi_image_call_omits_invalid_quality_and_tier(monkeypatch):
     assert "tier" not in posted["json"]
 
 
+def test_newapi_image_call_sends_quality_for_arbitrary_model(monkeypatch):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"data": [{"b64_json": base64.b64encode(b"image-bytes").decode()}]}
+
+    class FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def post(self, url, *, headers, json):
+            posted["json"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="newapi-token",
+            model="arbitrary-image-model",
+            prompt="prompt",
+            image_config={
+                "aspect_ratio": "1:1",
+                "image_size": "1K",
+                "quality": "high",
+            },
+            base_url="http://newapi.test/v1",
+        )
+    )
+
+    assert image_bytes == b"image-bytes"
+    assert error == ""
+    assert posted["json"]["quality"] == "high"
+
+
 def test_newapi_image_call_reports_transport_exception_type(monkeypatch):
     import httpx
     from novelvideo.generators import nanobanana_grid
@@ -989,7 +1036,7 @@ def test_newapi_image_call_omits_quality_for_nanobanana2(monkeypatch):
     assert image_bytes == b"image-bytes"
     assert error == ""
     assert posted["json"]["model"] == "LingShan-NB-2"
-    assert "quality" not in posted["json"]
+    assert posted["json"]["quality"] == "medium"
     assert posted["json"]["size"] == "768x1024"
     assert posted["json"]["metadata"] == {"ratio": "3:4", "resolution": "1k"}
     assert "extra_fields" not in posted["json"]
@@ -2649,7 +2696,7 @@ def test_newapi_prop_reference_nanobanana2_omits_quality(monkeypatch, tmp_path):
     assert result == str(output_path)
     assert output_path.read_bytes() == b"prop-ref"
     assert posted["json"]["model"] == "LingShan-NB-2"
-    assert "quality" not in posted["json"]
+    assert posted["json"]["quality"] == "medium"
     assert posted["json"]["size"] == "1088x608"
     assert posted["json"]["metadata"] == {"ratio": "16:9", "resolution": "1k"}
     assert "extra_fields" not in posted["json"]
