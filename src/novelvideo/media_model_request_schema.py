@@ -179,18 +179,20 @@ def enforce_newapi_media_geometry_contract(
     ).strip().lower()
     result.pop("ratio", None)
     result.pop("aspect_ratio", None)
-    # ``size`` is a retired merged geometry alias. Public NewAPI requests use
-    # numeric width/height for fixed geometry and omit all dimensions for auto.
-    result.pop("size", None)
     if ratio in {"auto", "adaptive"}:
         metadata["ratio"] = "auto"
         metadata.pop("aspect_ratio", None)
+        result.pop("size", None)
         result.pop("width", None)
         result.pop("height", None)
     else:
         if ratio:
             metadata["ratio"] = ratio
         metadata.pop("aspect_ratio", None)
+        if not result.get("size") and result.get("width") and result.get("height"):
+            result["size"] = f"{result['width']}x{result['height']}"
+        result.pop("width", None)
+        result.pop("height", None)
 
     if metadata:
         result["metadata"] = metadata

@@ -90,6 +90,8 @@ from novelvideo.storage.media_relay import (
 _VALID_IMAGE_SIZES = {"512", "1K", "2K", "4K"}
 _OPENROUTER_IMAGE_CAPABILITY_CACHE: dict[str, tuple[bool, str]] = {}
 _OPENAI_VALID_QUALITIES = {"low", "medium", "high", "auto"}
+_NEWAPI_IMAGE_QUALITIES = frozenset({"low", "medium", "high", "xhigh", "max"})
+_NEWAPI_IMAGE_TIERS = frozenset({"web", "1k", "2k", "4k"})
 _OPENAI_MIN_PIXELS = 655_360
 _OPENAI_MAX_PIXELS = 8_294_400
 _OPENAI_MAX_EDGE = 3840
@@ -500,8 +502,8 @@ def _newapi_safe_request_context(
         "endpoint": f"{endpoint}{request_path}",
         "model": model,
         "payload_keys": sorted(payload.keys()),
-        "width": payload.get("width") or "",
-        "height": payload.get("height") or "",
+        "size": payload.get("size") or "",
+        "tier": payload.get("tier") or "",
         "geometry_metadata": geometry_metadata,
         "reference_image_count": reference_image_count,
         "prompt_chars": len(prompt or ""),
@@ -514,8 +516,8 @@ def _newapi_context_for_error(context: dict[str, object]) -> str:
         f"model={context.get('model')}; "
         f"endpoint={context.get('endpoint')}; "
         f"payload_keys={context.get('payload_keys')}; "
-        f"width={context.get('width')}; "
-        f"height={context.get('height')}; "
+        f"size={context.get('size')}; "
+        f"tier={context.get('tier')}; "
         f"geometry_metadata={context.get('geometry_metadata')}; "
         f"reference_image_count={context.get('reference_image_count')}; "
         f"prompt_sha256={context.get('prompt_sha256')}"
@@ -705,6 +707,39 @@ def _newapi_image_model_supports_quality(model: str | None) -> bool:
         "image-2",
         "image-2-official",
     } or "gpt-image" in model_name
+
+
+def _newapi_image_tier(image_size: str | None) -> str | None:
+    raw = str(image_size or "").strip().lower()
+    direct = {
+        "web": "web",
+        "512": "web",
+        "0.5k": "web",
+        "1k": "1k",
+        "1024": "1k",
+        "2k": "2k",
+        "2048": "2k",
+        "4k": "4k",
+        "3840": "4k",
+    }
+    if raw in direct:
+        return direct[raw]
+    match = re.fullmatch(r"(\d+)\s*[xX×]\s*(\d+)", raw)
+    if not match:
+        return None
+    long_edge = max(int(match.group(1)), int(match.group(2)))
+    if long_edge <= 1024:
+        return "1k"
+    if long_edge <= 2048:
+        return "2k"
+    if long_edge <= 3840:
+        return "4k"
+    return None
+
+
+def _normalize_newapi_image_quality(value: object) -> str | None:
+    quality = str(value or "").strip().lower()
+    return quality if quality in _NEWAPI_IMAGE_QUALITIES else None
 
 
 def _image_credit_billing_params(
@@ -3882,17 +3917,24 @@ async def _call_newapi_image_api(
             )
         except ValueError as exc:
             return None, "", str(exc)
-        width, height = (int(value) for value in size.split("x", 1))
-        payload["width"] = width
-        payload["height"] = height
+        payload["size"] = size
     include_quality = bool(
         request_schema.get("includeQuality")
     ) or _newapi_image_model_supports_quality(model)
-    if include_quality and str(image_config.get("quality") or "").strip():
-        quality = str(image_config["quality"]).strip()
-        payload["quality"] = quality
+    if include_quality:
+        quality = _normalize_newapi_image_quality(image_config.get("quality"))
     else:
-        quality = ""
+        quality = None
+    if quality:
+        payload["quality"] = quality
+
+    requested_tier = str(image_config.get("tier") or "").strip().lower()
+    if requested_tier:
+        tier = requested_tier if requested_tier in _NEWAPI_IMAGE_TIERS else None
+    else:
+        tier = _newapi_image_tier(image_size) if "gpt-image" in str(model).lower() else None
+    if tier:
+        payload["tier"] = tier
 
     output_format = str(image_config.get("output_format") or "").strip().lower()
     if output_format:
@@ -4111,12 +4153,14 @@ async def _call_newapi_image_api(
                     "prompt": str(prompt),
                     "n": str(payload.get("n") or 1),
                 }
-                if "width" in payload and "height" in payload:
-                    form_fields["size"] = f"{payload['width']}x{payload['height']}"
+                if payload.get("size"):
+                    form_fields["size"] = str(payload["size"])
                 elif str(metadata.get("ratio") or "").lower() in {"auto", "adaptive"}:
                     form_fields["size"] = "auto"
                 if payload.get("quality"):
                     form_fields["quality"] = str(payload["quality"])
+                if payload.get("tier"):
+                    form_fields["tier"] = str(payload["tier"])
                 if payload.get("background"):
                     form_fields["background"] = str(payload["background"])
                 if payload.get("response_format") and not str(model).lower().startswith(
@@ -4126,7 +4170,7 @@ async def _call_newapi_image_api(
                 if payload.get("output_format"):
                     form_fields["output_format"] = str(payload["output_format"])
                 multipart_control_fields = {
-                    "model", "prompt", "n", "size", "width", "height", "quality",
+                    "model", "prompt", "n", "size", "width", "height", "quality", "tier",
                     "background", "response_format", "output_format", "watermark",
                     "metadata", "image", "images", "input_reference", "input_fidelity",
                 }

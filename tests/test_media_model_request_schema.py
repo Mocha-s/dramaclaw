@@ -107,7 +107,7 @@ def test_auto_geometry_removes_conflicting_dimensions(
     }
 
 
-def test_fixed_geometry_keeps_ratio_and_removes_legacy_size():
+def test_fixed_geometry_keeps_infinite_compatible_size():
     result = enforce_newapi_media_geometry_contract(
         {
             "width": 1920,
@@ -119,8 +119,7 @@ def test_fixed_geometry_keeps_ratio_and_removes_legacy_size():
     )
 
     assert result == {
-        "width": 1920,
-        "height": 1080,
+        "size": "1920x1080",
         "metadata": {"ratio": "16:9", "resolution": "4k"},
     }
 
