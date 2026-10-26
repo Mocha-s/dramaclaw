@@ -53,6 +53,7 @@ export interface ImageModelDefinition {
   defaultResolution: string;
   aspectRatios: AspectRatioOption[];
   resolutions: ResolutionOption[];
+  qualityOptions?: string[];
   resolveResolutions?: (context: ImageModelRuntimeContext) => ResolutionOption[];
   extraParamsSchema?: ExtraParamDefinition[];
   defaultExtraParams?: Record<string, unknown>;

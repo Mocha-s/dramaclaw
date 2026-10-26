@@ -10,6 +10,7 @@
 // 所以断言必须一路走到 ops 层的 payload，并且盯住**值的类型**，只测「有没有这个键」
 // 是测不出第 1 条的。
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 
 import type { MediaModelParameterDefinition } from "@/api/ops";
 import {
@@ -85,6 +86,7 @@ const CATALOG_ENTRY: CatalogImageModelEntry = {
   providerId: "openrouter",
   apiModel: "google/gemini-2.5-flash-image-preview",
   label: "Studio Image",
+  qualityOptions: ["low", "medium", "high"],
   request: { endpoint: "images/generations", parameters: PARAMETERS },
 };
 
@@ -125,6 +127,24 @@ describe("目录动态参数的端到端往返", () => {
     // 旧的翻译产物必须消失——它存在就意味着某处还会拿它去画控件，
     // 而它画出来的值提交路径根本不认。
     expect(definition.extraParamsSchema).toBeUndefined();
+    expect(definition.qualityOptions).toEqual(["low", "medium", "high"]);
+  });
+
+  it("节点菜单触发器把质量放在比例前面，并共用同一个参数菜单", () => {
+    const source = readFileSync(
+      "src/features/canvas/nodes/shared/ImageGenerationForm.tsx",
+      "utf8",
+    );
+    const trigger = source.slice(
+      source.indexOf('<button\n        ref={triggerRef}'),
+      source.indexOf('</button>', source.indexOf('<button\n        ref={triggerRef}')),
+    );
+    expect(trigger.indexOf('qualityLabel')).toBeGreaterThanOrEqual(0);
+    expect(trigger.indexOf('aspectLabel')).toBeGreaterThanOrEqual(0);
+    expect(trigger.indexOf('qualityLabel')).toBeLessThan(trigger.indexOf('aspectLabel'));
+    expect(source.indexOf("qualityOptions.map")).toBeLessThan(
+      source.indexOf("aspectOptions.map"),
+    );
   });
 
   it("没有 request.parameters 的目录条目不凭空造出参数字段", () => {

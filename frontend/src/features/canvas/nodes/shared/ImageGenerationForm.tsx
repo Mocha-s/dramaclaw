@@ -144,13 +144,13 @@ function AspectSizeChip({
         }}
         className={NODE_TEXT_CONTROL_TRIGGER_CLASS}
       >
-        <span>{aspectLabel}</span>
         {showQuality && (
           <>
-            <span className="text-text-muted/80">·</span>
             <span>{qualityLabel}</span>
+            <span className="text-text-muted/80">·</span>
           </>
         )}
+        <span>{aspectLabel}</span>
         <span className="text-text-muted/80">·</span>
         <span>{size}</span>
         <ChevronDown className="h-3 w-3 text-text-muted/90" />

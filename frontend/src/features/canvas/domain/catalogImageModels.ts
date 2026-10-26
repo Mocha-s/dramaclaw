@@ -84,6 +84,9 @@ export function toImageModelDefinition(
       ?? PREFERRED_DEFAULT_RESOLUTION,
     aspectRatios,
     resolutions,
+    ...(info.qualityOptions?.length
+      ? { qualityOptions: info.qualityOptions.map((value) => value.trim()).filter(Boolean) }
+      : {}),
     ...(parameters.length > 0 ? { requestParameters: parameters } : {}),
     resolveRequest: ({ referenceImageCount }) => ({
       // 必须带上 provider 前缀：`freezoneAiGateway.splitProviderModel` 按**第一个**
