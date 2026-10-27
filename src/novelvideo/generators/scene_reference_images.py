@@ -359,17 +359,29 @@ def _reverse_master_prompt(
     has_master_reference: bool = False,
     base_scene: NovelScene | None = None,
 ) -> str:
-    # 有 master 参考图时不注入 PROJECT STYLE PRESET 文本：master 已经按项目风格生成，
-    # reverse 直接 match master 的实际像素（STRICT STYLE LOCK 段）。两个风格通道
-    # 同时存在会让模型在"项目风格文本"和"master pixels"之间摇摆。
-    # 仅在没有 master 参考图（fallback 纯文本驱动）时才需要文字描述项目风格。
+    # 有 master 参考图时，master 像素仍是主风格锚点；项目风格文本只作为未见区域
+    # 的 fallback，避免模型在背面缺少空间事实时退化成完全无关的默认房间。
     if has_master_reference:
-        style_block = (
-            "STYLE SOURCE:\n"
-            "- The visual style (art style, materials, color palette, lighting, surface "
-            "treatment, finish) comes ENTIRELY from REFERENCE 1's pixels — match the master "
-            "image exactly. Do NOT re-derive style from any text description; the master is "
-            "the only style anchor."
+        fallback_lines = [
+            "PROJECT STYLE FALLBACK FOR UNSEEN AREAS:",
+            "- Use the project style only when inventing geometry that is not visible in "
+            "REFERENCE 1. It must never override REFERENCE 1's materials, lighting, or "
+            "visual identity.",
+        ]
+        if style_name:
+            fallback_lines.append(f"- Style preset: {style_name}")
+        if style_prompt:
+            fallback_lines.append(f"- Positive style fallback: {style_prompt}")
+        if avoid_instructions:
+            fallback_lines.append(f"- Negative / avoid fallback: {avoid_instructions}")
+        style_block = "\n".join(
+            [
+                "STYLE SOURCE:",
+                "- The visual style (art style, materials, color palette, lighting, surface "
+                "treatment, finish) comes ENTIRELY from REFERENCE 1's pixels — match the master "
+                "image exactly. REFERENCE 1 remains the primary style anchor.",
+                *fallback_lines,
+            ]
         )
     else:
         style_block = _style_context(
@@ -586,19 +598,18 @@ def resolve_scene_reference_image_model(
     return _scene_image_model(kind, selected_provider, model)
 
 
-def _scene_image_config(model: str) -> dict[str, str]:
+def _scene_image_config(
+    model: str,
+    *,
+    include_output_format: bool = True,
+) -> dict[str, str]:
     image_config = {
         "aspect_ratio": "16:9",
         "image_size": "1K",
-        "output_format": "png",
+        "quality": "medium",
     }
-    if str(model or "").strip().lower() in {
-        "lingshan-g2",
-        "gpt-image-2",
-        "image-2",
-        "image-2-official",
-    }:
-        image_config["quality"] = "medium"
+    if include_output_format:
+        image_config["output_format"] = "png"
     return image_config
 
 
@@ -707,7 +718,13 @@ async def generate_scene_reference_image(
         else:
             api_key = organization_egress.credential.api_key
             base_url = organization_egress.credential.base_url
-        scene_image_config = _scene_image_config(selected_model)
+        # Match the canvas image-edit contract for any reference-backed scene
+        # request: quality is explicit, while output_format is intentionally
+        # omitted because the edit path returns the provider's native image.
+        scene_image_config = _scene_image_config(
+            selected_model,
+            include_output_format=not bool(references),
+        )
         if request_metadata:
             scene_image_config.update(
                 {

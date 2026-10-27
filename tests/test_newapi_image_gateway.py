@@ -2247,6 +2247,7 @@ def test_newapi_scene_master_uses_text_only_nanobanana2(monkeypatch, tmp_path):
         "aspect_ratio": "16:9",
         "image_size": "1K",
         "output_format": "png",
+        "quality": "medium",
     }
     assert "SCENE NAME: 古董店" in captured["prompt"]
     assert "从店门可以直接看到收银台" in captured["prompt"]
@@ -2480,7 +2481,7 @@ def test_newapi_reverse_master_uses_master_reference_nanobanana2(monkeypatch, tm
     assert captured["image_config"] == {
         "aspect_ratio": "16:9",
         "image_size": "1K",
-        "output_format": "png",
+        "quality": "medium",
     }
     assert "REFERENCE 1 = the scene's FRONT-FACING master" in captured["prompt"]
 
@@ -2534,7 +2535,6 @@ def test_newapi_reverse_master_can_use_gpt_image2_quality_medium(monkeypatch, tm
     assert captured["image_config"] == {
         "aspect_ratio": "16:9",
         "image_size": "1K",
-        "output_format": "png",
         "quality": "medium",
     }
 

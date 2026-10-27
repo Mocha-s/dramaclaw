@@ -59,6 +59,28 @@ def test_scene_reference_prompt_keeps_variant_delta_out_of_scene_description():
     assert "地面湿润有积水" not in scene_description
 
 
+def test_reverse_prompt_keeps_project_style_as_fallback_for_unseen_back_half():
+    scene = NovelScene(
+        name="书房",
+        scene_type="interior",
+        environment_prompt="初始",
+    )
+
+    prompt = build_scene_reference_prompt(
+        "reverse_master",
+        scene,
+        style_name="写实古装剧 (chinese_period_drama)",
+        style_prompt="grounded historical realism with dark timber architecture",
+        avoid_instructions="no modern bedroom, no contemporary furniture",
+        has_master_reference=True,
+    )
+
+    assert "REFERENCE 1 is the SOLE source of truth" in prompt
+    assert "PROJECT STYLE FALLBACK FOR UNSEEN AREAS" in prompt
+    assert "grounded historical realism with dark timber architecture" in prompt
+    assert "no modern bedroom, no contemporary furniture" in prompt
+
+
 async def test_scene_reference_newapi_uses_normalized_gateway_base_url(monkeypatch, tmp_path):
     import novelvideo.config as config
     from novelvideo.generators import scene_reference_images
