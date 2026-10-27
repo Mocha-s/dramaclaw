@@ -6,6 +6,7 @@ import textwrap
 import threading
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -125,6 +126,24 @@ async def _wait_lane_idle(
             return
         await asyncio.sleep(0.02)
     assert backend.lane_snapshot()[lane]["active"] == 0
+
+
+def _write_runtime_lane_limits(
+    *,
+    world_concurrency: int,
+    world_queue_limit: int = 64,
+    world_project_limit: int = 8,
+    world_user_limit: int = 8,
+) -> None:
+    from novelvideo.runtime_settings import write_runtime_json
+
+    defaults = {
+        "default": {"globalConcurrency": 8, "globalQueueLimit": 512, "projectActiveLimit": 12, "projectUserActiveLimit": 12},
+        "video": {"globalConcurrency": 2, "globalQueueLimit": 128, "projectActiveLimit": 4, "projectUserActiveLimit": 4},
+        "world": {"globalConcurrency": world_concurrency, "globalQueueLimit": world_queue_limit, "projectActiveLimit": world_project_limit, "projectUserActiveLimit": world_user_limit},
+        "ffmpeg": {"globalConcurrency": 1, "globalQueueLimit": 64, "projectActiveLimit": 2, "projectUserActiveLimit": 2},
+    }
+    write_runtime_json("task_limits.v1", {"lanes": defaults})
 
 
 def _spawn_tree_script(tmp_path: Path) -> tuple[Path, Path]:
@@ -595,6 +614,152 @@ def test_gate3_global_lane_queue_limit_exception_maps_to_http_429():
         "queued": 1,
         "limit_scope": "global_lane_queue",
     }
+
+
+@pytest.mark.asyncio
+async def test_inline_backend_uses_updated_concurrency_without_restart(
+    monkeypatch,
+    _task_ports,
+    signed_inline_backend,
+    tmp_path,
+):
+    from novelvideo import runtime_settings
+
+    monkeypatch.setattr(
+        runtime_settings, "runtime_settings_db_path", lambda: tmp_path / "settings.db"
+    )
+    _write_runtime_lane_limits(world_concurrency=1)
+    backend = signed_inline_backend()
+    ctx = _ctx(tmp_path)
+    release = threading.Event()
+    second_started = threading.Event()
+
+    def first_runner(_envelope, _ctx):
+        release.wait(timeout=4)
+        return {"ok": True}
+
+    def second_runner(_envelope, _ctx):
+        second_started.set()
+        return {"ok": True}
+
+    register_project_task_runner("l014_hot_reload_first", first_runner)
+    register_project_task_runner("l014_hot_reload_second", second_runner)
+    await backend.enqueue_project_task(
+        ctx,
+        task_type="l014_hot_reload_first",
+        product_surface="mainline",
+        episode=1,
+        queue_kind="world",
+    )
+    await _wait_for_status(_task_ports, ctx, "l014_hot_reload_first", "running")
+    await backend.enqueue_project_task(
+        ctx,
+        task_type="l014_hot_reload_second",
+        product_surface="mainline",
+        episode=1,
+        queue_kind="world",
+    )
+    assert backend.lane_snapshot()["world"]["queued"] == 1
+
+    _write_runtime_lane_limits(world_concurrency=2)
+    backend.reload_limits()
+
+    assert await asyncio.to_thread(second_started.wait, 1) is True
+    assert backend.lane_snapshot()["world"]["concurrency"] == 2
+    await _wait_for_status(_task_ports, ctx, "l014_hot_reload_second", "completed")
+    release.set()
+    await _wait_for_status(_task_ports, ctx, "l014_hot_reload_first", "completed")
+
+
+@pytest.mark.asyncio
+async def test_lowering_inline_concurrency_does_not_cancel_running_jobs(
+    monkeypatch,
+    _task_ports,
+    signed_inline_backend,
+    tmp_path,
+):
+    from novelvideo import runtime_settings
+
+    monkeypatch.setattr(
+        runtime_settings, "runtime_settings_db_path", lambda: tmp_path / "settings.db"
+    )
+    _write_runtime_lane_limits(world_concurrency=2)
+    backend = signed_inline_backend()
+    ctx = _ctx(tmp_path)
+    release = threading.Event()
+    started: list[str] = []
+
+    def runner(envelope, _ctx):
+        started.append(envelope["task_type"])
+        release.wait(timeout=4)
+        return {"ok": True}
+
+    for name in ("l014_hot_lower_a", "l014_hot_lower_b", "l014_hot_lower_c"):
+        register_project_task_runner(name, runner)
+    for name in ("l014_hot_lower_a", "l014_hot_lower_b"):
+        await backend.enqueue_project_task(
+            ctx,
+            task_type=name,
+            product_surface="mainline",
+            episode=1,
+            queue_kind="world",
+        )
+    await _wait_for_status(_task_ports, ctx, "l014_hot_lower_a", "running")
+    await _wait_for_status(_task_ports, ctx, "l014_hot_lower_b", "running")
+    assert len(started) == 2
+
+    _write_runtime_lane_limits(world_concurrency=1)
+    backend.reload_limits()
+    await backend.enqueue_project_task(
+        ctx,
+        task_type="l014_hot_lower_c",
+        product_surface="mainline",
+        episode=1,
+        queue_kind="world",
+    )
+    assert backend.lane_snapshot()["world"]["active"] == 2
+    assert backend.lane_snapshot()["world"]["queued"] == 1
+    assert _task_ports.get_task_for_project(ctx, "l014_hot_lower_a", 1).status == "running"
+    assert _task_ports.get_task_for_project(ctx, "l014_hot_lower_b", 1).status == "running"
+
+    release.set()
+    await _wait_for_status(_task_ports, ctx, "l014_hot_lower_c", "completed")
+    assert backend.lane_snapshot()["world"]["concurrency"] == 1
+
+
+def test_runtime_limit_update_endpoint_reloads_inline_backend(monkeypatch, tmp_path):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from novelvideo.api.auth import get_api_user
+    from novelvideo.api.routes import task_limits
+    from novelvideo import runtime_settings
+
+    monkeypatch.setattr(
+        runtime_settings, "runtime_settings_db_path", lambda: tmp_path / "settings.db"
+    )
+    monkeypatch.setattr(task_limits, "_require_ce_task_limits_admin", lambda: None)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "novelvideo.ports.get_task_backend",
+        lambda: SimpleNamespace(reload_limits=lambda: calls.append("reload")),
+    )
+    app = FastAPI()
+    app.include_router(task_limits.router, prefix="/api/v1")
+    app.dependency_overrides[get_api_user] = lambda: {"role": "owner"}
+    payload = {
+        "lanes": {
+            "default": {"globalConcurrency": 8, "globalQueueLimit": 512, "projectActiveLimit": 12, "projectUserActiveLimit": 12},
+            "video": {"globalConcurrency": 2, "globalQueueLimit": 128, "projectActiveLimit": 4, "projectUserActiveLimit": 4},
+            "world": {"globalConcurrency": 2, "globalQueueLimit": 64, "projectActiveLimit": 2, "projectUserActiveLimit": 2},
+            "ffmpeg": {"globalConcurrency": 1, "globalQueueLimit": 64, "projectActiveLimit": 2, "projectUserActiveLimit": 2},
+        }
+    }
+
+    response = TestClient(app).put("/api/v1/config/task-limits", json=payload)
+
+    assert response.status_code == 200
+    assert calls == ["reload"]
 
 
 @pytest.mark.asyncio

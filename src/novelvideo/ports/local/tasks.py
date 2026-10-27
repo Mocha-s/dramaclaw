@@ -65,6 +65,8 @@ class _InlineLane:
     queued: deque[_InlineLaneJob] = field(default_factory=deque)
     active: int = 0
     last_started_project_id: str | None = None
+    task_executors: dict[asyncio.Task, ThreadPoolExecutor] = field(default_factory=dict)
+    executor_users: dict[ThreadPoolExecutor, int] = field(default_factory=dict)
 
 
 class InlineTaskBackend:
@@ -98,6 +100,7 @@ class InlineTaskBackend:
         payload: dict[str, Any] | None = None,
     ) -> QueuedTask:
         require_project_home_node(ctx, operation="enqueue project task")
+        self.reload_limits()
         manager = get_task_manager()
         payload = payload or {}
         lane_name = normalize_queue_kind(queue_kind)
@@ -221,6 +224,26 @@ class InlineTaskBackend:
             for name, lane in sorted(self._lanes.items())
         }
 
+    def reload_limits(self) -> None:
+        """Apply current persisted/env lane limits without cancelling active work."""
+        for lane in self._lanes.values():
+            next_concurrency = global_lane_concurrency(lane.name)
+            lane.queue_limit = global_lane_queue_limit(lane.name)
+            if next_concurrency != lane.concurrency:
+                old_executor = lane.executor
+                lane.executor = ThreadPoolExecutor(
+                    max_workers=next_concurrency,
+                    thread_name_prefix=f"inline-{lane.name}",
+                )
+                lane.concurrency = next_concurrency
+                if lane.executor_users.get(old_executor, 0) == 0:
+                    old_executor.shutdown(wait=False, cancel_futures=False)
+                # Active jobs retain their captured executor. The completion
+                # callback shuts down retired executors after their last job.
+                else:
+                    lane.executor_users.setdefault(old_executor, 0)
+            self._drain_lane(lane.name)
+
     def _submit_lane_job(self, job: _InlineLaneJob) -> None:
         lane = self._lanes[normalize_queue_kind(job.envelope.get("queue_kind"))]
         if lane.active < lane.concurrency:
@@ -248,8 +271,11 @@ class InlineTaskBackend:
     def _start_lane_job(self, lane: _InlineLane, job: _InlineLaneJob) -> None:
         lane.active += 1
         lane.last_started_project_id = job.project_id
-        task = asyncio.create_task(self._run_inline(lane, job))
+        executor = lane.executor
+        lane.executor_users[executor] = lane.executor_users.get(executor, 0) + 1
+        task = asyncio.create_task(self._run_inline(lane, job, executor))
         self._background_tasks.add(task)
+        lane.task_executors[task] = executor
         task.add_done_callback(
             lambda done, lane_name=lane.name: self._on_background_task_done(
                 done, lane_name
@@ -287,6 +313,7 @@ class InlineTaskBackend:
         self,
         lane: _InlineLane,
         job: _InlineLaneJob,
+        executor: ThreadPoolExecutor,
     ) -> None:
         consumer_failure: (
             InvalidTaskEnvelope | TaskAuthorityUnavailable | TaskAuthorityFault | None
@@ -330,7 +357,7 @@ class InlineTaskBackend:
 
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(
-            lane.executor,
+            executor,
             partial(
                 run_project_task_core_sync,
                 verified,
@@ -344,6 +371,15 @@ class InlineTaskBackend:
     def _on_background_task_done(self, task: asyncio.Task, lane_name: str) -> None:
         self._background_tasks.discard(task)
         lane = self._lanes[lane_name]
+        executor = lane.task_executors.pop(task, None)
+        if executor is not None:
+            users = max(lane.executor_users.get(executor, 1) - 1, 0)
+            if users == 0:
+                lane.executor_users.pop(executor, None)
+                if executor is not lane.executor:
+                    executor.shutdown(wait=False, cancel_futures=False)
+            else:
+                lane.executor_users[executor] = users
         lane.active = max(lane.active - 1, 0)
         if task.cancelled():
             self._drain_lane(lane_name)
