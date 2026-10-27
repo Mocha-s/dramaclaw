@@ -678,6 +678,25 @@ describe("SettingsDialog pages", () => {
     expect(screen.queryByText("业务模型映射")).not.toBeInTheDocument();
   });
 
+  it("does not render the removed NewAPI provider-channel editor in Advanced Custom", () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "third_party", baseUrl: "", apiKeyPreview: "", configured: true, model: "qwen-max", brainclaw: false },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [] },
+    };
+    renderSettingsDialog();
+
+    fireEvent.click(screen.getByRole("tab", { name: "自定义" }));
+    expect(screen.getByRole("tab", { name: "高级自定义" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "高级自定义" }));
+    expect(screen.queryByText("业务模型映射")).not.toBeInTheDocument();
+    expect(screen.queryByText("供应商渠道")).not.toBeInTheDocument();
+    expect(screen.getByText("第三方网关")).toBeInTheDocument();
+  });
+
   it("uses a configured third-party text group for BrainClaw without duplicate endpoint fields", () => {
     modelGatewayMocks.config = {
       mode: "custom",
