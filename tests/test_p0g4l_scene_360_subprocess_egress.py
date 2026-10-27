@@ -17,6 +17,8 @@ fail-closed、绝不回落 settings.db 的平台 Key，trace 经 manifest 回来
 from __future__ import annotations
 
 import json
+import os
+import time
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -467,6 +469,145 @@ def test_platform_launches_scene_analysis_with_gateway_only(
     assert "scene_overlap_analyzer" in launched
     assert "scene_spatial_contract" in launched
     assert "scene_360_builder" in launched
+
+
+def test_scene_360_passes_fresh_reference_contract_paths_to_builder(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The builder must receive the contracts produced for the current master pair."""
+    from novelvideo import stage_asset_tasks
+    from novelvideo.director_world import scene_analysis_gateway
+
+    pair = _master_pair(tmp_path)
+    analysis_path = (
+        pair["master"].parent
+        / "overlap_continuation_test"
+        / "overlap_continuation_analysis.json"
+    )
+    analysis_path.parent.mkdir(parents=True, exist_ok=True)
+    analysis_path.write_text("{}", encoding="utf-8")
+    contract_path = (
+        pair["master"].parent
+        / "scene_spatial_contract"
+        / "scene_spatial_contract.json"
+    )
+    contract_path.parent.mkdir(parents=True, exist_ok=True)
+    contract_path.write_text(
+        json.dumps({"schema_version": stage_asset_tasks.SPATIAL_CONTRACT_SCHEMA_VERSION}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        scene_analysis_gateway, "scene_analysis_gateway_configured", lambda: False
+    )
+    harness = _SceneHarness(monkeypatch, None)
+
+    _run_pano(
+        tmp_path,
+        source="master",
+        master_path_override=pair["master"],
+        reverse_master_path_override=pair["reverse"],
+    )
+
+    command = harness.pano_launch()["cmd"]
+    assert command[command.index("--overlap-analysis") + 1] == str(analysis_path)
+    assert command[command.index("--spatial-contract") + 1] == str(contract_path)
+
+
+def test_scene_360_does_not_pass_stale_reference_contract_paths_to_builder(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Old analysis must not override the builder's current-input freshness checks."""
+    from novelvideo import stage_asset_tasks
+    from novelvideo.director_world import scene_analysis_gateway
+
+    pair = _master_pair(tmp_path)
+    analysis_path = (
+        pair["master"].parent
+        / "overlap_continuation_test"
+        / "overlap_continuation_analysis.json"
+    )
+    analysis_path.parent.mkdir(parents=True, exist_ok=True)
+    analysis_path.write_text("{}", encoding="utf-8")
+    contract_path = (
+        pair["master"].parent
+        / "scene_spatial_contract"
+        / "scene_spatial_contract.json"
+    )
+    contract_path.parent.mkdir(parents=True, exist_ok=True)
+    contract_path.write_text(
+        json.dumps({"schema_version": stage_asset_tasks.SPATIAL_CONTRACT_SCHEMA_VERSION}),
+        encoding="utf-8",
+    )
+    stale_mtime = pair["master"].stat().st_mtime - 1
+    os.utime(analysis_path, (stale_mtime, stale_mtime))
+    os.utime(contract_path, (stale_mtime, stale_mtime))
+    monkeypatch.setattr(
+        scene_analysis_gateway, "scene_analysis_gateway_configured", lambda: False
+    )
+    harness = _SceneHarness(monkeypatch, None)
+
+    _run_pano(
+        tmp_path,
+        source="master",
+        master_path_override=pair["master"],
+        reverse_master_path_override=pair["reverse"],
+    )
+
+    command = harness.pano_launch()["cmd"]
+    assert "--overlap-analysis" not in command
+    assert "--spatial-contract" not in command
+
+
+def test_scene_360_does_not_pass_contract_older_than_fresh_overlap_analysis(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A spatial contract must include the current overlap analysis as an input."""
+    from novelvideo import stage_asset_tasks
+    from novelvideo.director_world import scene_analysis_gateway
+
+    pair = _master_pair(tmp_path)
+    now = time.time()
+    reference_mtime = now - 30
+    for reference in pair.values():
+        os.utime(reference, (reference_mtime, reference_mtime))
+
+    analysis_path = (
+        pair["master"].parent
+        / "overlap_continuation_test"
+        / "overlap_continuation_analysis.json"
+    )
+    analysis_path.parent.mkdir(parents=True, exist_ok=True)
+    analysis_path.write_text("{}", encoding="utf-8")
+    analysis_mtime = reference_mtime + 10
+    os.utime(analysis_path, (analysis_mtime, analysis_mtime))
+
+    contract_path = (
+        pair["master"].parent
+        / "scene_spatial_contract"
+        / "scene_spatial_contract.json"
+    )
+    contract_path.parent.mkdir(parents=True, exist_ok=True)
+    contract_path.write_text(
+        json.dumps({"schema_version": stage_asset_tasks.SPATIAL_CONTRACT_SCHEMA_VERSION}),
+        encoding="utf-8",
+    )
+    contract_mtime = reference_mtime + 5
+    os.utime(contract_path, (contract_mtime, contract_mtime))
+    monkeypatch.setattr(
+        scene_analysis_gateway, "scene_analysis_gateway_configured", lambda: False
+    )
+    harness = _SceneHarness(monkeypatch, None)
+
+    _run_pano(
+        tmp_path,
+        source="master",
+        master_path_override=pair["master"],
+        reverse_master_path_override=pair["reverse"],
+    )
+
+    command = harness.pano_launch()["cmd"]
+    assert command[command.index("--overlap-analysis") + 1] == str(analysis_path)
+    assert "--spatial-contract" not in command
 
 
 def test_platform_skips_analysis_without_gateway_even_with_legacy_key(

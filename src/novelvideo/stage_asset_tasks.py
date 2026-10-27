@@ -1481,6 +1481,35 @@ def run_scene_360(
                         logger.warning(
                             "scene spatial contract failed for %s: %s", scene_id, exc
                         )
+                latest_reference_mtime = max(
+                    Path(master_path).stat().st_mtime,
+                    Path(reverse_master_path).stat().st_mtime,
+                )
+                overlap_path = Path(overlap_analysis_path)
+                overlap_is_fresh = (
+                    overlap_path.exists()
+                    and overlap_path.stat().st_mtime >= latest_reference_mtime
+                )
+                if overlap_is_fresh:
+                    cmd.extend(["--overlap-analysis", overlap_analysis_path])
+                contract_path = Path(spatial_contract_path)
+                contract_is_fresh = (
+                    contract_path.exists()
+                    and contract_path.stat().st_mtime >= latest_reference_mtime
+                    and (
+                        not overlap_path.exists()
+                        or contract_path.stat().st_mtime >= overlap_path.stat().st_mtime
+                    )
+                    and _json_file_has_schema(
+                        contract_path, SPATIAL_CONTRACT_SCHEMA_VERSION
+                    )
+                    # A contract is generated from the overlap analysis too. If
+                    # an old analysis is present, never pair it with a newer
+                    # master/reverse set even when the contract itself is newer.
+                    and (not overlap_path.exists() or overlap_is_fresh)
+                )
+                if contract_is_fresh:
+                    cmd.extend(["--spatial-contract", spatial_contract_path])
             manifest_source = "uploaded_master"
     if source == "text":
         cmd.append("--text-only")
