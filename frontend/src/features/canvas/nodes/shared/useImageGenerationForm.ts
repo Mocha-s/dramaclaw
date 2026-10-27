@@ -56,6 +56,7 @@ import { type MentionCandidate } from '@/features/canvas/nodes/PromptMentionEdit
 import { useGenerationCreditCost } from '@/lib/queries/generation-credit-cost';
 import { hasImageGenPromptOverride } from '@/features/canvas/nodes/imageGenPrompt';
 import { orderedReferenceUrlsWithOwnFirst, upstreamNodesInEdgeOrder } from '@/features/canvas/nodes/referenceOrdering';
+import { dedupeImageGenerationPrompt } from './imageGenerationPrompt';
 import { matchesReference, referenceIssueName, referenceIssues, type ReferenceIssue } from '@/features/canvas/nodes/shared/ReferenceValidationDialog';
 import { useReferenceMentionSync } from '@/features/canvas/nodes/useReferenceMentionSync';
 import type { ImageGenerationFormProps } from '@/features/canvas/nodes/shared/ImageGenerationForm';
@@ -533,9 +534,7 @@ export function useImageGenerationForm(
     const ownPrompt = prompt.trim();
     const fallbackPrompt = shouldInlineUpstreamTextAsPrompt
       ? (ownPrompt || (hasUserEditedPromptRef.current ? "" : upstreamTextJoined.trim()))
-      : [upstreamTextJoined, ownPrompt]
-        .filter((s) => s.length > 0)
-        .join('\n\n');
+      : dedupeImageGenerationPrompt(upstreamTextJoined, ownPrompt);
     // 工作流配方节点用配方编译出的最终 prompt；非配方节点回落上面这段拼接。
     const effectivePrompt = await compileWorkflowNodePrompt({
       nodeId: id,

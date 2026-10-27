@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from copy import deepcopy
 from dataclasses import dataclass
@@ -33,6 +34,46 @@ from novelvideo.task_state import get_task_manager
 
 
 logger = logging.getLogger(__name__)
+
+
+def _reference_audit_from_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    paths = [str(path) for path in payload.get("reference_paths") or [] if str(path).strip()]
+    if not paths:
+        return None
+    hashes: list[str] = []
+    dimensions: list[dict[str, int]] = []
+    for raw_path in paths:
+        path = Path(raw_path)
+        if not path.is_file():
+            continue
+        hashes.append(hashlib.sha256(path.read_bytes()).hexdigest())
+        try:
+            from PIL import Image
+
+            with Image.open(path) as image:
+                dimensions.append({"width": int(image.width), "height": int(image.height)})
+        except Exception:
+            dimensions.append({})
+    request_schema = payload.get("request_schema") or {}
+    reference_protocol = str(
+        request_schema.get("referenceFormat")
+        or payload.get("reference_protocol")
+        or "unknown"
+    ).strip()
+    endpoint = str(request_schema.get("endpoint") or "").strip()
+    request_path = f"/{endpoint.lstrip('/')}" if endpoint else (
+        "/images/edits"
+        if reference_protocol in {"multipart", "input_reference", "images", "dc-media"}
+        else ""
+    )
+    return {
+        "reference_count": len(hashes),
+        "reference_sha256": hashes,
+        "reference_dimensions": dimensions,
+        "reference_protocol": reference_protocol,
+        "request_path": request_path,
+        "provider_request_id": str(payload.get("provider_request_id") or ""),
+    }
 
 
 async def _run_image_output(envelope: dict[str, Any], ctx: ProjectContext, *, vectorize: bool) -> dict[str, Any]:
@@ -564,6 +605,7 @@ def _append_node_history(
     episode: int = 0,
     beat_num: int | None = None,
     scope: str | None = None,
+    reference_audit: dict[str, Any] | None = None,
     **extra: Any,
 ) -> dict[str, Any] | None:
     node_id = str(payload.get("node_id") or "").strip()
@@ -593,6 +635,7 @@ def _append_node_history(
         result=result,
         error=error,
         prompt=payload.get("prompt") or payload.get("input"),
+        reference_audit=reference_audit,
         extra=extra,
     )
 
@@ -766,6 +809,7 @@ async def _run_freezone_gen_async(
         job_id=job_id,
         media_type="image",
         result=result,
+        reference_audit=_reference_audit_from_payload(payload),
         **_history_model_mode_extra(payload),
     )
     if history_record:

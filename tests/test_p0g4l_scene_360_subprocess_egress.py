@@ -259,19 +259,30 @@ class _SceneHarness:
         )
 
 
-def _run_pano(tmp_path: Path, **kwargs):
+def _run_pano(tmp_path: Path, *, allow_missing_contract: bool = True, **kwargs):
     from novelvideo import stage_asset_tasks
 
     kwargs.setdefault("provider", "newapi")
     kwargs.setdefault("source", "text")
-    return stage_asset_tasks.run_scene_360(
-        tmp_path / "project",
-        "scene-360",
-        artifact_dir=tmp_path / "stage",
-        update_manifest=False,
-        _manage_model_credit=False,
-        **kwargs,
-    )
+    previous = os.environ.get("SCENE_360_ALLOW_MISSING_SPATIAL_CONTRACT")
+    if allow_missing_contract:
+        os.environ["SCENE_360_ALLOW_MISSING_SPATIAL_CONTRACT"] = "1"
+    else:
+        os.environ.pop("SCENE_360_ALLOW_MISSING_SPATIAL_CONTRACT", None)
+    try:
+        return stage_asset_tasks.run_scene_360(
+            tmp_path / "project",
+            "scene-360",
+            artifact_dir=tmp_path / "stage",
+            update_manifest=False,
+            _manage_model_credit=False,
+            **kwargs,
+        )
+    finally:
+        if previous is None:
+            os.environ.pop("SCENE_360_ALLOW_MISSING_SPATIAL_CONTRACT", None)
+        else:
+            os.environ["SCENE_360_ALLOW_MISSING_SPATIAL_CONTRACT"] = previous
 
 
 # --- 组织路径：claim 在起进程之前，凭证经 env 过边界 --------------------------------
@@ -608,6 +619,36 @@ def test_scene_360_does_not_pass_contract_older_than_fresh_overlap_analysis(
     command = harness.pano_launch()["cmd"]
     assert command[command.index("--overlap-analysis") + 1] == str(analysis_path)
     assert "--spatial-contract" not in command
+
+
+def test_scene_360_strict_dual_reference_fails_when_contract_is_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from novelvideo import stage_asset_tasks
+    from novelvideo.director_world import scene_analysis_gateway
+
+    pair = _master_pair(tmp_path)
+    monkeypatch.setattr(
+        scene_analysis_gateway, "scene_analysis_gateway_configured", lambda: False
+    )
+    harness = _SceneHarness(monkeypatch, None)
+
+    with pytest.raises(stage_asset_tasks.Scene360SpatialContractUnavailable) as failed:
+        _run_pano(
+            tmp_path,
+            source="master",
+            master_path_override=pair["master"],
+            reverse_master_path_override=pair["reverse"],
+            allow_missing_contract=False,
+        )
+
+    assert failed.value.error_code == "SCENE_360_SPATIAL_CONTRACT_UNAVAILABLE"
+    from novelvideo.task_backend.run_core import _project_task_failure_for_exception
+
+    _message, metadata, recognized = _project_task_failure_for_exception(failed.value)
+    assert recognized is True
+    assert metadata["error_code"] == "SCENE_360_SPATIAL_CONTRACT_UNAVAILABLE"
+    assert harness.modules_launched() == []
 
 
 def test_platform_skips_analysis_without_gateway_even_with_legacy_key(

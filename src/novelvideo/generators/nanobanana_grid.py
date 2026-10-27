@@ -484,6 +484,7 @@ def _newapi_safe_request_context(
     model: str,
     payload: dict[str, object],
     prompt: str,
+    reference_protocol: str = "",
 ) -> dict[str, object]:
     reference_images = (
         payload.get("image")
@@ -500,12 +501,19 @@ def _newapi_safe_request_context(
     }
     return {
         "endpoint": f"{endpoint}{request_path}",
+        "request_path": request_path,
         "model": model,
         "payload_keys": sorted(payload.keys()),
         "size": payload.get("size") or "",
         "tier": payload.get("tier") or "",
         "geometry_metadata": geometry_metadata,
         "reference_image_count": reference_image_count,
+        "reference_protocol": str(
+            reference_protocol
+            or metadata.get("reference_protocol")
+            or ("multipart" if "image" in payload and not isinstance(payload.get("image"), list) else "")
+            or ("images" if "images" in payload else "input_reference" if "input_reference" in payload else "image" if "image" in payload else "none")
+        ),
         "prompt_chars": len(prompt or ""),
         "prompt_sha256": hashlib.sha256((prompt or "").encode("utf-8")).hexdigest()[:16],
     }
@@ -4052,6 +4060,7 @@ async def _call_newapi_image_api(
         model=model,
         payload=payload,
         prompt=prompt,
+        reference_protocol=reference_image_format if reference_images else "none",
     )
     logger.info("DramaClawAPI image request: %s", request_context)
     headers = {"Authorization": f"Bearer {api_key}"}

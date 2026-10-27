@@ -599,6 +599,9 @@ def _project_task_failure_for_exception(
     from novelvideo.novel_source import NovelImportRequiredError
     from novelvideo.scene_prerequisites import ScenePlanningPrerequisiteError
     from novelvideo.video_prompt_prerequisite import VideoPromptPrerequisiteError
+    from novelvideo.director_world.scene_360_reference_audit import (
+        Scene360SpatialContractUnavailable,
+    )
 
     if isinstance(exc, VoicePrerequisiteError):
         return str(exc), {"error_code": exc.error_code}, True
@@ -616,6 +619,9 @@ def _project_task_failure_for_exception(
         return str(exc), {"error_code": exc.error_code}, True
 
     if isinstance(exc, VideoPromptPrerequisiteError):
+        return str(exc), {"error_code": exc.error_code}, True
+
+    if isinstance(exc, Scene360SpatialContractUnavailable):
         return str(exc), {"error_code": exc.error_code}, True
 
     if isinstance(exc, TaskTimedOut):

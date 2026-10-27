@@ -1249,6 +1249,29 @@ def test_newapi_image_edit_supports_json_reference_protocols(
     ]
 
 
+def test_newapi_safe_request_context_records_protocol_and_path_without_reference_urls():
+    from novelvideo.generators import nanobanana_grid
+
+    context = nanobanana_grid._newapi_safe_request_context(
+        endpoint="https://gateway.test/v1",
+        request_path="/images/edits",
+        model="gpt-image-2",
+        payload={
+            "model": "gpt-image-2",
+            "prompt": "secret prompt",
+            "images": [{"image_url": "https://signed.example/token"}, {"image_url": "https://signed.example/token2"}],
+            "metadata": {"reference_protocol": "images"},
+        },
+        prompt="secret prompt",
+    )
+
+    assert context["reference_image_count"] == 2
+    assert context["reference_protocol"] == "images"
+    assert context["request_path"] == "/images/edits"
+    assert "signed.example" not in str(context)
+    assert "secret prompt" not in str(context)
+
+
 def test_newapi_image_reference_request_uses_catalog_endpoint(monkeypatch):
     """A catalog can route reference-image requests through generations."""
     import json

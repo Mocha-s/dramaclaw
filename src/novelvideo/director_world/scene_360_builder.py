@@ -59,6 +59,20 @@ SPATIAL_CONTRACT_SCHEMA_VERSION = "scene_spatial_contract_v8_topology_only_locks
 SAFE_SEAM_SPHERE_YAW_DEG = -90.0
 
 
+def _strict_spatial_contract() -> bool:
+    raw = os.environ.get("SCENE_360_STRICT_SPATIAL_CONTRACT", "1").strip().lower()
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    compatibility = os.environ.get(
+        "SCENE_360_ALLOW_MISSING_SPATIAL_CONTRACT", ""
+    ).strip().lower()
+    return compatibility not in {"1", "true", "yes", "on"}
+
+
+class Scene360SpatialContractUnavailable(RuntimeError):
+    error_code = "SCENE_360_SPATIAL_CONTRACT_UNAVAILABLE"
+
+
 def load_env() -> None:
     try:
         from dotenv import load_dotenv
@@ -674,15 +688,22 @@ def load_overlap_continuation_analysis(
 
     if not analysis_path.exists():
         return None, None, ""
-    if not explicit and master_path is not None and reverse_path is not None:
+    if master_path is not None and reverse_path is not None:
         latest_input_mtime = max(master_path.stat().st_mtime, reverse_path.stat().st_mtime)
         if analysis_path.stat().st_mtime < latest_input_mtime:
             return None, None, ""
 
     try:
         data = json.loads(analysis_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+    except (OSError, json.JSONDecodeError):
         return None, None, ""
+    if not isinstance(data, dict):
+        return None, None, ""
+    if master_path is not None and reverse_path is not None:
+        from novelvideo.director_world.scene_360_reference_audit import _inputs_match
+
+        if not _inputs_match(data, {"master": master_path, "reverse": reverse_path}):
+            return None, None, ""
     prompt_insert = str(data.get("pano_prompt_insert") or "").strip()
     front_unique = [
         str(item).strip() for item in data.get("front_unique_items") or [] if str(item).strip()
@@ -737,17 +758,24 @@ def load_scene_spatial_contract(
 
     if not contract_path.exists():
         return None, ""
-    if not explicit and master_path is not None and reverse_path is not None:
+    if master_path is not None and reverse_path is not None:
         latest_input_mtime = max(master_path.stat().st_mtime, reverse_path.stat().st_mtime)
         if contract_path.stat().st_mtime < latest_input_mtime:
             return None, ""
     try:
         data = json.loads(contract_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+    except (OSError, json.JSONDecodeError):
         return None, ""
-    if not explicit and data.get("schema_version") != SPATIAL_CONTRACT_SCHEMA_VERSION:
+    if not isinstance(data, dict) or data.get("schema_version") != SPATIAL_CONTRACT_SCHEMA_VERSION:
         return None, ""
+    if master_path is not None and reverse_path is not None:
+        from novelvideo.director_world.scene_360_reference_audit import _inputs_match
+
+        if not _inputs_match(data, {"master": master_path, "reverse": reverse_path}):
+            return None, ""
     prompt_insert = str(data.get("pano_prompt_insert") or "").strip()
+    if not prompt_insert:
+        return None, ""
     return contract_path, prompt_insert
 
 
@@ -851,6 +879,7 @@ async def run(args: argparse.Namespace) -> int:
     spatial_contract_path: Path | None = None
     overlap_prompt_insert = ""
     overlap_analysis_path: Path | None = None
+    reference_audit: dict[str, object] | None = None
     if not args.text_only:
         master = repo_path(args.master)
         if not master.exists():
@@ -951,6 +980,32 @@ async def run(args: argparse.Namespace) -> int:
                 )
             )
 
+        if _strict_spatial_contract():
+            if spatial_contract_path is None or overlap_analysis_path is None:
+                raise Scene360SpatialContractUnavailable(
+                    "master/reverse spatial contract evidence is unavailable"
+                )
+            from novelvideo.director_world.scene_360_reference_audit import (
+                Scene360ReferenceAudit,
+            )
+
+            try:
+                audit = Scene360ReferenceAudit.collect(
+                    master_path=master_path_for_overlap,
+                    reverse_path=reverse_path_for_overlap,
+                    overlap_analysis_path=overlap_analysis_path,
+                    spatial_contract_path=spatial_contract_path,
+                )
+            except (OSError, ValueError) as exc:
+                raise Scene360SpatialContractUnavailable(
+                    "master/reverse spatial contract evidence is unavailable"
+                ) from exc
+            if not audit.has_fresh_contract:
+                raise Scene360SpatialContractUnavailable(
+                    "master/reverse spatial contract evidence is missing or stale"
+                )
+            reference_audit = audit.as_dict()
+
     spatial_layout_arg = getattr(args, "spatial_layout", "") or ""
     if spatial_layout_arg:
         spatial_layout = repo_path(spatial_layout_arg)
@@ -997,6 +1052,11 @@ async def run(args: argparse.Namespace) -> int:
     result_path = output_dir / "scene_panorama_2to1.png"
     manifest_path = output_dir / "scene_360_manifest.json"
     prompt_path.write_text(prompt, encoding="utf-8")
+    if reference_audit is not None:
+        reference_audit["prompt_contract_marker"] = bool(
+            spatial_contract_prompt_insert
+            and spatial_contract_prompt_insert in prompt
+        )
 
     if provider in {"huimeng", "huimengi"}:
         api_key = os.environ.get("HUIMENGI_API_KEY")
@@ -1135,6 +1195,7 @@ async def run(args: argparse.Namespace) -> int:
                 "response_id": provider_trace.get("response_id", ""),
                 "result": str(result_path),
                 "size_note": ("scene 360 defaults to image-2 2K medium; aspect_ratio=2:1"),
+                "reference_audit": reference_audit,
             },
             ensure_ascii=False,
             indent=2,

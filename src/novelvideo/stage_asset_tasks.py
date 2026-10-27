@@ -28,6 +28,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 from novelvideo.director_world import block_world_builder, pano_sharp, stage_manifest
+from novelvideo.director_world.scene_360_reference_audit import (
+    Scene360ReferenceAudit,
+    Scene360SpatialContractUnavailable,
+)
 from novelvideo.director_world.paths import safe_name, world_path
 from novelvideo.egress_context import TrustedEgressContext
 from novelvideo.ports import get_usage_meter
@@ -48,6 +52,16 @@ SCENE_360_EGRESS_CAPABILITY = "image.generate.pano_360"
 SPATIAL_CONTRACT_SCHEMA_VERSION = "scene_spatial_contract_v8_topology_only_locks"
 SPATIAL_CONTRACT_DEFAULT_MODEL = "DC-scene-spatial-contract-LLM"
 SAFE_SEAM_SPHERE_YAW_DEG = -90.0
+
+
+def _scene_360_strict_spatial_contract() -> bool:
+    raw = os.environ.get("SCENE_360_STRICT_SPATIAL_CONTRACT", "1").strip().lower()
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    compatibility = os.environ.get(
+        "SCENE_360_ALLOW_MISSING_SPATIAL_CONTRACT", ""
+    ).strip().lower()
+    return compatibility not in {"1", "true", "yes", "on"}
 
 
 def _run_credit_coro(coro_factory):
@@ -1333,6 +1347,7 @@ def run_scene_360(
         or SPATIAL_CONTRACT_DEFAULT_MODEL
     )
     pano_correction_payload: dict[str, Any] | None = None
+    reference_audit: dict[str, Any] | None = None
     if source == "master":
         master_path = (
             str(Path(master_path_override))
@@ -1510,6 +1525,29 @@ def run_scene_360(
                 )
                 if contract_is_fresh:
                     cmd.extend(["--spatial-contract", spatial_contract_path])
+                from novelvideo.director_world.scene_360_reference_audit import (
+                    Scene360ReferenceAudit,
+                    Scene360SpatialContractUnavailable,
+                )
+
+                try:
+                    audit = Scene360ReferenceAudit.collect(
+                        master_path=master_path,
+                        reverse_path=reverse_master_path,
+                        overlap_analysis_path=overlap_analysis_path,
+                        spatial_contract_path=spatial_contract_path,
+                    )
+                except (OSError, ValueError) as exc:
+                    if _scene_360_strict_spatial_contract():
+                        raise Scene360SpatialContractUnavailable(
+                            "master/reverse spatial contract evidence is unavailable"
+                        ) from exc
+                else:
+                    reference_audit = audit.as_dict()
+                    if _scene_360_strict_spatial_contract() and not audit.has_fresh_contract:
+                        raise Scene360SpatialContractUnavailable(
+                            "master/reverse spatial contract evidence is missing or stale"
+                        )
             manifest_source = "uploaded_master"
     if source == "text":
         cmd.append("--text-only")
@@ -1675,6 +1713,7 @@ def run_scene_360(
                         spatial_contract_model if spatial_contract_path else ""
                     ),
                     "overlap_analysis_path": overlap_analysis_path,
+                    "reference_audit": reference_audit,
                 },
                 pano_correction=pano_correction_payload,
             )
