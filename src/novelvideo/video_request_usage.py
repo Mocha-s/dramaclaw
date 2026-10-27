@@ -124,7 +124,7 @@ def update_video_request_status(
     error_message: str | None = None,
 ) -> None:
     now = datetime.now().isoformat()
-    completed_at = now if status in {"completed", "downloaded"} else None
+    completed_at = now if status in {"provider_completed", "completed", "downloaded"} else None
     downloaded_at = now if status == "downloaded" else None
     with _connect(project_output_dir) as conn:
         conn.execute(

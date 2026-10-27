@@ -51,7 +51,9 @@ async def download_to_path(
                 digest.update(chunk)
                 size = len(chunk)
             else:
-                timeout = aiohttp.ClientTimeout(total=600)
+                from novelvideo.generators.video_generator import video_delivery_timeout_seconds
+
+                timeout = aiohttp.ClientTimeout(total=video_delivery_timeout_seconds())
                 async with aiohttp.ClientSession(timeout=timeout) as session:
                     async with session.get(url) as response:
                         if response.status < 200 or response.status >= 300:

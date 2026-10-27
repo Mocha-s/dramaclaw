@@ -12,6 +12,7 @@ import math
 import os
 import random
 import re
+import time
 import subprocess
 import urllib.parse
 import uuid
@@ -218,6 +219,7 @@ class VideoGenStatus(Enum):
     PROCESSING = "processing"
     DONE = "done"
     FAILED = "failed"
+    DELIVERY_PENDING = "delivery_pending"
 
 
 class VideoBackend(Enum):
@@ -245,6 +247,28 @@ class VideoGenResult:
     provider_task_id: Optional[str] = None
     error: Optional[str] = None
     duration_seconds: float = 0.0
+    provider_status: str = "pending"
+    delivery_status: str = "not_started"
+
+
+def _bounded_env_seconds(name: str, default: float, *, minimum: float = 0.1) -> float:
+    raw = os.environ.get(name, "").strip()
+    try:
+        return max(float(raw), minimum) if raw else default
+    except ValueError:
+        return default
+
+
+def video_provider_timeout_seconds() -> float:
+    return _bounded_env_seconds("ST_VIDEO_PROVIDER_TIMEOUT_SECONDS", NEWAPI_VIDEO_HTTP_TIMEOUT_SECONDS)
+
+
+def video_delivery_timeout_seconds() -> float:
+    return _bounded_env_seconds("ST_VIDEO_DELIVERY_TIMEOUT_SECONDS", 600.0)
+
+
+def video_poll_interval_seconds() -> float:
+    return _bounded_env_seconds("ST_VIDEO_POLL_INTERVAL_SECONDS", 5.0)
 
 
 class VideoGeneratorBase(ABC):
@@ -2075,7 +2099,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
 
     @staticmethod
     def _client_timeout() -> aiohttp.ClientTimeout:
-        return aiohttp.ClientTimeout(total=NEWAPI_VIDEO_HTTP_TIMEOUT_SECONDS)
+        return aiohttp.ClientTimeout(total=video_provider_timeout_seconds())
 
     async def _post_json(
         self,
@@ -3121,12 +3145,20 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         aspect_ratio: str = "9:16",
         duration: float = 5.0,
         poll_interval: float = 5.0,
-        max_polls: int = 360,
+        max_polls: int | None = None,
         on_log: Optional[Callable[[str], None]] = None,
         on_progress: Optional[Callable[[float], None]] = None,
         last_frame_path: Optional[str] = None,
         **kwargs,
     ) -> VideoGenResult:
+        if poll_interval == 5.0:
+            poll_interval = video_poll_interval_seconds()
+        if max_polls is None:
+            max_polls = max(
+                int(video_provider_timeout_seconds() / max(video_poll_interval_seconds(), 0.1)),
+                1,
+            )
+
         def log(msg: str):
             if on_log:
                 on_log(msg)
@@ -3241,6 +3273,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         operation_terminal = False
         submit_attempted = False
         provider_completed = False
+        delivery_started_at: float | None = None
         provider_settled = False
         last_delivery_error = ""
         request_base_url = self.base_url
@@ -3613,6 +3646,15 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             payload = enforce_newapi_media_geometry_contract(
                 payload, media_type="video"
             )
+            if self.video_endpoint == "video/generations":
+                canonical_metadata = payload.get("metadata")
+                if isinstance(canonical_metadata, dict):
+                    legacy_dimensions = self._video_dimensions(
+                        canonical_metadata.get("resolution"),
+                        canonical_metadata.get("ratio"),
+                    )
+                    if legacy_dimensions is not None:
+                        payload["width"], payload["height"] = legacy_dimensions
             payload = enforce_newapi_video_duration_contract(payload)
             payload = self._apply_seedance_source_video_ratio(payload)
             if self.video_endpoint == "videos":
@@ -3755,6 +3797,9 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                         response_payload=polled,
                     )
                     provider_completed = True
+                    if delivery_started_at is None:
+                        delivery_started_at = time.monotonic()
+                    update_request_status(task_id, "provider_completed")
                     if not provider_settled:
                         await _confirm_video_model_call(
                             model=self.model,
@@ -3763,6 +3808,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                             provider_task_id=task_id,
                         )
                         provider_settled = True
+                    update_request_status(task_id, "provider_completed")
 
                     advertised_archive = self._archive_state(task)
                     archive_delivery = get_video_result_delivery()
@@ -3785,6 +3831,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                             status=VideoGenStatus.FAILED,
                             error=last_delivery_error,
                             task_id=task_id,
+                            provider_status="completed",
+                            delivery_status="failed",
                         )
                     if archive_state is not None:
                         archive_status, archive_retryable = archive_state
@@ -3806,6 +3854,12 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                                             "视频生成完成，正在等待虾驿归档...",
                                         )
                                     )
+                                if (
+                                    delivery_started_at is not None
+                                    and time.monotonic() - delivery_started_at
+                                    >= video_delivery_timeout_seconds()
+                                ):
+                                    break
                                 await asyncio.sleep(poll_interval)
                                 continue
                             last_delivery_error = "VIDEO_ARCHIVE_FAILED"
@@ -3825,6 +3879,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                                 status=VideoGenStatus.FAILED,
                                 error=last_delivery_error,
                                 task_id=task_id,
+                                provider_status="completed",
+                                delivery_status="failed",
                             )
 
                     progress(0.9)
@@ -3863,6 +3919,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                                     else f"No video url in DramaClawAPI result: {task}"
                                 ),
                                 task_id=task_id,
+                                provider_status="completed",
+                                delivery_status="failed",
                             )
                     if organization_request:
                         running_authority_error = None
@@ -3929,7 +3987,12 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                             "delivery_pending" if exc.retryable else "delivery_failed",
                             last_delivery_error,
                         )
-                        if exc.retryable and poll_count + 1 < max_polls:
+                        delivery_window_open = (
+                            delivery_started_at is None
+                            or time.monotonic() - delivery_started_at
+                            < video_delivery_timeout_seconds()
+                        )
+                        if exc.retryable and poll_count + 1 < max_polls and delivery_window_open:
                             log(
                                 lmsg(
                                     "tasks.log.video.retryingDelivery",
@@ -3946,9 +4009,15 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                             )
                             operation_terminal = True
                         return VideoGenResult(
-                            status=VideoGenStatus.FAILED,
+                            status=(
+                                VideoGenStatus.DELIVERY_PENDING
+                                if exc.retryable
+                                else VideoGenStatus.FAILED
+                            ),
                             error=last_delivery_error,
                             task_id=task_id,
+                            provider_status="completed",
+                            delivery_status="pending" if exc.retryable else "failed",
                         )
                     provider_task_id = self._extract_provider_task_id(
                         task,
@@ -4031,6 +4100,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                         task_id=task_id,
                         provider_task_id=provider_task_id,
                         duration_seconds=float(duration),
+                        provider_status="completed",
+                        delivery_status="completed",
                     )
 
                 if status in {
@@ -4077,6 +4148,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                         status=VideoGenStatus.FAILED,
                         error=safe_task_error,
                         task_id=task_id,
+                        provider_status="failed",
+                        delivery_status="not_started",
                     )
 
                 if poll_count % 6 == 0:
@@ -4114,9 +4187,11 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                     provider_task_id=task_id,
                 )
             return VideoGenResult(
-                status=VideoGenStatus.FAILED,
+                status=(VideoGenStatus.DELIVERY_PENDING if provider_completed else VideoGenStatus.FAILED),
                 error=timeout_error,
                 task_id=task_id,
+                provider_status="completed" if provider_completed else "pending",
+                delivery_status="pending" if provider_completed else "not_started",
             )
         except RunningTaskAuthorityIndeterminate as exc:
             # Provider acceptance is already durable.  This branch must not
