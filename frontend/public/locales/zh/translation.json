@@ -7368,8 +7368,37 @@
     "pages": {
       "models": "模型与渠道",
       "storage": "媒体存储",
+      "taskLimits": "任务与队列",
       "freezoneSkills": "虾画 Skills",
       "freezoneRecipes": "虾画 Recipes"
+    },
+    "taskLimits": {
+      "title": "任务与队列",
+      "description": "实时调整各类任务的并发和排队限制。降低限制不会中断正在运行的任务。",
+      "loading": "正在加载队列设置",
+      "loadFailed": "加载队列设置失败",
+      "saveFailed": "保存队列设置失败",
+      "saved": "队列设置已保存",
+      "saving": "保存中…",
+      "save": "保存队列设置",
+      "invalid": "请输入范围内的整数。",
+      "lane": {
+        "default": "默认队列",
+        "video": "视频队列",
+        "world": "世界队列",
+        "ffmpeg": "FFmpeg 队列"
+      },
+      "fields": {
+        "globalConcurrency": "全局并发",
+        "globalQueueLimit": "等待队列上限",
+        "projectActiveLimit": "项目活动任务上限",
+        "projectUserActiveLimit": "单用户活动任务上限"
+      },
+      "headers": {
+        "active": "活动",
+        "queued": "排队",
+        "concurrency": "并发"
+      }
     },
     "freezoneCatalog": {
       "skills": {

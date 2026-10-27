@@ -17,6 +17,7 @@ from novelvideo.task_backend.limits import (
     TASK_LIMITS_RUNTIME_KEY,
 )
 from novelvideo.task_backend.queues import QUEUE_KINDS
+from novelvideo.ports.registry import PortNotRegistered
 
 router = APIRouter()
 
@@ -73,10 +74,26 @@ def _current() -> dict[str, Any]:
     return TaskLimitsConfig.model_validate(merged).model_dump()
 
 
+def _runtime_snapshot() -> dict[str, Any]:
+    from novelvideo.ports import get_task_backend
+
+    try:
+        backend = get_task_backend()
+    except PortNotRegistered:
+        return {}
+    snapshot = getattr(backend, "lane_snapshot", None)
+    return snapshot() if callable(snapshot) else {}
+
+
 @router.get("/config/task-limits")
 async def get_task_limits(_user: dict = Depends(get_api_user)) -> dict[str, Any]:
     _require_ce_task_limits_admin()
-    return {"ok": True, "data": _current(), "defaults": _defaults()}
+    return {
+        "ok": True,
+        "data": _current(),
+        "defaults": _defaults(),
+        "runtime": _runtime_snapshot(),
+    }
 
 
 @router.put("/config/task-limits")
@@ -87,14 +104,20 @@ async def save_task_limits(
     _require_ce_task_limits_admin()
     value = body.model_dump()
     write_runtime_json(TASK_LIMITS_RUNTIME_KEY, value)
-    from novelvideo.ports import get_task_backend
     try:
+        from novelvideo.ports import get_task_backend
+
         backend = get_task_backend()
-    except Exception as exc:
-        if exc.__class__.__name__ != "PortNotRegistered":
-            raise
+    except PortNotRegistered:
+        pass
     else:
         reload_limits = getattr(backend, "reload_limits", None)
         if callable(reload_limits):
             reload_limits()
-    return {"ok": True, "data": value, "effective": _current()}
+    return {
+        "ok": True,
+        "data": value,
+        "effective": _current(),
+        "defaults": _defaults(),
+        "runtime": _runtime_snapshot(),
+    }

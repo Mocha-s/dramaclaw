@@ -73,3 +73,25 @@ def test_task_limits_api_rejects_unauthorized_reads_and_writes(monkeypatch, tmp_
 
     assert client.get("/api/v1/config/task-limits").status_code == 403
     assert client.put("/api/v1/config/task-limits", json=_valid_payload()).status_code == 403
+
+
+def test_task_limits_api_includes_live_backend_snapshot(monkeypatch, tmp_path):
+    from novelvideo import ports
+
+    class FakeBackend:
+        def lane_snapshot(self):
+            return {
+                "default": {"active": 2, "queued": 5, "concurrency": 8},
+            }
+
+    monkeypatch.setattr(ports, "get_task_backend", lambda: FakeBackend())
+    client = _client(monkeypatch, tmp_path)
+
+    response = client.get("/api/v1/config/task-limits")
+
+    assert response.status_code == 200
+    assert response.json()["runtime"]["default"] == {
+        "active": 2,
+        "queued": 5,
+        "concurrency": 8,
+    }

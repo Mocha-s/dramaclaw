@@ -7368,8 +7368,37 @@
     "pages": {
       "models": "Models & Channels",
       "storage": "Media Storage",
+      "taskLimits": "Tasks & Queues",
       "freezoneSkills": "Freezone Skills",
       "freezoneRecipes": "Freezone Recipes"
+    },
+    "taskLimits": {
+      "title": "Tasks & Queues",
+      "description": "Adjust concurrency and queue limits in real time. Lowering a limit does not interrupt running tasks.",
+      "loading": "Loading queue settings",
+      "loadFailed": "Failed to load queue settings",
+      "saveFailed": "Failed to save queue settings",
+      "saved": "Queue settings saved",
+      "saving": "Saving…",
+      "save": "Save queue settings",
+      "invalid": "Enter a whole number within the allowed range.",
+      "lane": {
+        "default": "Default queue",
+        "video": "Video queue",
+        "world": "World queue",
+        "ffmpeg": "FFmpeg queue"
+      },
+      "fields": {
+        "globalConcurrency": "Global concurrency",
+        "globalQueueLimit": "Waiting queue limit",
+        "projectActiveLimit": "Project active-task limit",
+        "projectUserActiveLimit": "Per-user active-task limit"
+      },
+      "headers": {
+        "active": "Active",
+        "queued": "Queued",
+        "concurrency": "Concurrency"
+      }
     },
     "freezoneCatalog": {
       "skills": {
