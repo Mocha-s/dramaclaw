@@ -267,6 +267,68 @@ async def test_retryable_download_failure_keeps_provider_completed_and_does_not_
     assert calls["download"] == 2
 
 
+@pytest.mark.asyncio
+async def test_delivery_retry_window_is_separate_from_provider_timeout(
+    monkeypatch, tmp_path: Path
+) -> None:
+    import asyncio
+
+    from novelvideo.generators import video_generator as module
+    from novelvideo.generators.video_generator import NewApiVideoGenerator, VideoGenStatus
+
+    monkeypatch.setenv("ST_VIDEO_DELIVERY_TIMEOUT_SECONDS", "0.1")
+    monkeypatch.setenv("ST_VIDEO_POLL_INTERVAL_SECONDS", "0.1")
+    generator = NewApiVideoGenerator(
+        api_key="test-key", endpoint="https://gateway.example/v1", model="video-model"
+    )
+    calls = {"submit": 0, "poll": 0}
+
+    async def submit(*_args, **_kwargs):
+        calls["submit"] += 1
+        return {"id": "task-delivery-timeout"}
+
+    async def poll(*_args, **_kwargs):
+        calls["poll"] += 1
+        if calls["poll"] == 1:
+            return {
+                "status": "completed",
+                "task_id": "task-delivery-timeout",
+                "archive": _archive_payload("pending", retryable=True),
+            }
+        await asyncio.sleep(1)
+        return {
+            "status": "completed",
+            "task_id": "task-delivery-timeout",
+            "archive": _archive_payload("pending", retryable=True),
+        }
+
+    async def reserve(*_args, **_kwargs):
+        return "reservation-1"
+
+    async def confirm(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(generator, "_post_json", submit)
+    monkeypatch.setattr(generator, "_get_json", poll)
+    monkeypatch.setattr(module, "get_video_result_delivery", lambda: _ArchiveDelivery())
+    monkeypatch.setattr(module, "_reserve_video_model_call", reserve)
+    monkeypatch.setattr(module, "_confirm_video_model_call", confirm)
+
+    result = await generator.generate(
+        image_path=None,
+        prompt="test",
+        output_path=str(tmp_path / "delivery-timeout.mp4"),
+        poll_interval=0,
+    )
+
+    assert result.status is VideoGenStatus.DELIVERY_PENDING
+    assert result.provider_status == "completed"
+    assert result.delivery_status == "pending"
+    assert result.error == "VIDEO_DELIVERY_TIMEOUT"
+    assert calls["submit"] == 1
+    assert calls["poll"] == 2
+
+
 def test_video_phase_timeouts_are_independently_configurable(monkeypatch) -> None:
     from novelvideo.generators.video_generator import (
         video_delivery_timeout_seconds,

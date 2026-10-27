@@ -55,6 +55,10 @@ def _append_freezone_video_node_history(
     job_id: str,
     result: dict[str, Any] | None = None,
     error: str | None = None,
+    provider_task_id: str | None = None,
+    provider_status: str | None = None,
+    delivery_status: str | None = None,
+    error_code: str | None = None,
 ) -> dict[str, Any] | None:
     node_id = str(payload.get("node_id") or "").strip()
     if not node_id:
@@ -71,6 +75,14 @@ def _append_freezone_video_node_history(
     history_mode = payload.get("requested_gen_mode") or payload.get("gen_mode")
     if history_mode:
         extra["gen_mode"] = str(history_mode)
+    if provider_task_id:
+        extra["provider_task_id"] = str(provider_task_id)
+    if provider_status:
+        extra["provider_status"] = str(provider_status)
+    if delivery_status:
+        extra["delivery_status"] = str(delivery_status)
+    if error_code:
+        extra["error_code"] = str(error_code)
     for key in ("generation_attempt_id", "product_operation_id"):
         if payload.get(key):
             extra[key] = str(payload[key])

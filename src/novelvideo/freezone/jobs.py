@@ -1812,6 +1812,11 @@ async def run_freezone_video_gen(
         )
     if not result or result.status.value != "done":
         err = result.error if result else "unknown error"
+        if result and result.provider_status == "completed":
+            err = (
+                f"{err}; provider_status={result.provider_status}; "
+                f"delivery_status={result.delivery_status}"
+            )
         raise RuntimeError(f"freezone video generation failed: {err}")
     if not out.exists():
         raise RuntimeError(

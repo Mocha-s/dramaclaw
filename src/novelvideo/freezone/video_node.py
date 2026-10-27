@@ -825,6 +825,11 @@ async def run_trusted_freezone_video_gen(
     result = await generator.generate(**generate_kwargs)
     if not result or result.status is not VideoGenStatus.DONE:
         error = result.error if result else "video generation failed"
+        if result and result.provider_status == "completed":
+            error = (
+                f"{error}; provider_status={result.provider_status}; "
+                f"delivery_status={result.delivery_status}"
+            )
         raise RuntimeError(f"freezone video generation failed: {error}")
     if not output_path.exists():
         raise RuntimeError("video generation returned success without output")

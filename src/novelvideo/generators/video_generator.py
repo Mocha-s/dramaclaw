@@ -529,7 +529,7 @@ class SeedanceVideoGenerator(VideoGeneratorBase):
         output_path: str,
         aspect_ratio: str = "9:16",
         duration: float = 5.0,
-        poll_interval: float = 5.0,
+        poll_interval: float | None = None,
         max_polls: int = 120,
         on_log: Optional[Callable[[str], None]] = None,
         on_progress: Optional[Callable[[float], None]] = None,
@@ -3151,13 +3151,16 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         last_frame_path: Optional[str] = None,
         **kwargs,
     ) -> VideoGenResult:
-        if poll_interval == 5.0:
-            poll_interval = video_poll_interval_seconds()
+        poll_interval = video_poll_interval_seconds() if poll_interval is None else max(float(poll_interval), 0.0)
+        requested_max_polls = max_polls
         if max_polls is None:
             max_polls = max(
                 int(video_provider_timeout_seconds() / max(video_poll_interval_seconds(), 0.1)),
                 1,
             )
+        max_delivery_polls = requested_max_polls or max(
+            int(video_delivery_timeout_seconds() / max(poll_interval, 0.1)), 1
+        )
 
         def log(msg: str):
             if on_log:
@@ -3274,6 +3277,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         submit_attempted = False
         provider_completed = False
         delivery_started_at: float | None = None
+        provider_poll_count = 0
+        delivery_poll_count = 0
         provider_settled = False
         last_delivery_error = ""
         request_base_url = self.base_url
@@ -3743,7 +3748,24 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             log(f"任务已提交: {task_id}")
             progress(0.2)
 
-            for poll_count in range(max_polls):
+            while True:
+                phase_delivery = provider_completed
+                if phase_delivery:
+                    if delivery_poll_count >= max_delivery_polls:
+                        break
+                    if (
+                        delivery_started_at is not None
+                        and time.monotonic() - delivery_started_at
+                        >= video_delivery_timeout_seconds()
+                    ):
+                        last_delivery_error = "VIDEO_DELIVERY_TIMEOUT"
+                        break
+                    delivery_poll_count += 1
+                else:
+                    if provider_poll_count >= max_polls:
+                        break
+                    provider_poll_count += 1
+                poll_count = provider_poll_count + delivery_poll_count
                 if organization_request:
                     running_authority_error = None
                     try:
@@ -3775,7 +3797,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                         if is_modern_video_endpoint
                         else f"/video/generations/{task_id}"
                     )
-                    polled = await self._get_json(
+                    poll_request = self._get_json(
                         f"{request_base_url}{poll_path}",
                         headers=request_headers,
                     )
@@ -3785,9 +3807,22 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                         if is_modern_video_endpoint
                         else f"/video/generations/{task_id}"
                     )
-                    polled = await self._get_json(
-                        f"{request_base_url}{poll_path}"
+                    poll_request = self._get_json(f"{request_base_url}{poll_path}")
+                if phase_delivery:
+                    remaining_delivery = max(
+                        video_delivery_timeout_seconds()
+                        - (time.monotonic() - (delivery_started_at or time.monotonic())),
+                        0.001,
                     )
+                    try:
+                        polled = await asyncio.wait_for(
+                            poll_request, timeout=remaining_delivery
+                        )
+                    except asyncio.TimeoutError:
+                        last_delivery_error = "VIDEO_DELIVERY_TIMEOUT"
+                        break
+                else:
+                    polled = await poll_request
                 task = self._task_response_data(polled)
                 status = str(task.get("status") or "").lower()
                 progress(0.2 + (poll_count / max(max_polls, 1)) * 0.7)
@@ -3799,7 +3834,6 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                     provider_completed = True
                     if delivery_started_at is None:
                         delivery_started_at = time.monotonic()
-                    update_request_status(task_id, "provider_completed")
                     if not provider_settled:
                         await _confirm_video_model_call(
                             model=self.model,
@@ -3992,7 +4026,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                             or time.monotonic() - delivery_started_at
                             < video_delivery_timeout_seconds()
                         )
-                        if exc.retryable and poll_count + 1 < max_polls and delivery_window_open:
+                        if exc.retryable and delivery_poll_count < max_delivery_polls and delivery_window_open:
                             log(
                                 lmsg(
                                     "tasks.log.video.retryingDelivery",

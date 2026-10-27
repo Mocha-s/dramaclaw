@@ -108,6 +108,33 @@ def test_freezone_video_history_omits_prompt_when_absent(tmp_path: Path) -> None
     assert "prompt" not in rec
 
 
+def test_freezone_video_history_records_provider_and_delivery_phases(
+    tmp_path: Path,
+) -> None:
+    ctx = _ctx(tmp_path)
+    record = _append_freezone_video_node_history(
+        ctx=ctx,
+        project_dir=tmp_path / "project",
+        payload={
+            "node_id": "video_delivery",
+            "canvas_id": "default",
+            "prompt": "video prompt",
+        },
+        job_id="provider-task-123",
+        error="VIDEO_DOWNLOAD_FAILED",
+        provider_task_id="provider-task-123",
+        provider_status="completed",
+        delivery_status="failed",
+        error_code="VIDEO_DOWNLOAD_FAILED",
+    )
+
+    assert record is not None
+    assert record["provider_task_id"] == "provider-task-123"
+    assert record["provider_status"] == "completed"
+    assert record["delivery_status"] == "failed"
+    assert record["error_code"] == "VIDEO_DOWNLOAD_FAILED"
+
+
 def test_freezone_image_history_persists_prompt(tmp_path: Path) -> None:
     ctx = _ctx(tmp_path)
     project_dir = tmp_path / "proj"
