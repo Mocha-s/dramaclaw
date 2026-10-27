@@ -23,6 +23,7 @@ services:
       NOVELVIDEO_OUTPUT_DIR: /data/output
       NOVELVIDEO_STATE_DIR: /data/state
       NOVELVIDEO_RUNTIME_DIR: /data/runtime
+      SOG_COMPRESSION_GPU: "${SOG_COMPRESSION_GPU:-cpu}"
       DRAMACLAW_CHAT_BACKEND: "${DRAMACLAW_CHAT_BACKEND:-hermes}"
       HERMES_CLI_PATH: /root/.local/bin/hermes
       SUPERTALE_ALLOW_UNSANDBOXED: "1"
