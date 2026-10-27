@@ -54,18 +54,22 @@ def _reference_audit_from_payload(payload: dict[str, Any]) -> dict[str, Any] | N
                 dimensions.append({"width": int(image.width), "height": int(image.height)})
         except Exception:
             dimensions.append({})
-    request_schema = payload.get("request_schema") or {}
+    raw_request_schema = payload.get("request_schema")
+    request_schema = raw_request_schema if isinstance(raw_request_schema, dict) else {}
     reference_protocol = str(
         request_schema.get("referenceFormat")
         or payload.get("reference_protocol")
         or "unknown"
     ).strip()
-    endpoint = str(request_schema.get("endpoint") or "").strip()
-    request_path = f"/{endpoint.lstrip('/')}" if endpoint else (
-        "/images/edits"
-        if reference_protocol in {"multipart", "input_reference", "images", "dc-media"}
-        else ""
-    )
+    endpoint = str(request_schema.get("endpoint") or "").strip().strip("/")
+    if reference_protocol in {"multipart", "input_reference", "images", "dc-media"}:
+        request_path = (
+            "/images/generations"
+            if endpoint == "images/generations" and reference_protocol != "multipart"
+            else "/images/edits"
+        )
+    else:
+        request_path = "provider_native"
     return {
         "reference_count": len(hashes),
         "reference_sha256": hashes,
@@ -633,9 +637,9 @@ def _append_node_history(
         status="failed" if error else "completed",
         media_type=media_type,
         result=result,
+        reference_audit=reference_audit,
         error=error,
         prompt=payload.get("prompt") or payload.get("input"),
-        reference_audit=reference_audit,
         extra=extra,
     )
 
@@ -770,6 +774,7 @@ async def _run_freezone_gen_async(
     job_id = str(payload["job_id"])
     project_dir = Path(str(payload.get("project_dir") or ctx.output_dir))
     ensure_freezone_dirs(project_dir)
+    reference_audit = _reference_audit_from_payload(payload)
     _update(ctx, task_type, job_id, 0.1, "调用图像生成器...")
     out_path = await _await_with_cancel_watch(
         _call_freezone_leaf(
@@ -787,6 +792,7 @@ async def _run_freezone_gen_async(
             quality=payload.get("quality"),
             model_params=payload.get("model_params") or None,
             request_schema=payload.get("request_schema") or None,
+            request_audit=reference_audit,
             output_task_type=task_type,
         ),
         project_id=ctx.project_id,
@@ -809,7 +815,7 @@ async def _run_freezone_gen_async(
         job_id=job_id,
         media_type="image",
         result=result,
-        reference_audit=_reference_audit_from_payload(payload),
+        reference_audit=reference_audit,
         **_history_model_mode_extra(payload),
     )
     if history_record:

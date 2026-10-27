@@ -61,6 +61,7 @@ async def run_freezone_gen(
     quality: Optional[str] = None,
     model_params: Optional[dict[str, Any]] = None,
     request_schema: Optional[dict[str, Any]] = None,
+    request_audit: Optional[dict[str, Any]] = None,
     output_task_type: str = "freezone_gen",
     egress_context: TrustedEgressContext | None = None,
 ) -> Path:
@@ -156,6 +157,7 @@ async def run_freezone_gen(
             config=cfg,
             egress_context=egress_context,
             egress_capability="freezone.image.generate",
+            request_audit=request_audit,
         )
     else:
         await generate_text_to_image(

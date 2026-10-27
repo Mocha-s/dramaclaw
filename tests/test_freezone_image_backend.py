@@ -4053,6 +4053,63 @@ async def test_freezone_celery_runner_records_node_history(
 
 
 @pytest.mark.asyncio
+async def test_freezone_image_history_records_redacted_reference_wire_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from novelvideo.freezone.history import read_generation_history
+    from novelvideo.task_backend.runners import freezone as freezone_runner
+
+    ctx = _project_ctx(tmp_path)
+    project_dir = ctx.output_dir
+    output = project_dir / "freezone" / "_outputs" / "freezone_gen" / "job_refs.png"
+    _write_image(output)
+    references = [tmp_path / "ref-one.png", tmp_path / "ref-two.png"]
+    for reference in references:
+        _write_image(reference)
+
+    async def fake_run_freezone_gen(**kwargs):
+        kwargs["request_audit"]["provider_request_id"] = "provider-request-1"
+        return output
+
+    class FakeTaskManager:
+        def update_progress_for_project(self, *_args, **_kwargs):
+            return None
+
+    monkeypatch.setattr("novelvideo.freezone.jobs.run_freezone_gen", fake_run_freezone_gen)
+    monkeypatch.setattr(freezone_runner, "get_task_manager", lambda: FakeTaskManager())
+
+    await freezone_runner._run_freezone_gen_async(
+        {
+            "payload": {
+                "job_id": "job_refs",
+                "project_dir": str(project_dir),
+                "prompt": "generate",
+                "canvas_id": "canvas_refs",
+                "node_id": "node_refs",
+                "reference_paths": [str(path) for path in references],
+                "request_schema": {
+                    "referenceFormat": "images",
+                    "endpoint": "images/generations",
+                },
+            }
+        },
+        ctx,
+    )
+
+    records = read_generation_history(
+        project_dir=project_dir, canvas_id="canvas_refs", node_id="node_refs"
+    )
+    audit = records[-1]["reference_audit"]
+    assert audit["reference_count"] == 2
+    assert len(audit["reference_sha256"]) == 2
+    assert audit["reference_protocol"] == "images"
+    assert audit["request_path"] == "/images/generations"
+    assert audit["provider_request_id"] == "provider-request-1"
+    assert str(references[0]) not in str(records[-1])
+
+
+@pytest.mark.asyncio
 async def test_freezone_celery_text_runner_records_project_node_history(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
