@@ -440,11 +440,11 @@ PROJECTION REQUIREMENTS:
   labels, mirrors, sliced objects, or heavy stretching.
 
 STYLE CONTRACT:
-- Match the master image style exactly when a master reference is attached:
-  same linework density, mixed-media texture, color treatment, lighting mood,
-  material rendering, and animated-background finish.
-- Do not drift into photorealism, live-action, clean 3D render, game asset,
-  or glossy architectural visualization.
+- The selected project style preset is authoritative. Preserve the selected
+  project visual style and medium across the full panorama.
+- When a master reference is attached, preserve its scene identity and apply the
+  selected project preset's treatment; do not introduce a different medium,
+  rendering language, or style that the project did not request.
 - No people, no characters, no story action.
 - Do not invent new readable text. Preserve existing simple numeric marks or
   abstract signage already visible in the master/reverse references.
@@ -458,12 +458,12 @@ STYLE AVOIDANCE:
 {avoid_instructions}
 
 NEGATIVE REQUIREMENTS:
-Not a normal wide-angle illustration, not a single room painting, not a flat
-one-point perspective, not a multi-panel sheet, not fisheye lens, not cubemap
+Not a single room painting, not a flat one-point perspective, not a multi-panel
+sheet, not fisheye lens, not cubemap
 faces, not VR headset screenshot, no labels, no UI, no watermark, no broken seam,
 no duplicated doorway at seam, no warped horizon, no curved walls in VR viewer,
 no stretched ceiling/floor poles, no mirrored left/right halves, no sliced object
-at seam, no giant close foreground object, no photorealism.
+at seam, no giant close foreground object, no unrequested style or medium change.
 """
 
 
