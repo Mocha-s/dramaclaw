@@ -247,7 +247,8 @@ git commit -m "fix(video): classify unavailable provider accounts"
 - Native execution is isolated in worktree branch `fix/media-regressions-project-style`, based on commit `02de0836`.
 - The fallback resolver intentionally refuses to silently reuse `DC-freezone-text-writer-LLM`; production evidence showed it resolves to `gpt-6.1-sol`, which returns HTTP 404 for vision analysis. Configure the deployment-only fallback alias explicitly.
 - The spec was force-added because the repository ignores `docs/superpowers/`; the implementation plan and SDD ledger remain worktree artifacts unless explicitly force-added later.
-- Final review fix pass commit: `6ac89d3f`; it restricts 360 routing to active gateway mode and preserves backend-advertised video resolutions through UI selection/submission.
-- Full backend verification: 7325 passed, 31 skipped, 3 deselected, one unrelated concurrency timing failure; that test passed in isolation. Frontend: 216 files / 1849 tests passed. TypeScript build, focused Ruff, and diff checks passed.
+- Final review fix pass commits: `6ac89d3f`, `ef589613`, `bac265bf`, `9e77f804`, `4ec4969a`; they restrict 360 routing to active gateway mode, validate explicit fallback readiness, apply image quality across render workers, and preserve exact official/third-party video catalog capabilities.
+- Full backend verification: 7331 passed, 31 skipped, 3 deselected. Frontend: 216 files / 1849 tests passed. TypeScript build, focused Ruff, and diff checks passed.
 - Deployment used a temporary worktree `.env` copy so Compose's inherited `env_file: .env` received the deployment-only alias; that temporary file was removed after startup. Host `/root/dramaclaw/.env` remains the source for future deployment from its checkout.
-- Deployed API/web images: `sha256:225365800fda70e94a0a50912b28aa0801a0409ebb37109db67972cd853d7c92` / `sha256:c7a31d96f672ef3e286a9e918f66eaaaf7873410a5408db2361f656d3bd033a1`.
+- Deployed API/web images: `sha256:9d035a3c81255a59ef07b8d2081937b54b9e7813148849d7f74524c64bc9fd55` / `sha256:c7a31d96f672ef3e286a9e918f66eaaaf7873410a5408db2361f656d3bd033a1`.
+- Host disk pressure required pruning disposable dangling images and Docker build cache (18.14 GB reclaimed); named application volumes and running containers were preserved.

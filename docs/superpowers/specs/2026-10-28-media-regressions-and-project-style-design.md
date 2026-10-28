@@ -60,9 +60,10 @@
 - Render quality focused backend: 33 tests passed; focused frontend render settings/plan: 14 tests passed; TypeScript build passed.
 - Beat video resolution/provider focused backend: 204 tests passed; video-pane suite: 65 tests passed.
 - Provider account-unavailable regression: 21 video archive/processing/provider tests passed.
-- Full backend run: **7325 passed, 31 skipped, 3 deselected**, with one unrelated concurrency timing failure; that test passed on isolated rerun.
+- Full backend suite: **7331 passed, 31 skipped, 3 deselected**.
 - Frontend focused suite: **216 files / 1849 tests passed**.
 - `git diff --check`, locale JSON parsing, Python compilation, and focused Ruff checks passed. Existing unrelated Ruff findings remain in `tests/test_model_gateway_settings.py` (unused legacy imports/E402).
 - No paid provider request was issued during verification.
-- Deployment verification: API image `sha256:225365800fda70e94a0a50912b28aa0801a0409ebb37109db67972cd853d7c92`, web image `sha256:c7a31d96f672ef3e286a9e918f66eaaaf7873410a5408db2361f656d3bd033a1`; API health is healthy and API/web return HTTP 200.
+- Deployment verification: API image `sha256:9d035a3c81255a59ef07b8d2081937b54b9e7813148849d7f74524c64bc9fd55`, web image `sha256:c7a31d96f672ef3e286a9e918f66eaaaf7873410a5408db2361f656d3bd033a1`; API health is healthy and API/web return HTTP 200.
 - The deployment-only fallback resolves inside the running API container to `claude-sonnet-5-5`; the existing `dramaclaw_ce-data` volume remains mounted.
+- Live video catalog verification: `minimax-h3-768p-930-8-22` advertises `768p/2k`; exact catalog matching keeps `seedance-2.0-mini` at its own `480p/720p` capabilities.
