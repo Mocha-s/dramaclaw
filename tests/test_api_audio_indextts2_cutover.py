@@ -201,7 +201,9 @@ def test_video_catalog_exact_model_precedes_prefix_alias(monkeypatch):
     monkeypatch.setattr(
         model_gateway_settings,
         "get_third_party_media_model_catalog",
-        lambda _media_type: [],
+        lambda _media_type: [
+            {"id": "seedance-2.0-mini", "resolutionOptions": ["720p"]},
+        ],
     )
 
     assert generation._catalog_video_resolution_options("seedance-2.0-mini") == ("720p",)

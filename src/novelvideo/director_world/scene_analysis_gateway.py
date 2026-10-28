@@ -60,18 +60,28 @@ def resolve_scene_analysis_model(
 
 
 def scene_analysis_gateway_configured() -> bool:
-    """Use the same effective LLM credentials as the unified gateway client."""
+    """Check credentials for at least one active scene-analysis route."""
     from novelvideo.config import get_newapi_runtime_credentials
     from novelvideo.model_gateway_settings import get_effective_llm_config
 
-    config = get_effective_llm_config()
-    api_key, base_url = get_newapi_runtime_credentials(
-        api_key_override=config.api_key,
-        base_url_override=config.base_url,
-        env_api_key="MODEL_API_KEY",
-        env_base_url="MODEL_BASE_URL",
-    )
-    return bool(api_key and base_url)
+    for model_env, default_model in (
+        (OVERLAP_MODEL_ENV, OVERLAP_MODEL),
+        (SPATIAL_MODEL_ENV, SPATIAL_MODEL),
+    ):
+        try:
+            model = resolve_scene_analysis_model(model_env, default_model)
+            config = get_effective_llm_config(model=model)
+            api_key, base_url = get_newapi_runtime_credentials(
+                api_key_override=config.api_key,
+                base_url_override=config.base_url,
+                env_api_key="MODEL_API_KEY",
+                env_base_url="MODEL_BASE_URL",
+            )
+        except (RuntimeError, ValueError):
+            continue
+        if api_key and base_url:
+            return True
+    return False
 
 
 async def analyze_scene_references(

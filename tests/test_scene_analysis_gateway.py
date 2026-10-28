@@ -143,8 +143,32 @@ def test_analysis_checks_effective_gateway_credentials(monkeypatch):
 
     monkeypatch.setattr(
         model_gateway_settings,
+        "get_model_gateway_settings",
+        lambda: {"model_gateway_mode": model_gateway_settings.MODE_CUSTOM},
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_gateway_groups",
+        lambda: [
+            {
+                "id": "scene-analysis",
+                "baseUrl": "https://gateway.invalid/v1",
+                "apiKey": "effective-key",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {
+                        "requestPattern": scene_analysis_gateway.OVERLAP_MODEL,
+                        "upstreamModel": "vision-model",
+                    }
+                ],
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
         "get_effective_llm_config",
-        lambda: SimpleNamespace(
+        lambda **_kwargs: SimpleNamespace(
+            source="third_party",
             api_key="effective-key", base_url="https://gateway.invalid/v1"
         ),
     )
@@ -160,6 +184,56 @@ def test_analysis_checks_effective_gateway_credentials(monkeypatch):
     assert calls[0]["api_key_override"] == "effective-key"
     monkeypatch.setattr(config, "get_newapi_runtime_credentials", lambda **kw: ("", ""))
     assert not scene_analysis_gateway.scene_analysis_gateway_configured()
+
+
+def test_scene_analysis_readiness_uses_explicit_fallback_not_generic_chat_route(monkeypatch):
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "claude-sonnet-5-5")
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_model_gateway_settings",
+        lambda: {"model_gateway_mode": model_gateway_settings.MODE_CUSTOM},
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_gateway_groups",
+        lambda: [
+            {
+                "id": "claude",
+                "baseUrl": "https://gateway.invalid/v1",
+                "apiKey": "fallback-key",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "claude-sonnet-5-5",
+                        "upstreamModel": "claude-sonnet-5-5",
+                    }
+                ],
+            }
+        ],
+    )
+
+    def effective_config(*, model=""):
+        if model == "claude-sonnet-5-5":
+            return SimpleNamespace(
+                source="third_party",
+                api_key="fallback-key",
+                base_url="https://gateway.invalid/v1",
+            )
+        return SimpleNamespace(source="custom", api_key="", base_url="")
+
+    monkeypatch.setattr(model_gateway_settings, "get_effective_llm_config", effective_config)
+    monkeypatch.setattr(
+        config,
+        "get_newapi_runtime_credentials",
+        lambda **kwargs: (
+            kwargs.get("api_key_override", ""),
+            kwargs.get("base_url_override", ""),
+        ),
+    )
+
+    assert scene_analysis_gateway.scene_analysis_gateway_configured()
 
 
 def test_unmapped_scene_analysis_alias_uses_explicit_fallback_route(monkeypatch):

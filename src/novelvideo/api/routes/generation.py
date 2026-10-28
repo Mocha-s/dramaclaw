@@ -896,29 +896,29 @@ def _catalog_video_resolution_options(video_backend: str | None) -> tuple[str, .
             get_third_party_media_model_catalog,
         )
 
-        for catalog in (
-            get_official_media_model_catalog("video"),
-            get_third_party_media_model_catalog("video"),
-        ):
-            for exact_match in (True, False):
-                for entry in catalog:
-                    ids = {
-                        str(entry.get(key) or "").strip().lower()
-                        for key in ("id", "apiModel", "gatewayModel", "upstreamModel")
-                    }
-                    matches = model in ids if exact_match else any(
-                        model.startswith(candidate + "-")
-                        for candidate in ids
-                        if candidate
+        catalogs = [
+            *get_official_media_model_catalog("video"),
+            *get_third_party_media_model_catalog("video"),
+        ]
+        for exact_match in (True, False):
+            for entry in catalogs:
+                ids = {
+                    str(entry.get(key) or "").strip().lower()
+                    for key in ("id", "apiModel", "gatewayModel", "upstreamModel")
+                }
+                matches = model in ids if exact_match else any(
+                    model.startswith(candidate + "-")
+                    for candidate in ids
+                    if candidate
+                )
+                if matches:
+                    options = tuple(
+                        _seedance2_api_resolution(value)
+                        for value in (entry.get("resolutionOptions") or [])
+                        if str(value or "").strip()
                     )
-                    if matches:
-                        options = tuple(
-                            _seedance2_api_resolution(value)
-                            for value in (entry.get("resolutionOptions") or [])
-                            if str(value or "").strip()
-                        )
-                        if options:
-                            return tuple(dict.fromkeys(options))
+                    if options:
+                        return tuple(dict.fromkeys(options))
     except (ImportError, RuntimeError):
         pass
     return ()
