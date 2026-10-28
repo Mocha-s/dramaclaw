@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   shouldDisableDialogueOnlyBackendForBeat,
   VideoPane,
+  videoResolutionOptionsForBackend,
 } from "@/components/episode/beat-workbench/video-pane";
 import { BackendStatusError } from "@/lib/api-errors";
 import { useAspectRatioStore } from "@/stores/aspect-ratio-store";
@@ -1133,6 +1134,19 @@ describe("VideoPane Seedance2 inspector", () => {
     expect(await screen.findByRole("option", { name: "480p" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "720p" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "1080p" })).toBeInTheDocument();
+  });
+
+  it("keeps catalog video resolutions beyond the legacy three-value union", () => {
+    const backend = {
+      value: "minimax-h3-768p-930-8-22",
+      resolution_options: ["768p", "2K", "4K"],
+    };
+
+    expect(videoResolutionOptionsForBackend(backend.value, backend)).toEqual([
+      "768p",
+      "2K",
+      "4K",
+    ]);
   });
 
   it("hides unsupported Seedance2 value resolution options", async () => {

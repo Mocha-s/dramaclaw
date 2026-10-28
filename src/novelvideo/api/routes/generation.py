@@ -824,13 +824,19 @@ def _is_grok_video_backend(video_backend: str | None) -> bool:
 
 
 def _seedance2_api_resolution(resolution: str | None) -> str:
-    text = str(resolution or "").strip()
-    if text in {"480p", "720p", "1080p"}:
+    text = str(resolution or "").strip().lower().replace(" ", "")
+    if text in {"480p", "720p", "768p", "1080p", "2k", "4k"}:
         return text
     if "480" in text:
         return "480p"
+    if "768" in text:
+        return "768p"
     if "1080" in text:
         return "1080p"
+    if "2k" in text:
+        return "2k"
+    if "4k" in text:
+        return "4k"
     return "720p"
 
 
@@ -859,8 +865,34 @@ def _seedance2_model_from_backend(video_backend: str | None) -> str:
     return text
 
 
+def _catalog_video_resolution_options(video_backend: str | None) -> tuple[str, ...]:
+    model = _seedance2_model_from_backend(video_backend)
+    try:
+        from novelvideo.model_gateway_settings import get_third_party_media_model_catalog
+
+        for entry in get_third_party_media_model_catalog("video"):
+            ids = {
+                str(entry.get(key) or "").strip().lower()
+                for key in ("id", "apiModel", "gatewayModel", "upstreamModel")
+            }
+            if model in ids:
+                options = tuple(
+                    _seedance2_api_resolution(value)
+                    for value in (entry.get("resolutionOptions") or [])
+                    if str(value or "").strip()
+                )
+                if options:
+                    return tuple(dict.fromkeys(options))
+    except (ImportError, RuntimeError):
+        pass
+    return ()
+
+
 def _seedance2_resolution_options_for_backend(video_backend: str | None) -> tuple[str, ...]:
     model = _seedance2_model_from_backend(video_backend)
+    catalog_options = _catalog_video_resolution_options(video_backend)
+    if catalog_options:
+        return catalog_options
     return SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL.get(
         model,
         SEEDANCE2_DEFAULT_RESOLUTION_OPTIONS,
@@ -1767,7 +1799,14 @@ def _api_video_backend_options() -> list[VideoBackendOption]:
                     if is_happyhorse
                     else list(GROK_VIDEO_RESOLUTION_OPTIONS)
                     if is_grok_video
-                    else None
+                    else list(_catalog_video_resolution_options(value))
+                    or (
+                        list(_seedance2_resolution_options_for_backend(value))
+                        if _is_seedance2_backend(value)
+                        or _seedance2_model_from_backend(value)
+                        in {"seedance-1.5-pro", "seedance_pro"}
+                        else None
+                    )
                 ),
                 ratio_options=(
                     list(HAPPYHORSE_RATIO_OPTIONS)

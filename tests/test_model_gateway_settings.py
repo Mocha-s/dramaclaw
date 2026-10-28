@@ -3606,7 +3606,32 @@ def test_ce_media_model_catalog_uses_saved_custom_model_capabilities(
     assert get_ce_media_model_catalog("video", provider="comfyui") == []
 
 
-def test_official_media_model_catalog_uses_ce_export_shape():
+def test_official_media_model_catalog_uses_ce_export_shape(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": "custom",
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "video-gateway",
+                        "name": "video",
+                        "baseUrl": "https://gateway.invalid/v1",
+                        "apiKey": "test-key",
+                        "protocol": "openai",
+                        "capabilities": ["video"],
+                        "modelMappings": [
+                            {
+                                "requestPattern": "MiniMax-H3",
+                                "upstreamModel": "MiniMax-H3",
+                                "resolutionOptions": ["768p", "2k"],
+                            }
+                        ],
+                    }
+                ]
+            ),
+        }
+    )
     images = get_official_media_model_catalog("image")
     videos = get_official_media_model_catalog("video")
 
@@ -3660,6 +3685,9 @@ def test_official_media_model_catalog_uses_ce_export_shape():
     assert minimax["id"] == "MiniMax-H3"
     assert minimax["gatewayModel"] == "MiniMax-H3"
     assert minimax["resolutionOptions"] == ["768p", "2k"]
+    from novelvideo.api.routes.generation import _seedance2_resolution_for_backend
+
+    assert _seedance2_resolution_for_backend("MiniMax-H3", "2K") == "2k"
     assert minimax["ratioOptions"] == [
         "21:9",
         "16:9",

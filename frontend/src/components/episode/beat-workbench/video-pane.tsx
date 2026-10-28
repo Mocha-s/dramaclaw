@@ -190,7 +190,7 @@ const SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL = {
   "seedance-1.5-pro": ["480p", "720p", "1080p"],
 } as const;
 
-type Seedance2Resolution = "480p" | "720p" | "1080p";
+type Seedance2Resolution = string;
 type HappyHorseRatio = (typeof HAPPYHORSE_RATIO_OPTIONS)[number];
 type GrokVideoRatio = (typeof GROK_VIDEO_RATIO_OPTIONS)[number];
 
@@ -393,9 +393,28 @@ export function VideoPane({
   const showSeedance2ValueStyle =
     showSeedance2Config && isSeedance2ValueBackend(defaultBackend);
   const seedance2ResolutionOptions = useMemo(
-    () => seedance2ResolutionOptionsForBackend(defaultBackend),
-    [defaultBackend],
+    () => seedance2ResolutionOptionsForBackend(defaultBackend, selectedBackend),
+    [defaultBackend, selectedBackend],
   );
+  const showGenericResolution =
+    !showSeedance2Config &&
+    !showHappyHorseConfig &&
+    !showGrokVideoConfig &&
+    !isSeedance15ProBackend(defaultBackend) &&
+    (selectedBackend?.resolution_options?.length ?? 0) > 0;
+  const [genericResolution, setGenericResolution] = useState<Seedance2Resolution>(
+    seedance2ResolutionOptions.includes("720p")
+      ? "720p"
+      : seedance2ResolutionOptions[0] || "720p",
+  );
+  useEffect(() => {
+    const fallback = seedance2ResolutionOptions.includes("720p")
+      ? "720p"
+      : seedance2ResolutionOptions[0] || "720p";
+    if (!seedance2ResolutionOptions.includes(genericResolution)) {
+      setGenericResolution(fallback);
+    }
+  }, [defaultBackend, genericResolution, seedance2ResolutionOptions]);
   const seedance2DurationBounds = useMemo(
     () => seedance2DurationBoundsForBackend(selectedBackend),
     [selectedBackend],
@@ -833,6 +852,7 @@ export function VideoPane({
         ...(isSd15ProConfig
           ? { resolution: sd15Resolution, duration: sd15Duration }
           : {}),
+        ...(showGenericResolution ? { resolution: genericResolution } : {}),
       });
       if (res.ok === false) {
         toast.error(res.error || t("episode.workbench.video.regenFailed"));
@@ -1735,6 +1755,35 @@ export function VideoPane({
                 </Select>
               </VideoParamField>
             </>
+          )}
+          {showGenericResolution && (
+            <VideoParamField
+              label={t("episode.workbench.video.resolution")}
+              htmlFor={`generic-${beat.beat_number}-resolution`}
+            >
+              <Select
+                value={genericResolution}
+                onValueChange={(value) => {
+                  if (value && seedance2ResolutionOptions.includes(value)) {
+                    setGenericResolution(value);
+                  }
+                }}
+              >
+                <SelectTrigger
+                  id={`generic-${beat.beat_number}-resolution`}
+                  className={cn("w-24", VIDEO_PARAM_CONTROL_CLASS)}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  {seedance2ResolutionOptions.map((resolution) => (
+                    <SelectItem key={resolution} value={resolution}>
+                      {resolution}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </VideoParamField>
           )}
           <VideoParamField label="" hiddenLabel>
             {regenTask.started ? (
@@ -3264,13 +3313,25 @@ function isSeedance15ProBackend(value: string | null | undefined): boolean {
 
 function seedance2ResolutionOptionsForBackend(
   value: string | null | undefined,
+  backend?: { resolution_options?: string[] | null } | null,
 ): readonly Seedance2Resolution[] {
+  const catalogOptions = backend?.resolution_options
+    ?.map((option) => String(option).trim())
+    .filter(Boolean);
+  if (catalogOptions?.length) return catalogOptions;
   const model = seedance2ModelFromBackend(value);
   return (
     SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL[
       model as keyof typeof SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL
     ] ?? SEEDANCE2_DEFAULT_RESOLUTION_OPTIONS
   );
+}
+
+export function videoResolutionOptionsForBackend(
+  value: string | null | undefined,
+  backend?: { resolution_options?: string[] | null } | null,
+): readonly string[] {
+  return seedance2ResolutionOptionsForBackend(value, backend);
 }
 
 function normalizeSeedance2DraftForBackend(
