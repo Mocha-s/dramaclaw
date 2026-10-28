@@ -313,8 +313,12 @@ class InlineTaskBackend:
         self,
         lane: _InlineLane,
         job: _InlineLaneJob,
-        executor: ThreadPoolExecutor,
+        executor: ThreadPoolExecutor | None = None,
     ) -> None:
+        # Keep the two-argument seam compatible for direct tests and local
+        # callers; background tasks pass their captured executor explicitly so
+        # hot reload never moves active work onto a replacement pool.
+        executor = executor or lane.executor
         consumer_failure: (
             InvalidTaskEnvelope | TaskAuthorityUnavailable | TaskAuthorityFault | None
         ) = None

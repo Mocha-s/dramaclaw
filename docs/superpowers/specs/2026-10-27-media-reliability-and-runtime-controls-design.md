@@ -1,7 +1,7 @@
 # 媒体生成可靠性与运行时队列控制设计
 
 **日期：** 2026-10-27
-**状态：** 待确认
+**状态：** 已实施，待 provider-dependent verification
 **范围：** 方案 A 分阶段实施
 
 ## 目标
@@ -26,7 +26,7 @@
 2. 图片请求记录脱敏的参考图与 wire-protocol 证据，能区分“未传参考”和“模型收到但重绘”。
 3. 修复重复 prompt，避免同一段上游文本重复进入生成请求。
 4. 把视频 provider 状态与本地交付状态分离，并提供独立的轮询、归档、下载超时。
-5. 图片/视频模型的思考等级、质量、比例和分辨率由目录声明并显示在节点控制中；1080p 只在模型目录声明支持时出现。
+5. 图片/视频模型的思考等级、质量和比例由目录声明并显示在节点控制中；虾集图片生成统一提供 1K/2K/4K，视频生成统一提供 720p/768p/1080p/2K/4K，由上游决定模型是否支持。
 6. AI 优化支持逐 Beat 重试和部分成功结果，不因单个 Beat 失败丢失已成功结果。
 7. 队列的全局并发、等待队列、项目上限和单用户上限按队列类型实时配置。
 
@@ -110,7 +110,7 @@ provider_failed
   - resolution。
 - 参数变化必须随 `model_id` 和 `gen_mode` 重新过滤；切换模型后不能沿用旧模型选项。
 - 后端最终请求前再次按 catalog schema 校验并移除未知参数。
-- 1080p 由具体 catalog 的 `resolutionOptions` 决定；旧模型没有声明时保持现状。
+- 虾集 generation 档位不由 catalog `resolutionOptions` 过滤；其他模型与非-generation 路径仍沿用各自目录或功能声明。
 
 ### 5. AI 视频优化容错
 
@@ -160,7 +160,7 @@ PUT  /api/v1/config/task-limits
 - 旧客户端不发送新参数时，继续使用目录默认值。
 - 旧环境变量配置继续生效，但 settings.db 的显式配置优先。
 - 旧任务状态读取保持兼容；新增字段使用可选字段，不修改已有历史 JSONL 的必填结构。
-- 旧 provider 没有 thinking 或 1080p 声明时，前端不显示对应选项。
+- 旧 provider 没有 thinking 声明时，前端不显示对应选项；虾集 generation 分辨率按产品档位显示，不因目录缺少某一档而隐藏，unsupported 错误由上游返回。
 - 视频 provider 已完成但交付失败的历史任务保留旧 `failed` 可读性，同时新增 `provider_completed` 和 `delivery_status` 字段供新前端使用。
 
 ## 安全、数据与回滚
@@ -189,8 +189,8 @@ PUT  /api/v1/config/task-limits
 
 ### 阶段 3：模型参数
 
-- catalog 声明的 thinking level 和 resolution 会出现在图片/视频节点菜单。
-- 未声明 1080p 的模型不显示 1080p。
+- catalog 声明的 thinking level 会出现在图片/视频节点菜单。
+- 虾集图片 generation 显示 1K/2K/4K，视频 generation 显示 720p/768p/1080p/2K/4K；不支持的档位可提交并由上游拒绝。
 - 切换模型后旧参数不会错误带入新模型。
 
 ### 阶段 4：AI 优化
@@ -205,6 +205,39 @@ PUT  /api/v1/config/task-limits
 - 降低限制不取消运行中任务。
 - 项目、单用户、全局和等待队列限制分别产生可识别错误和日志。
 - 未授权请求不能修改队列配置。
+
+## 2026-10-28 验证记录
+
+### 已验证
+
+- 阶段 1：`tests/test_p0g4l_scene_360_subprocess_egress.py`、`tests/test_newapi_image_gateway.py`、`tests/test_freezone_image_backend.py`、`tests/test_media_reference_audit.py` 通过；双参考 360 缺合同默认返回 `SCENE_360_SPATIAL_CONTRACT_UNAVAILABLE`，兼容回退由显式环境变量控制；图片请求历史只保存数量、SHA256、尺寸、协议、路径类别和 provider request id。
+- 阶段 2：`tests/test_video_archive_delivery.py`、`tests/test_seedance2_request.py` 通过；provider completed、delivery pending/failed、terminal provider failure 已区分，delivery retry 不重新提交 provider 任务。
+- 阶段 3：`tests/test_media_model_request_schema.py`、`tests/test_freezone_video_backend.py` 及对应 Vitest 通过；虾集图片统一显示 1K/2K/4K，虾集视频统一显示 720p/768p/1080p/2K/4K，模型不支持的档位交由上游返回错误；thinking_level 仅在 catalog 标记 `userSelectable` 时可见和提交，模型/模式切换会清理旧参数。
+- 阶段 4：`tests/test_global_video_optimizer_retries.py` 和生命周期回归通过；每个 Beat 最多三次调用，部分成功保留成功 Beat，失败记录只包含 Beat、attempts、稳定错误码和脱敏消息。
+- 阶段 5：`tests/test_task_backend_limits.py`、`tests/test_runtime_task_limits_api.py`、`tests/contract/test_l014_inline_task_backend_concurrency.py` 通过；Settings UI 的四类队列控件和 live snapshot Vitest 通过，未授权读写由 API 测试覆盖。
+
+### 计划 focused evidence
+
+- Backend focused: 135 tests passed。
+- Frontend focused: 215 files / 1846 tests passed。
+- Repository `uv run pytest`: **7313 passed, 31 skipped, 3 deselected, 0 failed** (440.42s; 835 warnings, primarily existing framework deprecations).
+- Focused backend: **135 passed**. Focused compatibility/compliance regression set: **67 passed, 3 skipped**.
+- Focused frontend: **215 files / 1846 tests passed**; `tsc -b` passed.
+- `tests/test_env_config_ratchet.py`: **10 passed**. P0-B license inventory/compliance tests are included in the full suite and pass after regenerating the inventory/SBOM.
+- Ruff on touched Python files, Python `compileall`, `git diff --check`, and runtime task-limit unauthorized read/write tests passed.
+- `git diff --check`, TypeScript build, focused Ruff checks, and changed-file Python compilation passed.
+
+### Remaining manual/provider checks
+
+- Run one authorized real provider request per supported虾集 image/video model to confirm the upstream acceptance/error wording for 1K/2K/4K and 720p/768p/1080p/2K/4K.
+- Confirm provider archive/download behavior for each EE delivery adapter and inspect production usage records for `provider_completed`, `delivery_pending`, `delivery_failed`, and `completed`.
+- Do not place API keys, signed URLs, raw multipart bodies, or provider response bodies in test logs or history.
+
+### Scope alignment
+
+- The implementation keeps the existing provider adapters and settings.db architecture; it does not rewrite providers or cancel running tasks.
+- The虾集 resolution override is intentionally limited to generation image/video paths. Video upscale, compose/export, and other non-generation resolution selectors retain their existing catalog/feature-specific behavior.
+- Verification-driven compatibility alignment: `_run_inline` accepts the prior two-argument direct-call seam while scheduled lane work continues passing its captured executor; the candidate 360 fixture explicitly opts into degraded mode because it uses non-image placeholder bytes; geometry assertions now check intermediate derived dimensions and the dimension-free final wire contract. `.env.example` and generated license/SBOM evidence were aligned with tracked runtime settings and files.
 
 ## 影响面与验证
 

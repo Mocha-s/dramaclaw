@@ -7,7 +7,7 @@
     ]
   },
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://supertale.local/spdx/supertale-ce/a90eead043aac60c",
+  "documentNamespace": "https://supertale.local/spdx/supertale-ce/de95fe7609309319",
   "name": "supertale-ce-p0b-sbom",
   "packages": [
     {
@@ -18,7 +18,7 @@
       "licenseConcluded": "Elastic-2.0",
       "licenseDeclared": "Elastic-2.0",
       "name": "supertale-ce",
-      "versionInfo": "2.0.2"
+      "versionInfo": "2.0.6"
     },
     {
       "SPDXID": "SPDXRef-Package-aiofiles",
@@ -1179,6 +1179,16 @@
       "licenseDeclared": "MIT",
       "name": "mdurl",
       "versionInfo": "0.1.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-minio",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "name": "minio",
+      "versionInfo": "7.2.20"
     },
     {
       "SPDXID": "SPDXRef-Package-more-itertools",
@@ -3009,6 +3019,11 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-mdurl",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-supertale-ce"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-minio",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Package-supertale-ce"
     },
