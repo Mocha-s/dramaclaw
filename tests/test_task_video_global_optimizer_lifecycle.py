@@ -148,7 +148,7 @@ async def test_global_optimize_video_closes_cognee_store_on_failure(monkeypatch,
         lambda: FakeOptimizer(),
     )
 
-    with pytest.raises(RuntimeError, match="model unavailable"):
+    with pytest.raises(RuntimeError, match="全局优化失败：0/1"):
         await video._run_global_optimize_video_async(
             {
                 "episode": 1,
@@ -166,6 +166,8 @@ async def test_global_optimize_video_closes_cognee_store_on_failure(monkeypatch,
         "init",
         "initialize",
         "load_graph_state",
+        "optimize_single_beat",
+        "optimize_single_beat",
         "optimize_single_beat",
         "close",
     ]
@@ -224,7 +226,7 @@ async def test_global_optimize_video_continues_after_consecutive_model_failures(
         lambda: FakeOptimizer(),
     )
 
-    with pytest.raises(RuntimeError, match="Beat 5: invalid structured output"):
+    with pytest.raises(RuntimeError, match="全局优化失败：0/5"):
         await video._run_global_optimize_video_async(
             {
                 "episode": 1,
@@ -238,5 +240,5 @@ async def test_global_optimize_video_continues_after_consecutive_model_failures(
             _project_ctx(tmp_path),
         )
 
-    assert attempts == [1, 2, 3, 4, 5]
+    assert attempts == [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5]
     assert not any("提前停止全局优化" in message for message in logs)
