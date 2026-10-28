@@ -100,6 +100,8 @@ import {
   videoUpstreamImageDefaultMode,
   type VideoEmptyStateCtaMode,
 } from "@/features/canvas/nodes/shared/videoModelCapabilities";
+import { filterMediaModelParamsForMode } from "@/features/canvas/domain/mediaModelParameters";
+import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
 import {
   VIDEO_GENERATION_ASPECT_RATIOS,
   resolveImageDisplayUrl,
@@ -113,7 +115,6 @@ import {
 } from "@/features/canvas/application/videoFrameCapture";
 import {
   FALLBACK_VIDEO_ASPECT_OPTIONS,
-  FALLBACK_VIDEO_RESOLUTION_OPTIONS,
 } from "@/features/canvas/domain/mediaModelOptions";
 import { ensureWebSafeVideo } from "@/features/canvas/application/videoTranscode";
 import {
@@ -351,7 +352,6 @@ const REFERENCE_CAPS_BY_MODE: Partial<
 // 都来自目录条目的 ratioOptions / resolutionOptions。
 export const ASPECT_RATIOS: ReadonlyArray<FreezoneVideoAspectRatio> =
   FALLBACK_VIDEO_ASPECT_OPTIONS;
-const QUALITIES: ReadonlyArray<VideoGenQuality> = FALLBACK_VIDEO_RESOLUTION_OPTIONS;
 const SCENE_OPTIMIZE_OPTIONS: ReadonlyArray<Seedance2SceneOptimize> = ["anime", "realistic"];
 const DEFAULT_DURATION_MIN = 5;
 const DEFAULT_DURATION_MAX = 15;
@@ -361,10 +361,9 @@ export function qualityToResolution(q: VideoGenQuality): FreezoneVideoResolution
 }
 
 function videoQualityOptionsForModel(
-  model: { resolutionOptions?: string[] } | null | undefined,
+  _model: { resolutionOptions?: string[] } | null | undefined,
 ): readonly VideoGenQuality[] {
-  const options = (model?.resolutionOptions ?? []).map((item) => item.trim()).filter(Boolean);
-  return options.length > 0 ? options : QUALITIES;
+  return FREEZONE_VIDEO_RESOLUTIONS as readonly VideoGenQuality[];
 }
 
 function normalizeVideoQuality(
@@ -727,6 +726,14 @@ export const VideoNode = memo(
       [availableVideoModels, data.model],
     );
     const modelId = selectedVideoModel?.id ?? "";
+    const effectiveModelParams = useMemo(
+      () => filterMediaModelParamsForMode(
+        selectedVideoModel?.request?.parameters,
+        data.modelParams,
+        genMode,
+      ),
+      [data.modelParams, genMode, selectedVideoModel?.request?.parameters],
+    );
     const selectedVideoModelId = selectedVideoModel?.apiModel ?? selectedVideoModel?.id ?? modelId;
     const isHappyHorseModel = isHappyHorseVideoModel(selectedVideoModelId);
     const configuredAspectRatios = useMemo(
@@ -2672,7 +2679,7 @@ export const VideoNode = memo(
               durationSeconds: durationClamped,
               generateAudio,
               model: selectedVideoModel?.catalogId ?? modelId,
-              modelParams: data.modelParams,
+              modelParams: effectiveModelParams,
               humanReview: supportsHumanReview && humanReview,
               sceneOptimize: sceneOptimize ?? null,
               canvasId,
@@ -2703,7 +2710,7 @@ export const VideoNode = memo(
               generateAudio,
               model: selectedVideoModel?.catalogId ?? modelId,
               genMode,
-              modelParams: data.modelParams,
+              modelParams: effectiveModelParams,
               humanReview: supportsHumanReview && humanReview,
               sceneOptimize: sceneOptimize ?? null,
               canvasId,
@@ -2776,7 +2783,7 @@ export const VideoNode = memo(
               generateAudio,
               model: selectedVideoModel?.catalogId ?? modelId,
               genMode,
-              modelParams: data.modelParams,
+              modelParams: effectiveModelParams,
               humanReview: supportsHumanReview && humanReview,
               canvasId,
               nodeId: targetId,
@@ -2805,7 +2812,7 @@ export const VideoNode = memo(
               generateAudio,
               model: selectedVideoModel?.catalogId ?? modelId,
               genMode,
-              modelParams: data.modelParams,
+              modelParams: effectiveModelParams,
               humanReview: supportsHumanReview && humanReview,
               canvasId,
               nodeId: targetId,
@@ -2970,7 +2977,7 @@ export const VideoNode = memo(
               genMode,
               // 智能续写：后端按视频延长任务提交（任务类型、提示词要求同视频延长）。
               continuation: isExtendMode,
-              modelParams: data.modelParams,
+              modelParams: effectiveModelParams,
               humanReview: supportsHumanReview && humanReview,
               sceneOptimize: sceneOptimize ?? null,
               canvasId,
@@ -2988,7 +2995,7 @@ export const VideoNode = memo(
               generateAudio,
               model: selectedVideoModel?.catalogId ?? modelId,
               genMode,
-              modelParams: data.modelParams,
+              modelParams: effectiveModelParams,
               humanReview: supportsHumanReview && humanReview,
               sceneOptimize: sceneOptimize ?? null,
               canvasId,

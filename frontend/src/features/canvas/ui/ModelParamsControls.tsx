@@ -293,7 +293,9 @@ export const ModelParamsControls = memo(({
     : 'text-text-muted/80';
   const extraParamSchema = selectedModel.extraParamsSchema ?? [];
   const panelExtraParamSchema = useMemo(
-    () => extraParamSchema.filter((definition) => definition.key !== 'thinking_level'),
+    () => extraParamSchema.filter((definition) =>
+      definition.key !== 'thinking_level' || definition.userSelectable === true
+    ),
     [extraParamSchema]
   );
   const hasOtherParamsPanel = showWebSearchToggle;

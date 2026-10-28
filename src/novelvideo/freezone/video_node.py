@@ -184,6 +184,11 @@ def normalize_video_resolution(value: str | None) -> str:
     return text
 
 
+def normalize_freezone_generation_resolution(value: str | None) -> str:
+    """Normalize casing only; pass unsupported虾集 generation tiers upstream."""
+    return normalize_video_resolution(value)
+
+
 FREEZONE_SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL: dict[str, tuple[str, ...]] = {
     "seedance-2.0-fast": ("480p", "720p"),
     "seedance-2.0": ("480p", "720p", "1080p"),

@@ -34,12 +34,13 @@ export const FALLBACK_IMAGE_ASPECT_OPTIONS: readonly string[] = [
   '21:9',
 ];
 
-/** 目录未声明分辨率时的视频兜底档位。 */
-export const FALLBACK_VIDEO_RESOLUTION_OPTIONS: readonly string[] = [
-  '480p',
-  '720p',
-  '1080p',
-];
+/** Resolution tiers for one selected model; never infer 1080p from a missing catalog field. */
+export function resolveVideoModelResolutionOptions(
+  model: MediaModelCapabilities | null | undefined,
+): string[] {
+  const configured = normalizeOptions(model?.resolutionOptions);
+  return configured.length > 0 ? configured : ['720p'];
+}
 
 /**
  * 目录未声明画面比例时的视频兜底档位。

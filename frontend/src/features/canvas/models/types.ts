@@ -39,6 +39,7 @@ export interface ExtraParamDefinition {
   min?: number;
   max?: number;
   step?: number;
+  userSelectable?: boolean;
 }
 
 export interface ImageModelDefinition {

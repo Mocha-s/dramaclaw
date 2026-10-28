@@ -16,9 +16,13 @@ import {
 import { buildImageFeatureBillingParams } from '@/features/canvas/domain/imageBilling';
 import {
   IMAGE_ASPECT_OPTIONS,
-  IMAGE_QUALITY_OPTIONS,
-  IMAGE_SIZE_OPTIONS,
 } from '@/features/canvas/nodes/shared/imageGenerationOptions';
+import { FREEZONE_IMAGE_RESOLUTIONS } from '@/features/canvas/domain/freezoneGenerationResolutions';
+import {
+  modelSupportsQuality,
+  pickAllowedOption,
+  resolveModelQualityOptions,
+} from '@/features/canvas/domain/mediaModelOptions';
 import { isSystemManagedNodeData } from '@/features/canvas/domain/mainlineNodeFlags';
 import { setAlbumPendingTotal } from '@/features/canvas/nodes/shared/albumPendingTotals';
 import { resolveImageGenerationCompletionMode } from '@/features/canvas/nodes/imageGenCompletionMode';
@@ -57,6 +61,7 @@ import { useGenerationCreditCost } from '@/lib/queries/generation-credit-cost';
 import { hasImageGenPromptOverride } from '@/features/canvas/nodes/imageGenPrompt';
 import { orderedReferenceUrlsWithOwnFirst, upstreamNodesInEdgeOrder } from '@/features/canvas/nodes/referenceOrdering';
 import { dedupeImageGenerationPrompt } from './imageGenerationPrompt';
+import { filterMediaModelParamsForMode } from '@/features/canvas/domain/mediaModelParameters';
 import { matchesReference, referenceIssueName, referenceIssues, type ReferenceIssue } from '@/features/canvas/nodes/shared/ReferenceValidationDialog';
 import { useReferenceMentionSync } from '@/features/canvas/nodes/useReferenceMentionSync';
 import type { ImageGenerationFormProps } from '@/features/canvas/nodes/shared/ImageGenerationForm';
@@ -223,14 +228,9 @@ export function useImageGenerationForm(
     );
   }, [data.model, availableModels]);
   const modelId = selectedModel?.id ?? '';
-  // 分辨率/比例/画质三档一律由媒体目录（admin 后台可配）驱动，不再靠模型名正则猜。
-  // 目录没声明时退回内置常量，保证老模型与离线兜底列表照常可用。
-  const modelSizeOptions = useMemo(() => {
-    const configured = selectedModel?.resolutionOptions
-      ?.map((item) => item.trim())
-      .filter(Boolean);
-    return configured?.length ? configured : IMAGE_SIZE_OPTIONS;
-  }, [selectedModel]);
+  // 虾集的分辨率档位是统一产品选项，不随当前 catalog 模型筛选；
+  // 对模型不支持的选项由上游返回错误并保留到任务日志。
+  const modelSizeOptions: readonly string[] = [...FREEZONE_IMAGE_RESOLUTIONS];
   const modelAspectOptions = useMemo(() => {
     const configured = (selectedModel?.ratioOptions ?? [])
       .map((item) => item.trim())
@@ -247,13 +247,13 @@ export function useImageGenerationForm(
     modelAspectOptions.map((item) => item.value),
     modelAspectOptions[0]?.value ?? '1:1',
   );
-  const qualityOptions = IMAGE_QUALITY_OPTIONS.map((option) => option.value);
-  const supportsImageQuality = true;
-  const effectiveQuality =
-    qualityOptions.find((option) => option.toLowerCase() === quality.toLowerCase())
-    ?? qualityOptions.find((option) => option.toLowerCase() === DEFAULT_IMAGE_QUALITY)
-    ?? qualityOptions[0]
-    ?? DEFAULT_IMAGE_QUALITY;
+  const qualityOptions = resolveModelQualityOptions(selectedModel);
+  const supportsImageQuality = modelSupportsQuality(selectedModel);
+  const effectiveQuality = pickAllowedOption(
+    quality,
+    qualityOptions,
+    DEFAULT_IMAGE_QUALITY,
+  ) as ImageQuality;
   const imageSelectionForCost =
     imageModelsLoading || imageModelsFallback ? null : selectedModel?.apiModel ?? null;
   const imageQuantity = Math.min(Math.max(effectiveCount, 1), 4);
@@ -355,6 +355,14 @@ export function useImageGenerationForm(
   );
   const generationMode =
     orderedReferenceUrls.length > 0 ? 'image_to_image' : 'text_to_image';
+  const effectiveModelParams = useMemo(
+    () => filterMediaModelParamsForMode(
+      selectedModel?.request?.parameters,
+      data.modelParams,
+      generationMode,
+    ),
+    [data.modelParams, generationMode, selectedModel?.request?.parameters],
+  );
 
   // 候选按 orderedReferenceUrls 编号（自身参考图在场时就是图片1），保证 @ 出来的
   // 缩略图与后端解析到的 图片N 是同一张。key 优先用上游 nodeId；自身参考图没有
@@ -569,7 +577,7 @@ export function useImageGenerationForm(
       model: apiModel,
       modelId: selectedModel?.catalogId ?? modelId,
       genMode: generationMode,
-      modelParams: data.modelParams,
+      modelParams: effectiveModelParams,
       camera: hasCamera
         ? {
             cameraBodyId: cameraSelection?.cameraBodyId ?? null,
@@ -827,6 +835,7 @@ export function useImageGenerationForm(
     effectiveAspectRatio,
     effectiveImageSize,
     effectiveQuality,
+    effectiveModelParams,
     generationMode,
     supportsImageQuality,
     styleTemplateId,
@@ -890,7 +899,7 @@ export function useImageGenerationForm(
       qualityOptions,
       showQuality: supportsImageQuality,
       modelParameters: selectedModel?.request?.parameters,
-      modelParams: data.modelParams,
+       modelParams: effectiveModelParams,
       modelParamsMode: generationMode,
       selectedModelReferenceError:
         selectedModelReferenceError ?? billingRuleMissingSubmitMessage,
