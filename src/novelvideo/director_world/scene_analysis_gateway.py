@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 
 OVERLAP_MODEL_ENV = "SCENE_OVERLAP_ANALYSIS_MODEL"
@@ -15,10 +16,35 @@ SPATIAL_MODEL = "DC-scene-spatial-contract-LLM"
 def resolve_scene_analysis_model(
     model_env: str, default_model: str, model: str = ""
 ) -> str:
-    from novelvideo.config import get_effective_newapi_text_model_name
+    requested = str(model or "").strip() or str(os.environ.get(model_env) or "").strip()
+    requested = requested or default_model
+    from novelvideo import model_gateway_settings
 
-    return get_effective_newapi_text_model_name(
-        model_env, default_model, model_name_override=model or None
+    groups = model_gateway_settings.get_third_party_gateway_groups()
+
+    def has_explicit_route(candidate: str) -> bool:
+        selected = model_gateway_settings._resolve_sub2api_group(
+            capability="text", model=candidate, groups=groups
+        )
+        if selected is None:
+            return False
+        group, upstream_model, _mapping = selected
+        return bool(
+            str(group.get("baseUrl") or "").strip()
+            and str(group.get("apiKey") or "").strip()
+            and str(upstream_model or "").strip()
+        )
+
+    if has_explicit_route(requested):
+        return requested
+
+    fallback = str(os.environ.get("SCENE_ANALYSIS_FALLBACK_MODEL") or "").strip()
+    if fallback and has_explicit_route(fallback):
+        return fallback
+
+    raise ValueError(
+        "No explicit scene analysis model route; configure the requested alias "
+        "or SCENE_ANALYSIS_FALLBACK_MODEL"
     )
 
 
