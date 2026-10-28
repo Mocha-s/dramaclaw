@@ -186,6 +186,27 @@ def test_video_resolution_options_include_official_catalog_capabilities(monkeypa
     )
 
 
+def test_video_catalog_exact_model_precedes_prefix_alias(monkeypatch):
+    from novelvideo.api.routes import generation
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_official_media_model_catalog",
+        lambda _media_type: [
+            {"id": "seedance-2.0", "resolutionOptions": ["4k"]},
+            {"id": "seedance-2.0-mini", "resolutionOptions": ["720p"]},
+        ],
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_media_model_catalog",
+        lambda _media_type: [],
+    )
+
+    assert generation._catalog_video_resolution_options("seedance-2.0-mini") == ("720p",)
+
+
 @pytest.mark.asyncio
 async def test_audio_generate_route_dispatches_indextts2(monkeypatch, tmp_path):
     from novelvideo.api.routes import generation
