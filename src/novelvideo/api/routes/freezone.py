@@ -10648,9 +10648,7 @@ async def freezone_image_animate(
                 source_paths[0],
                 _image_animate_ratio_options(model, capabilities),
             ),
-            resolution=normalize_video_resolution_for_backend(
-                backend, "720p", _catalog_resolution_options(capabilities)
-            ),
+            resolution=normalize_freezone_generation_resolution("720p"),
             duration_seconds=normalize_video_duration_for_backend(
                 backend, 4, *_catalog_duration_bounds(capabilities)
             ),

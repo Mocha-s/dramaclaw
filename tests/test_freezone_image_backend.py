@@ -1027,6 +1027,43 @@ async def test_freezone_video_generation_enqueues_feature_billing(
 
 
 @pytest.mark.asyncio
+async def test_freezone_video_route_preserves_resolution_not_advertised_by_model(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_freezone_project(monkeypatch, tmp_path, username="admin", project="58")
+    captured: dict[str, object] = {}
+
+    async def resolve_backend(*_args, **_kwargs):
+        return "seedance-2.0-fast"
+
+    async def resolve_catalog(*_args, **_kwargs):
+        return {"endpoint": "videos", "parameters": []}, {}, {
+            "resolutionOptions": ["720p"],
+        }
+
+    async def start_video(**kwargs):
+        captured.update(kwargs)
+        return {"ok": True, "data": {"task_type": "freezone_video_gen"}}
+
+    monkeypatch.setattr(freezone_routes, "_resolve_catalog_video_backend", resolve_backend)
+    monkeypatch.setattr(freezone_routes, "_resolve_catalog_request", resolve_catalog)
+    monkeypatch.setattr(freezone_routes, "_start_or_enqueue_freezone_video_gen", start_video)
+
+    await freezone_routes.freezone_video_gen(
+        project="58",
+        body=freezone_routes.FreezoneVideoGenRequest(
+            prompt="虾集视频",
+            model="seedance-2.0-fast",
+            resolution="768p",
+        ),
+        user={"username": "admin"},
+    )
+
+    assert captured["resolution"] == "768p"
+
+
+@pytest.mark.asyncio
 async def test_freezone_video_generation_forces_audio_off_when_model_disallows_it(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -3804,6 +3841,42 @@ async def test_freezone_gen_route_passes_output_dir_and_quality(
     ]["model"]
     assert billing["pricing_params"] == {"size": "1K", "quality": "low"}
     assert billing["pricing_quantity"] == 1
+
+
+@pytest.mark.asyncio
+async def test_freezone_image_generation_preserves_catalog_independent_resolution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_freezone_project(monkeypatch, tmp_path, username="admin", project="58")
+    captured: dict[str, object] = {}
+
+    async def fake_enqueue_project_task(_ctx: ProjectContext, **kwargs):
+        captured.update(kwargs.get("payload") or {})
+        return SimpleNamespace(
+            task_state=SimpleNamespace(task_id="task-resolution"),
+            backend="celery",
+            queue="node.node_a.default",
+        )
+
+    monkeypatch.setattr(
+        freezone_routes,
+        "get_task_backend",
+        lambda: SimpleNamespace(enqueue_project_task=fake_enqueue_project_task),
+    )
+    monkeypatch.setattr(freezone_routes, "_new_job_id", lambda: "job-resolution")
+
+    await freezone_routes.freezone_gen(
+        project="58",
+        body=freezone_routes.FreezoneGenRequest(
+            prompt="虾集图片",
+            image_size="4K",
+            model="gpt-image-2",
+        ),
+        user={"username": "admin"},
+    )
+
+    assert captured["image_size"] == "4K"
 
 
 @pytest.mark.asyncio
