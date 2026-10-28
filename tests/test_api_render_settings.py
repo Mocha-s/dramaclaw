@@ -156,10 +156,26 @@ def test_render_settings_patch_rejects_invalid_image_quality(monkeypatch, tmp_pa
         json={"image_quality": "ultra"},
     )
 
-    assert response.status_code == 400
-    assert response.json()["ok"] is False
-    assert "Invalid image_quality" in response.json()["error"]
+    assert response.status_code == 422
     assert saved == []
+
+
+def test_render_settings_preserves_provider_default_when_quality_is_unset(monkeypatch, tmp_path):
+    client, _saved = _client(monkeypatch, tmp_path, {})
+    from novelvideo import config as config_module
+    monkeypatch.setattr(
+        config_module,
+        "get_render_generation_config",
+        lambda *args, **_kwargs: {
+            "provider": "openai",
+            "openai_image_quality": "high",
+        },
+    )
+
+    response = client.get("/api/v1/projects/demo/render-settings")
+
+    assert response.status_code == 200
+    assert response.json()["data"]["image_quality"] == "high"
 
 
 @pytest.mark.m09

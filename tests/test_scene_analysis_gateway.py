@@ -261,6 +261,30 @@ def test_scene_analysis_route_reports_missing_fallback_without_credentials(monke
     assert "key" not in str(exc_info.value).lower()
 
 
+def test_scene_analysis_route_does_not_accept_inactive_group_mapping(monkeypatch):
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "inactive-analysis")
+    monkeypatch.setattr(model_gateway_settings, "get_third_party_gateway_groups", lambda: [])
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_effective_llm_config",
+        lambda **_kwargs: SimpleNamespace(
+            source="custom",
+            base_url="",
+            api_key="",
+            model="",
+            is_brainclaw=False,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="scene analysis model route"):
+        scene_analysis_gateway.resolve_scene_analysis_model(
+            "SCENE_SPATIAL_CONTRACT_MODEL",
+            "DC-scene-spatial-contract-LLM",
+        )
+
+
 @pytest.mark.parametrize("module", [scene_overlap_analyzer, scene_spatial_contract])
 def test_cli_defaults_do_not_inherit_legacy_openrouter_model(monkeypatch, module):
     import sys

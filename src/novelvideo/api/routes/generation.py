@@ -335,6 +335,15 @@ def _resolve_render_bool_setting(
 _MAINLINE_IMAGE_QUALITIES = frozenset({"low", "medium", "high"})
 
 
+def _default_mainline_image_quality() -> str:
+    from novelvideo.config import get_render_generation_config
+
+    config = get_render_generation_config()
+    provider = str(config.get("provider") or "").strip().lower()
+    key = "huimeng_image_quality" if provider == "huimeng" else "openai_image_quality"
+    return _resolve_mainline_image_quality({}, str(config.get(key) or "medium"))
+
+
 def _resolve_mainline_image_quality(
     project_config: dict,
     requested_value: str | None = None,
@@ -342,7 +351,7 @@ def _resolve_mainline_image_quality(
     value = str(
         requested_value
         if requested_value is not None
-        else project_config.get("image_quality") or "medium"
+        else project_config.get("image_quality") or _default_mainline_image_quality()
     ).strip().lower()
     if value not in _MAINLINE_IMAGE_QUALITIES:
         raise ValueError(
@@ -350,6 +359,20 @@ def _resolve_mainline_image_quality(
             + ", ".join(sorted(_MAINLINE_IMAGE_QUALITIES))
         )
     return value
+
+
+def _stored_mainline_image_quality(
+    project_config: dict,
+    requested_value: str | None = None,
+) -> str | None:
+    raw = (
+        requested_value
+        if requested_value is not None
+        else project_config.get("image_quality")
+    )
+    if raw is None or not str(raw).strip():
+        return None
+    return _resolve_mainline_image_quality({}, str(raw))
 
 
 def _render_settings_payload(username: str, project: str) -> dict:
@@ -3060,7 +3083,7 @@ async def regenerate_grid(
             body.sketch_aspect_padding,
             True,
         ),
-        "image_quality": _resolve_mainline_image_quality(proj_config),
+        "image_quality": _stored_mainline_image_quality(proj_config),
     }
 
     scope = f"grid_{grid_index}"
@@ -3068,7 +3091,7 @@ async def regenerate_grid(
         billing = _render_regen_billing_metadata(
             render_image_selection,
             billing_mode_key,
-            config["image_quality"],
+            config.get("image_quality") or "medium",
         )
         queued = await get_task_backend().enqueue_project_task(
             ctx,
@@ -3376,7 +3399,7 @@ async def render_execute(
             body.sketch_aspect_padding,
             True,
         ),
-        "image_quality": _resolve_mainline_image_quality(
+        "image_quality": _stored_mainline_image_quality(
             project_config,
             body.image_quality,
         ),
@@ -3392,7 +3415,7 @@ async def render_execute(
             billing = _render_regen_billing_metadata(
                 render_image_selection,
                 entry.mode_key,
-                base_config["image_quality"],
+                base_config.get("image_quality") or "medium",
             )
             try:
                 queued = await get_task_backend().enqueue_project_task(
@@ -3533,7 +3556,7 @@ async def regenerate_beats(
     billing = _render_regen_billing_metadata(
         render_image_selection,
         mode_key,
-        _resolve_mainline_image_quality(proj_config),
+        _stored_mainline_image_quality(proj_config) or "medium",
     )
     config = {
         "beats": beats,
