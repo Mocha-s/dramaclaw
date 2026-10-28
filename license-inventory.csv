@@ -448,6 +448,7 @@ frontend/src/__tests__/components/episode/beat-workbench/render-grid-gallery.tes
 frontend/src/__tests__/components/episode/beat-workbench/render-plan-dialog.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/components/episode/beat-workbench/render-plan-partial-retry.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/components/episode/beat-workbench/render-section.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+frontend/src/__tests__/components/episode/beat-workbench/render-settings-controls.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/components/episode/beat-workbench/seedance2-mentions.test.ts,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/components/episode/beat-workbench/single-beat-panel.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/__tests__/components/episode/beat-workbench/sketch-crop-dialog.test.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
@@ -2888,6 +2889,7 @@ tests/test_runtime_env.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml agg
 tests/test_runtime_task_limits_api.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_sandbox_linux_probe.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_sandbox_roots.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+tests/test_scene_360_project_style_prompt.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_scene_analysis_gateway.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_scene_build_resume.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_scene_environment_contract.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
@@ -2978,6 +2980,7 @@ tests/test_video_composer_result_contract.py,Elastic-2.0,2026 SuperTale contribu
 tests/test_video_pool_static_urls.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_video_processing_request.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_video_prompt_language.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+tests/test_video_provider_account_unavailable.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_worker_stderr_drain.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_workflow_argument_recovery.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_workflow_drafts.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
