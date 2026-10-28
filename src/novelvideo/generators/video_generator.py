@@ -4268,7 +4268,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                     or "EGRESS_OPERATION_UNKNOWN"
                 )
                 if organization_request
-                else str(exc)
+                else provider_video_error_code_from_text(str(exc)) or str(exc)
             )
             if (
                 organization_request
@@ -4326,6 +4326,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                 status=VideoGenStatus.FAILED,
                 error=safe_exception_error,
                 task_id=task_id,
+                provider_status="failed",
+                delivery_status="not_started",
             )
         except Exception as exc:
             await update_current_model_call_log(
