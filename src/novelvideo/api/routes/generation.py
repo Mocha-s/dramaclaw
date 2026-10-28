@@ -891,21 +891,28 @@ def _seedance2_model_from_backend(video_backend: str | None) -> str:
 def _catalog_video_resolution_options(video_backend: str | None) -> tuple[str, ...]:
     model = _seedance2_model_from_backend(video_backend)
     try:
-        from novelvideo.model_gateway_settings import get_third_party_media_model_catalog
+        from novelvideo.model_gateway_settings import (
+            get_official_media_model_catalog,
+            get_third_party_media_model_catalog,
+        )
 
-        for entry in get_third_party_media_model_catalog("video"):
-            ids = {
-                str(entry.get(key) or "").strip().lower()
-                for key in ("id", "apiModel", "gatewayModel", "upstreamModel")
-            }
-            if model in ids:
-                options = tuple(
-                    _seedance2_api_resolution(value)
-                    for value in (entry.get("resolutionOptions") or [])
-                    if str(value or "").strip()
-                )
-                if options:
-                    return tuple(dict.fromkeys(options))
+        for catalog in (
+            get_official_media_model_catalog("video"),
+            get_third_party_media_model_catalog("video"),
+        ):
+            for entry in catalog:
+                ids = {
+                    str(entry.get(key) or "").strip().lower()
+                    for key in ("id", "apiModel", "gatewayModel", "upstreamModel")
+                }
+                if model in ids:
+                    options = tuple(
+                        _seedance2_api_resolution(value)
+                        for value in (entry.get("resolutionOptions") or [])
+                        if str(value or "").strip()
+                    )
+                    if options:
+                        return tuple(dict.fromkeys(options))
     except (ImportError, RuntimeError):
         pass
     return ()

@@ -22,6 +22,16 @@ from novelvideo.task_backend.runners.sketch import (
 from novelvideo.task_state import get_task_manager
 
 
+def _apply_render_image_quality(
+    generator_config: dict[str, Any], image_quality: object,
+) -> dict[str, Any]:
+    quality = str(image_quality or "").strip().lower()
+    if quality in {"low", "medium", "high"}:
+        generator_config["openai_image_quality"] = quality
+        generator_config["huimeng_image_quality"] = quality
+    return generator_config
+
+
 def _identity_character(identity_id: str) -> str:
     text = str(identity_id or "").strip()
     if not text:
@@ -286,6 +296,7 @@ async def _run_batch_render_async(
         fallback=DEFAULT_RENDER_IMAGE_SELECTION,
     )
     generator_config = get_render_generation_config(selection_override=render_image_selection)
+    _apply_render_image_quality(generator_config, config.get("image_quality"))
     generator = NanoBananaGridGenerator(config=generator_config)
     log(f"[Render Image] provider={generator.provider}, model={generator.model}")
 
@@ -590,10 +601,7 @@ async def _run_selected_regen_async(
         fallback=default_selection,
     )
     generator_config = get_generation_config(selection_override=image_selection)
-    image_quality = str(config.get("image_quality") or "").strip().lower()
-    if image_quality in {"low", "medium", "high"}:
-        generator_config["openai_image_quality"] = image_quality
-        generator_config["huimeng_image_quality"] = image_quality
+    _apply_render_image_quality(generator_config, config.get("image_quality"))
     log(
         f"[{'Sketch' if is_sketch else 'Render'} Image] "
         f"provider={generator_config.get('provider')}, model={generator_config.get('model')}"
@@ -798,6 +806,7 @@ async def _run_grid_regenerate_async(
         fallback=DEFAULT_RENDER_IMAGE_SELECTION,
     )
     grid_config = get_render_generation_config(selection_override=render_image_selection)
+    _apply_render_image_quality(grid_config, config.get("image_quality"))
     grid_mode = str(config.get("grid_mode") or grid_config.get("mode", "3x3"))
     scene_grouping = bool(config.get("scene_grouping", False))
     character_grouping = bool(config.get("character_grouping", False))
