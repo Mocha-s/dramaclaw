@@ -905,7 +905,11 @@ def _catalog_video_resolution_options(video_backend: str | None) -> tuple[str, .
                     str(entry.get(key) or "").strip().lower()
                     for key in ("id", "apiModel", "gatewayModel", "upstreamModel")
                 }
-                if model in ids:
+                if model in ids or any(
+                    model.startswith(candidate + "-")
+                    for candidate in ids
+                    if candidate
+                ):
                     options = tuple(
                         _seedance2_api_resolution(value)
                         for value in (entry.get("resolutionOptions") or [])

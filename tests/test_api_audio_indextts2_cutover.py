@@ -180,6 +180,10 @@ def test_video_resolution_options_include_official_catalog_capabilities(monkeypa
     )
 
     assert generation._catalog_video_resolution_options("MiniMax-H3") == ("768p", "2k")
+    assert generation._catalog_video_resolution_options("MiniMax-H3-768p-930-8-22") == (
+        "768p",
+        "2k",
+    )
 
 
 @pytest.mark.asyncio
