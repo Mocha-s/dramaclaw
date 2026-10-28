@@ -234,16 +234,20 @@ git commit -m "fix(video): classify unavailable provider accounts"
 
 ### Task 6: Full verification and deployment
 
-- [ ] Run focused backend and frontend suites for all five tasks.
-- [ ] Run `uv run pytest` and the relevant frontend suite.
-- [ ] Run `git diff --check`, Ruff, TypeScript build, and secret/error-log scan.
-- [ ] Set the deployment-only `SCENE_ANALYSIS_FALLBACK_MODEL=claude-sonnet-5-5` in the existing host `.env` if that model route remains configured; do not place credentials in `.env` changes or source control.
-- [ ] Build/deploy the latest branch without deleting `ce-data`.
-- [ ] Verify API/web HTTP 200, API health, and running image IDs.
-- [ ] Keep real provider generation manual and authorized; do not submit paid tests automatically.
+- [x] Run focused backend and frontend suites for all five tasks.
+- [x] Run `uv run pytest` and the relevant frontend suite. Full backend run had one unrelated inline-concurrency timing failure; isolated rerun passed. Other backend tests passed.
+- [x] Run `git diff --check`, Ruff, TypeScript build, and secret/error-log scan.
+- [x] Set deployment-only `SCENE_ANALYSIS_FALLBACK_MODEL=claude-sonnet-5-5` in the host `.env`; credentials remain in settings.db and are not in source control.
+- [x] Build/deploy the latest branch without deleting `ce-data`.
+- [x] Verify API/web HTTP 200, API health, fallback model resolution, and running image IDs.
+- [x] Keep real provider generation manual and authorized; no paid provider request was made.
 
 ## Execution Notes
 
 - Native execution is isolated in worktree branch `fix/media-regressions-project-style`, based on commit `02de0836`.
 - The fallback resolver intentionally refuses to silently reuse `DC-freezone-text-writer-LLM`; production evidence showed it resolves to `gpt-6.1-sol`, which returns HTTP 404 for vision analysis. Configure the deployment-only fallback alias explicitly.
 - The spec was force-added because the repository ignores `docs/superpowers/`; the implementation plan and SDD ledger remain worktree artifacts unless explicitly force-added later.
+- Final review fix pass commit: `6ac89d3f`; it restricts 360 routing to active gateway mode and preserves backend-advertised video resolutions through UI selection/submission.
+- Full backend verification: 7325 passed, 31 skipped, 3 deselected, one unrelated concurrency timing failure; that test passed in isolation. Frontend: 216 files / 1849 tests passed. TypeScript build, focused Ruff, and diff checks passed.
+- Deployment used a temporary worktree `.env` copy so Compose's inherited `env_file: .env` received the deployment-only alias; that temporary file was removed after startup. Host `/root/dramaclaw/.env` remains the source for future deployment from its checkout.
+- Deployed API/web images: `sha256:225365800fda70e94a0a50912b28aa0801a0409ebb37109db67972cd853d7c92` / `sha256:c7a31d96f672ef3e286a9e918f66eaaaf7873410a5408db2361f656d3bd033a1`.
