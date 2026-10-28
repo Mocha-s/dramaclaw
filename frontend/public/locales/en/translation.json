@@ -4585,7 +4585,9 @@
     },
     "renderSettings": {
       "model": "Render model",
-      "modelPlaceholder": "Select model"
+      "modelPlaceholder": "Select model",
+      "quality": "Image quality",
+      "qualityOptions": { "low": "Low", "medium": "Medium", "high": "High" }
     },
     "sketchSettings": {
       "model": "Sketch model",

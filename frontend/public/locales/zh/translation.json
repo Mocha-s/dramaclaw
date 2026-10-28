@@ -4585,7 +4585,9 @@
     },
     "renderSettings": {
       "model": "渲染模型",
-      "modelPlaceholder": "选择模型"
+      "modelPlaceholder": "选择模型",
+      "quality": "图片画质",
+      "qualityOptions": { "low": "低", "medium": "中", "high": "高" }
     },
     "sketchSettings": {
       "model": "草图模型",

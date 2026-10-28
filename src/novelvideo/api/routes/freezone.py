@@ -1670,6 +1670,7 @@ async def _mainline_single_beat_config(
         _build_character_map,
         _episode_from_store_or_none,
         _resolve_render_bool_setting,
+        _resolve_mainline_image_quality,
         _resolve_render_image_selection,
         _resolve_sketch_image_selection,
         _runtime_prop_menu_with_global_props,
@@ -1746,6 +1747,11 @@ async def _mainline_single_beat_config(
             "sketch_aspect_padding",
             None,
             True,
+        ),
+        "image_quality": (
+            _resolve_mainline_image_quality(project_config)
+            if not is_sketch
+            else None
         ),
         "mode_key": mode_key,
         "aspect_ratio": aspect_ratio,

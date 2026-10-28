@@ -29,6 +29,52 @@ interface RenderSettingsControlsProps {
   project: string;
 }
 
+const IMAGE_QUALITY_OPTIONS = ["low", "medium", "high"] as const;
+
+function RenderQualitySelect({
+  data,
+  disabled,
+  onChange,
+}: {
+  data: { image_quality: "low" | "medium" | "high" };
+  disabled: boolean;
+  onChange: (quality: "low" | "medium" | "high") => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Select
+      value={data.image_quality}
+      onValueChange={(value) => {
+        if (IMAGE_QUALITY_OPTIONS.includes(value as (typeof IMAGE_QUALITY_OPTIONS)[number])) {
+          onChange(value as (typeof IMAGE_QUALITY_OPTIONS)[number]);
+        }
+      }}
+      disabled={disabled}
+    >
+      <SelectTrigger
+        aria-label="episode.renderSettings.quality"
+        className={WORKBENCH_SELECT_TRIGGER_CLASS}
+      >
+        <SelectValue>
+          {() => t(`episode.renderSettings.qualityOptions.${data.image_quality}`)}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent
+        align="start"
+        sideOffset={8}
+        alignItemWithTrigger={false}
+        className={WORKBENCH_SELECT_CONTENT_CLASS}
+      >
+        {IMAGE_QUALITY_OPTIONS.map((quality) => (
+          <SelectItem key={quality} value={quality} className={WORKBENCH_SELECT_ITEM_CLASS}>
+            {t(`episode.renderSettings.qualityOptions.${quality}`)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export function RenderModelSelect({ project }: { project: string }) {
   const { t } = useTranslation();
   const settings = useRenderSettings(project);
@@ -97,6 +143,14 @@ export function RenderModelSelect({ project }: { project: string }) {
           ))}
         </SelectContent>
       </Select>
+      <Label className="whitespace-nowrap text-[11px] text-muted-foreground">
+        {t("episode.renderSettings.quality")}
+      </Label>
+      <RenderQualitySelect
+        data={{ ...data, image_quality: data.image_quality ?? "medium" }}
+        disabled={disabled}
+        onChange={(image_quality) => void patchSettings({ image_quality })}
+      />
     </div>
   );
 }
@@ -163,6 +217,14 @@ export function RenderSettingsControls({
           ))}
         </SelectContent>
       </Select>
+      <Label className="text-xs text-muted-foreground">
+        {t("episode.renderSettings.quality")}
+      </Label>
+      <RenderQualitySelect
+        data={{ ...data, image_quality: data.image_quality ?? "medium" }}
+        disabled={disabled}
+        onChange={(image_quality) => void patchSettings({ image_quality })}
+      />
     </div>
   );
 }

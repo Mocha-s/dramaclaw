@@ -231,6 +231,7 @@ def _image_selection_billing_metadata(
     mode_key: str,
     *,
     image_role: str,
+    quality: str = "",
 ) -> dict:
     from novelvideo.config import (
         IMAGE_GENERATION_SELECTIONS,
@@ -269,6 +270,7 @@ def _image_selection_billing_metadata(
         model=pricing_model,
         mode_key=mode_key,
         image_role=image_role,
+        quality=quality,
     )
     return {
         "image_selection": selection,
@@ -288,11 +290,16 @@ def _sketch_regen_billing_metadata(image_selection: str, mode_key: str) -> dict:
     )
 
 
-def _render_regen_billing_metadata(image_selection: str, mode_key: str) -> dict:
+def _render_regen_billing_metadata(
+    image_selection: str,
+    mode_key: str,
+    image_quality: str = "",
+) -> dict:
     return _image_selection_billing_metadata(
         image_selection,
         mode_key,
         image_role="render",
+        quality=image_quality,
     )
 
 
@@ -325,6 +332,26 @@ def _resolve_render_bool_setting(
     return bool(project_config.get(key, default))
 
 
+_MAINLINE_IMAGE_QUALITIES = frozenset({"low", "medium", "high"})
+
+
+def _resolve_mainline_image_quality(
+    project_config: dict,
+    requested_value: str | None = None,
+) -> str:
+    value = str(
+        requested_value
+        if requested_value is not None
+        else project_config.get("image_quality") or "medium"
+    ).strip().lower()
+    if value not in _MAINLINE_IMAGE_QUALITIES:
+        raise ValueError(
+            "Invalid image_quality; must be one of: "
+            + ", ".join(sorted(_MAINLINE_IMAGE_QUALITIES))
+        )
+    return value
+
+
 def _render_settings_payload(username: str, project: str) -> dict:
     from novelvideo.config import configured_image_generation_selection_options
 
@@ -332,6 +359,7 @@ def _render_settings_payload(username: str, project: str) -> dict:
     return {
         "render_image_selection": _resolve_render_image_selection(project_config),
         "options": configured_image_generation_selection_options(),
+        "image_quality": _resolve_mainline_image_quality(project_config),
         "sketch_aspect_padding": _resolve_render_bool_setting(
             project_config,
             "sketch_aspect_padding",
@@ -1813,6 +1841,17 @@ async def update_render_settings(
         updates["render_image_selection"] = selection
     if body.sketch_aspect_padding is not None:
         updates["sketch_aspect_padding"] = bool(body.sketch_aspect_padding)
+    if body.image_quality is not None:
+        try:
+            updates["image_quality"] = _resolve_mainline_image_quality(
+                project_config={},
+                requested_value=body.image_quality,
+            )
+        except ValueError as exc:
+            return JSONResponse(
+                status_code=400,
+                content={"ok": False, "error": str(exc)},
+            )
 
     if updates:
         save_project_config(username, project_name, config=updates)
@@ -2982,6 +3021,7 @@ async def regenerate_grid(
             body.sketch_aspect_padding,
             True,
         ),
+        "image_quality": _resolve_mainline_image_quality(proj_config),
     }
 
     scope = f"grid_{grid_index}"
@@ -2989,6 +3029,7 @@ async def regenerate_grid(
         billing = _render_regen_billing_metadata(
             render_image_selection,
             billing_mode_key,
+            config["image_quality"],
         )
         queued = await get_task_backend().enqueue_project_task(
             ctx,
@@ -3083,6 +3124,10 @@ async def render_plan(
         project_config,
         body.image_generation_selection,
     )
+    render_image_quality = _resolve_mainline_image_quality(
+        project_config,
+        body.image_quality,
+    )
     plan = build_regen_plan(
         selected_beats=selected_beats,
         strategy=body.strategy,
@@ -3122,6 +3167,7 @@ async def render_plan(
             strategy=body.strategy,
             total_beats=len(selected_beats),
             total_grids=len(plan),
+            image_quality=render_image_quality,
         ).model_dump(),
     }
 
@@ -3291,6 +3337,10 @@ async def render_execute(
             body.sketch_aspect_padding,
             True,
         ),
+        "image_quality": _resolve_mainline_image_quality(
+            project_config,
+            body.image_quality,
+        ),
     }
     scope = f"{dispatch_strategy}__{execution_hash}"
     dispatched_task_ids: list[str] = []
@@ -3303,6 +3353,7 @@ async def render_execute(
             billing = _render_regen_billing_metadata(
                 render_image_selection,
                 entry.mode_key,
+                base_config["image_quality"],
             )
             try:
                 queued = await get_task_backend().enqueue_project_task(
@@ -3440,7 +3491,11 @@ async def regenerate_beats(
     )
     episode_obj = _episode_from_store_or_none(store, episode_num)
     prop_menu = await _runtime_prop_menu_with_global_props(store, episode_obj, beats)
-    billing = _render_regen_billing_metadata(render_image_selection, mode_key)
+    billing = _render_regen_billing_metadata(
+        render_image_selection,
+        mode_key,
+        _resolve_mainline_image_quality(proj_config),
+    )
     config = {
         "beats": beats,
         "character_map": character_map,
@@ -3456,6 +3511,7 @@ async def regenerate_beats(
             body.sketch_aspect_padding,
             True,
         ),
+        "image_quality": _resolve_mainline_image_quality(proj_config),
     }
 
     from novelvideo.task_identity import selection_scope

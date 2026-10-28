@@ -85,6 +85,7 @@ def test_render_settings_returns_current_selection_and_options(monkeypatch, tmp_
         {
             "render_image_selection": "nano-banana-2",
             "sketch_aspect_padding": True,
+            "image_quality": "high",
         },
     )
 
@@ -99,6 +100,7 @@ def test_render_settings_returns_current_selection_and_options(monkeypatch, tmp_
         "nano-banana-2": "LingShan-NB-2",
     }
     assert body["data"]["sketch_aspect_padding"] is True
+    assert body["data"]["image_quality"] == "high"
     assert "force_half_k" not in body["data"]
 
 
@@ -128,6 +130,7 @@ def test_render_settings_patch_persists_valid_settings(monkeypatch, tmp_path):
         json={
             "render_image_selection": "nano-banana-2",
             "sketch_aspect_padding": True,
+            "image_quality": "high",
         },
     )
 
@@ -138,9 +141,25 @@ def test_render_settings_patch_persists_valid_settings(monkeypatch, tmp_path):
         {
             "render_image_selection": "nano-banana-2",
             "sketch_aspect_padding": True,
+            "image_quality": "high",
         }
     ]
     assert "force_half_k" not in body["data"]
+
+
+@pytest.mark.m09
+def test_render_settings_patch_rejects_invalid_image_quality(monkeypatch, tmp_path):
+    client, saved = _client(monkeypatch, tmp_path)
+
+    response = client.patch(
+        "/api/v1/projects/demo/render-settings",
+        json={"image_quality": "ultra"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["ok"] is False
+    assert "Invalid image_quality" in response.json()["error"]
+    assert saved == []
 
 
 @pytest.mark.m09

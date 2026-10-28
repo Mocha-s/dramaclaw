@@ -331,6 +331,7 @@ def test_render_plan_execute_checks_only_selected_beat_detection(monkeypatch, tm
             "strategy": plan_data["strategy"],
             "aspect_mode": "9:16",
             "beat_indices": [2],
+            "image_quality": "high",
         },
     )
 
@@ -338,6 +339,7 @@ def test_render_plan_execute_checks_only_selected_beat_detection(monkeypatch, tm
     execute_body = execute_response.json()
     assert execute_body["ok"] is True
     assert calls[0]["payload"]["config"]["selected_beat_numbers"] == [2]
+    assert calls[0]["payload"]["config"]["image_quality"] == "high"
     billing = calls[0]["payload"]["billing"]
     assert billing["image_selection"]
     assert billing["pricing_kind"] == "image"

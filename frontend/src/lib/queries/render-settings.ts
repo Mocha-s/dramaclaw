@@ -11,11 +11,13 @@ export interface RenderSettingsData {
   render_image_selection: string;
   options: Record<string, string>;
   sketch_aspect_padding: boolean;
+  image_quality: "low" | "medium" | "high";
 }
 
 export interface RenderSettingsUpdate {
   render_image_selection?: string;
   sketch_aspect_padding?: boolean;
+  image_quality?: "low" | "medium" | "high";
 }
 
 export function useRenderSettings(project: string) {
