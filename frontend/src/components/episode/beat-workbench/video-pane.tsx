@@ -564,7 +564,9 @@ export function VideoPane({
   );
   const [seedance2Draft, setSeedance2Draft] = useState(seedance2Config);
   const videoPricingResolution =
-    showSeedance2Config || showHappyHorseConfig || showGrokVideoConfig
+    showGenericResolution
+      ? genericResolution
+      : showSeedance2Config || showHappyHorseConfig || showGrokVideoConfig
       ? seedance2Draft.resolution
       : isSd15ProConfig
         ? sd15Resolution
@@ -1657,7 +1659,11 @@ export function VideoPane({
                   onValueChange={(v) =>
                     updateSeedance2Draft(
                       "resolution",
-                      normalizeSeedance2Resolution(v, happyHorseResolutionOptions[0]),
+                      normalizeSeedance2Resolution(
+                        v,
+                        happyHorseResolutionOptions[0],
+                        happyHorseResolutionOptions,
+                      ),
                     )
                   }
                 >
@@ -1735,6 +1741,7 @@ export function VideoPane({
                       normalizeSeedance2Resolution(
                         v,
                         seedance2ResolutionOptions[0],
+                        seedance2ResolutionOptions,
                       ),
                     )
                   }
@@ -2291,6 +2298,11 @@ export function VideoPane({
                         : showHappyHorseConfig
                         ? happyHorseResolutionOptions[0]
                         : seedance2ResolutionOptions[0],
+                      showGrokVideoConfig
+                        ? grokVideoResolutionOptions
+                        : showHappyHorseConfig
+                        ? happyHorseResolutionOptions
+                        : seedance2ResolutionOptions,
                     ),
                   )
                 }
@@ -3557,9 +3569,22 @@ function normalizeSeedance2SceneOptimize(
 function normalizeSeedance2Resolution(
   value: unknown,
   fallback: Seedance2Resolution = "720p",
+  options?: readonly Seedance2Resolution[],
 ): Seedance2Resolution {
-  if (value === "480p" || value === "720p" || value === "1080p") return value;
-  return fallback;
+  if (typeof value === "string" && (!options || options.includes(value))) {
+    if (
+      options ||
+      value === "480p" ||
+      value === "720p" ||
+      value === "768p" ||
+      value === "1080p" ||
+      value === "2K" ||
+      value === "4K"
+    ) {
+      return value;
+    }
+  }
+  return options?.includes(fallback) ? fallback : options?.[0] || fallback;
 }
 
 function normalizeSeedance2TextOverlayKind(value: unknown): string {

@@ -20,11 +20,22 @@ def resolve_scene_analysis_model(
     requested = requested or default_model
     from novelvideo import model_gateway_settings
 
-    groups = model_gateway_settings.get_third_party_gateway_groups()
+    settings = model_gateway_settings.get_model_gateway_settings()
+    raw_mode = str(settings.get("model_gateway_mode") or "").strip().lower()
+    normalized_mode = model_gateway_settings.normalize_gateway_mode(raw_mode)
+    if raw_mode == model_gateway_settings.MODE_SUB2API:
+        active_groups = model_gateway_settings.get_sub2api_groups()
+    elif normalized_mode in {
+        model_gateway_settings.MODE_CUSTOM,
+        model_gateway_settings.MODE_HYBRID,
+    }:
+        active_groups = model_gateway_settings.get_third_party_gateway_groups()
+    else:
+        active_groups = []
 
     def has_explicit_route(candidate: str) -> bool:
         selected = model_gateway_settings._resolve_sub2api_group(
-            capability="text", model=candidate, groups=groups
+            capability="text", model=candidate, groups=active_groups
         )
         if selected is None:
             return False

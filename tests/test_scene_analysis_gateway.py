@@ -169,6 +169,11 @@ def test_unmapped_scene_analysis_alias_uses_explicit_fallback_route(monkeypatch)
 
     monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "vision-fallback")
     monkeypatch.setattr(
+        model_gateway_settings,
+        "get_model_gateway_settings",
+        lambda: {"model_gateway_mode": model_gateway_settings.MODE_CUSTOM},
+    )
+    monkeypatch.setattr(
         config_module,
         "get_effective_newapi_text_model_name",
         lambda _env, default, model_name_override=None: model_name_override or default,
@@ -206,6 +211,11 @@ def test_mapped_scene_analysis_alias_remains_authoritative(monkeypatch):
     from novelvideo import model_gateway_settings
     from novelvideo import config as config_module
 
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_model_gateway_settings",
+        lambda: {"model_gateway_mode": model_gateway_settings.MODE_CUSTOM},
+    )
     monkeypatch.setattr(
         config_module,
         "get_effective_newapi_text_model_name",
@@ -276,6 +286,77 @@ def test_scene_analysis_route_does_not_accept_inactive_group_mapping(monkeypatch
             model="",
             is_brainclaw=False,
         ),
+    )
+
+    with pytest.raises(ValueError, match="scene analysis model route"):
+        scene_analysis_gateway.resolve_scene_analysis_model(
+            "SCENE_SPATIAL_CONTRACT_MODEL",
+            "DC-scene-spatial-contract-LLM",
+        )
+
+
+def test_scene_analysis_fallback_does_not_use_group_outside_active_gateway_mode(monkeypatch):
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "inactive-analysis")
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_model_gateway_settings",
+        lambda: {"model_gateway_mode": model_gateway_settings.MODE_SUB2API},
+    )
+    monkeypatch.setattr(model_gateway_settings, "get_sub2api_groups", lambda: [])
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_gateway_groups",
+        lambda: [
+            {
+                "id": "inactive-third-party",
+                "baseUrl": "https://inactive.invalid/v1",
+                "apiKey": "inactive-test-key",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "inactive-analysis",
+                        "upstreamModel": "inactive-upstream",
+                    }
+                ],
+            }
+        ],
+    )
+
+    with pytest.raises(ValueError, match="scene analysis model route"):
+        scene_analysis_gateway.resolve_scene_analysis_model(
+            "SCENE_SPATIAL_CONTRACT_MODEL",
+            "DC-scene-spatial-contract-LLM",
+        )
+
+
+def test_scene_analysis_route_does_not_use_third_party_group_in_official_mode(monkeypatch):
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "inactive-analysis")
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_model_gateway_settings",
+        lambda: {"model_gateway_mode": model_gateway_settings.MODE_OFFICIAL},
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_gateway_groups",
+        lambda: [
+            {
+                "id": "inactive-third-party",
+                "baseUrl": "https://inactive.invalid/v1",
+                "apiKey": "inactive-test-key",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "inactive-analysis",
+                        "upstreamModel": "inactive-upstream",
+                    }
+                ],
+            }
+        ],
     )
 
     with pytest.raises(ValueError, match="scene analysis model route"):
