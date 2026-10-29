@@ -66,6 +66,7 @@ from novelvideo.generators.nanobanana_grid import (
     hash_plan,
 )
 from novelvideo.generators.render_identity_guard import render_ai_detection_error
+from novelvideo.media_parameters import IMAGE_QUALITY_OPTIONS
 from novelvideo.manual_shots import pick_beats_by_number
 from novelvideo.render_plan.ref_image_hash import RefImageHasher
 from novelvideo.seedance2_i2v.pipeline import (
@@ -332,7 +333,7 @@ def _resolve_render_bool_setting(
     return bool(project_config.get(key, default))
 
 
-_MAINLINE_IMAGE_QUALITIES = frozenset({"low", "medium", "high"})
+_MAINLINE_IMAGE_QUALITIES = frozenset(IMAGE_QUALITY_OPTIONS)
 
 
 def _default_mainline_image_quality() -> str:
