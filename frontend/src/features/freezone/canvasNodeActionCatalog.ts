@@ -30,6 +30,8 @@ import { isCommitCandidateData } from "@/features/freezone/commit/commitEligibil
 import { resolveInputsForSkill } from "@/features/freezone/context/skillNodeInputs";
 import type { SkillDefinition, SkillInputRole } from "@/features/freezone/context/skillRoles";
 import { STANDARD_TIME_OF_DAY_OPTIONS } from "@/lib/time-of-day";
+import { FREEZONE_IMAGE_RESOLUTIONS, FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
+import { IMAGE_QUALITY_OPTIONS } from "@/features/canvas/nodes/shared/imageGenerationOptions";
 
 export type CanvasNodeActionExecution = "chat_command" | "requires_confirmation" | "manual_ui" | "frontend_node" | "tool";
 
@@ -491,8 +493,7 @@ function hasConnectedImageUpstream(
   });
 }
 
-const IMAGE_SIZE_OPTIONS = ["1K", "2K", "4K"] as const;
-const IMAGE_QUALITY_OPTIONS = ["low", "medium", "high"] as const;
+const IMAGE_SIZE_OPTIONS = FREEZONE_IMAGE_RESOLUTIONS;
 const IMAGE_ASPECT_RATIO_OPTIONS = [
   "auto",
   "1:1",
@@ -516,7 +517,7 @@ const VIDEO_ASPECT_RATIO_OPTIONS = [
   "9:16",
   "21:9",
 ] as const;
-const VIDEO_QUALITY_OPTIONS = ["480P", "720P", "1080P"] as const;
+const VIDEO_QUALITY_OPTIONS = FREEZONE_VIDEO_RESOLUTIONS;
 const VIDEO_COUNT_OPTIONS = [1, 2, 4] as const;
 const VIDEO_GEN_MODE_OPTIONS = [
   "textToVideo",
@@ -554,27 +555,21 @@ function selectedImageModel(node: CanvasNode): ModelOption | undefined {
     : undefined;
 }
 
-function imageSizeSchema(node: CanvasNode): CanvasEditableFieldSchema {
-  const options = (selectedImageModel(node)?.resolutionOptions ?? [])
-    .map((value) => value.trim()).filter(Boolean);
+function imageSizeSchema(_node: CanvasNode): CanvasEditableFieldSchema {
   return {
     type: "enum",
     label: "分辨率",
-    options: options.length > 0 ? options : [...IMAGE_SIZE_OPTIONS],
-    description: "使用所选图片模型目录返回的原始分辨率选项。",
+    options: [...IMAGE_SIZE_OPTIONS],
+    description: "使用虾塘全局图片分辨率档位；模型不支持时由上游返回错误。",
   };
 }
 
-function imageQualitySchema(node: CanvasNode): CanvasEditableFieldSchema {
-  const model = selectedImageModel(node);
-  const options = (model?.qualityOptions ?? []).map((value) => value.trim()).filter(Boolean);
+function imageQualitySchema(_node: CanvasNode): CanvasEditableFieldSchema {
   return {
     type: "enum",
     label: "画质",
-    options: model ? options : [...IMAGE_QUALITY_OPTIONS],
-    description: model && options.length === 0
-      ? "所选模型不支持画质档位；请省略 quality。"
-      : "仅使用所选图片模型支持的画质档位。",
+    options: IMAGE_QUALITY_OPTIONS.map((option) => option.value),
+    description: "使用画布全局图片画质档位；模型不支持时由上游返回错误。",
   };
 }
 
@@ -621,22 +616,12 @@ function videoAspectRatioSchema(node: CanvasNode): CanvasEditableFieldSchema {
 }
 
 function videoQualitySchema(node: CanvasNode): CanvasEditableFieldSchema {
-  const snapshot = getFreezoneVideoModelsSnapshot();
-  const currentModelId = (node.data as { model?: unknown }).model;
-  const currentModel =
-    typeof currentModelId === "string"
-      ? snapshot.models.find((model) => model.id === currentModelId)
-      : null;
-  const options = (currentModel?.resolutionOptions ?? [])
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const resolvedOptions = options.length > 0 ? options : [...VIDEO_QUALITY_OPTIONS];
   return {
     type: "enum",
     label: "清晰度",
-    options: resolvedOptions,
+    options: [...VIDEO_QUALITY_OPTIONS],
     current_value: (node.data as { quality?: unknown }).quality ?? null,
-    description: "视频节点底部参数里的清晰度；使用所选模型目录返回的原始分辨率选项。",
+    description: "使用虾镜全局视频分辨率档位；模型不支持时由上游返回错误。",
   };
 }
 
