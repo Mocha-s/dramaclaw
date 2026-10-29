@@ -46,13 +46,13 @@ describe("resolveFixedFeatureModelRequest", () => {
     expect(submit.model).not.toContain("openrouter/");
   });
 
-  it("目录没声明画质：既不下发 quality，也不按 quality 报价", () => {
+  it("目录没声明画质：仍使用全局 medium 档位并下发给上游校验", () => {
     const { submit, billingParams } = resolveFixedFeatureModelRequest({
       apiModel: "huimeng_gpt_image2",
       resolutionOptions: ["1K", "2K"],
     });
-    expect(submit.quality).toBeUndefined();
-    expect(billingParams).not.toHaveProperty("quality");
+    expect(submit.quality).toBe("medium");
+    expect(billingParams.quality).toBe("medium");
     expect(submit.imageSize).toBe("2K");
   });
 

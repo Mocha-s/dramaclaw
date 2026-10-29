@@ -176,6 +176,24 @@ describe("模式缺失时模型参数控件的后果", () => {
 });
 
 describe("ImageGenNode（共享生成表单）递出去的模式", () => {
+  it("catalog 未声明 qualityOptions 时仍显示全局画质选项", async () => {
+    useCanvasStore.getState().setCanvasData([imageGenNode("img-1")], []);
+
+    const { result } = renderHook(() => useImageGenerationForm("img-1"));
+
+    await waitFor(() => {
+      expect(result.current.formProps.showQuality).toBe(true);
+      expect(result.current.formProps.qualityOptions).toEqual([
+        "auto",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+      ]);
+    });
+  });
+
   it("没有参考图时推导为文生图，而不是留空", async () => {
     useCanvasStore.getState().setCanvasData([imageGenNode("img-1")], []);
 
