@@ -251,7 +251,6 @@ export function useImageGenerationForm(
   // billing path support the same Infinite Canvas quality tiers for all image
   // generation models.
   const qualityOptions = IMAGE_QUALITY_OPTIONS.map((option) => option.value);
-  const supportsImageQuality = true;
   const effectiveQuality = pickAllowedOption(
     quality,
     qualityOptions,
@@ -270,7 +269,7 @@ export function useImageGenerationForm(
       surface: 'canvas',
       params: buildImageFeatureBillingParams(selectedModel, {
         size: effectiveImageSize,
-        ...(supportsImageQuality ? { quality: effectiveQuality } : {}),
+        quality: effectiveQuality,
         pricing_quantity: imageQuantity,
       }),
       quantity: imageQuantity,
@@ -573,8 +572,8 @@ export function useImageGenerationForm(
       // 非标准值（如 "43:24"）或 "auto"，提交前吸附到最接近的合法比例（auto→1:1）。
       aspectRatio: effectiveAspectRatio as typeof aspectRatio,
       imageSize: effectiveImageSize,
-      // 画质仅在媒体目录声明 qualityOptions 时下发。
-      quality: supportsImageQuality ? effectiveQuality : null,
+      // Global quality is always sent; unsupported values are rejected upstream.
+      quality: effectiveQuality,
       referenceUrls,
       provider: selectedModel?.providerId as FreezoneProvider | undefined,
       model: apiModel,
@@ -840,7 +839,6 @@ export function useImageGenerationForm(
     effectiveQuality,
     effectiveModelParams,
     generationMode,
-    supportsImageQuality,
     styleTemplateId,
     billingRuleMissingSubmitMessage,
     submitDisabled,
@@ -900,7 +898,7 @@ export function useImageGenerationForm(
       aspectOptions: modelAspectOptions,
       quality: effectiveQuality,
       qualityOptions,
-      showQuality: supportsImageQuality,
+      showQuality: true,
       modelParameters: selectedModel?.request?.parameters,
        modelParams: effectiveModelParams,
       modelParamsMode: generationMode,

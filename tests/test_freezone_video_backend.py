@@ -468,6 +468,15 @@ def test_backend_resolution_normalizer_does_not_downgrade_global_values():
             assert normalize_video_resolution_for_backend(backend, resolution) == resolution
 
 
+def test_backend_resolution_normalizer_ignores_partial_catalog_capabilities():
+    assert (
+        normalize_video_resolution_for_backend(
+            "model-with-partial-catalog", "4k", ["720p"]
+        )
+        == "4k"
+    )
+
+
 def test_canvas_video_node_quality_options_are_global():
     from novelvideo.freezone.video_node import freezone_video_resolution_options
 
