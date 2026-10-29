@@ -22,3 +22,6 @@ rag_storage/
 *.zip
 *.srt
 *.docx
+frontend/node_modules/
+frontend/dist/
+frontend/.cache/
