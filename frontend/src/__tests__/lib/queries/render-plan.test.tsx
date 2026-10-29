@@ -31,17 +31,26 @@ const mockPlan: RenderPlan = {
   total_grids: 1,
 };
 
+let receivedPlanBody: unknown;
+let receivedExecuteBody: unknown;
+
 const server = setupServer(
-  http.post("*/render/plan", async () => HttpResponse.json({ ok: true, data: mockPlan })),
-  http.post("*/render/execute", async () => HttpResponse.json({
-    ok: true,
-    data: {
-      task_type: "render_plan",
-      message: "started",
-      scope: "location__abc123def4567890",
-      resolved_grids: mockPlan.plan,
-    },
-  })),
+  http.post("*/render/plan", async ({ request }) => {
+    receivedPlanBody = await request.clone().json();
+    return HttpResponse.json({ ok: true, data: mockPlan });
+  }),
+  http.post("*/render/execute", async ({ request }) => {
+    receivedExecuteBody = await request.clone().json();
+    return HttpResponse.json({
+      ok: true,
+      data: {
+        task_type: "render_plan",
+        message: "started",
+        scope: "location__abc123def4567890",
+        resolved_grids: mockPlan.plan,
+      },
+    });
+  }),
 );
 
 beforeAll(() => server.listen());
@@ -62,12 +71,14 @@ describe("useRenderPlan", () => {
       beat_indices: [1, 2, 3, 4, 5],
       strategy: "location",
       aspect_mode: "9:16",
+      image_quality: "xhigh",
     });
     await waitFor(() => expect(result.current.data).toBeDefined());
     const res = result.current.data;
     expect(res?.ok).toBe(true);
     if (!res?.ok) throw new Error("expected ok render plan response");
     expect(res.data.plan_hash).toBe("abc123def4567890");
+    expect((receivedPlanBody as { image_quality: string }).image_quality).toBe("xhigh");
   });
 });
 
@@ -83,11 +94,13 @@ describe("useRenderExecute", () => {
       strategy: "location",
       aspect_mode: "9:16",
       beat_indices: [1, 2, 3, 4, 5],
+      image_quality: "max",
     });
     await waitFor(() => expect(result.current.data).toBeDefined());
     const res = result.current.data;
     expect(res?.ok).toBe(true);
     if (!res?.ok) throw new Error("expected ok render execute response");
     expect(res.data.scope).toBe("location__abc123def4567890");
+    expect((receivedExecuteBody as { image_quality: string }).image_quality).toBe("max");
   });
 });
