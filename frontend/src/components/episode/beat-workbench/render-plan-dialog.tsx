@@ -147,6 +147,7 @@ export function RenderPlanDialog({
   });
   const taskRows = (tasksCache.data as OkResponse<Task[]> | undefined)?.data;
   const renderImageSelection = renderSettings.data?.data.render_image_selection ?? null;
+  const renderImageQuality = renderSettings.data?.data.image_quality ?? "medium";
   const renderCostModeKeys = useMemo(
     () => [...new Set((plan?.plan ?? []).map((entry) => entry.mode_key).filter(Boolean))],
     [plan?.plan],
@@ -192,6 +193,7 @@ export function RenderPlanDialog({
         strategy: "location",
         aspect_mode: aspectMode,
         force_one_by_one: defaultForceOneByOne,
+        image_quality: renderImageQuality,
       },
       {
         onSuccess: (res) => {
@@ -298,6 +300,7 @@ export function RenderPlanDialog({
         strategy: "location",
         aspect_mode: aspectMode,
         force_one_by_one: defaultForceOneByOne,
+        image_quality: renderImageQuality,
       });
       if (!planRes.ok || !planRes.data) {
         toast.error(t("common.error"));
@@ -314,6 +317,7 @@ export function RenderPlanDialog({
         custom_plan: true,
         force_one_by_one: defaultForceOneByOne,
         image_generation_selection: renderImageSelection ?? undefined,
+        image_quality: renderImageQuality,
       });
       if (!res.ok) {
         toast.error(t("common.error"));
@@ -360,6 +364,7 @@ export function RenderPlanDialog({
         beat_indices: beatIndices,
         force_one_by_one: defaultForceOneByOne,
         image_generation_selection: renderImageSelection ?? undefined,
+        image_quality: renderImageQuality,
       });
       if (!res.ok) {
         toast.error(t("common.error"));

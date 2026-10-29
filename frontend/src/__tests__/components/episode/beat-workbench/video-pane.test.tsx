@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   shouldDisableDialogueOnlyBackendForBeat,
   VideoPane,
+  videoResolutionOptionsForBackend,
 } from "@/components/episode/beat-workbench/video-pane";
 import { BackendStatusError } from "@/lib/api-errors";
 import { useAspectRatioStore } from "@/stores/aspect-ratio-store";
@@ -215,6 +216,7 @@ const videoQueryMockState = vi.hoisted(() => ({
   hideReturnedLastFrame: false,
   includeAudioAsset: false,
   seedance2AssetsOverride: null as Array<Record<string, unknown>> | null,
+  videoBackendsOverride: null as Array<Record<string, unknown>> | null,
 }));
 
 vi.mock("@/lib/queries/video", () => ({
@@ -305,6 +307,7 @@ vi.mock("@/lib/queries/video", () => ({
           min_duration: 4,
           max_duration: 15,
         },
+        ...(videoQueryMockState.videoBackendsOverride ?? []),
       ],
     },
   }),
@@ -691,6 +694,7 @@ beforeEach(() => {
   videoQueryMockState.hideReturnedLastFrame = false;
   videoQueryMockState.includeAudioAsset = false;
   videoQueryMockState.seedance2AssetsOverride = null;
+  videoQueryMockState.videoBackendsOverride = null;
   useAspectRatioStore.getState().reset();
   updateBeatMock.mockReset();
   updateBeatMock.mockResolvedValue({ ok: true, data: makeBeat() });
@@ -1133,6 +1137,49 @@ describe("VideoPane Seedance2 inspector", () => {
     expect(await screen.findByRole("option", { name: "480p" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "720p" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "1080p" })).toBeInTheDocument();
+  });
+
+  it("keeps catalog video resolutions beyond the legacy three-value union", () => {
+    const backend = {
+      value: "minimax-h3-768p-930-8-22",
+      resolution_options: ["768p", "2K", "4K"],
+    };
+
+    expect(videoResolutionOptionsForBackend(backend.value, backend)).toEqual([
+      "768p",
+      "2K",
+      "4K",
+    ]);
+  });
+
+  it("submits an advertised catalog resolution for a non-Seedance Beat backend", async () => {
+    const user = userEvent.setup();
+    videoQueryMockState.videoBackendsOverride = [
+      {
+        value: "minimax-h3",
+        label: "MiniMax H3",
+        is_default: false,
+        is_seedance2: false,
+        is_happyhorse: false,
+        is_grok_video: false,
+        dialogue_only: false,
+        min_duration: 4,
+        max_duration: 15,
+        resolution_options: ["768p", "2k", "4k"],
+      },
+    ];
+    renderPane(makeBeat({ video_url: null }), { defaultBackend: "minimax-h3" });
+
+    const resolution = screen.getByLabelText("分辨率");
+    await user.click(resolution);
+    await user.click(await screen.findByRole("option", { name: "4k" }));
+    await user.click(screen.getByRole("button", { name: "重新生成" }));
+    await user.click(screen.getByRole("button", { name: "确认" }));
+
+    await waitFor(() => expect(regenerateMock).toHaveBeenCalledTimes(1));
+    expect(regenerateMock.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ resolution: "4k" }),
+    );
   });
 
   it("hides unsupported Seedance2 value resolution options", async () => {

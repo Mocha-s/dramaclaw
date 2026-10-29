@@ -127,6 +127,7 @@ def test_scene_360_candidate_artifact_does_not_update_manifest(monkeypatch, tmp_
     project_dir = tmp_path / "project"
     master = project_dir / "assets" / "scenes" / "Hall" / "master.png"
     reverse = project_dir / "assets" / "scenes" / "Hall" / "reverse.png"
+    monkeypatch.setenv("SCENE_360_ALLOW_MISSING_SPATIAL_CONTRACT", "1")
     master.parent.mkdir(parents=True, exist_ok=True)
     master.write_bytes(b"master")
     reverse.write_bytes(b"reverse")

@@ -55,6 +55,10 @@ def _append_freezone_video_node_history(
     job_id: str,
     result: dict[str, Any] | None = None,
     error: str | None = None,
+    provider_task_id: str | None = None,
+    provider_status: str | None = None,
+    delivery_status: str | None = None,
+    error_code: str | None = None,
 ) -> dict[str, Any] | None:
     node_id = str(payload.get("node_id") or "").strip()
     if not node_id:
@@ -71,6 +75,14 @@ def _append_freezone_video_node_history(
     history_mode = payload.get("requested_gen_mode") or payload.get("gen_mode")
     if history_mode:
         extra["gen_mode"] = str(history_mode)
+    if provider_task_id:
+        extra["provider_task_id"] = str(provider_task_id)
+    if provider_status:
+        extra["provider_status"] = str(provider_status)
+    if delivery_status:
+        extra["delivery_status"] = str(delivery_status)
+    if error_code:
+        extra["error_code"] = str(error_code)
     for key in ("generation_attempt_id", "product_operation_id"):
         if payload.get(key):
             extra[key] = str(payload[key])
@@ -746,6 +758,7 @@ async def _run_global_optimize_video_async(
         sorted_beats = sorted(beats, key=lambda beat: beat.get("beat_number", 0))
         updated_count = 0
         failure_messages: list[str] = []
+        failed_beats: list[dict[str, Any]] = []
         prev_prompt = None
 
         for index, beat in enumerate(sorted_beats):
@@ -768,17 +781,39 @@ async def _run_global_optimize_video_async(
             next_beat = (
                 sorted_beats[index + 1] if index < len(sorted_beats) - 1 else None
             )
+            result = None
+            last_error = ""
+            attempts = 0
+            for attempt in range(1, 4):
+                attempts = attempt
+                try:
+                    result = await optimizer.optimize_single_beat(
+                        beat=beat,
+                        sketch_image_path=sketch_path,
+                        character_color_map=color_map,
+                        language=language,
+                        prev_beat=prev_beat,
+                        next_beat=next_beat,
+                        prev_prompt=prev_prompt,
+                        total_beats=len(sorted_beats),
+                    )
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    last_error = type(exc).__name__
+                    if attempt < 3:
+                        await asyncio.sleep(0.1 * (2 ** (attempt - 1)))
             try:
-                result = await optimizer.optimize_single_beat(
-                    beat=beat,
-                    sketch_image_path=sketch_path,
-                    character_color_map=color_map,
-                    language=language,
-                    prev_beat=prev_beat,
-                    next_beat=next_beat,
-                    prev_prompt=prev_prompt,
-                    total_beats=len(sorted_beats),
-                )
+                if result is None:
+                    failure = {
+                        "beat_number": beat_num,
+                        "attempts": attempts,
+                        "error_code": "GLOBAL_VIDEO_OPTIMIZER_FAILED",
+                        "message": last_error or "optimizer failed",
+                    }
+                    failed_beats.append(failure)
+                    failure_messages.append(f"Beat {beat_num}: {failure['message']}")
+                    log(f"Beat {beat_num}: 生成失败（已尝试 {attempts} 次）")
+                    continue
                 prompt = result["prompt"]
                 beat["video_mode"] = "first_frame"
                 beat["video_prompt"] = prompt
@@ -793,20 +828,32 @@ async def _run_global_optimize_video_async(
                 updated_count += 1
                 prev_prompt = prompt
             except Exception as exc:  # noqa: BLE001
-                failure_messages.append(f"Beat {beat_num}: {exc}")
-                log(f"Beat {beat_num}: 生成失败 ({exc})")
+                failure = {
+                    "beat_number": beat_num,
+                    "attempts": attempts,
+                    "error_code": "GLOBAL_VIDEO_OPTIMIZER_FAILED",
+                    "message": type(exc).__name__,
+                }
+                failed_beats.append(failure)
+                failure_messages.append(f"Beat {beat_num}: {failure['message']}")
+                log(f"Beat {beat_num}: 生成失败（已尝试 {attempts} 次）")
 
         if updated_count == 0:
             error = f"全局优化失败：0/{len(sorted_beats)} 个 Beat 生成成功"
             if failure_messages:
-                error = f"{error}；最后错误：{failure_messages[-1]}"
+                error = f"{error}；最后错误：{failed_beats[-1]['message']}"
             raise RuntimeError(error)
 
         log(
-            f"全局优化完成：成功更新 {updated_count}/{len(sorted_beats)} 个 Beat",
+            f"全局优化完成：成功更新 {updated_count}/{len(sorted_beats)} 个 Beat，失败 {len(failed_beats)} 个",
             progress=1.0,
         )
-        return {"optimized": updated_count, "beats": beats}
+        return {
+            "optimized": updated_count,
+            "failed": len(failed_beats),
+            "failed_beats": failed_beats,
+            "beats": beats,
+        }
     finally:
         await store.close()
 

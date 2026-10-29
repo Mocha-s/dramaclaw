@@ -74,14 +74,12 @@ import {
   resolveReferenceAwareDeleteRange,
 } from '@/features/canvas/application/referenceTokenEditing';
 import {
-  resolveImageModelResolution,
-  resolveImageModelResolutions,
-} from '@/features/canvas/models';
-import {
   EMPTY_CATALOG_IMAGE_MODEL,
   useCatalogImageModels,
 } from '@/features/canvas/domain/catalogImageModels';
 import { MediaModelParameterChip } from '@/features/canvas/ui/MediaModelParameterChip';
+import { filterMediaModelParamsForMode } from '@/features/canvas/domain/mediaModelParameters';
+import { FREEZONE_IMAGE_RESOLUTIONS } from '@/features/canvas/domain/freezoneGenerationResolutions';
 import { resolveModelPriceDisplay } from '@/features/canvas/pricing';
 import {
   NODE_CONTROL_CHIP_CLASS,
@@ -437,13 +435,17 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
     [data.extraParams]
   );
   const resolutionOptions = useMemo(
-    () => resolveImageModelResolutions(selectedModel, { extraParams: effectiveExtraParams }),
-    [effectiveExtraParams, selectedModel]
+    () => FREEZONE_IMAGE_RESOLUTIONS.map((value) => ({
+      value,
+      label: value.toLowerCase(),
+    })),
+    [],
   );
 
   const selectedResolution = useMemo(
-    () => resolveImageModelResolution(selectedModel, data.size, { extraParams: effectiveExtraParams }),
-    [data.size, effectiveExtraParams, selectedModel]
+    () => resolutionOptions.find((item) => item.value.toLowerCase() === String(data.size ?? "2K").toLowerCase())
+      ?? resolutionOptions[1],
+    [data.size, resolutionOptions]
   );
 
   const aspectRatioOptions = useMemo<AspectRatioChoice[]>(
@@ -765,7 +767,11 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
       extraParams: effectiveExtraParams,
       // 目录声明的动态参数（model_params），与 ImageGenNode 同一口径：原样提交，
       // 模式不匹配的键由后端 `_resolve_catalog_request` 过滤。
-      modelParams: data.modelParams,
+      modelParams: filterMediaModelParamsForMode(
+        selectedModel.requestParameters,
+        data.modelParams,
+        generationMode,
+      ),
       capabilityId: data.capabilityId,
       nodeId: id,
       capabilityParams: data.capabilityParams,

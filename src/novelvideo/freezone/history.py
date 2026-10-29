@@ -53,6 +53,7 @@ def build_node_history_record(
     result: dict[str, Any] | None = None,
     error: str | None = None,
     prompt: str | None = None,
+    reference_audit: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the canonical per-node generation-history record.
@@ -77,7 +78,63 @@ def build_node_history_record(
     prompt = str(prompt or "").strip()
     if prompt:
         record["prompt"] = prompt[:MAX_HISTORY_PROMPT_CHARS]
+    if reference_audit:
+        record["reference_audit"] = _redacted_reference_audit(reference_audit)
     return record
+
+
+def _redacted_reference_audit(value: dict[str, Any]) -> dict[str, Any]:
+    """Keep only non-sensitive reference evidence in append-only history."""
+    allowed = {
+        "reference_count",
+        "reference_sha256",
+        "reference_dimensions",
+        "reference_protocol",
+        "request_path",
+        "provider_request_id",
+    }
+    audit = {key: copy.deepcopy(value[key]) for key in allowed if key in value}
+    hashes = audit.get("reference_sha256")
+    if isinstance(hashes, list):
+        audit["reference_sha256"] = [
+            item.lower()
+            for item in hashes
+            if isinstance(item, str)
+            and len(item) == 64
+            and all(char in "0123456789abcdefABCDEF" for char in item)
+        ]
+    elif "reference_sha256" in audit:
+        audit.pop("reference_sha256")
+    protocol = audit.get("reference_protocol")
+    if protocol not in {"dc-media", "images", "input_reference", "multipart", "unknown"}:
+        audit.pop("reference_protocol", None)
+    request_path = audit.get("request_path")
+    if request_path not in {"/images/edits", "/images/generations", "provider_native"}:
+        audit.pop("request_path", None)
+    request_id = audit.get("provider_request_id")
+    if (
+        not isinstance(request_id, str)
+        or len(request_id) > 128
+        or not request_id
+        or any(char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._:-" for char in request_id)
+    ):
+        audit.pop("provider_request_id", None)
+    dimensions = audit.get("reference_dimensions")
+    if isinstance(dimensions, list):
+        audit["reference_dimensions"] = [
+            {
+                axis: value[axis]
+                for axis in ("width", "height")
+                if type(value.get(axis)) is int and value[axis] > 0
+            }
+            for value in dimensions
+            if isinstance(value, dict)
+        ]
+    elif "reference_dimensions" in audit:
+        audit.pop("reference_dimensions")
+    if type(audit.get("reference_count")) is not int or audit["reference_count"] < 0:
+        audit.pop("reference_count", None)
+    return audit
 
 
 def _safe_part(value: str) -> str:

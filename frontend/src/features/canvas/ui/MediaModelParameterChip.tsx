@@ -3,28 +3,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { MediaModelParameterDefinition } from "@/api/ops";
-import { GEN_MODE_TO_CATALOG_MODE } from "@/features/canvas/nodes/shared/videoModelCapabilities";
+import { userSelectableMediaModelParameters } from "@/features/canvas/domain/mediaModelParameters";
 import { NODE_TEXT_CONTROL_TRIGGER_CLASS } from "@/features/canvas/ui/nodeControlStyles";
+
+export {
+  filterMediaModelParamsForMode,
+  userSelectableMediaModelParameters,
+} from "@/features/canvas/domain/mediaModelParameters";
 
 interface Props {
   parameters?: MediaModelParameterDefinition[];
   values?: Record<string, unknown>;
   mode?: string;
   onChange: (values: Record<string, unknown>) => void;
-}
-
-const SERVER_MANAGED_PARAMETER_KEYS = new Set(["thinking_level"]);
-
-export function userSelectableMediaModelParameters(
-  parameters: MediaModelParameterDefinition[] | undefined,
-  mode?: string,
-): MediaModelParameterDefinition[] {
-  const normalizedMode = mode ? MODE_ALIASES[mode] ?? mode : "";
-  return (parameters ?? []).filter((item) => {
-    if (SERVER_MANAGED_PARAMETER_KEYS.has(item.key)) return false;
-    if (!item.modes?.length) return true;
-    return Boolean(mode && (item.modes.includes(mode) || item.modes.includes(normalizedMode)));
-  });
 }
 
 export function MediaModelParameterChip({ parameters, values = {}, mode, onChange }: Props) {
@@ -46,7 +37,13 @@ export function MediaModelParameterChip({ parameters, values = {}, mode, onChang
   }, [open]);
 
   if (!visible.length) return null;
-  const setValue = (key: string, value: unknown) => onChange({ ...values, [key]: value });
+  const visibleKeys = new Set(visible.map((item) => item.key));
+  const setValue = (key: string, value: unknown) => onChange({
+    ...Object.fromEntries(
+      Object.entries(values).filter(([valueKey]) => visibleKeys.has(valueKey)),
+    ),
+    [key]: value,
+  });
 
   return (
     <div ref={rootRef} className="relative">
@@ -113,25 +110,6 @@ export function MediaModelParameterChip({ parameters, values = {}, mode, onChang
         </div>
       )}
     </div>
-  );
-}
-
-const MODE_ALIASES: Record<string, string> = {
-  ...GEN_MODE_TO_CATALOG_MODE,
-};
-
-export function filterMediaModelParamsForMode(
-  parameters: MediaModelParameterDefinition[] | undefined,
-  values: Record<string, unknown> | undefined,
-  mode: string,
-): Record<string, unknown> {
-  const normalizedMode = MODE_ALIASES[mode] ?? mode;
-  const allowed = new Set(
-    userSelectableMediaModelParameters(parameters, normalizedMode)
-      .map((item) => item.key),
-  );
-  return Object.fromEntries(
-    Object.entries(values ?? {}).filter(([key]) => allowed.has(key)),
   );
 }
 

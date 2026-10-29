@@ -158,6 +158,57 @@ def test_mainline_video_backend_options_hide_legacy_models_and_expose_mini() -> 
     assert mini["max_duration"] == 15
 
 
+def test_video_resolution_options_include_official_catalog_capabilities(monkeypatch):
+    from novelvideo.api.routes import generation
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_official_media_model_catalog",
+        lambda _media_type: [
+            {
+                "id": "MiniMax-H3",
+                "apiModel": "MiniMax-H3",
+                "resolutionOptions": ["768p", "2k"],
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_media_model_catalog",
+        lambda _media_type: [],
+    )
+
+    assert generation._catalog_video_resolution_options("MiniMax-H3") == ("768p", "2k")
+    assert generation._catalog_video_resolution_options("MiniMax-H3-768p-930-8-22") == (
+        "768p",
+        "2k",
+    )
+
+
+def test_video_catalog_exact_model_precedes_prefix_alias(monkeypatch):
+    from novelvideo.api.routes import generation
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_official_media_model_catalog",
+        lambda _media_type: [
+            {"id": "seedance-2.0", "resolutionOptions": ["4k"]},
+            {"id": "seedance-2.0-mini", "resolutionOptions": ["720p"]},
+        ],
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_media_model_catalog",
+        lambda _media_type: [
+            {"id": "seedance-2.0-mini", "resolutionOptions": ["720p"]},
+        ],
+    )
+
+    assert generation._catalog_video_resolution_options("seedance-2.0-mini") == ("720p",)
+
+
 @pytest.mark.asyncio
 async def test_audio_generate_route_dispatches_indextts2(monkeypatch, tmp_path):
     from novelvideo.api.routes import generation

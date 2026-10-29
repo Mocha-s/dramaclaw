@@ -231,6 +231,7 @@ def _image_selection_billing_metadata(
     mode_key: str,
     *,
     image_role: str,
+    quality: str = "",
 ) -> dict:
     from novelvideo.config import (
         IMAGE_GENERATION_SELECTIONS,
@@ -269,6 +270,7 @@ def _image_selection_billing_metadata(
         model=pricing_model,
         mode_key=mode_key,
         image_role=image_role,
+        quality=quality,
     )
     return {
         "image_selection": selection,
@@ -288,11 +290,16 @@ def _sketch_regen_billing_metadata(image_selection: str, mode_key: str) -> dict:
     )
 
 
-def _render_regen_billing_metadata(image_selection: str, mode_key: str) -> dict:
+def _render_regen_billing_metadata(
+    image_selection: str,
+    mode_key: str,
+    image_quality: str = "",
+) -> dict:
     return _image_selection_billing_metadata(
         image_selection,
         mode_key,
         image_role="render",
+        quality=image_quality,
     )
 
 
@@ -325,6 +332,49 @@ def _resolve_render_bool_setting(
     return bool(project_config.get(key, default))
 
 
+_MAINLINE_IMAGE_QUALITIES = frozenset({"low", "medium", "high"})
+
+
+def _default_mainline_image_quality() -> str:
+    from novelvideo.config import get_render_generation_config
+
+    config = get_render_generation_config()
+    provider = str(config.get("provider") or "").strip().lower()
+    key = "huimeng_image_quality" if provider == "huimeng" else "openai_image_quality"
+    return _resolve_mainline_image_quality({}, str(config.get(key) or "medium"))
+
+
+def _resolve_mainline_image_quality(
+    project_config: dict,
+    requested_value: str | None = None,
+) -> str:
+    value = str(
+        requested_value
+        if requested_value is not None
+        else project_config.get("image_quality") or _default_mainline_image_quality()
+    ).strip().lower()
+    if value not in _MAINLINE_IMAGE_QUALITIES:
+        raise ValueError(
+            "Invalid image_quality; must be one of: "
+            + ", ".join(sorted(_MAINLINE_IMAGE_QUALITIES))
+        )
+    return value
+
+
+def _stored_mainline_image_quality(
+    project_config: dict,
+    requested_value: str | None = None,
+) -> str | None:
+    raw = (
+        requested_value
+        if requested_value is not None
+        else project_config.get("image_quality")
+    )
+    if raw is None or not str(raw).strip():
+        return None
+    return _resolve_mainline_image_quality({}, str(raw))
+
+
 def _render_settings_payload(username: str, project: str) -> dict:
     from novelvideo.config import configured_image_generation_selection_options
 
@@ -332,6 +382,7 @@ def _render_settings_payload(username: str, project: str) -> dict:
     return {
         "render_image_selection": _resolve_render_image_selection(project_config),
         "options": configured_image_generation_selection_options(),
+        "image_quality": _resolve_mainline_image_quality(project_config),
         "sketch_aspect_padding": _resolve_render_bool_setting(
             project_config,
             "sketch_aspect_padding",
@@ -796,13 +847,19 @@ def _is_grok_video_backend(video_backend: str | None) -> bool:
 
 
 def _seedance2_api_resolution(resolution: str | None) -> str:
-    text = str(resolution or "").strip()
-    if text in {"480p", "720p", "1080p"}:
+    text = str(resolution or "").strip().lower().replace(" ", "")
+    if text in {"480p", "720p", "768p", "1080p", "2k", "4k"}:
         return text
     if "480" in text:
         return "480p"
+    if "768" in text:
+        return "768p"
     if "1080" in text:
         return "1080p"
+    if "2k" in text:
+        return "2k"
+    if "4k" in text:
+        return "4k"
     return "720p"
 
 
@@ -831,8 +888,47 @@ def _seedance2_model_from_backend(video_backend: str | None) -> str:
     return text
 
 
+def _catalog_video_resolution_options(video_backend: str | None) -> tuple[str, ...]:
+    model = _seedance2_model_from_backend(video_backend)
+    try:
+        from novelvideo.model_gateway_settings import (
+            get_official_media_model_catalog,
+            get_third_party_media_model_catalog,
+        )
+
+        catalogs = [
+            *get_official_media_model_catalog("video"),
+            *get_third_party_media_model_catalog("video"),
+        ]
+        for exact_match in (True, False):
+            for entry in catalogs:
+                ids = {
+                    str(entry.get(key) or "").strip().lower()
+                    for key in ("id", "apiModel", "gatewayModel", "upstreamModel")
+                }
+                matches = model in ids if exact_match else any(
+                    model.startswith(candidate + "-")
+                    for candidate in ids
+                    if candidate
+                )
+                if matches:
+                    options = tuple(
+                        _seedance2_api_resolution(value)
+                        for value in (entry.get("resolutionOptions") or [])
+                        if str(value or "").strip()
+                    )
+                    if options:
+                        return tuple(dict.fromkeys(options))
+    except (ImportError, RuntimeError):
+        pass
+    return ()
+
+
 def _seedance2_resolution_options_for_backend(video_backend: str | None) -> tuple[str, ...]:
     model = _seedance2_model_from_backend(video_backend)
+    catalog_options = _catalog_video_resolution_options(video_backend)
+    if catalog_options:
+        return catalog_options
     return SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL.get(
         model,
         SEEDANCE2_DEFAULT_RESOLUTION_OPTIONS,
@@ -1739,7 +1835,14 @@ def _api_video_backend_options() -> list[VideoBackendOption]:
                     if is_happyhorse
                     else list(GROK_VIDEO_RESOLUTION_OPTIONS)
                     if is_grok_video
-                    else None
+                    else list(_catalog_video_resolution_options(value))
+                    or (
+                        list(_seedance2_resolution_options_for_backend(value))
+                        if _is_seedance2_backend(value)
+                        or _seedance2_model_from_backend(value)
+                        in {"seedance-1.5-pro", "seedance_pro"}
+                        else None
+                    )
                 ),
                 ratio_options=(
                     list(HAPPYHORSE_RATIO_OPTIONS)
@@ -1813,6 +1916,17 @@ async def update_render_settings(
         updates["render_image_selection"] = selection
     if body.sketch_aspect_padding is not None:
         updates["sketch_aspect_padding"] = bool(body.sketch_aspect_padding)
+    if body.image_quality is not None:
+        try:
+            updates["image_quality"] = _resolve_mainline_image_quality(
+                project_config={},
+                requested_value=body.image_quality,
+            )
+        except ValueError as exc:
+            return JSONResponse(
+                status_code=400,
+                content={"ok": False, "error": str(exc)},
+            )
 
     if updates:
         save_project_config(username, project_name, config=updates)
@@ -2982,6 +3096,7 @@ async def regenerate_grid(
             body.sketch_aspect_padding,
             True,
         ),
+        "image_quality": _stored_mainline_image_quality(proj_config),
     }
 
     scope = f"grid_{grid_index}"
@@ -2989,6 +3104,7 @@ async def regenerate_grid(
         billing = _render_regen_billing_metadata(
             render_image_selection,
             billing_mode_key,
+            config.get("image_quality") or "medium",
         )
         queued = await get_task_backend().enqueue_project_task(
             ctx,
@@ -3083,6 +3199,10 @@ async def render_plan(
         project_config,
         body.image_generation_selection,
     )
+    render_image_quality = _resolve_mainline_image_quality(
+        project_config,
+        body.image_quality,
+    )
     plan = build_regen_plan(
         selected_beats=selected_beats,
         strategy=body.strategy,
@@ -3122,6 +3242,7 @@ async def render_plan(
             strategy=body.strategy,
             total_beats=len(selected_beats),
             total_grids=len(plan),
+            image_quality=render_image_quality,
         ).model_dump(),
     }
 
@@ -3291,6 +3412,10 @@ async def render_execute(
             body.sketch_aspect_padding,
             True,
         ),
+        "image_quality": _stored_mainline_image_quality(
+            project_config,
+            body.image_quality,
+        ),
     }
     scope = f"{dispatch_strategy}__{execution_hash}"
     dispatched_task_ids: list[str] = []
@@ -3303,6 +3428,7 @@ async def render_execute(
             billing = _render_regen_billing_metadata(
                 render_image_selection,
                 entry.mode_key,
+                base_config.get("image_quality") or "medium",
             )
             try:
                 queued = await get_task_backend().enqueue_project_task(
@@ -3440,7 +3566,11 @@ async def regenerate_beats(
     )
     episode_obj = _episode_from_store_or_none(store, episode_num)
     prop_menu = await _runtime_prop_menu_with_global_props(store, episode_obj, beats)
-    billing = _render_regen_billing_metadata(render_image_selection, mode_key)
+    billing = _render_regen_billing_metadata(
+        render_image_selection,
+        mode_key,
+        _stored_mainline_image_quality(proj_config) or "medium",
+    )
     config = {
         "beats": beats,
         "character_map": character_map,
@@ -3456,6 +3586,7 @@ async def regenerate_beats(
             body.sketch_aspect_padding,
             True,
         ),
+        "image_quality": _resolve_mainline_image_quality(proj_config),
     }
 
     from novelvideo.task_identity import selection_scope

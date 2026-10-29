@@ -331,6 +331,7 @@ def test_render_plan_execute_checks_only_selected_beat_detection(monkeypatch, tm
             "strategy": plan_data["strategy"],
             "aspect_mode": "9:16",
             "beat_indices": [2],
+            "image_quality": "high",
         },
     )
 
@@ -338,12 +339,34 @@ def test_render_plan_execute_checks_only_selected_beat_detection(monkeypatch, tm
     execute_body = execute_response.json()
     assert execute_body["ok"] is True
     assert calls[0]["payload"]["config"]["selected_beat_numbers"] == [2]
+    assert calls[0]["payload"]["config"]["image_quality"] == "high"
     billing = calls[0]["payload"]["billing"]
     assert billing["image_selection"]
     assert billing["pricing_kind"] == "image"
     assert billing["pricing_model"]
     assert billing["pricing_params"]
     assert seen_character_map_beats == [[2], [2]]
+
+
+@pytest.mark.m09
+def test_render_plan_rejects_invalid_image_quality(monkeypatch, tmp_path):
+    client, _calls, _seen = _client_with_real_detection_guard(
+        monkeypatch,
+        tmp_path,
+        [{"beat_number": 1, "narration_segment": "a", "detected_identities": []}],
+    )
+
+    response = client.post(
+        "/api/v1/projects/demo/episodes/2/render/plan",
+        json={
+            "beat_indices": [1],
+            "strategy": "naive",
+            "aspect_mode": "9:16",
+            "image_quality": "ultra",
+        },
+    )
+
+    assert response.status_code == 422
 
 
 def test_render_grid_regen_passes_render_settings(monkeypatch, tmp_path):

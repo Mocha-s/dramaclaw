@@ -392,7 +392,12 @@ def test_newapi_sketch_config_defaults_to_dc_image2_low_quality(monkeypatch):
     assert posted["json"]["size"] == "688x1024"
     assert posted["json"]["metadata"] == {"ratio": "2:3", "resolution": "1k"}
     assert "extra_fields" not in posted["json"]
-    assert trace == {"request_id": "req-sketch", "response_id": "resp-sketch"}
+    assert trace == {
+        "request_id": "req-sketch",
+        "response_id": "resp-sketch",
+        "reference_protocol": "none",
+        "request_path": "/images/generations",
+    }
 
 
 def test_newapi_sketch_config_can_use_dc_banana2_without_quality(monkeypatch):
@@ -1154,6 +1159,7 @@ def test_newapi_image_edit_supports_cockpit_reference_format(
         lambda data, **_kwargs: f"https://relay.test/{data.decode()}.png",
     )
     image_config = {"aspect_ratio": "3:4", "image_size": "1K"}
+    trace = {}
     if configure_via_env:
         monkeypatch.setenv("NEWAPI_IMAGE_EDIT_REFERENCE_FORMAT", "images")
     else:
@@ -1168,6 +1174,7 @@ def test_newapi_image_edit_supports_cockpit_reference_format(
             reference_images=[f"ref-{i}".encode() for i in range(reference_count)],
             image_config=image_config,
             base_url="http://newapi.test/v1",
+            trace=trace,
         )
     )
 
@@ -1181,6 +1188,8 @@ def test_newapi_image_edit_supports_cockpit_reference_format(
         expected_images.append({"image_url": "https://relay.test/ref-1.png"})
     assert payload["images"] == expected_images
     assert "image" not in payload
+    assert trace["reference_protocol"] == "images"
+    assert trace["request_path"] == "/images/edits"
     context = nanobanana_grid._newapi_safe_request_context(
         endpoint="http://newapi.test/v1",
         request_path="/images/edits",
@@ -1247,6 +1256,41 @@ def test_newapi_image_edit_supports_json_reference_protocols(
         {"image_url": "https://relay.test/ref-a.png"},
         {"image_url": "https://relay.test/ref-b.png"},
     ]
+
+
+def test_newapi_safe_request_context_records_protocol_and_path_without_reference_urls():
+    from novelvideo.generators import nanobanana_grid
+
+    context = nanobanana_grid._newapi_safe_request_context(
+        endpoint="https://gateway.test/v1",
+        request_path="/images/edits",
+        model="gpt-image-2",
+        payload={
+            "model": "gpt-image-2",
+            "prompt": "secret prompt",
+            "images": [{"image_url": "https://signed.example/token"}, {"image_url": "https://signed.example/token2"}],
+            "metadata": {"reference_protocol": "images"},
+        },
+        prompt="secret prompt",
+    )
+
+    assert context["reference_image_count"] == 2
+    assert context["reference_protocol"] == "images"
+    assert context["request_path"] == "/images/edits"
+    assert "signed.example" not in str(context)
+    assert "secret prompt" not in str(context)
+
+    credentialed = nanobanana_grid._newapi_safe_request_context(
+        endpoint="https://user:password@gateway.test/v1/secret-path-token?token=signed-secret",
+        request_path="/images/edits",
+        model="gpt-image-2",
+        payload={"images": ["<reference>"]},
+        prompt="safe prompt",
+    )
+    assert credentialed["endpoint"] == "https://gateway.test/v1/images/edits"
+    assert "password" not in str(credentialed)
+    assert "secret-path-token" not in str(credentialed)
+    assert "signed-secret" not in str(credentialed)
 
 
 def test_newapi_image_reference_request_uses_catalog_endpoint(monkeypatch):

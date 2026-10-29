@@ -422,6 +422,15 @@ def test_video_model_options_and_resolution_work() -> None:
     assert happyhorse["minDuration"] == 3
     assert happyhorse["maxDuration"] == 15
     assert normalize_video_resolution_for_backend("happyhorse-1.0", "480p") == "720p"
+    seedance_fast = next(item for item in options if item["id"] == "seedance-2.0-fast")
+    assert "1080p" not in seedance_fast["resolutionOptions"]
+
+
+def test_freezone_generation_preserves_requested_unadvertised_resolution():
+    from novelvideo.freezone.video_node import normalize_freezone_generation_resolution
+
+    assert normalize_freezone_generation_resolution("768P") == "768p"
+    assert normalize_freezone_generation_resolution("4K") == "4k"
 
 
 def test_catalog_resolution_options_override_legacy_video_whitelist() -> None:

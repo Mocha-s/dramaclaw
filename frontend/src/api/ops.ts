@@ -1249,6 +1249,8 @@ export interface MediaModelParameterDefinition {
   max?: number;
   step?: number;
   required?: boolean;
+  /** Explicitly expose otherwise server-managed parameters such as thinking_level. */
+  userSelectable?: boolean;
   modes?: string[];
 }
 export interface MediaModelRequestSchema {

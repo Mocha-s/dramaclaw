@@ -327,6 +327,44 @@ def test_filters_mode_specific_parameters_and_defaults():
         validate_media_model_params(filtered, {"camera_fixed": True})
 
 
+def test_parameter_user_selectable_flag_is_validated_and_preserved():
+    schema = {
+        "endpoint": "images/generations",
+        "parameters": [
+            {
+                "key": "thinking_level",
+                "control": "select",
+                "requestPath": "metadata.thinking_level",
+                "options": ["low", "high"],
+                "userSelectable": True,
+            }
+        ],
+    }
+
+    assert validate_media_request_schema(schema) is schema
+    assert media_request_schema_for_mode(schema, "text_to_image")["parameters"][0][
+        "userSelectable"
+    ] is True
+
+
+def test_parameter_user_selectable_flag_rejects_non_boolean_values():
+    schema = {
+        "endpoint": "images/generations",
+        "parameters": [
+            {
+                "key": "thinking_level",
+                "control": "select",
+                "requestPath": "metadata.thinking_level",
+                "options": ["low", "high"],
+                "userSelectable": "yes",
+            }
+        ],
+    }
+
+    with pytest.raises(MediaModelSchemaError, match="invalid userSelectable flag"):
+        validate_media_request_schema(schema)
+
+
 @pytest.mark.parametrize(
     ("business_mode", "catalog_mode"),
     [

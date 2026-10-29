@@ -110,6 +110,7 @@ class ProjectUpdate(BaseModel):
 class RenderSettingsUpdate(BaseModel):
     render_image_selection: Optional[str] = None
     sketch_aspect_padding: Optional[bool] = None
+    image_quality: Optional[Literal["low", "medium", "high"]] = None
 
 
 class SketchSettingsUpdate(BaseModel):
@@ -2395,6 +2396,7 @@ class RenderPlanRequest(BaseModel):
     aspect_mode: str = Field(..., description="e.g. '9:16', '1:1', '16:9'")
     image_generation_selection: Optional[str] = None
     sketch_aspect_padding: Optional[bool] = None
+    image_quality: Optional[Literal["low", "medium", "high"]] = None
 
 
 class PlanEntryOut(BaseModel):
@@ -2415,6 +2417,7 @@ class RenderPlanResponse(BaseModel):
     strategy: str
     total_beats: int
     total_grids: int
+    image_quality: str = "medium"
 
 
 class RenderPlanExecuteRequest(BaseModel):
@@ -2428,6 +2431,7 @@ class RenderPlanExecuteRequest(BaseModel):
     beat_indices: list[int] = Field(..., min_length=1)
     image_generation_selection: Optional[str] = None
     sketch_aspect_padding: Optional[bool] = None
+    image_quality: Optional[Literal["low", "medium", "high"]] = None
 
 
 class RenderPlanExecuteResponse(BaseModel):

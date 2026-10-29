@@ -19,6 +19,7 @@ export interface RenderPlanParams {
   aspect_mode: string;
   image_generation_selection?: string;
   sketch_aspect_padding?: boolean;
+  image_quality?: "low" | "medium" | "high";
 }
 
 export function useRenderPlan(project: string, episode: number) {
@@ -42,6 +43,7 @@ export interface RenderExecuteParams {
   force_one_by_one?: boolean;
   image_generation_selection?: string;
   sketch_aspect_padding?: boolean;
+  image_quality?: "low" | "medium" | "high";
   custom_plan?: boolean;
   beat_indices: number[];
 }

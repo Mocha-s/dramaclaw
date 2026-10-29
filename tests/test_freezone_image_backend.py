@@ -1027,6 +1027,43 @@ async def test_freezone_video_generation_enqueues_feature_billing(
 
 
 @pytest.mark.asyncio
+async def test_freezone_video_route_preserves_resolution_not_advertised_by_model(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_freezone_project(monkeypatch, tmp_path, username="admin", project="58")
+    captured: dict[str, object] = {}
+
+    async def resolve_backend(*_args, **_kwargs):
+        return "seedance-2.0-fast"
+
+    async def resolve_catalog(*_args, **_kwargs):
+        return {"endpoint": "videos", "parameters": []}, {}, {
+            "resolutionOptions": ["720p"],
+        }
+
+    async def start_video(**kwargs):
+        captured.update(kwargs)
+        return {"ok": True, "data": {"task_type": "freezone_video_gen"}}
+
+    monkeypatch.setattr(freezone_routes, "_resolve_catalog_video_backend", resolve_backend)
+    monkeypatch.setattr(freezone_routes, "_resolve_catalog_request", resolve_catalog)
+    monkeypatch.setattr(freezone_routes, "_start_or_enqueue_freezone_video_gen", start_video)
+
+    await freezone_routes.freezone_video_gen(
+        project="58",
+        body=freezone_routes.FreezoneVideoGenRequest(
+            prompt="虾集视频",
+            model="seedance-2.0-fast",
+            resolution="768p",
+        ),
+        user={"username": "admin"},
+    )
+
+    assert captured["resolution"] == "768p"
+
+
+@pytest.mark.asyncio
 async def test_freezone_video_generation_forces_audio_off_when_model_disallows_it(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -3807,6 +3844,42 @@ async def test_freezone_gen_route_passes_output_dir_and_quality(
 
 
 @pytest.mark.asyncio
+async def test_freezone_image_generation_preserves_catalog_independent_resolution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_freezone_project(monkeypatch, tmp_path, username="admin", project="58")
+    captured: dict[str, object] = {}
+
+    async def fake_enqueue_project_task(_ctx: ProjectContext, **kwargs):
+        captured.update(kwargs.get("payload") or {})
+        return SimpleNamespace(
+            task_state=SimpleNamespace(task_id="task-resolution"),
+            backend="celery",
+            queue="node.node_a.default",
+        )
+
+    monkeypatch.setattr(
+        freezone_routes,
+        "get_task_backend",
+        lambda: SimpleNamespace(enqueue_project_task=fake_enqueue_project_task),
+    )
+    monkeypatch.setattr(freezone_routes, "_new_job_id", lambda: "job-resolution")
+
+    await freezone_routes.freezone_gen(
+        project="58",
+        body=freezone_routes.FreezoneGenRequest(
+            prompt="虾集图片",
+            image_size="4K",
+            model="gpt-image-2",
+        ),
+        user={"username": "admin"},
+    )
+
+    assert captured["image_size"] == "4K"
+
+
+@pytest.mark.asyncio
 async def test_freezone_gen_rejects_references_above_catalog_limit(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -4050,6 +4123,63 @@ async def test_freezone_celery_runner_records_node_history(
     assert output_url.split("?", 1)[0].endswith("/freezone/_outputs/freezone_gen/job_123.png")
     json.dumps(result)
     assert result["generation_history_record"]["result"] is not result
+
+
+@pytest.mark.asyncio
+async def test_freezone_image_history_records_redacted_reference_wire_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from novelvideo.freezone.history import read_generation_history
+    from novelvideo.task_backend.runners import freezone as freezone_runner
+
+    ctx = _project_ctx(tmp_path)
+    project_dir = ctx.output_dir
+    output = project_dir / "freezone" / "_outputs" / "freezone_gen" / "job_refs.png"
+    _write_image(output)
+    references = [tmp_path / "ref-one.png", tmp_path / "ref-two.png"]
+    for reference in references:
+        _write_image(reference)
+
+    async def fake_run_freezone_gen(**kwargs):
+        kwargs["request_audit"]["provider_request_id"] = "provider-request-1"
+        return output
+
+    class FakeTaskManager:
+        def update_progress_for_project(self, *_args, **_kwargs):
+            return None
+
+    monkeypatch.setattr("novelvideo.freezone.jobs.run_freezone_gen", fake_run_freezone_gen)
+    monkeypatch.setattr(freezone_runner, "get_task_manager", lambda: FakeTaskManager())
+
+    await freezone_runner._run_freezone_gen_async(
+        {
+            "payload": {
+                "job_id": "job_refs",
+                "project_dir": str(project_dir),
+                "prompt": "generate",
+                "canvas_id": "canvas_refs",
+                "node_id": "node_refs",
+                "reference_paths": [str(path) for path in references],
+                "request_schema": {
+                    "referenceFormat": "images",
+                    "endpoint": "images/generations",
+                },
+            }
+        },
+        ctx,
+    )
+
+    records = read_generation_history(
+        project_dir=project_dir, canvas_id="canvas_refs", node_id="node_refs"
+    )
+    audit = records[-1]["reference_audit"]
+    assert audit["reference_count"] == 2
+    assert len(audit["reference_sha256"]) == 2
+    assert audit["reference_protocol"] == "images"
+    assert audit["request_path"] == "/images/generations"
+    assert audit["provider_request_id"] == "provider-request-1"
+    assert str(references[0]) not in str(records[-1])
 
 
 @pytest.mark.asyncio
@@ -8778,6 +8908,87 @@ async def test_freezone_image_models_hides_server_managed_thinking_level(
     parameters = result["data"][0]["request"]["parameters"]
     assert [parameter["key"] for parameter in parameters] == ["style"]
     assert len(catalog[0]["request"]["parameters"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_freezone_image_models_exposes_catalog_selectable_thinking_level(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_freezone_project(monkeypatch, tmp_path, project="58")
+    catalog = [
+        {
+            "id": "custom-image",
+            "providerId": "fal",
+            "apiModel": "nano-banana-2",
+            "request": {
+                "endpoint": "images/generations",
+                "parameters": [
+                    {
+                        "key": "thinking_level",
+                        "control": "select",
+                        "requestPath": "thinking_level",
+                        "options": ["low", "medium", "high"],
+                        "default": "low",
+                        "userSelectable": True,
+                    }
+                ],
+            },
+        }
+    ]
+
+    async def fake_catalog(media_type: str) -> list[dict[str, object]]:
+        assert media_type == "image"
+        return catalog
+
+    monkeypatch.setattr(freezone_routes, "_ee_media_model_catalog", fake_catalog)
+
+    result = await freezone_routes.freezone_image_models(
+        project="58",
+        user={"username": "admin"},
+    )
+
+    assert result["data"][0]["request"]["parameters"][0]["userSelectable"] is True
+
+
+@pytest.mark.asyncio
+async def test_catalog_request_accepts_explicitly_selectable_thinking_level(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    catalog = [
+        {
+            "id": "custom-image-id",
+            "providerId": "fal",
+            "apiModel": "nano-banana-2",
+            "request": {
+                "endpoint": "images/generations",
+                "parameters": [
+                    {
+                        "key": "thinking_level",
+                        "control": "select",
+                        "requestPath": "thinking_level",
+                        "options": ["low", "medium", "high"],
+                        "default": "low",
+                        "userSelectable": True,
+                    }
+                ],
+            },
+        }
+    ]
+
+    async def fake_catalog(media_type: str) -> list[dict[str, object]]:
+        assert media_type == "image"
+        return catalog
+
+    monkeypatch.setattr(freezone_routes, "_ee_media_model_catalog", fake_catalog)
+
+    _schema, values, _entry = await freezone_routes._resolve_catalog_request(
+        "image",
+        "custom-image-id",
+        {"thinking_level": "high"},
+    )
+
+    assert values == {"thinking_level": "high"}
 
 
 def test_ce_media_catalog_overlay_preserves_unconfigured_defaults() -> None:

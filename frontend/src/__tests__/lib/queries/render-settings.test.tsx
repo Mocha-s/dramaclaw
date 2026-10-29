@@ -41,8 +41,9 @@ describe("render settings query", () => {
             render_image_selection: "openrouter_nanobanana2",
             options: {
               openrouter_nanobanana2: "OpenRouter NanoBanana 2",
-            },
-            sketch_aspect_padding: true,
+              },
+              sketch_aspect_padding: true,
+              image_quality: "high",
           },
         });
       }),
@@ -58,6 +59,7 @@ describe("render settings query", () => {
       "openrouter_nanobanana2",
     );
     expect(result.current.data?.data.sketch_aspect_padding).toBe(true);
+    expect(result.current.data?.data.image_quality).toBe("high");
   });
 
   it("patches Render settings through the project-level contract", async () => {
@@ -76,7 +78,8 @@ describe("render settings query", () => {
               options: {
                 openrouter_nanobanana2: "OpenRouter NanoBanana 2",
               },
-            sketch_aspect_padding: true,
+              sketch_aspect_padding: true,
+              image_quality: "high",
           },
         });
         },
@@ -90,6 +93,7 @@ describe("render settings query", () => {
     result.current.mutate({
       render_image_selection: "openrouter_nanobanana2",
       sketch_aspect_padding: true,
+      image_quality: "high",
     });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
@@ -97,6 +101,7 @@ describe("render settings query", () => {
     expect(receivedBody).toEqual({
       render_image_selection: "openrouter_nanobanana2",
       sketch_aspect_padding: true,
+      image_quality: "high",
     });
   });
 });

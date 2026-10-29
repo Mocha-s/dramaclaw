@@ -338,6 +338,7 @@ def _image_selection_billing_params(
     model: str,
     mode_key: str = "",
     image_role: str = "",
+    quality: str = "",
 ) -> dict:
     params: dict[str, str] = {}
     clean_mode_key = mode_key.strip()
@@ -372,7 +373,7 @@ def _image_selection_billing_params(
             _image_billing_params(
                 model=model,
                 image_size="1K" if clean_role in {"character", "identity"} else "",
-                quality=OPENAI_IMAGE_QUALITY,
+                quality=quality or OPENAI_IMAGE_QUALITY,
             )
         )
     return params

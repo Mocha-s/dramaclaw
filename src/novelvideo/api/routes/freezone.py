@@ -394,6 +394,7 @@ from novelvideo.freezone.video_node import (
     normalize_video_aspect_ratio,
     normalize_video_duration_for_backend,
     normalize_video_resolution_for_backend,
+    normalize_freezone_generation_resolution,
     rename_video_character_library_item,
     resolve_freezone_video_backend,
     supported_image_aspect_ratio,
@@ -1669,6 +1670,7 @@ async def _mainline_single_beat_config(
         _build_character_map,
         _episode_from_store_or_none,
         _resolve_render_bool_setting,
+        _resolve_mainline_image_quality,
         _resolve_render_image_selection,
         _resolve_sketch_image_selection,
         _runtime_prop_menu_with_global_props,
@@ -1745,6 +1747,11 @@ async def _mainline_single_beat_config(
             "sketch_aspect_padding",
             None,
             True,
+        ),
+        "image_quality": (
+            _resolve_mainline_image_quality(project_config)
+            if not is_sketch
+            else None
         ),
         "mode_key": mode_key,
         "aspect_ratio": aspect_ratio,
@@ -9342,8 +9349,12 @@ def _public_media_model_catalog(
                     dict(parameter)
                     for parameter in parameters
                     if isinstance(parameter, dict)
-                    and str(parameter.get("key") or "")
-                    not in _SERVER_MANAGED_MEDIA_MODEL_PARAMETER_KEYS
+                    and parameter.get("userSelectable") is not False
+                    and (
+                        str(parameter.get("key") or "")
+                        not in _SERVER_MANAGED_MEDIA_MODEL_PARAMETER_KEYS
+                        or parameter.get("userSelectable") is True
+                    )
                 ]
             public_entry["request"] = public_request
         result.append(public_entry)
@@ -9542,9 +9553,15 @@ async def _resolve_catalog_request(
         defined_keys = {
             str(parameter["key"]) for parameter in full_schema.get("parameters") or []
         }
-        server_managed_keys = (
-            defined_keys & _SERVER_MANAGED_MEDIA_MODEL_PARAMETER_KEYS
-        )
+        server_managed_keys = {
+            str(parameter["key"])
+            for parameter in full_schema.get("parameters") or []
+            if parameter.get("userSelectable") is False
+            or (
+                str(parameter["key"]) in _SERVER_MANAGED_MEDIA_MODEL_PARAMETER_KEYS
+                and parameter.get("userSelectable") is not True
+            )
+        }
         filtered_params = {
             key: value
             for key, value in (model_params or {}).items()
@@ -10548,11 +10565,7 @@ async def freezone_video_gen(
             prompt=final_prompt,
             reference_items=reference_items,
             aspect_ratio=normalize_video_aspect_ratio(body.aspect_ratio),
-            resolution=normalize_video_resolution_for_backend(
-                backend,
-                body.resolution,
-                _catalog_resolution_options(capabilities),
-            ),
+            resolution=normalize_freezone_generation_resolution(body.resolution),
             duration_seconds=normalize_video_duration_for_backend(
                 backend,
                 body.duration_seconds,
@@ -10641,9 +10654,7 @@ async def freezone_image_animate(
                 source_paths[0],
                 _image_animate_ratio_options(model, capabilities),
             ),
-            resolution=normalize_video_resolution_for_backend(
-                backend, "720p", _catalog_resolution_options(capabilities)
-            ),
+            resolution=normalize_freezone_generation_resolution("720p"),
             duration_seconds=normalize_video_duration_for_backend(
                 backend, 4, *_catalog_duration_bounds(capabilities)
             ),
@@ -10803,11 +10814,7 @@ async def freezone_video_i2v(
             prompt=final_prompt,
             reference_items=reference_items,
             aspect_ratio=normalize_video_aspect_ratio(body.aspect_ratio),
-            resolution=normalize_video_resolution_for_backend(
-                backend,
-                body.resolution,
-                _catalog_resolution_options(capabilities),
-            ),
+            resolution=normalize_freezone_generation_resolution(body.resolution),
             duration_seconds=normalize_video_duration_for_backend(
                 backend,
                 body.duration_seconds,
@@ -10939,11 +10946,7 @@ async def freezone_video_keyframes(
             reference_items=reference_items,
             # 关键帧画幅跟随首帧；仅尾帧时跟随尾帧，不接受固定比例。
             aspect_ratio="auto",
-            resolution=normalize_video_resolution_for_backend(
-                backend,
-                body.resolution,
-                _catalog_resolution_options(capabilities),
-            ),
+            resolution=normalize_freezone_generation_resolution(body.resolution),
             duration_seconds=normalize_video_duration_for_backend(
                 backend,
                 body.duration_seconds,
@@ -11139,11 +11142,7 @@ async def freezone_video_omni_gen(
             prompt=final_prompt,
             reference_items=reference_items,
             aspect_ratio=normalize_video_aspect_ratio(body.aspect_ratio),
-            resolution=normalize_video_resolution_for_backend(
-                backend,
-                body.resolution,
-                _catalog_resolution_options(capabilities),
-            ),
+            resolution=normalize_freezone_generation_resolution(body.resolution),
             duration_seconds=normalize_video_duration_for_backend(
                 backend,
                 body.duration_seconds,
@@ -11290,11 +11289,7 @@ async def freezone_video_edit(
             reference_items=reference_items,
             # 视频编辑的画幅与输出时长均跟随源视频；用户只选择分辨率。
             aspect_ratio="auto",
-            resolution=normalize_video_resolution_for_backend(
-                backend,
-                body.resolution,
-                _catalog_resolution_options(capabilities),
-            ),
+            resolution=normalize_freezone_generation_resolution(body.resolution),
             duration_seconds=None,
             generate_audio=body.generate_audio,
             human_review=body.human_review,
@@ -11388,11 +11383,7 @@ async def freezone_video_extend(
             reference_items=reference_items,
             # 延长任务沿用源视频画幅，但时长表示新生成片段的长度。
             aspect_ratio="auto",
-            resolution=normalize_video_resolution_for_backend(
-                backend,
-                body.resolution,
-                _catalog_resolution_options(capabilities),
-            ),
+            resolution=normalize_freezone_generation_resolution(body.resolution),
             duration_seconds=normalize_video_duration_for_backend(
                 backend,
                 body.duration_seconds,

@@ -18,6 +18,7 @@ export interface RenderPlan {
   strategy: "location";
   total_beats: number;
   total_grids: number;
+  image_quality?: "low" | "medium" | "high";
 }
 
 /**

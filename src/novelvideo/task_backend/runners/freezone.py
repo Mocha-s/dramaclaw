@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from copy import deepcopy
 from dataclasses import dataclass
@@ -33,6 +34,50 @@ from novelvideo.task_state import get_task_manager
 
 
 logger = logging.getLogger(__name__)
+
+
+def _reference_audit_from_payload(payload: dict[str, Any]) -> dict[str, Any] | None:
+    paths = [str(path) for path in payload.get("reference_paths") or [] if str(path).strip()]
+    if not paths:
+        return None
+    hashes: list[str] = []
+    dimensions: list[dict[str, int]] = []
+    for raw_path in paths:
+        path = Path(raw_path)
+        if not path.is_file():
+            continue
+        hashes.append(hashlib.sha256(path.read_bytes()).hexdigest())
+        try:
+            from PIL import Image
+
+            with Image.open(path) as image:
+                dimensions.append({"width": int(image.width), "height": int(image.height)})
+        except Exception:
+            dimensions.append({})
+    raw_request_schema = payload.get("request_schema")
+    request_schema = raw_request_schema if isinstance(raw_request_schema, dict) else {}
+    reference_protocol = str(
+        request_schema.get("referenceFormat")
+        or payload.get("reference_protocol")
+        or "unknown"
+    ).strip()
+    endpoint = str(request_schema.get("endpoint") or "").strip().strip("/")
+    if reference_protocol in {"multipart", "input_reference", "images", "dc-media"}:
+        request_path = (
+            "/images/generations"
+            if endpoint == "images/generations" and reference_protocol != "multipart"
+            else "/images/edits"
+        )
+    else:
+        request_path = "provider_native"
+    return {
+        "reference_count": len(hashes),
+        "reference_sha256": hashes,
+        "reference_dimensions": dimensions,
+        "reference_protocol": reference_protocol,
+        "request_path": request_path,
+        "provider_request_id": str(payload.get("provider_request_id") or ""),
+    }
 
 
 async def _run_image_output(envelope: dict[str, Any], ctx: ProjectContext, *, vectorize: bool) -> dict[str, Any]:
@@ -564,6 +609,7 @@ def _append_node_history(
     episode: int = 0,
     beat_num: int | None = None,
     scope: str | None = None,
+    reference_audit: dict[str, Any] | None = None,
     **extra: Any,
 ) -> dict[str, Any] | None:
     node_id = str(payload.get("node_id") or "").strip()
@@ -591,6 +637,7 @@ def _append_node_history(
         status="failed" if error else "completed",
         media_type=media_type,
         result=result,
+        reference_audit=reference_audit,
         error=error,
         prompt=payload.get("prompt") or payload.get("input"),
         extra=extra,
@@ -727,6 +774,7 @@ async def _run_freezone_gen_async(
     job_id = str(payload["job_id"])
     project_dir = Path(str(payload.get("project_dir") or ctx.output_dir))
     ensure_freezone_dirs(project_dir)
+    reference_audit = _reference_audit_from_payload(payload)
     _update(ctx, task_type, job_id, 0.1, "调用图像生成器...")
     out_path = await _await_with_cancel_watch(
         _call_freezone_leaf(
@@ -744,6 +792,7 @@ async def _run_freezone_gen_async(
             quality=payload.get("quality"),
             model_params=payload.get("model_params") or None,
             request_schema=payload.get("request_schema") or None,
+            request_audit=reference_audit,
             output_task_type=task_type,
         ),
         project_id=ctx.project_id,
@@ -766,6 +815,7 @@ async def _run_freezone_gen_async(
         job_id=job_id,
         media_type="image",
         result=result,
+        reference_audit=reference_audit,
         **_history_model_mode_extra(payload),
     )
     if history_record:

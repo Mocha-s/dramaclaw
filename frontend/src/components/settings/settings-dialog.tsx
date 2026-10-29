@@ -12,6 +12,7 @@ import {
   EyeOff,
   ExternalLink,
   HardDrive,
+  ListChecks,
   Loader2,
   Package,
   Maximize2,
@@ -110,6 +111,7 @@ import {
 } from "@/stores/settingsStore";
 import { isCeRuntime } from "@/lib/runtime-config";
 import { FreezoneSkillRecipeSettings } from "./freezone-skill-recipe-settings";
+import { TaskLimitsSettings } from "./task-limits-settings";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -131,7 +133,9 @@ const COMFY_WORKFLOW_MANAGED_CONFIG_KEY = "_dcManagedByWorkflow";
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { t } = useTranslation();
   const ceRuntime = isCeRuntime();
-  const [page, setPage] = useState<"models" | "storage" | "freezone-skills" | "freezone-recipes">(
+  const [page, setPage] = useState<
+    "models" | "storage" | "task-limits" | "freezone-skills" | "freezone-recipes"
+  >(
     () => (ceRuntime ? "models" : "freezone-skills"),
   );
   const statusQuery = useModelGatewayConfig(open && ceRuntime);
@@ -142,7 +146,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   );
 
   useEffect(() => {
-    if (!ceRuntime && (page === "models" || page === "storage")) {
+    if (
+      !ceRuntime &&
+      (page === "models" || page === "storage" || page === "task-limits")
+    ) {
       setPage("freezone-skills");
     }
   }, [ceRuntime, page]);
@@ -207,6 +214,22 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 </button>
                 <button
                   type="button"
+                  aria-current={page === "task-limits" ? "page" : undefined}
+                  onClick={() => setPage("task-limits")}
+                  className={cn(
+                    "relative flex h-10 items-center justify-center gap-2 rounded-md px-2 text-sm font-medium transition-colors sm:justify-start sm:px-3",
+                    page === "task-limits"
+                      ? "bg-white/[0.09] text-foreground"
+                      : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
+                  )}
+                >
+                  <ListChecks className="size-4" aria-hidden />
+                  <span className="hidden sm:inline">
+                    {t("settings.pages.taskLimits")}
+                  </span>
+                </button>
+                <button
+                  type="button"
                   aria-current={page === "storage" ? "page" : undefined}
                   onClick={() => setPage("storage")}
                   className={cn(
@@ -249,6 +272,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <div className="min-w-0 flex-1">
               <ScrollArea className="h-full [&_[data-slot=scroll-area-scrollbar]]:!w-1 [&_[data-slot=scroll-area-scrollbar]]:!border-l-0 [&_[data-slot=scroll-area-scrollbar]]:!p-0">
                 <MediaStorageSection />
+              </ScrollArea>
+            </div>
+          ) : page === "task-limits" ? (
+            <div className="min-w-0 flex-1">
+              <ScrollArea className="h-full [&_[data-slot=scroll-area-scrollbar]]:!w-1 [&_[data-slot=scroll-area-scrollbar]]:!border-l-0 [&_[data-slot=scroll-area-scrollbar]]:!p-0">
+                <TaskLimitsSettings open={open && page === "task-limits"} />
               </ScrollArea>
             </div>
           ) : (

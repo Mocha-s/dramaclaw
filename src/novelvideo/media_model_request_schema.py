@@ -372,6 +372,9 @@ def validate_media_request_schema(schema: object) -> dict[str, Any]:
         required = item.get("required")
         if required is not None and not isinstance(required, bool):
             raise MediaModelSchemaError(f"invalid required flag for {key}")
+        user_selectable = item.get("userSelectable")
+        if user_selectable is not None and not isinstance(user_selectable, bool):
+            raise MediaModelSchemaError(f"invalid userSelectable flag for {key}")
         label = item.get("label")
         if label is not None and (not isinstance(label, str) or len(label) > 64):
             raise MediaModelSchemaError(f"invalid label for {key}")

@@ -115,10 +115,11 @@ import type { ModelOption } from "@/features/canvas/ui/ProviderModelPicker";
 import { writeLastVideoModel } from "@/features/canvas/domain/lastVideoModel";
 import { useGenerationCreditCost } from "@/lib/queries/generation-credit-cost";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { filterMediaModelParamsForMode } from "@/features/canvas/domain/mediaModelParameters";
+import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
 
-// 媒体目录可以给模型声明任意分辨率档位，这里只是没配置时的兜底；大小写按后端
-// 口径统一成小写（`qualityToResolution` 因此退化成恒等函数）。
-const QUALITIES: ReadonlyArray<VideoGenQuality> = ["480p", "720p", "1080p"];
+// 媒体目录声明的分辨率档位原样使用；无声明时只保留安全的 720p 默认档。
+// 大小写按后端口径统一成小写（`qualityToResolution` 因此退化成恒等函数）。
 const SCENE_OPTIMIZE_OPTIONS: ReadonlyArray<Seedance2SceneOptimize> = ["anime", "realistic"];
 const DEFAULT_DURATION_MIN = 5;
 const DEFAULT_DURATION_MAX = 15;
@@ -136,10 +137,9 @@ function qualityToResolution(q: VideoGenQuality): FreezoneVideoResolution {
 }
 
 function videoQualityOptionsForModel(
-  model: { resolutionOptions?: string[] } | null | undefined,
+  _model: { resolutionOptions?: string[] } | null | undefined,
 ): readonly VideoGenQuality[] {
-  const options = (model?.resolutionOptions ?? []).map((item) => item.trim()).filter(Boolean);
-  return options.length > 0 ? options : QUALITIES;
+  return FREEZONE_VIDEO_RESOLUTIONS as readonly VideoGenQuality[];
 }
 
 // 节点上存着的旧值可能是 "720P"，目录里现在写的是 "720p"：大小写不敏感地对上，
@@ -473,6 +473,14 @@ export function useVideoGenerationForm(
   );
   const modelId = selectedVideoModel?.id ?? "";
   const selectedVideoModelId = selectedVideoModel?.apiModel ?? selectedVideoModel?.id ?? modelId;
+  const effectiveModelParams = useMemo(
+    () => filterMediaModelParamsForMode(
+      selectedVideoModel?.request?.parameters,
+      data.modelParams,
+      genMode,
+    ),
+    [data.modelParams, genMode, selectedVideoModel?.request?.parameters],
+  );
   const isHappyHorseModel = isHappyHorseVideoModel(selectedVideoModelId);
   const configuredAspectRatios = useMemo(
     () => (selectedVideoModel?.ratioOptions ?? []).map((ratio) => ratio.trim()).filter(Boolean),
@@ -1357,7 +1365,7 @@ export function useVideoGenerationForm(
             durationSeconds: durationClamped,
             generateAudio,
             model: selectedVideoModel?.catalogId ?? modelId,
-            modelParams: data.modelParams,
+            modelParams: effectiveModelParams,
             humanReview: supportsHumanReview && humanReview,
             sceneOptimize: sceneOptimize ?? null,
             canvasId,
@@ -1388,7 +1396,7 @@ export function useVideoGenerationForm(
             generateAudio,
             model: selectedVideoModel?.catalogId ?? modelId,
             genMode,
-            modelParams: data.modelParams,
+            modelParams: effectiveModelParams,
             humanReview: supportsHumanReview && humanReview,
             sceneOptimize: sceneOptimize ?? null,
             canvasId,
@@ -1438,7 +1446,7 @@ export function useVideoGenerationForm(
             generateAudio,
             model: selectedVideoModel?.catalogId ?? modelId,
             genMode,
-            modelParams: data.modelParams,
+            modelParams: effectiveModelParams,
             canvasId,
             nodeId: targetId,
           });
@@ -1676,7 +1684,7 @@ export function useVideoGenerationForm(
             generateAudio,
             model: selectedVideoModel?.catalogId ?? modelId,
             genMode,
-            modelParams: data.modelParams,
+            modelParams: effectiveModelParams,
             humanReview: supportsHumanReview && humanReview,
             sceneOptimize: sceneOptimize ?? null,
             canvasId,
@@ -1694,7 +1702,7 @@ export function useVideoGenerationForm(
             generateAudio,
             model: selectedVideoModel?.catalogId ?? modelId,
             genMode,
-            modelParams: data.modelParams,
+            modelParams: effectiveModelParams,
             humanReview: supportsHumanReview && humanReview,
             sceneOptimize: sceneOptimize ?? null,
             canvasId,
@@ -1890,6 +1898,7 @@ export function useVideoGenerationForm(
     quality,
     onGenerationSettled,
     sceneOptimize,
+    effectiveModelParams,
     billingRuleMissingSubmitMessage,
     submitDisabled,
     updateNodeData,
@@ -1972,7 +1981,7 @@ export function useVideoGenerationForm(
       showHumanReview: supportsHumanReview,
       humanReview,
       modelParameters: selectedVideoModel?.request?.parameters,
-      modelParams: data.modelParams,
+      modelParams: effectiveModelParams,
       count,
       isTranslatingPrompt,
       isGenerating,

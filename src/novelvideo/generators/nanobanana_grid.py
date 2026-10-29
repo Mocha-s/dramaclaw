@@ -19,6 +19,7 @@ import json
 import logging
 import math
 import os
+from urllib.parse import urlsplit
 import re
 import time
 from urllib.parse import quote
@@ -484,6 +485,7 @@ def _newapi_safe_request_context(
     model: str,
     payload: dict[str, object],
     prompt: str,
+    reference_protocol: str = "",
 ) -> dict[str, object]:
     reference_images = (
         payload.get("image")
@@ -498,14 +500,40 @@ def _newapi_safe_request_context(
         for key in ("ratio", "aspect_ratio", "resolution")
         if key in metadata
     }
+    endpoint_parts = urlsplit(str(endpoint))
+    hostname = endpoint_parts.hostname or ""
+    safe_host = f"[{hostname}]" if ":" in hostname else hostname
+    try:
+        port_number = endpoint_parts.port
+    except ValueError:
+        port_number = None
+    port = f":{port_number}" if port_number else ""
+    path_parts = [part for part in endpoint_parts.path.split("/") if part]
+    version_path = (
+        f"/{path_parts[0]}"
+        if path_parts and re.fullmatch(r"v\d+", path_parts[0])
+        else ""
+    )
+    safe_endpoint = (
+        f"{endpoint_parts.scheme}://{safe_host}{port}{version_path}"
+        if endpoint_parts.scheme in {"http", "https"} and safe_host
+        else "<invalid-endpoint>"
+    )
     return {
-        "endpoint": f"{endpoint}{request_path}",
+        "endpoint": f"{safe_endpoint}{request_path}",
+        "request_path": request_path,
         "model": model,
         "payload_keys": sorted(payload.keys()),
         "size": payload.get("size") or "",
         "tier": payload.get("tier") or "",
         "geometry_metadata": geometry_metadata,
         "reference_image_count": reference_image_count,
+        "reference_protocol": str(
+            reference_protocol
+            or metadata.get("reference_protocol")
+            or ("multipart" if "image" in payload and not isinstance(payload.get("image"), list) else "")
+            or ("images" if "images" in payload else "input_reference" if "input_reference" in payload else "image" if "image" in payload else "none")
+        ),
         "prompt_chars": len(prompt or ""),
         "prompt_sha256": hashlib.sha256((prompt or "").encode("utf-8")).hexdigest()[:16],
     }
@@ -3152,6 +3180,7 @@ async def generate_reference_edit_image(
     config: Optional[dict] = None,
     egress_context: TrustedEgressContext | None = None,
     egress_capability: str = "image.edit",
+    request_audit: dict[str, object] | None = None,
 ) -> Path:
     """Generate one edited image from reference images plus a free-form edit prompt.
 
@@ -3173,6 +3202,7 @@ async def generate_reference_edit_image(
         config=config,
         egress_context=egress_context,
         egress_capability=egress_capability,
+        request_audit=request_audit,
     )
 
 
@@ -3188,6 +3218,7 @@ async def _generate_image(
     config: Optional[dict],
     egress_context: TrustedEgressContext | None,
     egress_capability: str,
+    request_audit: dict[str, object] | None = None,
 ) -> Path:
     """Shared body for text-only and image-edit single-image generation."""
     ref_paths = list(reference_image_paths or [])
@@ -3381,6 +3412,14 @@ async def _generate_image(
     output.parent.mkdir(parents=True, exist_ok=True)
     if not (generator.provider == "newapi" and delivery_state.get("copied")):
         output.write_bytes(image_bytes)
+    if request_audit is not None:
+        request_audit["provider_request_id"] = trace.get("request_id", "")
+        request_audit["reference_protocol"] = trace.get(
+            "reference_protocol", request_audit.get("reference_protocol", "unknown")
+        )
+        request_audit["request_path"] = trace.get(
+            "request_path", request_audit.get("request_path", "provider_native")
+        )
     await _complete_organization_image_egress(
         organization_egress,
         trace=trace if generator.provider == "newapi" else {},
@@ -4025,6 +4064,10 @@ async def _call_newapi_image_api(
     else:
         request_path = "/images/generations"
 
+    if trace is not None:
+        trace["reference_protocol"] = reference_image_format if reference_images else "none"
+        trace["request_path"] = request_path
+
     from novelvideo.media_model_request_schema import (
         apply_media_request_schema,
         enforce_newapi_media_geometry_contract,
@@ -4052,6 +4095,7 @@ async def _call_newapi_image_api(
         model=model,
         payload=payload,
         prompt=prompt,
+        reference_protocol=reference_image_format if reference_images else "none",
     )
     logger.info("DramaClawAPI image request: %s", request_context)
     headers = {"Authorization": f"Bearer {api_key}"}
@@ -4134,7 +4178,7 @@ async def _call_newapi_image_api(
     try:
         reservation_id = await _reserve("newapi_image_api")
         await update_current_model_call_log(
-            request_payload=payload,
+            request_payload=request_context,
         )
 
         async with httpx.AsyncClient(

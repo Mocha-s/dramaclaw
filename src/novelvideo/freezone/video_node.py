@@ -184,6 +184,11 @@ def normalize_video_resolution(value: str | None) -> str:
     return text
 
 
+def normalize_freezone_generation_resolution(value: str | None) -> str:
+    """Normalize casing only; pass unsupported虾集 generation tiers upstream."""
+    return normalize_video_resolution(value)
+
+
 FREEZONE_SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL: dict[str, tuple[str, ...]] = {
     "seedance-2.0-fast": ("480p", "720p"),
     "seedance-2.0": ("480p", "720p", "1080p"),
@@ -825,6 +830,11 @@ async def run_trusted_freezone_video_gen(
     result = await generator.generate(**generate_kwargs)
     if not result or result.status is not VideoGenStatus.DONE:
         error = result.error if result else "video generation failed"
+        if result and result.provider_status == "completed":
+            error = (
+                f"{error}; provider_status={result.provider_status}; "
+                f"delivery_status={result.delivery_status}"
+            )
         raise RuntimeError(f"freezone video generation failed: {error}")
     if not output_path.exists():
         raise RuntimeError("video generation returned success without output")

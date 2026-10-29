@@ -22,10 +22,10 @@ PROJECT_LANE_MIN_DEFAULTS = {
 }
 
 PROJECT_USER_LANE_LIMIT_DEFAULTS = {
-    "default": 3,
-    "video": 1,
-    "world": 1,
-    "ffmpeg": 1,
+    "default": 12,
+    "video": 4,
+    "world": 2,
+    "ffmpeg": 2,
 }
 
 GLOBAL_LANE_CONCURRENCY_DEFAULTS = {
@@ -41,6 +41,21 @@ GLOBAL_LANE_QUEUE_LIMIT_DEFAULTS = {
     "world": 64,
     "ffmpeg": 64,
 }
+
+TASK_LIMITS_RUNTIME_KEY = "task_limits.v1"
+
+
+def _runtime_lane_value(lane: str, field: str) -> int | None:
+    from novelvideo.runtime_settings import read_runtime_json
+
+    saved = read_runtime_json(TASK_LIMITS_RUNTIME_KEY, {})
+    if not isinstance(saved, dict):
+        return None
+    lanes = saved.get("lanes")
+    if not isinstance(lanes, dict) or not isinstance(lanes.get(lane), dict):
+        return None
+    value = lanes[lane].get(field)
+    return int(value) if isinstance(value, int) and not isinstance(value, bool) else None
 
 
 @dataclass
@@ -164,6 +179,12 @@ def _lane_active_limit(
     defaults: dict[str, int],
 ) -> int | None:
     lane = normalize_queue_kind(queue_kind)
+    runtime_value = _runtime_lane_value(
+        lane,
+        "projectActiveLimit" if env_prefix == "ST_PROJECT_MAX_ACTIVE" else "projectUserActiveLimit",
+    )
+    if runtime_value is not None:
+        return runtime_value
     env_name = f"{env_prefix}_{lane.upper()}_TASKS"
     raw = os.environ.get(env_name)
     default = defaults[lane]
@@ -183,6 +204,14 @@ def _positive_lane_int(
     defaults: dict[str, int],
 ) -> int:
     lane = normalize_queue_kind(queue_kind)
+    runtime_field = (
+        "globalConcurrency"
+        if env_prefix == "ST_CE_GLOBAL_MAX_ACTIVE"
+        else "globalQueueLimit"
+    )
+    runtime_value = _runtime_lane_value(lane, runtime_field)
+    if runtime_value is not None:
+        return max(runtime_value, 1)
     env_name = f"{env_prefix}_{lane.upper()}_TASKS"
     raw = os.environ.get(env_name)
     default = defaults[lane]

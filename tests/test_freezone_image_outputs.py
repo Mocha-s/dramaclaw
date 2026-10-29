@@ -131,10 +131,12 @@ async def test_animate_uses_locked_frame_and_requests_gif(
     metadata = {"resolution": "720p", "ratio": captured["aspect_ratio"]}
     payload = {"model": "seedance-2.0-fast", "seconds": "4", "metadata": metadata}
     NewApiVideoGenerator._canonicalize_video_payload(payload, metadata)
+    if expected_ratio == "1:1":
+        assert payload["width"] == payload["height"]
     wire_payload = enforce_newapi_media_geometry_contract(payload, media_type="video")
     assert wire_payload["metadata"]["ratio"] == expected_ratio
-    if expected_ratio == "1:1":
-        assert wire_payload["width"] == wire_payload["height"]
+    assert "width" not in wire_payload
+    assert "height" not in wire_payload
 
 
 @pytest.mark.parametrize(

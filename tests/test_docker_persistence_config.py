@@ -159,6 +159,12 @@ def test_env_example_configures_data_root_instead_of_individual_directories() ->
     assert "# NOVELVIDEO_DATA_ROOT=" in env_example
 
 
+def test_compose_defaults_sog_compression_to_cpu_but_allows_override() -> None:
+    for relative_path in COMPOSE_FILES:
+        api = _api(relative_path)
+        assert api["environment"]["SOG_COMPRESSION_GPU"] == "${SOG_COMPRESSION_GPU:-cpu}"
+
+
 CODEX_REF_RE = re.compile(r'^ARG CODEX_REF="([0-9a-f]{40})"$', re.MULTILINE)
 CODEX_RUNTIME_IMAGE_RE = re.compile(
     r'^ARG CODEX_RUNTIME_IMAGE="docker\.io/claymorelab/codex-dramaclaw:'
