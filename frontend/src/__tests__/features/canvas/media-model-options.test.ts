@@ -20,16 +20,17 @@ describe('媒体模型公共选项归一化', () => {
     ).toEqual(['auto', '16:9']);
   });
 
-  it('保留后台配置的分辨率档位顺序', () => {
+  it('keeps global image sizes even when a catalog advertises a narrow subset', () => {
     expect(resolveModelSizeOptions({ resolutionOptions: ['720p', '1080p'] })).toEqual([
-      '720p',
-      '1080p',
+      '1K',
+      '2K',
+      '4K',
     ]);
   });
 
   it('uses all product video resolution tiers when catalog omits them', () => {
-    expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p'] })).toEqual(['720p']);
-    expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p', '1080p'] })).toEqual(['720p', '1080p']);
+    expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p'] })).toEqual(['720p', '768p', '1080p', '2k', '4k']);
+    expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p', '1080p'] })).toEqual(['720p', '768p', '1080p', '2k', '4k']);
     expect(resolveVideoModelResolutionOptions({})).toEqual(['720p', '768p', '1080p', '2k', '4k']);
   });
 
@@ -45,9 +46,9 @@ describe('媒体模型公共选项归一化', () => {
   it('uses catalog image quality options when present and global options otherwise', () => {
     const model = { qualityOptions: ['draft', 'studio'] };
     const options = resolveModelQualityOptions(model);
-    expect(options).toEqual(['draft', 'studio']);
+    expect(options).toEqual(['auto', 'low', 'medium', 'high', 'xhigh', 'max']);
     expect(modelSupportsQuality(model)).toBe(true);
-    expect(pickAllowedOption('high', options, 'draft')).toBe('draft');
+    expect(pickAllowedOption('max', options, 'draft')).toBe('max');
     expect(resolveModelQualityOptions({})).toEqual(['auto', 'low', 'medium', 'high', 'xhigh', 'max']);
     expect(modelSupportsQuality({})).toBe(true);
   });
