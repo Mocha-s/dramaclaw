@@ -7,17 +7,19 @@ import { p } from "@/lib/api-path";
 import { queryKeys } from "@/lib/query-keys";
 import type { ErrorResponse, OkResponse } from "@/types/api";
 
+export type ImageQuality = "auto" | "low" | "medium" | "high" | "xhigh" | "max";
+
 export interface RenderSettingsData {
   render_image_selection: string;
   options: Record<string, string>;
   sketch_aspect_padding: boolean;
-  image_quality: "low" | "medium" | "high";
+  image_quality: ImageQuality;
 }
 
 export interface RenderSettingsUpdate {
   render_image_selection?: string;
   sketch_aspect_padding?: boolean;
-  image_quality?: "low" | "medium" | "high";
+  image_quality?: ImageQuality;
 }
 
 export function useRenderSettings(project: string) {

@@ -11,6 +11,7 @@ import type {
   RenderExecuteResult,
   RenderPlan,
 } from "@/types/render-plan";
+import type { ImageQuality } from "@/lib/queries/render-settings";
 
 export interface RenderPlanParams {
   beat_indices: number[];
@@ -19,7 +20,7 @@ export interface RenderPlanParams {
   aspect_mode: string;
   image_generation_selection?: string;
   sketch_aspect_padding?: boolean;
-  image_quality?: "low" | "medium" | "high";
+  image_quality?: ImageQuality;
 }
 
 export function useRenderPlan(project: string, episode: number) {
@@ -43,7 +44,7 @@ export interface RenderExecuteParams {
   force_one_by_one?: boolean;
   image_generation_selection?: string;
   sketch_aspect_padding?: boolean;
-  image_quality?: "low" | "medium" | "high";
+  image_quality?: ImageQuality;
   custom_plan?: boolean;
   beat_indices: number[];
 }

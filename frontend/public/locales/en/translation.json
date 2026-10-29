@@ -4589,7 +4589,7 @@
       "model": "Render model",
       "modelPlaceholder": "Select model",
       "quality": "Image quality",
-      "qualityOptions": { "low": "Low", "medium": "Medium", "high": "High" }
+      "qualityOptions": { "auto": "Auto", "low": "Low", "medium": "Medium", "high": "High", "xhigh": "Extra high", "max": "Maximum" }
     },
     "sketchSettings": {
       "model": "Sketch model",

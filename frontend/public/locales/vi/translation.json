@@ -4485,7 +4485,7 @@
       "model": "Model render",
       "modelPlaceholder": "Chọn model",
       "quality": "Chất lượng hình ảnh",
-      "qualityOptions": { "low": "Thấp", "medium": "Trung bình", "high": "Cao" }
+      "qualityOptions": { "auto": "Tự động", "low": "Thấp", "medium": "Trung bình", "high": "Cao", "xhigh": "Siêu cao", "max": "Tối đa" }
     },
     "sketchSettings": {
       "model": "Model phác thảo",

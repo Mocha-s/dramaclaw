@@ -26,9 +26,10 @@ def _apply_render_image_quality(
     generator_config: dict[str, Any], image_quality: object,
 ) -> dict[str, Any]:
     quality = str(image_quality or "").strip().lower()
-    if quality in {"low", "medium", "high"}:
+    if quality in {"auto", "low", "medium", "high", "xhigh", "max"}:
         generator_config["openai_image_quality"] = quality
         generator_config["huimeng_image_quality"] = quality
+        generator_config["strict_image_quality"] = True
     return generator_config
 
 

@@ -17,8 +17,10 @@ import {
 import {
   useRenderSettings,
   useUpdateRenderSettings,
+  type ImageQuality,
   type RenderSettingsUpdate,
 } from "@/lib/queries/render-settings";
+import { IMAGE_QUALITY_OPTIONS } from "@/features/canvas/nodes/shared/imageGenerationOptions";
 import {
   WORKBENCH_SELECT_CONTENT_CLASS,
   WORKBENCH_SELECT_ITEM_CLASS,
@@ -29,24 +31,22 @@ interface RenderSettingsControlsProps {
   project: string;
 }
 
-const IMAGE_QUALITY_OPTIONS = ["low", "medium", "high"] as const;
-
 function RenderQualitySelect({
   data,
   disabled,
   onChange,
 }: {
-  data: { image_quality: "low" | "medium" | "high" };
+  data: { image_quality: ImageQuality };
   disabled: boolean;
-  onChange: (quality: "low" | "medium" | "high") => void;
+  onChange: (quality: ImageQuality) => void;
 }) {
   const { t } = useTranslation();
   return (
     <Select
       value={data.image_quality}
       onValueChange={(value) => {
-        if (IMAGE_QUALITY_OPTIONS.includes(value as (typeof IMAGE_QUALITY_OPTIONS)[number])) {
-          onChange(value as (typeof IMAGE_QUALITY_OPTIONS)[number]);
+        if (IMAGE_QUALITY_OPTIONS.some((option) => option.value === value)) {
+          onChange(value as ImageQuality);
         }
       }}
       disabled={disabled}
@@ -65,7 +65,7 @@ function RenderQualitySelect({
         alignItemWithTrigger={false}
         className={WORKBENCH_SELECT_CONTENT_CLASS}
       >
-        {IMAGE_QUALITY_OPTIONS.map((quality) => (
+        {IMAGE_QUALITY_OPTIONS.map(({ value: quality }) => (
           <SelectItem key={quality} value={quality} className={WORKBENCH_SELECT_ITEM_CLASS}>
             {t(`episode.renderSettings.qualityOptions.${quality}`)}
           </SelectItem>

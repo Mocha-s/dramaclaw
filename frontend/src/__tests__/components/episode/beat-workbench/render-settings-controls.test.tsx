@@ -30,7 +30,7 @@ import { RenderModelSelect } from "@/components/episode/beat-workbench/render-se
 describe("RenderModelSelect image quality", () => {
   beforeEach(() => mutateAsync.mockReset().mockResolvedValue({ ok: true }));
 
-  it("shows the current image quality and persists a newly selected quality", async () => {
+  it("shows all global image qualities and persists max", async () => {
     const user = userEvent.setup();
     render(<RenderModelSelect project="demo" />);
 
@@ -40,12 +40,19 @@ describe("RenderModelSelect image quality", () => {
     expect(qualityButton).toHaveTextContent("episode.renderSettings.qualityOptions.medium");
 
     await user.click(qualityButton);
-    await user.click(await screen.findByRole("option", {
-      name: "episode.renderSettings.qualityOptions.high",
+    for (const quality of ["auto", "low", "medium", "high", "xhigh", "max"]) {
+      expect(
+        screen.getByRole("option", {
+          name: `episode.renderSettings.qualityOptions.${quality}`,
+        }),
+      ).toBeInTheDocument();
+    }
+    await user.click(screen.getByRole("option", {
+      name: "episode.renderSettings.qualityOptions.max",
     }));
 
     await waitFor(() =>
-      expect(mutateAsync).toHaveBeenCalledWith({ image_quality: "high" }),
+      expect(mutateAsync).toHaveBeenCalledWith({ image_quality: "max" }),
     );
   });
 });
