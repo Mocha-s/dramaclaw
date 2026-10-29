@@ -34,6 +34,8 @@ beforeAll(async () => {
               label: "Image source",
               loading: "Loading image source",
               saveFailed: "Failed to update image source",
+              sizeLabel: "Image size",
+              qualityLabel: "Image quality",
             },
           },
         },
@@ -158,5 +160,66 @@ describe("CharacterImageSourceSelect", () => {
     );
     expect(patchBody).toEqual({ image_source_selection: "portrait" });
     expect(onSelectionChange).toHaveBeenCalledWith("portrait");
+  });
+
+  it("shows global image settings and persists an explicit value without catalog capability data", async () => {
+    const user = userEvent.setup();
+    const patchBodies: unknown[] = [];
+    server.use(
+      http.get(
+        "http://localhost:3000/api/v1/projects/demo/image-source-selection/character",
+        () =>
+          HttpResponse.json({
+            ok: true,
+            data: {
+              asset_kind: "character",
+              image_source_selection: "identity",
+              image_size: "2K",
+              image_quality: "medium",
+              options: { identity: "Identity image" },
+            },
+          }),
+      ),
+      http.patch(
+        "http://localhost:3000/api/v1/projects/demo/image-source-selection/character",
+        async ({ request }) => {
+          patchBodies.push(await request.json());
+          return HttpResponse.json({
+            ok: true,
+            data: {
+              asset_kind: "character",
+              image_source_selection: "identity",
+              image_size: "4K",
+              image_quality: "medium",
+              options: { identity: "Identity image" },
+            },
+          });
+        },
+      ),
+    );
+
+    render(<CharacterImageSourceSelect project="demo" />, { wrapper });
+
+    const sizeTrigger = await screen.findByRole("combobox", { name: "Image size" });
+    expect(await screen.findByRole("combobox", { name: "Image quality" })).toBeInTheDocument();
+    await user.click(sizeTrigger);
+    expect(await screen.findByRole("option", { name: "1K" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "2K" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "4K" })).toBeInTheDocument();
+    await user.click(screen.getByRole("option", { name: "4K" }));
+
+    const qualityTrigger = screen.getByRole("combobox", { name: "Image quality" });
+    await user.click(qualityTrigger);
+    for (const quality of ["auto", "low", "medium", "high", "xhigh", "max"]) {
+      expect(screen.getByRole("option", { name: quality })).toBeInTheDocument();
+    }
+    await user.click(screen.getByRole("option", { name: "max" }));
+
+    await waitFor(() =>
+      expect(patchBodies).toEqual([
+        { image_size: "4K" },
+        { image_quality: "max" },
+      ]),
+    );
   });
 });

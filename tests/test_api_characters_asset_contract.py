@@ -100,6 +100,92 @@ def _client(monkeypatch, tmp_path, store: _CharacterStore):
     return TestClient(app)
 
 
+def _asset_image_source_client(monkeypatch, tmp_path, config: dict):
+    from novelvideo.api.routes import characters
+
+    async def fake_resolve_character_project(project: str, user: dict, **kwargs):
+        return (
+            None,
+            "admin",
+            "demo",
+            tmp_path,
+            str(tmp_path),
+            None,
+        )
+
+    def update_config(_username: str, _project: str, apply_update) -> None:
+        apply_update(config)
+
+    monkeypatch.setattr(characters, "_resolve_character_project", fake_resolve_character_project)
+    monkeypatch.setattr(characters, "image_generation_selection_options", lambda: {"identity": "Identity"})
+    monkeypatch.setattr(characters, "load_project_config_file", lambda _user, _project: dict(config))
+    monkeypatch.setattr(characters, "update_project_config_file", update_config)
+
+    app = FastAPI()
+    app.include_router(characters.router)
+    app.dependency_overrides[characters.get_api_user] = lambda: {"username": "admin"}
+    return TestClient(app)
+
+
+def test_asset_image_source_get_returns_global_image_defaults(monkeypatch, tmp_path):
+    client = _asset_image_source_client(monkeypatch, tmp_path, {"scene_image_selection": "identity"})
+
+    response = client.get("/projects/demo/image-source-selection/scene")
+
+    assert response.status_code == 200
+    assert response.json()["data"]["image_size"] == "2K"
+    assert response.json()["data"]["image_quality"] == "medium"
+
+
+def test_asset_image_source_patch_persists_each_global_setting_independently(
+    monkeypatch, tmp_path
+):
+    config = {"scene_image_selection": "identity"}
+    client = _asset_image_source_client(monkeypatch, tmp_path, config)
+
+    size_response = client.patch(
+        "/projects/demo/image-source-selection/scene", json={"image_size": "4K"}
+    )
+    quality_response = client.patch(
+        "/projects/demo/image-source-selection/scene", json={"image_quality": "xhigh"}
+    )
+
+    assert size_response.status_code == 200
+    assert quality_response.status_code == 200
+    assert config["asset_image_size"] == "4K"
+    assert config["asset_image_quality"] == "xhigh"
+
+
+def test_asset_image_source_patch_keeps_existing_model_only_request(monkeypatch, tmp_path):
+    config = {"scene_image_selection": "identity"}
+    client = _asset_image_source_client(monkeypatch, tmp_path, config)
+
+    response = client.patch(
+        "/projects/demo/image-source-selection/scene",
+        json={"image_source_selection": "identity"},
+    )
+
+    assert response.status_code == 200
+    assert config["scene_image_selection"] == "identity"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"), [("image_size", "8K"), ("image_quality", "draft")]
+)
+def test_asset_image_source_patch_rejects_invalid_global_values(
+    monkeypatch, tmp_path, field: str, value: str
+):
+    client = _asset_image_source_client(monkeypatch, tmp_path, {})
+
+    response = client.patch(
+        "/projects/demo/image-source-selection/scene", json={field: value}
+    )
+
+    assert response.status_code == 400
+    error_field = "quality" if field == "image_quality" else field
+    assert error_field in response.json()["error"]
+
+
 def test_create_character_accepts_react_extra_payload(monkeypatch, tmp_path):
     store = _CharacterStore()
     client = _client(monkeypatch, tmp_path, store)

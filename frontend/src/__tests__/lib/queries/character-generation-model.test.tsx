@@ -49,10 +49,18 @@ describe("character generation model selection", () => {
     const { result } = renderHook(() => useGeneratePortraitAsync("demo", "秦"), {
       wrapper,
     });
-    result.current.mutate({ model: "openrouter_nanobanana2" });
+    result.current.mutate({
+      model: "openrouter_nanobanana2",
+      imageSize: "4K",
+      quality: "xhigh",
+    });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(body).toEqual({ model: "openrouter_nanobanana2" });
+    expect(body).toEqual({
+      model: "openrouter_nanobanana2",
+      image_size: "4K",
+      quality: "xhigh",
+    });
   });
 
   it("surfaces backend queue-limit errors when generating a character portrait", async () => {
@@ -179,13 +187,19 @@ describe("character generation model selection", () => {
     result.current.mutate({
       identityId: "id-1",
       model: "openrouter_nanobanana2",
+      imageSize: "4K",
+      quality: "xhigh",
     });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(requestedPath).toBe(
       "/api/v1/projects/demo/characters/%E7%A7%A6/identities/id-1/generate-async",
     );
-    expect(body).toEqual({ model: "openrouter_nanobanana2" });
+    expect(body).toEqual({
+      model: "openrouter_nanobanana2",
+      image_size: "4K",
+      quality: "xhigh",
+    });
   });
 
   it("posts the selected model when generating an identity portrait", async () => {
@@ -207,9 +221,45 @@ describe("character generation model selection", () => {
     result.current.mutate({
       identityId: "id-1",
       model: "openrouter_nanobanana2",
+      imageSize: "4K",
+      quality: "xhigh",
     });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(body).toEqual({ model: "openrouter_nanobanana2" });
+    expect(body).toEqual({
+      model: "openrouter_nanobanana2",
+      image_size: "4K",
+      quality: "xhigh",
+    });
+  });
+
+  it("posts the selected image parameters when generating a scene master", async () => {
+    let body: unknown = null;
+    server.use(
+      http.post(
+        "http://localhost:3000/api/v1/projects/demo/scenes/Hall/master/generate-async",
+        async ({ request }) => {
+          body = await request.json();
+          return HttpResponse.json({ ok: true, task_id: "task-scene" });
+        },
+      ),
+    );
+
+    const { result } = renderHook(
+      () => useGenerateSceneMasterAsync("demo", "Hall"),
+      { wrapper },
+    );
+    result.current.mutate({
+      model: "gpt-image-2",
+      image_size: "4K",
+      quality: "xhigh",
+    });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(body).toEqual({
+      model: "gpt-image-2",
+      image_size: "4K",
+      quality: "xhigh",
+    });
   });
 });

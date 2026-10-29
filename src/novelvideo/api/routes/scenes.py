@@ -39,6 +39,7 @@ from novelvideo.api.viewer_manifests import (
     build_pano_viewer_manifest,
 )
 from novelvideo.director_world import stage_manifest
+from novelvideo.media_parameters import resolve_asset_image_parameters
 from novelvideo.models import (
     NovelScene,
     build_scene_effective_prompt,
@@ -191,7 +192,12 @@ async def _start_or_enqueue_stage_asset(
     raise RuntimeError("片场资产生成需要 project context")
 
 
-def _scene_reference_billing_metadata(model_selection: str) -> dict[str, Any]:
+def _scene_reference_billing_metadata(
+    model_selection: str,
+    *,
+    image_size: str = "1K",
+    quality: str = "medium",
+) -> dict[str, Any]:
     from novelvideo.api.routes.model_credits import _fixed_image_billing_params
     from novelvideo.config import (
         IMAGE_GENERATION_SELECTIONS,
@@ -210,6 +216,8 @@ def _scene_reference_billing_metadata(model_selection: str) -> dict[str, Any]:
         "pricing_params": _fixed_image_billing_params(
             "scene_master",
             model=pricing_model,
+            image_size=image_size,
+            quality=quality,
         ),
         "pricing_model_selection": selection,
         "pricing_model_label": str(model_config.get("label") or selection),
@@ -1426,6 +1434,8 @@ async def generate_scene_master(
         name=name,
         kind="master",
         model=body.model if body else None,
+        image_size=body.image_size if body else None,
+        quality=body.quality if body else None,
         user=user,
     )
 
@@ -1442,6 +1452,8 @@ async def generate_scene_reverse_master(
         name=name,
         kind="reverse_master",
         model=body.model if body else None,
+        image_size=body.image_size if body else None,
+        quality=body.quality if body else None,
         user=user,
     )
 
@@ -1452,6 +1464,8 @@ async def _start_scene_reference_task(
     name: str,
     kind: str,
     model: str | None = None,
+    image_size: str | None = None,
+    quality: str | None = None,
     user: dict,
     store: SQLiteStore | None = None,
 ):
@@ -1471,6 +1485,20 @@ async def _start_scene_reference_task(
     scope = scene_reference_asset_scope(scene.name, kind)
     if ctx is not None:
         model_selection = str(model or "").strip()
+        config = load_project_config_file(username, project_name)
+        effective_size, effective_quality = resolve_asset_image_parameters(
+            requested_size=image_size,
+            requested_quality=quality,
+            stored_size=config.get("asset_image_size"),
+            stored_quality=config.get("asset_image_quality"),
+            default_size="1K",
+            default_quality="medium",
+        )
+        billing = _scene_reference_billing_metadata(
+            model_selection,
+            image_size=effective_size,
+            quality=effective_quality,
+        )
         queued = await get_task_backend().enqueue_project_task(
             ctx,
             product_surface="mainline",
@@ -1482,9 +1510,11 @@ async def _start_scene_reference_task(
                 "scene_name": scene.name,
                 "kind": kind,
                 "model": model_selection,
+                "image_size": effective_size,
+                "quality": effective_quality,
                 "style": _project_style(username, project_name),
                 "output_dir": output_dir,
-                "billing": _scene_reference_billing_metadata(model_selection),
+                "billing": billing,
             },
         )
         return {

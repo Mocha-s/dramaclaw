@@ -1980,7 +1980,9 @@
     "imageSource": {
       "label": "图源",
       "loading": "正在读取图源",
-      "saveFailed": "图源更新失败"
+      "saveFailed": "图源更新失败",
+      "sizeLabel": "图片尺寸",
+      "qualityLabel": "图片画质"
     },
     "projectStyle": {
       "label": "风格",
@@ -4587,7 +4589,7 @@
       "model": "渲染模型",
       "modelPlaceholder": "选择模型",
       "quality": "图片画质",
-      "qualityOptions": { "low": "低", "medium": "中", "high": "高" }
+      "qualityOptions": { "auto": "自动", "low": "低", "medium": "中", "high": "高", "xhigh": "超高", "max": "最高" }
     },
     "sketchSettings": {
       "model": "草图模型",

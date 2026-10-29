@@ -348,8 +348,8 @@ const REFERENCE_CAPS_BY_MODE: Partial<
   firstLastFrame: { image: 2, video: 0, audio: 0 },
 };
 
-// 后台「媒体模型」未给该模型配置比例 / 分辨率时的兜底档位。正常路径下这两项
-// 都来自目录条目的 ratioOptions / resolutionOptions。
+// Video generation resolution is a global product contract; aspect ratio remains
+// model/catalog-scoped.
 export const ASPECT_RATIOS: ReadonlyArray<FreezoneVideoAspectRatio> =
   FALLBACK_VIDEO_ASPECT_OPTIONS;
 const SCENE_OPTIMIZE_OPTIONS: ReadonlyArray<Seedance2SceneOptimize> = ["anime", "realistic"];

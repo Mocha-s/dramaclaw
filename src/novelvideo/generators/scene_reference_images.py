@@ -602,11 +602,13 @@ def _scene_image_config(
     model: str,
     *,
     include_output_format: bool = True,
+    image_size: str = "1K",
+    quality: str = "medium",
 ) -> dict[str, str]:
     image_config = {
         "aspect_ratio": "16:9",
-        "image_size": "1K",
-        "quality": "medium",
+        "image_size": image_size,
+        "quality": quality,
     }
     if include_output_format:
         image_config["output_format"] = "png"
@@ -624,6 +626,8 @@ async def generate_scene_reference_image(
     style_prompt: str = "",
     avoid_instructions: str = "",
     base_scene: NovelScene | None = None,
+    image_size: str = "1K",
+    quality: str = "medium",
     egress_context: TrustedEgressContext | None = None,
 ) -> Path:
     """Generate one canonical scene reference image and return its path."""
@@ -702,7 +706,9 @@ async def generate_scene_reference_image(
             model=selected_model,
             prompt=prompt,
             reference_images=references or None,
-            image_config=_scene_image_config(selected_model),
+            image_config=_scene_image_config(
+                selected_model, image_size=image_size, quality=quality
+            ),
         )
     elif provider == "newapi":
         if organization_egress is None:
@@ -724,6 +730,8 @@ async def generate_scene_reference_image(
         scene_image_config = _scene_image_config(
             selected_model,
             include_output_format=not bool(references),
+            image_size=image_size,
+            quality=quality,
         )
         if request_metadata:
             scene_image_config.update(
@@ -757,9 +765,9 @@ async def generate_scene_reference_image(
             reference_images=references or None,
             image_config={
                 "aspect_ratio": "16:9",
-                "image_size": "1K",
-                "quality": "medium",
-                "huimeng_image_quality": "medium",
+                "image_size": image_size,
+                "quality": quality,
+                "huimeng_image_quality": quality,
             },
         )
     else:
@@ -771,8 +779,8 @@ async def generate_scene_reference_image(
             reference_images=[item[1] for item in references] or None,
             image_config={
                 "aspect_ratio": "16:9",
-                "image_size": "1K",
-                "quality": "medium",
+                "image_size": image_size,
+                "quality": quality,
             },
         )
 

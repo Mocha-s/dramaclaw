@@ -29,6 +29,17 @@ def test_render_generator_quality_override_is_shared_by_batch_and_grid_paths():
     assert result["huimeng_image_quality"] == "high"
 
 
+@pytest.mark.parametrize("quality", ["auto", "xhigh", "max"])
+def test_render_generator_quality_override_forwards_new_global_tiers(quality):
+    config = {"openai_image_quality": "low", "huimeng_image_quality": "low"}
+
+    render_runner._apply_render_image_quality(config, quality)
+
+    assert config["openai_image_quality"] == quality
+    assert config["huimeng_image_quality"] == quality
+    assert config["strict_image_quality"] is True
+
+
 def test_render_generator_quality_override_ignores_invalid_values():
     config = {"openai_image_quality": "low"}
 

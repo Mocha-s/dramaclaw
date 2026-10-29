@@ -90,8 +90,8 @@ from novelvideo.storage.media_relay import (
 
 _VALID_IMAGE_SIZES = {"512", "1K", "2K", "4K"}
 _OPENROUTER_IMAGE_CAPABILITY_CACHE: dict[str, tuple[bool, str]] = {}
-_OPENAI_VALID_QUALITIES = {"low", "medium", "high", "auto"}
-_NEWAPI_IMAGE_QUALITIES = frozenset({"low", "medium", "high", "xhigh", "max"})
+_OPENAI_VALID_QUALITIES = {"auto", "low", "medium", "high", "xhigh", "max"}
+_NEWAPI_IMAGE_QUALITIES = frozenset({"auto", "low", "medium", "high", "xhigh", "max"})
 _NEWAPI_IMAGE_TIERS = frozenset({"web", "1k", "2k", "4k"})
 _OPENAI_MIN_PIXELS = 655_360
 _OPENAI_MAX_PIXELS = 8_294_400
@@ -3820,7 +3820,12 @@ async def _call_openai_image_api(
             except Exception as exc:
                 detail = f"{type(exc).__name__}: {exc!r}"
                 unknown_parameter = _extract_openai_unknown_parameter(detail)
-                if unknown_parameter and unknown_parameter in request_options:
+                strict_quality = image_config.get("strict_quality") is True
+                if (
+                    unknown_parameter
+                    and unknown_parameter in request_options
+                    and not (strict_quality and unknown_parameter == "quality")
+                ):
                     print(
                         f"[OpenAI Image] 参数 {unknown_parameter!r} 不被当前端点接受，" "移除后重试"
                     )
@@ -4748,6 +4753,7 @@ class NanoBananaGridGenerator:
         self.model = config["model"]
         self.base_url = config.get("base_url", "")
         self.openai_image_quality = config.get("openai_image_quality", "medium")
+        self.strict_image_quality = bool(config.get("strict_image_quality", False))
         self.openai_sketch_image_quality = config.get(
             "openai_sketch_image_quality", "low"
         )
@@ -5502,6 +5508,7 @@ class NanoBananaGridGenerator:
                             if sketch
                             else self.openai_image_quality
                         ),
+                        "strict_quality": self.strict_image_quality,
                         "output_format": "png",
                     },
                 )

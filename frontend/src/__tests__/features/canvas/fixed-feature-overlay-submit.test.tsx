@@ -224,8 +224,8 @@ describe("宫格动作面板", () => {
     const payload = submitFreezoneTemplateEdit.mock.calls[0][1] as Record<string, unknown>;
     expect(payload.model).toBe(CATALOG_MODEL.apiModel);
     expect(payload.catalogId).toBe(CATALOG_MODEL.catalogId);
-    expect(payload.imageSize).toBe("1K");
-    expect(payload.quality).toBe("low");
+    expect(payload.imageSize).toBe("2K");
+    expect(payload.quality).toBe("medium");
     expect(payload.imageSize).toBe(quoted.size);
     expect(payload.quality).toBe(quoted.quality);
     expect(payload.model).toBe(quoted.image_selection);

@@ -70,8 +70,8 @@ export function useDeleteProp(project: string) {
 }
 
 export function useGeneratePropReferenceAsync(project: string, name: string) {
-  return useMutation<TaskResponse | ErrorResponse, Error, { model?: string } | void>({
-    mutationFn: (data: { model?: string } | void) =>
+  return useMutation<TaskResponse | ErrorResponse, Error, { model?: string; image_size?: string; quality?: string } | void>({
+    mutationFn: (data: { model?: string; image_size?: string; quality?: string } | void) =>
       jsonWithBackendError<TaskResponse | ErrorResponse>(
         api.post(p`api/v1/projects/${project}/props/${name}/reference/generate-async`, {
           json: data ?? {},

@@ -2,6 +2,10 @@
 // Copyright (c) 2026 ClaymoreLab
 
 import { IMAGE_QUALITY_OPTIONS } from '@/features/canvas/nodes/shared/imageGenerationOptions';
+import {
+  FREEZONE_IMAGE_RESOLUTIONS,
+  FREEZONE_VIDEO_RESOLUTIONS,
+} from '@/features/canvas/domain/freezoneGenerationResolutions';
 
 /**
  * 媒体模型能力的统一解析入口。
@@ -38,10 +42,9 @@ export const FALLBACK_IMAGE_ASPECT_OPTIONS: readonly string[] = [
 
 /** Resolution tiers for one selected model; missing catalog fields use product tiers. */
 export function resolveVideoModelResolutionOptions(
-  model: MediaModelCapabilities | null | undefined,
+  _model: MediaModelCapabilities | null | undefined,
 ): string[] {
-  const configured = normalizeOptions(model?.resolutionOptions);
-  return configured.length > 0 ? configured : ['720p', '768p', '1080p', '2k', '4k'];
+  return [...FREEZONE_VIDEO_RESOLUTIONS];
 }
 
 /**
@@ -86,11 +89,10 @@ function normalizeRatioOptions(values: string[] | null | undefined): string[] {
 
 /** 选中模型支持的分辨率档位；目录没配就用兜底。 */
 export function resolveModelSizeOptions(
-  model: MediaModelCapabilities | null | undefined,
-  fallback: readonly string[] = FALLBACK_IMAGE_SIZE_OPTIONS,
+  _model: MediaModelCapabilities | null | undefined,
+  _fallback: readonly string[] = FALLBACK_IMAGE_SIZE_OPTIONS,
 ): string[] {
-  const configured = normalizeOptions(model?.resolutionOptions);
-  return configured.length > 0 ? configured : [...fallback];
+  return [...FREEZONE_IMAGE_RESOLUTIONS];
 }
 
 /** 选中模型支持的画面比例；目录没配就用兜底。 */
@@ -109,12 +111,9 @@ export function resolveModelAspectOptions(
  * quality 参数，此时下发 quality 会被网关拒掉。
  */
 export function resolveModelQualityOptions(
-  model: MediaModelCapabilities | null | undefined,
+  _model: MediaModelCapabilities | null | undefined,
 ): string[] {
-  const configured = normalizeOptions(model?.qualityOptions);
-  return configured.length > 0
-    ? configured
-    : IMAGE_QUALITY_OPTIONS.map((option) => option.value);
+  return IMAGE_QUALITY_OPTIONS.map((option) => option.value);
 }
 
 /**

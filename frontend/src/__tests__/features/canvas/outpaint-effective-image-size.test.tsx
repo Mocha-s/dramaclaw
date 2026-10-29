@@ -122,15 +122,14 @@ beforeEach(() => {
 });
 
 describe("扩图面板的分辨率档位", () => {
-  it("提交的是收敛后的档位，不是越界的原始选择", async () => {
+  it("catalog 窄能力声明不收敛全局默认档位", async () => {
     renderOverlay();
     fireEvent.click(screen.getByTitle("outpaintEditor.submit"));
 
     await waitFor(() => expect(submitFreezoneOutpaint).toHaveBeenCalled());
     const body = submitFreezoneOutpaint.mock.calls[0][1] as Record<string, unknown>;
-    // 默认状态是 '2K'，但该模型只配了 1K / 4K → 必须落到首个可用档位 '1K'。
-    expect(body.imageSize).toBe("1K");
-    expect(body.imageSize).not.toBe("2K");
+    // 默认状态是全局产品档位 2K，即使 catalog 只声明了 1K / 4K 也不能改写。
+    expect(body.imageSize).toBe("2K");
   });
 
   it("报价与提交用同一个档位", async () => {
@@ -148,8 +147,8 @@ describe("扩图面板的分辨率档位", () => {
 
   it("用户显式选中的档位在允许范围内时原样提交", async () => {
     renderOverlay();
-    // 打开分辨率下拉（触发器上显示的就是当前收敛值 1K），挑一个模型确实支持的档位。
-    fireEvent.click(screen.getByText("1K"));
+    // 打开分辨率下拉，选择另一个全局产品档位。
+    fireEvent.click(screen.getByText("2K"));
     fireEvent.click(screen.getByText("4K"));
     fireEvent.click(screen.getByTitle("outpaintEditor.submit"));
 

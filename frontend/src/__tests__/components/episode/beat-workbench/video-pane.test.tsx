@@ -1127,16 +1127,19 @@ describe("VideoPane Seedance2 inspector", () => {
     expect(config.scene_optimize).toBe("realistic");
   });
 
-  it("uses model-specific Seedance2 resolution options", async () => {
+  it("uses all global resolution options for Seedance2", async () => {
     const user = userEvent.setup();
     renderPane(makeBeat({ seedance2_config_json: "" }), {
       defaultBackend: "seedance-2.0",
     });
 
     await user.click(screen.getByRole("combobox", { name: "分辨率" }));
-    expect(await screen.findByRole("option", { name: "480p" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "480p" })).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: "720p" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "768p" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "1080p" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "2k" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "4k" })).toBeInTheDocument();
   });
 
   it("keeps catalog video resolutions beyond the legacy three-value union", () => {
@@ -1146,9 +1149,11 @@ describe("VideoPane Seedance2 inspector", () => {
     };
 
     expect(videoResolutionOptionsForBackend(backend.value, backend)).toEqual([
+      "720p",
       "768p",
-      "2K",
-      "4K",
+      "1080p",
+      "2k",
+      "4k",
     ]);
   });
 
@@ -1165,7 +1170,7 @@ describe("VideoPane Seedance2 inspector", () => {
         dialogue_only: false,
         min_duration: 4,
         max_duration: 15,
-        resolution_options: ["768p", "2k", "4k"],
+        resolution_options: [],
       },
     ];
     renderPane(makeBeat({ video_url: null }), { defaultBackend: "minimax-h3" });
@@ -1182,7 +1187,7 @@ describe("VideoPane Seedance2 inspector", () => {
     );
   });
 
-  it("hides unsupported Seedance2 value resolution options", async () => {
+  it("keeps global resolution options for Seedance2 value models", async () => {
     const user = userEvent.setup();
     renderPane(makeBeat({ seedance2_config_json: "" }), {
       defaultBackend: "seedance-2.0-value",
@@ -1197,14 +1202,17 @@ describe("VideoPane Seedance2 inspector", () => {
     await user.click(screen.getByLabelText("分辨率"));
     expect(await screen.findByRole("option", { name: "720p" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "480p" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "768p" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "1080p" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "2k" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "4k" })).toBeInTheDocument();
   });
 
-  it("normalizes unsupported saved Seedance2 value resolution", async () => {
+  it("preserves a saved global Seedance2 value resolution", async () => {
     renderPane(
       makeBeat({
         seedance2_config_json: JSON.stringify({
-          resolution: "480p",
+          resolution: "4k",
           final_prompt: "existing seedance2 prompt",
         }),
       }),
@@ -1216,16 +1224,16 @@ describe("VideoPane Seedance2 inspector", () => {
     const payload =
       updateBeatMock.mock.calls[updateBeatMock.mock.calls.length - 1][0];
     const config = JSON.parse(payload.data.seedance2_config_json);
-    expect(config.resolution).toBe("720p");
+    expect(config.resolution).toBe("4k");
   });
 
-  it("normalizes Seedance2 resolution before generation after backend switches", async () => {
+  it("regenerates after a backend switch without dropping the global config", async () => {
     const user = userEvent.setup();
     const beat = makeBeat({
       seedance2_config_json: JSON.stringify({
         mode: "multimodal_reference",
         duration: 5,
-        resolution: "1080p",
+        resolution: "4k",
         ratio: "9:16",
         final_prompt: "existing seedance2 prompt",
       }),
@@ -1249,16 +1257,8 @@ describe("VideoPane Seedance2 inspector", () => {
     await user.click(screen.getByRole("button", { name: "确认" }));
 
     await waitFor(() => expect(regenerateMock).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(updateBeatMock).toHaveBeenCalled());
-    const saveBeforeRegenerateIndex = updateBeatMock.mock.invocationCallOrder.findIndex(
-      (order) => order < regenerateMock.mock.invocationCallOrder[0],
-    );
-    expect(saveBeforeRegenerateIndex).toBeGreaterThanOrEqual(0);
-    const payload = updateBeatMock.mock.calls[saveBeforeRegenerateIndex][0];
-    const config = JSON.parse(payload.data.seedance2_config_json);
-    expect(config.resolution).toBe("720p");
-    expect(updateBeatMock.mock.invocationCallOrder[saveBeforeRegenerateIndex]).toBeLessThan(
-      regenerateMock.mock.invocationCallOrder[0],
+    expect(regenerateMock.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ videoBackend: "seedance-2.0-fast" }),
     );
   });
 

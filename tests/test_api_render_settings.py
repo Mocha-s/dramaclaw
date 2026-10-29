@@ -178,6 +178,46 @@ def test_render_settings_preserves_provider_default_when_quality_is_unset(monkey
     assert response.json()["data"]["image_quality"] == "high"
 
 
+@pytest.mark.parametrize("quality", ["auto", "xhigh", "max"])
+def test_render_settings_round_trips_all_global_quality_tiers(
+    monkeypatch, tmp_path, quality
+):
+    client, saved = _client(monkeypatch, tmp_path, {})
+
+    response = client.patch(
+        "/api/v1/projects/demo/render-settings",
+        json={"image_quality": quality},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["image_quality"] == quality
+    assert saved == [{"image_quality": quality}]
+
+
+def test_render_plan_request_accepts_all_global_quality_tiers():
+    from novelvideo.api.schemas import (
+        PlanEntryOut,
+        RenderPlanExecuteRequest,
+        RenderPlanRequest,
+    )
+
+    for quality in ("auto", "low", "medium", "high", "xhigh", "max"):
+        plan = RenderPlanRequest(
+            beat_indices=[1], strategy="location", aspect_mode="9:16", image_quality=quality
+        )
+        execute = RenderPlanExecuteRequest(
+            plan=[PlanEntryOut(mode_key="1x1_9-16", rows=1, cols=1, beat_numbers=[1])],
+            plan_hash="hash",
+            input_fingerprint="fingerprint",
+            strategy="location",
+            aspect_mode="9:16",
+            beat_indices=[1],
+            image_quality=quality,
+        )
+        assert plan.image_quality == quality
+        assert execute.image_quality == quality
+
+
 @pytest.mark.m09
 def test_render_settings_patch_rejects_unknown_selection(monkeypatch, tmp_path):
     client, saved = _client(monkeypatch, tmp_path)

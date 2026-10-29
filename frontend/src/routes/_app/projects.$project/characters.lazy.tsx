@@ -64,7 +64,10 @@ import {
   backendErrorToastMessage,
   BillingRuleNotConfiguredError,
 } from "@/lib/api-errors";
-import { useCharacterImageSelection } from "@/lib/queries/character-image-selection";
+import {
+  useAssetImageSourceSelection,
+  useCharacterImageSelection,
+} from "@/lib/queries/character-image-selection";
 import { useProject } from "@/lib/queries/projects";
 import { useGenerationCreditCost } from "@/lib/queries/generation-credit-cost";
 import { isCeRuntime } from "@/lib/runtime-config";
@@ -922,12 +925,16 @@ function PortraitBlock({
   character,
   project,
   imageModel,
+  imageSize,
+  imageQuality,
   attemptCount,
   onAttempt,
 }: {
   character: Character;
   project: string;
   imageModel?: string;
+  imageSize?: string;
+  imageQuality?: string;
   attemptCount: number;
   onAttempt: () => void;
 }) {
@@ -962,6 +969,8 @@ function PortraitBlock({
     try {
       const res = await genPortrait.mutateAsync({
         model: imageModel || undefined,
+        imageSize,
+        quality: imageQuality,
       });
       if (res.ok === false) {
         toast.error(res.error || t("common.error"));
@@ -1341,6 +1350,8 @@ function IdentityCard({
   characterName,
   characterAgeGroup,
   imageModel,
+  imageSize,
+  imageQuality,
   ageLabel,
   roleLabel,
   onAttempt,
@@ -1350,6 +1361,8 @@ function IdentityCard({
   characterName: string;
   characterAgeGroup?: string;
   imageModel?: string;
+  imageSize?: string;
+  imageQuality?: string;
   ageLabel: string;
   roleLabel: string;
   onAttempt: () => void;
@@ -1531,6 +1544,8 @@ function IdentityCard({
       const res = await genImg.mutateAsync({
         identityId: identity.identity_id,
         model: imageModel || undefined,
+        imageSize,
+        quality: imageQuality,
       });
       if (res.ok === false) {
         toast.error(res.error || t("common.error"));
@@ -1554,6 +1569,8 @@ function IdentityCard({
       const res = await genPortrait.mutateAsync({
         identityId: identity.identity_id,
         model: imageModel || undefined,
+        imageSize,
+        quality: imageQuality,
       });
       if (res.ok === false) {
         toast.error(res.error || t("common.error"));
@@ -2380,11 +2397,15 @@ function IdentitiesGridSection({
   character,
   project,
   imageModel,
+  imageSize,
+  imageQuality,
   onAttempt,
 }: {
   character: Character;
   project: string;
   imageModel?: string;
+  imageSize?: string;
+  imageQuality?: string;
   onAttempt: () => void;
 }) {
   const { t } = useTranslation();
@@ -2488,6 +2509,8 @@ function IdentitiesGridSection({
                 characterName={character.name}
                 characterAgeGroup={character.age_group}
                 imageModel={imageModel}
+                imageSize={imageSize}
+                imageQuality={imageQuality}
                 ageLabel={ageLabel}
                 roleLabel={roleLabel}
                 onAttempt={onAttempt}
@@ -2611,6 +2634,8 @@ function DetailPanel({
   character,
   project,
   imageModel,
+  imageSize,
+  imageQuality,
   attemptCount,
   mainCopy,
   onAttempt,
@@ -2620,6 +2645,8 @@ function DetailPanel({
   character: Character | null;
   project: string;
   imageModel?: string;
+  imageSize?: string;
+  imageQuality?: string;
   attemptCount: number;
   mainCopy: CharacterMainCopy;
   onAttempt: () => void;
@@ -2669,6 +2696,8 @@ function DetailPanel({
                 character={character}
                 project={project}
                 imageModel={imageModel}
+                imageSize={imageSize}
+                imageQuality={imageQuality}
                 attemptCount={attemptCount}
                 onAttempt={onAttempt}
               />
@@ -2687,6 +2716,8 @@ function DetailPanel({
           character={character}
           project={project}
           imageModel={imageModel}
+          imageSize={imageSize}
+          imageQuality={imageQuality}
           onAttempt={onAttempt}
         />
       </div>
@@ -2947,6 +2978,8 @@ function CharactersSplit({
   characters,
   totalCharacters,
   imageModel,
+  imageSize,
+  imageQuality,
   mainCopy,
   searchQuery,
   onSearchQueryChange,
@@ -2970,6 +3003,8 @@ function CharactersSplit({
   characters: Character[];
   totalCharacters: number;
   imageModel?: string;
+  imageSize?: string;
+  imageQuality?: string;
   mainCopy: CharacterMainCopy;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
@@ -3128,7 +3163,9 @@ function CharactersSplit({
     <DetailPanel
       character={selectedChar}
       project={project}
-      imageModel={imageModel}
+        imageModel={imageModel}
+        imageSize={imageSize}
+        imageQuality={imageQuality}
       attemptCount={selectedChar ? (attempts[selectedChar.name] ?? 0) : 0}
       mainCopy={mainCopy}
       onAttempt={() => selectedChar && handleAttempt(selectedChar.name)}
@@ -3173,6 +3210,10 @@ function CharactersPageContent() {
   const { data: imageSelectionRes } = useCharacterImageSelection(
     project,
     assetTab === "characters",
+  );
+  const { data: assetImageSourceRes } = useAssetImageSourceSelection(
+    project,
+    "character",
   );
   const buildChars = useBuildCharacters(project);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -3221,6 +3262,8 @@ function CharactersPageContent() {
   const projectConfig = projectRes?.data;
   const savedImageModel =
     imageSelectionRes?.data.character_image_selection ?? "";
+  const imageSize = assetImageSourceRes?.data.image_size ?? "2K";
+  const imageQuality = assetImageSourceRes?.data.image_quality ?? "medium";
   const narratorMain = useMemo(
     () => characters.find((character) => character.is_main) ?? null,
     [characters],
@@ -3347,6 +3390,8 @@ function CharactersPageContent() {
             characters={filteredCharacters}
             totalCharacters={characters.length}
             imageModel={imageModel}
+            imageSize={imageSize}
+            imageQuality={imageQuality}
             mainCopy={mainCopy}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}

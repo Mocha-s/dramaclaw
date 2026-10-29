@@ -153,7 +153,7 @@ describe("目录动态参数的端到端往返", () => {
       "utf8",
     );
     expect(source).toContain("IMAGE_QUALITY_OPTIONS.map");
-    expect(source).toContain("const supportsImageQuality = true");
+    expect(source).toContain("quality: effectiveQuality");
   });
 
   it("没有 request.parameters 的目录条目不凭空造出参数字段", () => {

@@ -92,16 +92,19 @@ describe("asset query hooks", () => {
   });
 
   it("starts a prop reference generation task", async () => {
+    let body: unknown = null;
     server.use(
       http.post(
         "http://localhost:3000/api/v1/projects/demo/props/%E4%B8%83%E6%98%9F%E5%89%91/reference/generate-async",
-        () =>
-          HttpResponse.json({
+        async ({ request }) => {
+          body = await request.json();
+          return HttpResponse.json({
             ok: true,
             task_type: "prop_reference_asset",
             scope: "prop:seven-star-sword",
             message: "started",
-          }),
+          });
+        },
       ),
     );
 
@@ -109,11 +112,20 @@ describe("asset query hooks", () => {
       () => useGeneratePropReferenceAsync("demo", "七星剑"),
       { wrapper },
     );
-    result.current.mutate();
+    result.current.mutate({
+      model: "gpt-image-2",
+      image_size: "4K",
+      quality: "xhigh",
+    });
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data?.ok).toBe(true);
     if (result.current.data?.ok) {
       expect(result.current.data.task_type).toBe("prop_reference_asset");
     }
+    expect(body).toEqual({
+      model: "gpt-image-2",
+      image_size: "4K",
+      quality: "xhigh",
+    });
   });
 });

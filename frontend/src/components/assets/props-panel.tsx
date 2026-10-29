@@ -235,12 +235,16 @@ function PropAssetCardController({
   project,
   prop,
   imageSourceSelection,
+  imageSize,
+  imageQuality,
   onEdit,
   onDelete,
 }: {
   project: string;
   prop: PropAsset;
   imageSourceSelection: string;
+  imageSize?: string;
+  imageQuality?: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -275,7 +279,11 @@ function PropAssetCardController({
 
   async function handleGenerate() {
     try {
-      const res = await generateReference.mutateAsync({ model: imageSourceSelection });
+      const res = await generateReference.mutateAsync({
+        model: imageSourceSelection,
+        image_size: imageSize,
+        quality: imageQuality,
+      });
       if (isErrorResponse(res)) {
         toast.error(res.error);
         return;
@@ -350,6 +358,8 @@ export function PropsPanel({
   );
   const imageSourceQuery = useAssetImageSourceSelection(project, "prop");
   const imageSourceSelection = imageSourceQuery.data?.data.image_source_selection ?? "";
+  const imageSize = imageSourceQuery.data?.data.image_size ?? "2K";
+  const imageQuality = imageSourceQuery.data?.data.image_quality ?? "medium";
   const allItems = props.data?.data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const items = useMemo(() => {
@@ -502,6 +512,8 @@ export function PropsPanel({
                   project={project}
                   prop={prop}
                   imageSourceSelection={imageSourceSelection}
+                  imageSize={imageSize}
+                  imageQuality={imageQuality}
                   onEdit={() => {
                     setEditing(prop);
                     setDialogOpen(true);

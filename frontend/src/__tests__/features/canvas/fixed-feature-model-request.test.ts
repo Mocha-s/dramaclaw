@@ -23,11 +23,11 @@ describe("resolveFixedFeatureModelRequest", () => {
     expect(submit.quality).toBe(billingParams.quality);
   });
 
-  it("模型不支持默认档位时收敛到它真支持的档位，而不是硬发 2K/medium", () => {
+  it("catalog 窄能力声明不隐藏或收敛全局默认档位", () => {
     const { submit } = resolveFixedFeatureModelRequest(CATALOG_MODEL);
     // 目录只配了 1K / 4K 与 low / high。
-    expect(submit.imageSize).toBe("1K");
-    expect(submit.quality).toBe("low");
+    expect(submit.imageSize).toBe("2K");
+    expect(submit.quality).toBe("medium");
   });
 
   it("带上模型与目录身份，不把模型选择留给后端默认", () => {

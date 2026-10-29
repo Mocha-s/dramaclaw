@@ -436,9 +436,7 @@ export function MultiAngleEditorPanel({ imageSource, onClose, onSubmit }: MultiA
       surface: 'canvas',
       params: buildImageFeatureBillingParams(selectedModel, {
         size: effectiveImageSize,
-        ...(qualityOptions.length > 0
-          ? { quality: pickAllowedOption('medium', qualityOptions) }
-          : {}),
+        quality: pickAllowedOption('medium', qualityOptions),
         operation: 'multi_view',
       }),
     },

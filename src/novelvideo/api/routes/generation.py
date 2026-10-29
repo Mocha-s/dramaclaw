@@ -66,6 +66,7 @@ from novelvideo.generators.nanobanana_grid import (
     hash_plan,
 )
 from novelvideo.generators.render_identity_guard import render_ai_detection_error
+from novelvideo.media_parameters import IMAGE_QUALITY_OPTIONS
 from novelvideo.manual_shots import pick_beats_by_number
 from novelvideo.render_plan.ref_image_hash import RefImageHasher
 from novelvideo.seedance2_i2v.pipeline import (
@@ -332,7 +333,7 @@ def _resolve_render_bool_setting(
     return bool(project_config.get(key, default))
 
 
-_MAINLINE_IMAGE_QUALITIES = frozenset({"low", "medium", "high"})
+_MAINLINE_IMAGE_QUALITIES = frozenset(IMAGE_QUALITY_OPTIONS)
 
 
 def _default_mainline_image_quality() -> str:
@@ -925,31 +926,38 @@ def _catalog_video_resolution_options(video_backend: str | None) -> tuple[str, .
 
 
 def _seedance2_resolution_options_for_backend(video_backend: str | None) -> tuple[str, ...]:
-    model = _seedance2_model_from_backend(video_backend)
-    catalog_options = _catalog_video_resolution_options(video_backend)
-    if catalog_options:
-        return catalog_options
-    return SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL.get(
-        model,
-        SEEDANCE2_DEFAULT_RESOLUTION_OPTIONS,
-    )
+    from novelvideo.media_parameters import VIDEO_GENERATION_RESOLUTION_OPTIONS
+
+    return VIDEO_GENERATION_RESOLUTION_OPTIONS
 
 
 def _seedance2_resolution_for_backend(
     video_backend: str | None,
     resolution: str | None,
+    *,
+    explicit: bool = False,
 ) -> str:
+    from novelvideo.media_parameters import validate_video_generation_resolution
+
+    if not resolution:
+        return "720p"
+    if explicit:
+        return validate_video_generation_resolution(str(resolution).strip().lower())
     clean_resolution = _seedance2_api_resolution(resolution)
     options = _seedance2_resolution_options_for_backend(video_backend)
     if clean_resolution in options:
         return clean_resolution
-    if "720p" in options:
-        return "720p"
-    return options[0]
+    return "720p"
 
 
-def _happyhorse_resolution_for_backend(resolution: str | None) -> str:
+def _happyhorse_resolution_for_backend(
+    resolution: str | None, *, explicit: bool = False
+) -> str:
     text = str(resolution or "").strip().lower()
+    if explicit:
+        from novelvideo.media_parameters import validate_video_generation_resolution
+
+        return validate_video_generation_resolution(text)
     if "720" in text:
         return "720p"
     return "1080p"
@@ -960,8 +968,14 @@ def _happyhorse_ratio_for_backend(ratio: str | None) -> str:
     return text if text in HAPPYHORSE_RATIO_OPTIONS else "16:9"
 
 
-def _grok_video_resolution_for_backend(resolution: str | None) -> str:
+def _grok_video_resolution_for_backend(
+    resolution: str | None, *, explicit: bool = False
+) -> str:
     text = str(resolution or "").strip().lower()
+    if explicit:
+        from novelvideo.media_parameters import validate_video_generation_resolution
+
+        return validate_video_generation_resolution(text)
     return text if text in GROK_VIDEO_RESOLUTION_OPTIONS else "720p"
 
 
@@ -1101,6 +1115,7 @@ async def _prepare_seedance2_api_beat(
         resolution=_seedance2_resolution_for_backend(
             video_backend,
             requested_resolution,
+            explicit=resolution is not None,
         ),
         ratio=ratio,
         prop_menu=prop_menu,
@@ -1160,7 +1175,10 @@ async def _prepare_happyhorse_api_beat(
 
     target_duration = int(config.duration or duration or 0)
     config.duration = target_duration
-    config.resolution = _happyhorse_resolution_for_backend(resolution or config.resolution)
+    config.resolution = _happyhorse_resolution_for_backend(
+        resolution or config.resolution,
+        explicit=resolution is not None,
+    )
     config.ratio = _happyhorse_ratio_for_backend(ratio or config.ratio)
     config.final_prompt = final_prompt
 
@@ -1242,7 +1260,10 @@ async def _prepare_grok_video_api_beat(
 
     target_duration = int(config.duration or duration or 0)
     config.duration = target_duration
-    config.resolution = _grok_video_resolution_for_backend(resolution or config.resolution)
+    config.resolution = _grok_video_resolution_for_backend(
+        resolution or config.resolution,
+        explicit=resolution is not None,
+    )
     config.ratio = _grok_video_ratio_for_backend(ratio or config.ratio)
     config.final_prompt = final_prompt
 
@@ -4933,6 +4954,16 @@ async def generate_single_video(
     is_seedance2 = _is_seedance2_backend(body.video_backend)
     is_happyhorse = _is_happyhorse_backend(body.video_backend)
     is_grok_video = _is_grok_video_backend(body.video_backend)
+    explicit_resolution: str | None = None
+    if "resolution" in body.model_fields_set:
+        from novelvideo.media_parameters import validate_video_generation_resolution
+
+        try:
+            explicit_resolution = validate_video_generation_resolution(
+                str(body.resolution).strip().lower()
+            )
+        except ValueError as exc:
+            return {"ok": False, "error": str(exc)}
 
     # 首帧路径
     from novelvideo.utils.path_resolver import PathResolver
@@ -4998,7 +5029,7 @@ async def generate_single_video(
                 all_beats=beats,
                 index=beat_index,
                 video_backend=body.video_backend,
-                resolution=body.resolution if "resolution" in body.model_fields_set else None,
+                resolution=explicit_resolution,
                 ratio=body.ratio if "ratio" in body.model_fields_set else None,
                 prop_menu=prop_menu,
             )
@@ -5041,7 +5072,7 @@ async def generate_single_video(
                 video_mode=video_mode,
                 prompt=prompt,
                 duration=video_duration,
-                resolution=body.resolution if "resolution" in body.model_fields_set else None,
+                resolution=explicit_resolution,
                 ratio=body.ratio if "ratio" in body.model_fields_set else None,
                 prop_menu=prop_menu,
             )
@@ -5088,7 +5119,7 @@ async def generate_single_video(
                 video_mode=video_mode,
                 prompt=prompt,
                 duration=video_duration,
-                resolution=body.resolution if "resolution" in body.model_fields_set else None,
+                resolution=explicit_resolution,
                 ratio=body.ratio if "ratio" in body.model_fields_set else None,
                 prop_menu=prop_menu,
             )
@@ -5124,10 +5155,8 @@ async def generate_single_video(
                 pass
         if audio_duration:
             video_duration = max(float(video_duration), float(math.ceil(float(audio_duration))))
-        if "resolution" in body.model_fields_set:
-            single_video_resolution = _seedance2_resolution_for_backend(
-                body.video_backend, body.resolution
-            )
+        if explicit_resolution is not None:
+            single_video_resolution = explicit_resolution
 
     from novelvideo.video_duration import normalize_video_duration_for_backend
 
@@ -5162,7 +5191,8 @@ async def generate_single_video(
 
     billing_resolution = single_video_resolution or _seedance2_resolution_for_backend(
         body.video_backend,
-        body.resolution,
+        explicit_resolution,
+        explicit=explicit_resolution is not None,
     )
     billing = _single_video_billing_metadata(
         body.video_backend,

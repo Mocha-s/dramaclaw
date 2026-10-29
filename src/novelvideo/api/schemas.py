@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from novelvideo.models import SceneRef
+from novelvideo.media_parameters import ImageQuality, ImageSize
 from novelvideo.freezone.asset_copy import MAX_SOURCE_URL_LENGTH, MAX_SOURCES_PER_REQUEST
 from novelvideo.freezone.slots import PushTarget
 
@@ -110,7 +111,7 @@ class ProjectUpdate(BaseModel):
 class RenderSettingsUpdate(BaseModel):
     render_image_selection: Optional[str] = None
     sketch_aspect_padding: Optional[bool] = None
-    image_quality: Optional[Literal["low", "medium", "high"]] = None
+    image_quality: Optional[ImageQuality] = None
 
 
 class SketchSettingsUpdate(BaseModel):
@@ -137,6 +138,8 @@ class PortraitGenRequest(BaseModel):
     style: Optional[str] = None
     ethnicity: str = "Chinese"
     model: Optional[str] = None
+    image_size: Optional[ImageSize] = None
+    quality: Optional[ImageQuality] = None
 
 
 # ── 分集 ──────────────────────────────────────────────────────────────────────
@@ -2267,6 +2270,8 @@ class ScenePanoGenerateRequest(BaseModel):
 
 class SceneReferenceGenerateRequest(BaseModel):
     model: Optional[str] = None
+    image_size: Optional[ImageSize] = None
+    quality: Optional[ImageQuality] = None
 
 
 # ── 道具资产 ─────────────────────────────────────────────────────────────────
@@ -2295,6 +2300,8 @@ class PropUpdate(BaseModel):
 class PropReferenceGenerateRequest(BaseModel):
     style: Optional[str] = None
     model: Optional[str] = None
+    image_size: Optional[ImageSize] = None
+    quality: Optional[ImageQuality] = None
 
 
 # ── 身份 CRUD ────────────────────────────────────────────────────────────────
@@ -2309,6 +2316,8 @@ class IdentityCreate(BaseModel):
 class IdentityImageGenRequest(BaseModel):
     style: Optional[str] = None
     model: Optional[str] = None
+    image_size: Optional[ImageSize] = None
+    quality: Optional[ImageQuality] = None
 
 
 CharacterAssetKind = Literal["portrait", "identity", "identity_costume", "identity_portrait"]
@@ -2325,7 +2334,9 @@ class CharacterImageSelectionRequest(BaseModel):
 
 
 class AssetImageSourceSelectionRequest(BaseModel):
-    image_source_selection: str
+    image_source_selection: Optional[str] = None
+    image_size: Optional[str] = None
+    image_quality: Optional[str] = None
 
 
 class CharacterVoiceRecordRequest(BaseModel):
@@ -2396,7 +2407,7 @@ class RenderPlanRequest(BaseModel):
     aspect_mode: str = Field(..., description="e.g. '9:16', '1:1', '16:9'")
     image_generation_selection: Optional[str] = None
     sketch_aspect_padding: Optional[bool] = None
-    image_quality: Optional[Literal["low", "medium", "high"]] = None
+    image_quality: Optional[ImageQuality] = None
 
 
 class PlanEntryOut(BaseModel):
@@ -2431,7 +2442,7 @@ class RenderPlanExecuteRequest(BaseModel):
     beat_indices: list[int] = Field(..., min_length=1)
     image_generation_selection: Optional[str] = None
     sketch_aspect_padding: Optional[bool] = None
-    image_quality: Optional[Literal["low", "medium", "high"]] = None
+    image_quality: Optional[ImageQuality] = None
 
 
 class RenderPlanExecuteResponse(BaseModel):

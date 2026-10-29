@@ -52,6 +52,11 @@ from novelvideo.config import (
     normalize_character_image_selection,
 )
 from novelvideo.image_request_usage import get_image_usage_summary
+from novelvideo.media_parameters import (
+    resolve_asset_image_parameters,
+    validate_image_quality,
+    validate_image_size,
+)
 from novelvideo.project_config import (
     load_project_config,
     load_project_config_file,
@@ -199,15 +204,28 @@ def _character_image_selection_payload(username: str, project: str) -> dict:
 def _asset_image_source_selection_payload(username: str, project: str, asset_kind: str) -> dict:
     options = image_generation_selection_options()
     config_key = ASSET_IMAGE_SELECTION_CONFIG_KEYS[asset_kind]
+    config = load_project_config_file(username, project)
     if asset_kind == "character":
         selection = _character_image_selection_payload(username, project)["character_image_selection"]
     else:
-        saved_selection = str(load_project_config_file(username, project).get(config_key) or "")
+        saved_selection = str(config.get(config_key) or "")
         selection = normalize_image_generation_selection(saved_selection)
+    saved_size = str(config.get("asset_image_size") or "2K")
+    saved_quality = str(config.get("asset_image_quality") or "medium")
+    try:
+        image_size = validate_image_size(saved_size)
+    except ValueError:
+        image_size = "2K"
+    try:
+        image_quality = validate_image_quality(saved_quality)
+    except ValueError:
+        image_quality = "medium"
     return {
         "asset_kind": asset_kind,
         "image_source_selection": selection,
         "options": options,
+        "image_size": image_size,
+        "image_quality": image_quality,
     }
 
 
@@ -229,8 +247,32 @@ def _resolve_character_image_model(
     ]
 
 
+def _asset_generation_parameters(
+    username: str,
+    project: str,
+    *,
+    requested_size: str | None,
+    requested_quality: str | None,
+    default_size: str = "1K",
+    default_quality: str = "medium",
+) -> tuple[str, str]:
+    config = load_project_config_file(username, project)
+    return resolve_asset_image_parameters(
+        requested_size=requested_size,
+        requested_quality=requested_quality,
+        stored_size=config.get("asset_image_size"),
+        stored_quality=config.get("asset_image_quality"),
+        default_size=default_size,
+        default_quality=default_quality,
+    )
+
+
 def _character_image_billing_metadata(
-    model: str, *, image_role: str = "character"
+    model: str,
+    *,
+    image_role: str = "character",
+    image_size: str | None = None,
+    quality: str | None = None,
 ) -> dict:
     from novelvideo.config import IMAGE_GENERATION_SELECTIONS, configured_image_generation_selection_options
 
@@ -265,6 +307,8 @@ def _character_image_billing_metadata(
     pricing_params = _image_selection_billing_params(
         model=pricing_model,
         image_role=image_role,
+        image_size=image_size or "",
+        quality=quality or "",
     )
     return {
         "pricing_kind": "image",
@@ -1037,17 +1081,41 @@ async def update_project_asset_image_source_selection(
     _ctx, username, project_name, _project_dir, _output_dir, _store = (
         await _resolve_character_project(project, user)
     )
-    selection = str(body.image_source_selection or "").strip()
     options = image_generation_selection_options()
-    if selection not in options:
+    selection = str(body.image_source_selection or "").strip()
+    if body.image_source_selection is not None and selection not in options:
         return JSONResponse(
             status_code=400,
             content={"ok": False, "error": f"Invalid image_source_selection: {selection}"},
         )
+    try:
+        image_size = (
+            validate_image_size(body.image_size)
+            if body.image_size is not None
+            else None
+        )
+        image_quality = (
+            validate_image_quality(body.image_quality)
+            if body.image_quality is not None
+            else None
+        )
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"ok": False, "error": str(exc)})
+
+    if body.image_source_selection is None and image_size is None and image_quality is None:
+        return JSONResponse(
+            status_code=400,
+            content={"ok": False, "error": "At least one image source setting is required"},
+        )
     config_key = ASSET_IMAGE_SELECTION_CONFIG_KEYS[normalized_kind]
 
     def _apply(config: dict) -> None:
-        config[config_key] = selection
+        if body.image_source_selection is not None:
+            config[config_key] = selection
+        if image_size is not None:
+            config["asset_image_size"] = image_size
+        if image_quality is not None:
+            config["asset_image_quality"] = image_quality
 
     update_project_config_file(username, project_name, _apply)
     return {
@@ -1683,7 +1751,18 @@ async def generate_single_portrait_async(
     scope = f"character:{name}:portrait"
     style = body.style or config.get("visual_style", "chinese_period_drama")
     model = _resolve_character_image_model(username, project_name, body.model)
-    billing = _character_image_billing_metadata(model)
+    image_size, quality = _asset_generation_parameters(
+        username,
+        project_name,
+        requested_size=body.image_size,
+        requested_quality=body.quality,
+        default_size="0.5K",
+    )
+    billing = _character_image_billing_metadata(
+        model,
+        image_size=image_size,
+        quality=quality,
+    )
     if ctx is not None:
         queued = await get_task_backend().enqueue_project_task(
             ctx,
@@ -1698,6 +1777,8 @@ async def generate_single_portrait_async(
                 "character_name": name,
                 "style": style,
                 "model": model,
+                "image_size": image_size,
+                "quality": quality,
                 "scope": scope,
                 "output_dir": str(project_dir),
                 "billing": billing,
@@ -1740,6 +1821,13 @@ async def generate_single_portrait(
 
     proj_config = load_project_config(username, project_name)
     style = body.style or proj_config.get("visual_style", "chinese_period_drama")
+    image_size, quality = _asset_generation_parameters(
+        username,
+        project_name,
+        requested_size=body.image_size,
+        requested_quality=body.quality,
+        default_size="0.5K",
+    )
 
     from novelvideo.generators.image_generator import (
         generate_character_reference_unified,
@@ -1762,6 +1850,8 @@ async def generate_single_portrait(
         model=_resolve_character_image_model(username, project_name, body.model),
         output_dir=output_dir,
         project_dir=str(project_dir),
+        image_size=image_size,
+        quality=quality,
     )
 
     if not paths:
@@ -2024,7 +2114,18 @@ async def generate_identity_portrait_async(
     scope = f"character:{name}:identity_portrait:{identity.identity_name}"
     style = body.style or config.get("visual_style", "chinese_period_drama")
     model = _resolve_character_image_model(username, project_name, body.model)
-    billing = _character_image_billing_metadata(model)
+    image_size, quality = _asset_generation_parameters(
+        username,
+        project_name,
+        requested_size=body.image_size,
+        requested_quality=body.quality,
+        default_size="0.5K",
+    )
+    billing = _character_image_billing_metadata(
+        model,
+        image_size=image_size,
+        quality=quality,
+    )
     if ctx is not None:
         queued = await get_task_backend().enqueue_project_task(
             ctx,
@@ -2041,6 +2142,8 @@ async def generate_identity_portrait_async(
                 "identity_name": identity.identity_name,
                 "style": style,
                 "model": model,
+                "image_size": image_size,
+                "quality": quality,
                 "scope": scope,
                 "output_dir": str(project_dir),
                 "billing": billing,
@@ -2088,6 +2191,13 @@ async def generate_identity_portrait(
     from novelvideo.generators import generate_character_reference_unified
 
     config = load_project_config(username, project_name)
+    image_size, quality = _asset_generation_parameters(
+        username,
+        project_name,
+        requested_size=body.image_size,
+        requested_quality=body.quality,
+        default_size="0.5K",
+    )
     safe_name = _safe_asset_name(identity.identity_name)
     identities_dir = project_dir / "assets" / "characters" / name / "identities"
     identities_dir.mkdir(parents=True, exist_ok=True)
@@ -2108,6 +2218,8 @@ async def generate_identity_portrait(
             usage_task_type="character_portrait",
             usage_scope=f"character:{name}:identity_portrait:{identity.identity_name}",
             identity_name=identity.identity_name,
+            image_size=image_size,
+            quality=quality,
         )
         if not paths:
             return {"ok": False, "error": "身份 Portrait 生成失败"}
@@ -2154,7 +2266,18 @@ async def generate_identity_image_async(
     scope = f"character:{name}:identity:{identity.identity_name}"
     style = body.style or config.get("visual_style", "chinese_period_drama")
     model = _resolve_character_image_model(username, project_name, body.model)
-    billing = _character_image_billing_metadata(model, image_role="identity")
+    image_size, quality = _asset_generation_parameters(
+        username,
+        project_name,
+        requested_size=body.image_size,
+        requested_quality=body.quality,
+    )
+    billing = _character_image_billing_metadata(
+        model,
+        image_role="identity",
+        image_size=image_size,
+        quality=quality,
+    )
     if ctx is not None:
         queued = await get_task_backend().enqueue_project_task(
             ctx,
@@ -2171,6 +2294,8 @@ async def generate_identity_image_async(
                 "identity_name": identity.identity_name,
                 "style": style,
                 "model": model,
+                "image_size": image_size,
+                "quality": quality,
                 "scope": scope,
                 "output_dir": str(project_dir),
                 "billing": billing,
@@ -2301,6 +2426,12 @@ async def generate_identity_image(
 
     # 读取项目配置获取默认 style/ethnicity
     proj_config = load_project_config(username, project_name)
+    image_size, quality = _asset_generation_parameters(
+        username,
+        project_name,
+        requested_size=body.image_size,
+        requested_quality=body.quality,
+    )
 
     face_override = getattr(identity, "face_prompt", "") or ""
     identity_scope = f"character:{name}:identity:{identity.identity_name}"
@@ -2336,6 +2467,8 @@ async def generate_identity_image(
             usage_task_type="identity_image",
             usage_scope=identity_scope,
             identity_name=identity.identity_name,
+            image_size=image_size,
+            quality=quality,
         )
     else:
         portrait_path = compute_portrait_path(project_dir, name)
@@ -2359,6 +2492,8 @@ async def generate_identity_image(
             usage_task_type="identity_image",
             usage_scope=identity_scope,
             identity_name=identity.identity_name,
+            image_size=image_size,
+            quality=quality,
         )
 
     if isinstance(result, bool):

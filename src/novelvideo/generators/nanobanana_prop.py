@@ -141,6 +141,9 @@ async def generate_prop_reference(
     project_dir: str = "",
     state_dir: str = "",
     model: str | None = None,
+    image_size: str = PROP_REF_IMAGE_SIZE,
+    quality: str = "medium",
+    raise_on_error: bool = False,
     egress_context: TrustedEgressContext | None = None,
 ) -> Optional[str]:
     """生成道具三视图参考图。
@@ -179,7 +182,7 @@ async def generate_prop_reference(
             prompt=prompt,
             output_path=output_path,
             aspect_ratio=PROP_REF_ASPECT_RATIO,
-            image_size=PROP_REF_IMAGE_SIZE,
+            image_size=image_size,
             config={
                 "provider": "newapi",
                 "api_key": "request-scoped",
@@ -189,6 +192,7 @@ async def generate_prop_reference(
                 "rows": 1,
                 "cols": 1,
                 "total_panels": 1,
+                "quality": quality,
             },
             egress_context=egress_context,
             egress_capability="image.asset.prop",
@@ -246,6 +250,8 @@ async def generate_prop_reference(
                 output_path=output_path,
                 api_key=api_key,
                 model=model,
+                image_size=image_size,
+                quality=quality,
             )
         elif provider == "openai":
             result_path = await _generate_via_openai(
@@ -253,7 +259,8 @@ async def generate_prop_reference(
                 output_path=output_path,
                 api_key=api_key,
                 model=model,
-                quality=config.get("openai_image_quality", "medium"),
+                image_size=image_size,
+                quality=quality,
             )
         elif provider == "newapi":
             result_path = await _generate_via_newapi(
@@ -262,7 +269,8 @@ async def generate_prop_reference(
                 api_key=api_key,
                 model=model,
                 base_url=base_url,
-                quality=config.get("openai_image_quality", "medium"),
+                image_size=image_size,
+                quality=quality,
             )
         else:
             result_path = await _generate_via_google(
@@ -270,6 +278,8 @@ async def generate_prop_reference(
                 output_path=output_path,
                 api_key=api_key,
                 model=model,
+                image_size=image_size,
+                quality=quality,
             )
 
         elapsed = time.time() - start_time
@@ -282,6 +292,8 @@ async def generate_prop_reference(
     except Exception as e:
         if is_fatal_billing_error(e):
             raise
+        if raise_on_error:
+            raise
         elapsed = time.time() - start_time
         print(f"[PropRefGen] 生成异常: {e}，耗时 {elapsed:.1f}s")
         return None
@@ -292,6 +304,8 @@ async def _generate_via_google(
     output_path: str,
     api_key: str,
     model: str,
+    image_size: str = PROP_REF_IMAGE_SIZE,
+    quality: str = "medium",
 ) -> Optional[str]:
     """通过 Google AI Studio 直连生成图像。"""
     try:
@@ -307,7 +321,7 @@ async def _generate_via_google(
     if is_gemini3:
         image_config = types.ImageConfig(
             aspect_ratio=PROP_REF_ASPECT_RATIO,
-            image_size=clamp_image_size(PROP_REF_IMAGE_SIZE),
+            image_size=clamp_image_size(image_size),
         )
     else:
         image_config = types.ImageConfig(
@@ -332,11 +346,13 @@ async def _generate_via_openrouter(
     output_path: str,
     api_key: str,
     model: str,
+    image_size: str = PROP_REF_IMAGE_SIZE,
+    quality: str = "medium",
 ) -> Optional[str]:
     """通过 OpenRouter 代理生成图像。"""
     from novelvideo.generators.nanobanana_grid import _call_openrouter_image_api
 
-    requested_size = normalize_image_size(PROP_REF_IMAGE_SIZE, provider="openrouter")
+    requested_size = normalize_image_size(image_size, provider="openrouter")
     image_bytes, _text_content, error_text = await _call_openrouter_image_api(
         api_key=api_key,
         model=model,
@@ -344,6 +360,7 @@ async def _generate_via_openrouter(
         image_config={
             "aspect_ratio": PROP_REF_ASPECT_RATIO,
             "image_size": requested_size,
+            "quality": quality,
         },
     )
 
@@ -374,6 +391,7 @@ async def _generate_via_openai(
     output_path: str,
     api_key: str,
     model: str,
+    image_size: str = PROP_REF_IMAGE_SIZE,
     quality: str = "medium",
 ) -> Optional[str]:
     """通过 OpenAI Image API 生成图像。"""
@@ -384,8 +402,8 @@ async def _generate_via_openai(
         prompt=prompt,
         image_config={
             "aspect_ratio": PROP_REF_ASPECT_RATIO,
-            "image_size": PROP_REF_IMAGE_SIZE,
-            "quality": normalize_openai_quality(quality, default="medium"),
+            "image_size": image_size,
+            "quality": normalize_openai_quality(quality, default=quality),
             "output_format": "png",
         },
     )
@@ -397,6 +415,8 @@ async def _generate_via_openai(
         return output_path
 
     print(f"[PropRefGen] OpenAI 生成失败: {error_text or 'No response'}")
+    if error_text:
+        raise RuntimeError(error_text)
     return None
 
 
@@ -406,6 +426,7 @@ async def _generate_via_newapi(
     api_key: str,
     model: str,
     base_url: str,
+    image_size: str = PROP_REF_IMAGE_SIZE,
     quality: str = "medium",
 ) -> Optional[str]:
     """通过 newAPI 生成道具参考图。"""
@@ -415,7 +436,7 @@ async def _generate_via_newapi(
     image_delivery_state: dict[str, bool] = {}
     image_config = {
         "aspect_ratio": PROP_REF_ASPECT_RATIO,
-        "image_size": normalize_image_size(PROP_REF_IMAGE_SIZE, provider="newapi"),
+        "image_size": normalize_image_size(image_size, provider="newapi"),
         "quality": normalize_openai_quality(quality, default="medium"),
         "output_format": "png",
     }
@@ -447,6 +468,8 @@ async def _generate_via_newapi(
         return output_path
 
     print(f"[PropRefGen] DramaClawAPI 生成失败: {error_text or 'No response'}")
+    if error_text:
+        raise RuntimeError(error_text)
     return None
 
 

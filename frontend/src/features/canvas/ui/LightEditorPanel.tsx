@@ -903,9 +903,7 @@ export function LightEditorPanel({
       surface: "canvas",
       params: buildImageFeatureBillingParams(selectedModel, {
         size: effectiveImageSize,
-        ...(qualityOptions.length > 0
-          ? { quality: pickAllowedOption("medium", qualityOptions) }
-          : {}),
+        quality: pickAllowedOption("medium", qualityOptions),
         operation: "relight",
       }),
     },

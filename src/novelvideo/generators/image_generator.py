@@ -1163,6 +1163,8 @@ async def generate_character_reference_unified(
     usage_task_type: str = "character_portrait",
     usage_scope: str = "",
     identity_name: str = "",
+    image_size: str = "1K",
+    quality: str = "medium",
     raise_on_error: bool = False,
     egress_context=None,
 ) -> list[str]:
@@ -1229,6 +1231,8 @@ async def generate_character_reference_unified(
                 usage_task_type=usage_task_type,
                 usage_scope=usage_scope,
                 identity_name=identity_name,
+                image_size=image_size,
+                quality=quality,
             )
 
             if result.success:
@@ -1270,6 +1274,8 @@ async def generate_character_reference_unified(
                 usage_task_type=usage_task_type,
                 usage_scope=usage_scope,
                 identity_name=identity_name,
+                image_size=image_size,
+                quality=quality,
             )
 
             if result.success:
@@ -1340,6 +1346,8 @@ async def generate_identity_image_unified(
     usage_task_type: str = "identity_image",
     usage_scope: str = "",
     identity_name: str = "",
+    image_size: str = "1K",
+    quality: str = "medium",
     raise_on_error: bool = False,
     egress_context=None,
 ) -> dict:
@@ -1395,6 +1403,8 @@ async def generate_identity_image_unified(
                 usage_task_type=usage_task_type,
                 usage_scope=usage_scope,
                 identity_name=identity_name,
+                image_size=image_size,
+                quality=quality,
             )
             if dry_run:
                 return {
@@ -1439,6 +1449,8 @@ async def generate_identity_image_unified(
                 usage_task_type=usage_task_type,
                 usage_scope=usage_scope,
                 identity_name=identity_name,
+                image_size=image_size,
+                quality=quality,
             )
             if dry_run:
                 return {
@@ -1476,6 +1488,8 @@ async def generate_identity_image_unified(
         usage_task_type=usage_task_type,
         usage_scope=usage_scope,
         identity_name=identity_name,
+        image_size=image_size,
+        quality=quality,
         egress_context=egress_context,
     )
     if paths:

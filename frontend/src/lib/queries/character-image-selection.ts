@@ -17,6 +17,14 @@ export type AssetImageSourceSelection = {
   asset_kind: AssetImageSourceKind;
   image_source_selection: string;
   options: Record<string, string>;
+  image_size?: string;
+  image_quality?: string;
+};
+
+export type AssetImageGenerationPatch = {
+  image_source_selection?: string;
+  image_size?: string;
+  image_quality?: string;
 };
 
 export type CharacterImageUsage = {
@@ -79,10 +87,10 @@ export function useUpdateAssetImageSourceSelection(
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (imageSourceSelection: string) =>
+    mutationFn: (patch: AssetImageGenerationPatch) =>
       api
         .patch(p`api/v1/projects/${project}/image-source-selection/${kind}`, {
-          json: { image_source_selection: imageSourceSelection },
+          json: patch,
         })
         .json<OkResponse<AssetImageSourceSelection>>(),
     onSuccess: () => {

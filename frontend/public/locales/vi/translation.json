@@ -1876,7 +1876,9 @@
     "imageSource": {
       "label": "Nguồn ảnh",
       "loading": "Đang tải nguồn ảnh",
-      "saveFailed": "Cập nhật nguồn ảnh thất bại"
+      "saveFailed": "Cập nhật nguồn ảnh thất bại",
+      "sizeLabel": "Kích thước ảnh",
+      "qualityLabel": "Chất lượng ảnh"
     },
     "projectStyle": {
       "label": "Phong cách",
@@ -4483,7 +4485,7 @@
       "model": "Model render",
       "modelPlaceholder": "Chọn model",
       "quality": "Chất lượng hình ảnh",
-      "qualityOptions": { "low": "Thấp", "medium": "Trung bình", "high": "Cao" }
+      "qualityOptions": { "auto": "Tự động", "low": "Thấp", "medium": "Trung bình", "high": "Cao", "xhigh": "Siêu cao", "max": "Tối đa" }
     },
     "sketchSettings": {
       "model": "Model phác thảo",

@@ -56,6 +56,8 @@ async def _run_scene_reference_asset(
     kind = str(payload["kind"])
     style = str(payload.get("style") or "")
     model_selection = str(payload.get("model") or "").strip()
+    image_size = str(payload.get("image_size") or "1K")
+    quality = str(payload.get("quality") or "medium")
     scope = envelope.get("scope")
     output_dir = Path(str(payload.get("output_dir") or ctx.output_dir))
     manager = get_task_manager()
@@ -116,6 +118,8 @@ async def _run_scene_reference_asset(
                 kind=kind,  # type: ignore[arg-type]
                 provider=provider,
                 model=model,
+                image_size=image_size,
+                quality=quality,
                 style_name=style_name,
                 style_prompt=style_prompt,
                 avoid_instructions=avoid_instructions,
