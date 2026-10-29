@@ -27,10 +27,10 @@ describe('媒体模型公共选项归一化', () => {
     ]);
   });
 
-  it('does not add 1080p to a catalog entry that does not advertise it', () => {
+  it('uses all product video resolution tiers when catalog omits them', () => {
     expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p'] })).toEqual(['720p']);
     expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p', '1080p'] })).toEqual(['720p', '1080p']);
-    expect(resolveVideoModelResolutionOptions({})).toEqual(['720p']);
+    expect(resolveVideoModelResolutionOptions({})).toEqual(['720p', '768p', '1080p', '2k', '4k']);
   });
 
   it('虾集图片和视频分辨率档位独立于模型目录并覆盖产品档位', async () => {
@@ -42,14 +42,14 @@ describe('媒体模型公共选项归一化', () => {
     ]);
   });
 
-  it('uses only catalog-declared image quality options and falls back when stale', () => {
+  it('uses catalog image quality options when present and global options otherwise', () => {
     const model = { qualityOptions: ['draft', 'studio'] };
     const options = resolveModelQualityOptions(model);
     expect(options).toEqual(['draft', 'studio']);
     expect(modelSupportsQuality(model)).toBe(true);
     expect(pickAllowedOption('high', options, 'draft')).toBe('draft');
-    expect(resolveModelQualityOptions({})).toEqual([]);
-    expect(modelSupportsQuality({})).toBe(false);
+    expect(resolveModelQualityOptions({})).toEqual(['auto', 'low', 'medium', 'high', 'xhigh', 'max']);
+    expect(modelSupportsQuality({})).toBe(true);
   });
 
   it('分辨率只在显示层统一成小写', () => {

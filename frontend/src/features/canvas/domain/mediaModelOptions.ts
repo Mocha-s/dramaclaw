@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
 
+import { IMAGE_QUALITY_OPTIONS } from '@/features/canvas/nodes/shared/imageGenerationOptions';
+
 /**
  * 媒体模型能力的统一解析入口。
  *
@@ -34,12 +36,12 @@ export const FALLBACK_IMAGE_ASPECT_OPTIONS: readonly string[] = [
   '21:9',
 ];
 
-/** Resolution tiers for one selected model; never infer 1080p from a missing catalog field. */
+/** Resolution tiers for one selected model; missing catalog fields use product tiers. */
 export function resolveVideoModelResolutionOptions(
   model: MediaModelCapabilities | null | undefined,
 ): string[] {
   const configured = normalizeOptions(model?.resolutionOptions);
-  return configured.length > 0 ? configured : ['720p'];
+  return configured.length > 0 ? configured : ['720p', '768p', '1080p', '2k', '4k'];
 }
 
 /**
@@ -109,7 +111,10 @@ export function resolveModelAspectOptions(
 export function resolveModelQualityOptions(
   model: MediaModelCapabilities | null | undefined,
 ): string[] {
-  return normalizeOptions(model?.qualityOptions);
+  const configured = normalizeOptions(model?.qualityOptions);
+  return configured.length > 0
+    ? configured
+    : IMAGE_QUALITY_OPTIONS.map((option) => option.value);
 }
 
 /**
@@ -119,9 +124,9 @@ export function resolveModelQualityOptions(
  * 支持画质的模型时，前端不需要跟着改代码。
  */
 export function modelSupportsQuality(
-  model: MediaModelCapabilities | null | undefined,
+  _model: MediaModelCapabilities | null | undefined,
 ): boolean {
-  return resolveModelQualityOptions(model).length > 0;
+  return true;
 }
 
 /**

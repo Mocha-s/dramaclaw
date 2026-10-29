@@ -147,13 +147,13 @@ describe("目录动态参数的端到端往返", () => {
     );
   });
 
-  it("质量档位的候选来自当前模型目录声明", () => {
+  it("质量档位使用画布全局参数，不依赖模型目录声明", () => {
     const source = readFileSync(
       "src/features/canvas/nodes/shared/useImageGenerationForm.ts",
       "utf8",
     );
-    expect(source).toContain("resolveModelQualityOptions(selectedModel)");
-    expect(source).toContain("modelSupportsQuality(selectedModel)");
+    expect(source).toContain("IMAGE_QUALITY_OPTIONS.map");
+    expect(source).toContain("const supportsImageQuality = true");
   });
 
   it("没有 request.parameters 的目录条目不凭空造出参数字段", () => {

@@ -16,12 +16,11 @@ import {
 import { buildImageFeatureBillingParams } from '@/features/canvas/domain/imageBilling';
 import {
   IMAGE_ASPECT_OPTIONS,
+  IMAGE_QUALITY_OPTIONS,
 } from '@/features/canvas/nodes/shared/imageGenerationOptions';
 import { FREEZONE_IMAGE_RESOLUTIONS } from '@/features/canvas/domain/freezoneGenerationResolutions';
 import {
-  modelSupportsQuality,
   pickAllowedOption,
-  resolveModelQualityOptions,
 } from '@/features/canvas/domain/mediaModelOptions';
 import { isSystemManagedNodeData } from '@/features/canvas/domain/mainlineNodeFlags';
 import { setAlbumPendingTotal } from '@/features/canvas/nodes/shared/albumPendingTotals';
@@ -247,8 +246,12 @@ export function useImageGenerationForm(
     modelAspectOptions.map((item) => item.value),
     modelAspectOptions[0]?.value ?? '1:1',
   );
-  const qualityOptions = resolveModelQualityOptions(selectedModel);
-  const supportsImageQuality = modelSupportsQuality(selectedModel);
+  // Image quality is a global canvas parameter. Do not hide it when an older
+  // gateway catalog omits qualityOptions; the backend request contract and
+  // billing path support the same Infinite Canvas quality tiers for all image
+  // generation models.
+  const qualityOptions = IMAGE_QUALITY_OPTIONS.map((option) => option.value);
+  const supportsImageQuality = true;
   const effectiveQuality = pickAllowedOption(
     quality,
     qualityOptions,
