@@ -64,6 +64,7 @@ import { normalizeMentionSeparatorSpaces } from "@/lib/mention-markers";
 import { useGenerationCreditCost } from "@/lib/queries/generation-credit-cost";
 import { CreditCostInline } from "@/components/credit-cost-inline";
 import { Button } from "@/components/ui/button";
+import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MentionTextarea } from "@/components/episode/beat-workbench/mention-textarea";
@@ -176,20 +177,8 @@ const SEEDANCE2_SEGMENTED_OPTION_CLASS =
   "h-7 rounded-[7px] border px-1.5 text-xs font-normal shadow-none transition-[background-color,border-color,color] duration-150";
 const SEEDANCE2_COLLAPSE_TRIGGER_CLASS =
   "-ml-1 h-6 gap-1.5 px-1 text-xs font-medium text-foreground/78 !bg-transparent hover:!bg-transparent hover:text-foreground aria-expanded:!bg-transparent dark:hover:!bg-transparent";
-const SEEDANCE2_DEFAULT_RESOLUTION_OPTIONS = ["480p", "720p"] as const;
-const HAPPYHORSE_RESOLUTION_OPTIONS = ["720p", "1080p"] as const;
 const HAPPYHORSE_RATIO_OPTIONS = ["16:9", "9:16", "1:1", "4:3", "3:4"] as const;
-const GROK_VIDEO_RESOLUTION_OPTIONS = ["720p", "480p"] as const;
 const GROK_VIDEO_RATIO_OPTIONS = ["16:9", "9:16", "1:1", "2:3", "3:2"] as const;
-const SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL = {
-  "seedance-2.0-fast": ["480p", "720p"],
-  "seedance-2.0": ["480p", "720p", "1080p"],
-  "seedance-2.0-value": ["720p", "1080p"],
-  "seedance-2.0-fast-value": ["720p", "1080p"],
-  // Seedance 1.5 Pro（有声）清晰度，来源 huimengi /api/v1/models
-  "seedance-1.5-pro": ["480p", "720p", "1080p"],
-} as const;
-
 type Seedance2Resolution = string;
 type HappyHorseRatio = (typeof HAPPYHORSE_RATIO_OPTIONS)[number];
 type GrokVideoRatio = (typeof GROK_VIDEO_RATIO_OPTIONS)[number];
@@ -400,8 +389,7 @@ export function VideoPane({
     !showSeedance2Config &&
     !showHappyHorseConfig &&
     !showGrokVideoConfig &&
-    !isSeedance15ProBackend(defaultBackend) &&
-    (selectedBackend?.resolution_options?.length ?? 0) > 0;
+    !isSeedance15ProBackend(defaultBackend);
   const [genericResolution, setGenericResolution] = useState<Seedance2Resolution>(
     seedance2ResolutionOptions.includes("720p")
       ? "720p"
@@ -3324,26 +3312,17 @@ function isSeedance15ProBackend(value: string | null | undefined): boolean {
 }
 
 function seedance2ResolutionOptionsForBackend(
-  value: string | null | undefined,
-  backend?: { resolution_options?: string[] | null } | null,
+  _value: string | null | undefined,
+  _backend?: { resolution_options?: string[] | null } | null,
 ): readonly Seedance2Resolution[] {
-  const catalogOptions = backend?.resolution_options
-    ?.map((option) => String(option).trim())
-    .filter(Boolean);
-  if (catalogOptions?.length) return catalogOptions;
-  const model = seedance2ModelFromBackend(value);
-  return (
-    SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL[
-      model as keyof typeof SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL
-    ] ?? SEEDANCE2_DEFAULT_RESOLUTION_OPTIONS
-  );
+  return FREEZONE_VIDEO_RESOLUTIONS;
 }
 
 export function videoResolutionOptionsForBackend(
-  value: string | null | undefined,
-  backend?: { resolution_options?: string[] | null } | null,
+  _value: string | null | undefined,
+  _backend?: { resolution_options?: string[] | null } | null,
 ): readonly string[] {
-  return seedance2ResolutionOptionsForBackend(value, backend);
+  return [...FREEZONE_VIDEO_RESOLUTIONS];
 }
 
 function normalizeSeedance2DraftForBackend(
@@ -3372,13 +3351,9 @@ function normalizeSeedance2DraftForBackend(
 }
 
 function happyHorseResolutionOptionsForBackend(
-  backend: VideoBackendOption | null | undefined,
+  _backend: VideoBackendOption | null | undefined,
 ): readonly Seedance2Resolution[] {
-  const options = backend?.resolution_options?.filter(
-    (value): value is Seedance2Resolution =>
-      value === "720p" || value === "1080p",
-  );
-  return options?.length ? options : HAPPYHORSE_RESOLUTION_OPTIONS;
+  return FREEZONE_VIDEO_RESOLUTIONS;
 }
 
 function happyHorseRatioOptionsForBackend(
@@ -3396,12 +3371,9 @@ function happyHorseRatioOptionsForBackend(
 }
 
 function grokVideoResolutionOptionsForBackend(
-  backend: VideoBackendOption | null | undefined,
+  _backend: VideoBackendOption | null | undefined,
 ): readonly Seedance2Resolution[] {
-  const options = backend?.resolution_options?.filter(
-    (value): value is Seedance2Resolution => value === "720p" || value === "480p",
-  );
-  return options?.length ? options : GROK_VIDEO_RESOLUTION_OPTIONS;
+  return FREEZONE_VIDEO_RESOLUTIONS;
 }
 
 function grokVideoRatioOptionsForBackend(
@@ -3578,6 +3550,8 @@ function normalizeSeedance2Resolution(
       value === "720p" ||
       value === "768p" ||
       value === "1080p" ||
+      value === "2k" ||
+      value === "4k" ||
       value === "2K" ||
       value === "4K"
     ) {
