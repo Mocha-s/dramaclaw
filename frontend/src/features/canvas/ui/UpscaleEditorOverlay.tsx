@@ -103,9 +103,7 @@ export const UpscaleEditorOverlay = memo(({ node }: UpscaleEditorOverlayProps) =
       surface: 'canvas',
       params: buildImageFeatureBillingParams(selectedModel, {
         size: persistedImageSize,
-        ...(qualityOptions.length > 0
-          ? { quality: pickAllowedOption('medium', qualityOptions) }
-          : {}),
+        quality: pickAllowedOption('medium', qualityOptions),
         operation: 'upscale',
       }),
     },

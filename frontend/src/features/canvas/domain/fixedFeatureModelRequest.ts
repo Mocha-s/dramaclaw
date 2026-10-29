@@ -61,10 +61,7 @@ export function resolveFixedFeatureModelRequest(
 ): FixedFeatureModelRequest {
   const imageSize = pickAllowedOption(PREFERRED_SIZE, resolveModelSizeOptions(model));
   const qualityOptions = resolveModelQualityOptions(model);
-  const quality =
-    qualityOptions.length > 0
-      ? pickAllowedOption(PREFERRED_QUALITY, qualityOptions)
-      : undefined;
+  const quality = pickAllowedOption(PREFERRED_QUALITY, qualityOptions);
   const apiModel = String(model?.apiModel ?? '').trim();
   const catalogId = String(model?.catalogId ?? '').trim();
 
@@ -73,11 +70,11 @@ export function resolveFixedFeatureModelRequest(
       ...(apiModel ? { model: apiModel } : {}),
       ...(catalogId ? { catalogId } : {}),
       imageSize,
-      ...(quality ? { quality } : {}),
+      quality,
     },
     billingParams: buildImageFeatureBillingParams(model, {
       size: imageSize,
-      ...(quality ? { quality } : {}),
+      quality,
       ...extraBillingParams,
     }),
   };

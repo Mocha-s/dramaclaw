@@ -157,9 +157,7 @@ export const EraseOverlay = memo(({ node, imageSource, onClose }: EraseOverlayPr
       surface: 'canvas',
       params: buildImageFeatureBillingParams(selectedModel, {
         size: effectiveImageSize,
-        ...(qualityOptions.length > 0
-          ? { quality: pickAllowedOption('medium', qualityOptions) }
-          : {}),
+        quality: pickAllowedOption('medium', qualityOptions),
         operation: 'erase',
         pricing_quantity: Math.min(Math.max(numImages, 1), 4),
       }),
