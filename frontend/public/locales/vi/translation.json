@@ -1876,7 +1876,9 @@
     "imageSource": {
       "label": "Nguồn ảnh",
       "loading": "Đang tải nguồn ảnh",
-      "saveFailed": "Cập nhật nguồn ảnh thất bại"
+      "saveFailed": "Cập nhật nguồn ảnh thất bại",
+      "sizeLabel": "Kích thước ảnh",
+      "qualityLabel": "Chất lượng ảnh"
     },
     "projectStyle": {
       "label": "Phong cách",

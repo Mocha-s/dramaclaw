@@ -52,6 +52,10 @@ from novelvideo.config import (
     normalize_character_image_selection,
 )
 from novelvideo.image_request_usage import get_image_usage_summary
+from novelvideo.media_parameters import (
+    validate_image_quality,
+    validate_image_size,
+)
 from novelvideo.project_config import (
     load_project_config,
     load_project_config_file,
@@ -199,15 +203,28 @@ def _character_image_selection_payload(username: str, project: str) -> dict:
 def _asset_image_source_selection_payload(username: str, project: str, asset_kind: str) -> dict:
     options = image_generation_selection_options()
     config_key = ASSET_IMAGE_SELECTION_CONFIG_KEYS[asset_kind]
+    config = load_project_config_file(username, project)
     if asset_kind == "character":
         selection = _character_image_selection_payload(username, project)["character_image_selection"]
     else:
-        saved_selection = str(load_project_config_file(username, project).get(config_key) or "")
+        saved_selection = str(config.get(config_key) or "")
         selection = normalize_image_generation_selection(saved_selection)
+    saved_size = str(config.get("asset_image_size") or "2K")
+    saved_quality = str(config.get("asset_image_quality") or "medium")
+    try:
+        image_size = validate_image_size(saved_size)
+    except ValueError:
+        image_size = "2K"
+    try:
+        image_quality = validate_image_quality(saved_quality)
+    except ValueError:
+        image_quality = "medium"
     return {
         "asset_kind": asset_kind,
         "image_source_selection": selection,
         "options": options,
+        "image_size": image_size,
+        "image_quality": image_quality,
     }
 
 
@@ -1037,17 +1054,41 @@ async def update_project_asset_image_source_selection(
     _ctx, username, project_name, _project_dir, _output_dir, _store = (
         await _resolve_character_project(project, user)
     )
-    selection = str(body.image_source_selection or "").strip()
     options = image_generation_selection_options()
-    if selection not in options:
+    selection = str(body.image_source_selection or "").strip()
+    if body.image_source_selection is not None and selection not in options:
         return JSONResponse(
             status_code=400,
             content={"ok": False, "error": f"Invalid image_source_selection: {selection}"},
         )
+    try:
+        image_size = (
+            validate_image_size(body.image_size)
+            if body.image_size is not None
+            else None
+        )
+        image_quality = (
+            validate_image_quality(body.image_quality)
+            if body.image_quality is not None
+            else None
+        )
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"ok": False, "error": str(exc)})
+
+    if body.image_source_selection is None and image_size is None and image_quality is None:
+        return JSONResponse(
+            status_code=400,
+            content={"ok": False, "error": "At least one image source setting is required"},
+        )
     config_key = ASSET_IMAGE_SELECTION_CONFIG_KEYS[normalized_kind]
 
     def _apply(config: dict) -> None:
-        config[config_key] = selection
+        if body.image_source_selection is not None:
+            config[config_key] = selection
+        if image_size is not None:
+            config["asset_image_size"] = image_size
+        if image_quality is not None:
+            config["asset_image_quality"] = image_quality
 
     update_project_config_file(username, project_name, _apply)
     return {

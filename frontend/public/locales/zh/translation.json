@@ -1980,7 +1980,9 @@
     "imageSource": {
       "label": "图源",
       "loading": "正在读取图源",
-      "saveFailed": "图源更新失败"
+      "saveFailed": "图源更新失败",
+      "sizeLabel": "图片尺寸",
+      "qualityLabel": "图片画质"
     },
     "projectStyle": {
       "label": "风格",

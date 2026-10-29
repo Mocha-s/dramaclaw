@@ -197,7 +197,7 @@ describe("character image selection query hooks", () => {
       { wrapper },
     );
 
-    result.current.mutate("nano-banana-2");
+    result.current.mutate({ image_source_selection: "nano-banana-2" });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(requestedPath).toBe(

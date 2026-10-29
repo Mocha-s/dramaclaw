@@ -2325,7 +2325,9 @@ class CharacterImageSelectionRequest(BaseModel):
 
 
 class AssetImageSourceSelectionRequest(BaseModel):
-    image_source_selection: str
+    image_source_selection: Optional[str] = None
+    image_size: Optional[str] = None
+    image_quality: Optional[str] = None
 
 
 class CharacterVoiceRecordRequest(BaseModel):
