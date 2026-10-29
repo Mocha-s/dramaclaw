@@ -571,12 +571,16 @@ function SceneAssetCardController({
   project,
   scene,
   imageSourceSelection,
+  imageSize,
+  imageQuality,
   onEdit,
   onDelete,
 }: {
   project: string;
   scene: SceneAsset;
   imageSourceSelection: string;
+  imageSize?: string;
+  imageQuality?: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -769,7 +773,11 @@ function SceneAssetCardController({
 
   async function handleGenerateMaster() {
     try {
-      const res = await generateMaster.mutateAsync({ model: imageSourceSelection });
+      const res = await generateMaster.mutateAsync({
+        model: imageSourceSelection,
+        image_size: imageSize,
+        quality: imageQuality,
+      });
       if (isErrorResponse(res)) {
         toast.error(humanizeTaskError(res.error, t));
         return;
@@ -797,7 +805,11 @@ function SceneAssetCardController({
 
   async function handleGenerateReverse() {
     try {
-      const res = await generateReverse.mutateAsync({ model: imageSourceSelection });
+      const res = await generateReverse.mutateAsync({
+        model: imageSourceSelection,
+        image_size: imageSize,
+        quality: imageQuality,
+      });
       if (isErrorResponse(res)) {
         toast.error(humanizeTaskError(res.error, t));
         return;
@@ -1214,6 +1226,8 @@ export function ScenesPanel({
   const buildDisabled = isBuildingScenes || buildActivity.isRestoring;
   const imageSourceQuery = useAssetImageSourceSelection(project, "scene");
   const imageSourceSelection = imageSourceQuery.data?.data.image_source_selection ?? "";
+  const imageSize = imageSourceQuery.data?.data.image_size ?? "2K";
+  const imageQuality = imageSourceQuery.data?.data.image_quality ?? "medium";
   const buildScenesCost = useGenerationCreditCost("feature", "mainline.build_scenes");
   const buildScenesCostDisplay =
     buildScenesCost.data?.data.display ??
@@ -1636,6 +1650,8 @@ export function ScenesPanel({
                         project={project}
                         scene={scene}
                         imageSourceSelection={imageSourceSelection}
+                        imageSize={imageSize}
+                        imageQuality={imageQuality}
                         onEdit={() => {
                           setEditing(scene);
                           setDraftSeed(null);

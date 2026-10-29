@@ -2629,6 +2629,7 @@ tests/test_api_styles.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggr
 tests/test_api_video_batch_schema.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_asset_compiler_prop_planning.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_asset_compiler_scene_enrichment.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+tests/test_asset_generation_media_params.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_asset_resolver.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_async_route_storage.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 tests/test_auth_contract_snapshot.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation

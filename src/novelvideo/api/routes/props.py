@@ -20,6 +20,7 @@ from novelvideo.api.deps import (
 )
 from novelvideo.api.schemas import PropCreate, PropReferenceGenerateRequest, PropUpdate
 from novelvideo.models import NovelProp, build_prop_menu
+from novelvideo.media_parameters import resolve_asset_image_parameters
 from novelvideo.project_config import load_project_config_file
 from novelvideo.sqlite_store import SQLiteStore
 from novelvideo.ports import get_task_backend
@@ -349,6 +350,15 @@ async def generate_prop_reference(
     )
     style = (body.style if body else "") or _project_style(username, project_name)
     model = str(body.model if body else "").strip()
+    project_config = load_project_config_file(username, project_name)
+    image_size, quality = resolve_asset_image_parameters(
+        requested_size=body.image_size if body else None,
+        requested_quality=body.quality if body else None,
+        stored_size=project_config.get("asset_image_size"),
+        stored_quality=project_config.get("asset_image_quality"),
+        default_size="0.5K",
+        default_quality="medium",
+    )
     prop = await _require_prop(store, name)
     if prop is None:
         return {"ok": False, "error": f"Prop '{name}' not found"}
@@ -376,12 +386,17 @@ async def generate_prop_reference(
                 "prop_name": prop.name,
                 "style": style,
                 "model": model,
+                "image_size": image_size,
+                "quality": quality,
                 "output_dir": output_dir,
                 "billing": {
                     "pricing_kind": "image",
                     "pricing_model": pricing_model,
                     "pricing_params": _fixed_image_billing_params(
-                        "prop_reference", model=pricing_model
+                        "prop_reference",
+                        model=pricing_model,
+                        image_size=image_size,
+                        quality=quality,
                     ),
                 },
             },

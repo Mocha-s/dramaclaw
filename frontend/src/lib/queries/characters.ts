@@ -128,21 +128,25 @@ type IdentityGenerationInput =
       identityId: string;
       style?: string;
       model?: string;
+      imageSize?: string;
+      quality?: string;
     };
 
 function identityGenerationPayload(input: IdentityGenerationInput): {
   identityId: string;
-  body: { style?: string; model?: string };
+  body: { style?: string; model?: string; image_size?: string; quality?: string };
 } {
   if (typeof input === "string") {
     return { identityId: input, body: {} };
   }
-  const { identityId, style, model } = input;
+  const { identityId, style, model, imageSize, quality } = input;
   return {
     identityId,
     body: {
       style,
       model,
+      image_size: imageSize,
+      quality,
     },
   };
 }
@@ -150,13 +154,15 @@ function identityGenerationPayload(input: IdentityGenerationInput): {
 export function useGeneratePortrait(project: string, name: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data?: { style?: string; ethnicity?: string; model?: string }) =>
-      api
+    mutationFn: (data?: { style?: string; ethnicity?: string; model?: string; imageSize?: string; quality?: string }) => {
+      const { imageSize, ...body } = data ?? {};
+      return api
         .post(p`api/v1/projects/${project}/characters/${name}/portrait`, {
-          json: data ?? {},
+          json: { ...body, ...(imageSize ? { image_size: imageSize } : {}) },
           timeout: LONG_IMAGE_GEN_TIMEOUT_MS,
         })
-        .json<OkResponse<{ portrait_url: string }>>(),
+        .json<OkResponse<{ portrait_url: string }>>();
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.characters(project) }),
   });
 }
@@ -169,13 +175,15 @@ export function useGeneratePortrait(project: string, name: string) {
  */
 export function useGeneratePortraitAsync(project: string, name: string) {
   return useMutation({
-    mutationFn: (data?: { style?: string; ethnicity?: string; model?: string }) =>
-      jsonWithBackendError<TaskResponse | ErrorResponse>(
+    mutationFn: (data?: { style?: string; ethnicity?: string; model?: string; imageSize?: string; quality?: string }) => {
+      const { imageSize, ...body } = data ?? {};
+      return jsonWithBackendError<TaskResponse | ErrorResponse>(
         api.post(p`api/v1/projects/${project}/characters/${name}/portrait-async`, {
-          json: data ?? {},
+          json: { ...body, ...(imageSize ? { image_size: imageSize } : {}) },
           throwHttpErrors: false,
         }),
-      ),
+      );
+    },
   });
 }
 

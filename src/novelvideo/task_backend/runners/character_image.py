@@ -111,6 +111,8 @@ async def _run_character_image(
     identity_name = str(payload.get("identity_name") or "")
     style = str(payload.get("style") or "")
     model = str(payload.get("model") or "")
+    image_size = str(payload.get("image_size") or "1K")
+    quality = str(payload.get("quality") or "medium")
     output_dir = Path(str(payload.get("output_dir") or ctx.output_dir))
     task_type = str(envelope.get("task_type") or payload.get("task_type") or "character_portrait")
     scope = envelope.get("scope") or payload.get("scope")
@@ -156,6 +158,8 @@ async def _run_character_image(
                 scope=str(scope or ""),
                 update=update,
                 egress_context=egress_context,
+                image_size=image_size,
+                quality=quality,
             )
         elif mode == "identity_portrait":
             output_path = await _generate_identity_portrait(
@@ -172,6 +176,8 @@ async def _run_character_image(
                 scope=str(scope or ""),
                 update=update,
                 egress_context=egress_context,
+                image_size=image_size,
+                quality=quality,
             )
         elif mode == "identity_image":
             output_path = await _generate_identity_image(
@@ -187,6 +193,8 @@ async def _run_character_image(
                 scope=str(scope or ""),
                 update=update,
                 egress_context=egress_context,
+                image_size=image_size,
+                quality=quality,
             )
         else:
             raise RuntimeError(f"未知角色图像生成模式: {mode}")
@@ -215,6 +223,8 @@ async def _generate_character_portrait(
     scope: str,
     update,
     egress_context: TrustedEgressContext | None = None,
+    image_size: str = "1K",
+    quality: str = "medium",
 ) -> Path:
     from novelvideo.generators import generate_character_reference_unified
 
@@ -242,6 +252,8 @@ async def _generate_character_portrait(
             usage_scope=scope,
             raise_on_error=True,
             egress_context=egress_context,
+            image_size=image_size,
+            quality=quality,
         )
         if not paths:
             raise RuntimeError("角色 Portrait 生成失败")
@@ -265,6 +277,8 @@ async def _generate_identity_portrait(
     scope: str,
     update,
     egress_context: TrustedEgressContext | None = None,
+    image_size: str = "1K",
+    quality: str = "medium",
 ) -> Path:
     from novelvideo.generators import generate_character_reference_unified
 
@@ -297,6 +311,8 @@ async def _generate_identity_portrait(
             identity_name=identity.identity_name,
             raise_on_error=True,
             egress_context=egress_context,
+            image_size=image_size,
+            quality=quality,
         )
         if not paths:
             raise RuntimeError("身份 Portrait 生成失败")
@@ -325,6 +341,8 @@ async def _generate_identity_image(
     scope: str,
     update,
     egress_context: TrustedEgressContext | None = None,
+    image_size: str = "1K",
+    quality: str = "medium",
 ) -> Path:
     from novelvideo.generators import generate_identity_image_unified
     from novelvideo.utils.path_resolver import (
@@ -395,6 +413,8 @@ async def _generate_identity_image(
             identity_name=identity.identity_name,
             raise_on_error=True,
             egress_context=egress_context,
+            image_size=image_size,
+            quality=quality,
         )
         success = bool(result.get("success", False)) if isinstance(result, dict) else bool(result)
         if not success:

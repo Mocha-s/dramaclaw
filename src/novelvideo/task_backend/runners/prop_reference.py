@@ -51,6 +51,8 @@ async def _run_prop_reference_asset(
     prop_name = str(payload["prop_name"])
     style = str(payload.get("style") or "")
     model = str(payload.get("model") or "")
+    image_size = str(payload.get("image_size") or "0.5K")
+    quality = str(payload.get("quality") or "medium")
     output_dir = Path(str(payload.get("output_dir") or ctx.output_dir))
     scope = envelope.get("scope")
     manager = get_task_manager()
@@ -86,6 +88,9 @@ async def _run_prop_reference_asset(
                 project_dir=str(output_dir),
                 state_dir=str(ctx.state_dir),
                 model=model,
+                image_size=image_size,
+                quality=quality,
+                raise_on_error=True,
                 egress_context=egress_context,
             )
         if not result_path:

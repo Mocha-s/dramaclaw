@@ -90,8 +90,8 @@ from novelvideo.storage.media_relay import (
 
 _VALID_IMAGE_SIZES = {"512", "1K", "2K", "4K"}
 _OPENROUTER_IMAGE_CAPABILITY_CACHE: dict[str, tuple[bool, str]] = {}
-_OPENAI_VALID_QUALITIES = {"low", "medium", "high", "auto"}
-_NEWAPI_IMAGE_QUALITIES = frozenset({"low", "medium", "high", "xhigh", "max"})
+_OPENAI_VALID_QUALITIES = {"auto", "low", "medium", "high", "xhigh", "max"}
+_NEWAPI_IMAGE_QUALITIES = frozenset({"auto", "low", "medium", "high", "xhigh", "max"})
 _NEWAPI_IMAGE_TIERS = frozenset({"web", "1k", "2k", "4k"})
 _OPENAI_MIN_PIXELS = 655_360
 _OPENAI_MAX_PIXELS = 8_294_400

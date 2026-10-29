@@ -90,3 +90,45 @@ def test_validators_reject_values_outside_the_global_contract(
 
     with pytest.raises(ValueError, match="must be one of"):
         validator(invalid_value)
+
+
+def test_asset_parameter_resolution_prefers_explicit_then_stored_then_legacy():
+    params = _media_parameters()
+    resolve = params.resolve_asset_image_parameters
+    defaults = {"default_size": "1K", "default_quality": "medium"}
+
+    assert resolve(
+        requested_size="4K",
+        requested_quality="xhigh",
+        stored_size="2K",
+        stored_quality="low",
+        **defaults,
+    ) == ("4K", "xhigh")
+    assert resolve(
+        requested_size=None,
+        requested_quality=None,
+        stored_size="2K",
+        stored_quality="high",
+        **defaults,
+    ) == ("2K", "high")
+    assert resolve(
+        requested_size=None,
+        requested_quality=None,
+        stored_size=None,
+        stored_quality=None,
+        **defaults,
+    ) == ("1K", "medium")
+
+
+def test_asset_parameter_resolution_rejects_invalid_explicit_values():
+    params = _media_parameters()
+
+    with pytest.raises(ValueError, match="image_size"):
+        params.resolve_asset_image_parameters(
+            requested_size="8K",
+            requested_quality=None,
+            stored_size=None,
+            stored_quality=None,
+            default_size="1K",
+            default_quality="medium",
+        )

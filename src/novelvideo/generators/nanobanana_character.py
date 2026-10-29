@@ -241,6 +241,8 @@ class NanoBananaCharacterGenerator:
         usage_task_type: str = "character_portrait",
         usage_scope: str = "",
         identity_name: str = "",
+        image_size: str = "1K",
+        quality: str = "medium",
     ) -> CharacterReferenceResult:
         """生成角色 portrait / identity anchor。
 
@@ -346,7 +348,8 @@ class NanoBananaCharacterGenerator:
                 client=client,
                 prompt=front_prompt,
                 output_path=portrait_ref_path,
-                image_size="0.5K",
+                image_size=image_size,
+                quality=quality,
             )
 
             if portrait_bytes and portrait_ref_path:
@@ -466,6 +469,8 @@ class NanoBananaCharacterGenerator:
         usage_task_type: str = "identity_image",
         usage_scope: str = "",
         identity_name: str = "",
+        image_size: str = "1K",
+        quality: str = "medium",
     ) -> CharacterReferenceResult:
         """基于角色基准图生成身份参考图（Identity Locking）。
 
@@ -626,6 +631,7 @@ class NanoBananaCharacterGenerator:
                 additional_images=[costume_image] if costume_image else None,
                 additional_image_bytes=[costume_image_bytes] if costume_image_bytes else None,
                 additional_image_names=[costume_image_path] if costume_image_bytes else None,
+                quality=quality,
             )
 
             if image_bytes:
@@ -1177,6 +1183,7 @@ STRICT REQUIREMENTS (MUST AVOID):
         output_path: Optional[str] = None,
         aspect_ratio: str = "3:4",
         image_size: str = "1K",
+        quality: str = "medium",
     ) -> Optional[bytes]:
         """生成单张图像（无参考图）。
 
@@ -1265,9 +1272,7 @@ STRICT REQUIREMENTS (MUST AVOID):
                     image_config={
                         "aspect_ratio": aspect_ratio,
                         "image_size": image_size,
-                        "quality": normalize_openai_quality(
-                            self.openai_image_quality, default="medium"
-                        ),
+                        "quality": quality or self.openai_image_quality,
                         "output_format": "png",
                     },
                 )
@@ -1284,9 +1289,7 @@ STRICT REQUIREMENTS (MUST AVOID):
                     image_config=self._newapi_image_config(
                         aspect_ratio=aspect_ratio,
                         image_size=image_size,
-                        quality=normalize_openai_quality(
-                            self.openai_image_quality, default="medium"
-                        ),
+                        quality=quality or self.openai_image_quality,
                     ),
                     base_url=self.base_url,
                     delivery_path=output_path,
@@ -1384,6 +1387,7 @@ STRICT REQUIREMENTS (MUST AVOID):
         reference_image_name: str = "",
         aspect_ratio: str = "3:4",
         image_size: str = "1K",
+        quality: str = "medium",
         additional_images: list = None,  # 额外参考图 Part 对象列表（Google 模式）
         additional_image_bytes: list = None,  # 额外参考图字节列表（OpenRouter 模式）
         additional_image_names: list[str] = None,
@@ -1524,7 +1528,7 @@ STRICT REQUIREMENTS (MUST AVOID):
                         "aspect_ratio": aspect_ratio,
                         "image_size": image_size,
                         "quality": normalize_openai_quality(
-                            self.openai_image_quality, default="medium"
+                            quality, default=quality
                         ),
                         "output_format": "png",
                     },
@@ -1555,7 +1559,7 @@ STRICT REQUIREMENTS (MUST AVOID):
                         aspect_ratio=aspect_ratio,
                         image_size=image_size,
                         quality=normalize_openai_quality(
-                            self.openai_image_quality, default="medium"
+                            quality, default=quality
                         ),
                     ),
                     base_url=self.base_url,

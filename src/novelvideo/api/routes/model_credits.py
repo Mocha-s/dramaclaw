@@ -82,7 +82,7 @@ def _image_billing_params(
     if clean_size:
         params["size"] = clean_size
     clean_quality = str(quality or "").strip()
-    if clean_quality and _image_model_supports_quality(model):
+    if clean_quality:
         params["quality"] = clean_quality
     return params
 
@@ -307,7 +307,13 @@ def _generation_billing_kind(kind: str) -> str:
     return "model"
 
 
-def _fixed_image_billing_params(value: str, *, model: str) -> dict:
+def _fixed_image_billing_params(
+    value: str,
+    *,
+    model: str,
+    image_size: str = "",
+    quality: str = "",
+) -> dict:
     clean_value = value.strip()
     if clean_value == "scene_pano":
         image_size = (os.environ.get("SCENE_360_IMAGE_SIZE") or "2K").strip()
@@ -320,15 +326,19 @@ def _fixed_image_billing_params(value: str, *, model: str) -> dict:
             model=model, image_size=image_size, quality=quality
         )
     if clean_value in {"scene_master", "scene_reverse_master"}:
-        return _image_billing_params(model=model, image_size="1K", quality="medium")
+        return _image_billing_params(
+            model=model,
+            image_size=image_size or "1K",
+            quality=quality or "medium",
+        )
     if clean_value == "prop_reference":
         from novelvideo.generators.nanobanana_grid import normalize_image_size
         from novelvideo.generators.nanobanana_prop import PROP_REF_IMAGE_SIZE
 
         return _image_billing_params(
             model=model,
-            image_size=normalize_image_size(PROP_REF_IMAGE_SIZE, provider="newapi"),
-            quality="medium",
+            image_size=normalize_image_size(image_size or PROP_REF_IMAGE_SIZE, provider="newapi"),
+            quality=quality or "medium",
         )
     return {}
 
@@ -338,6 +348,7 @@ def _image_selection_billing_params(
     model: str,
     mode_key: str = "",
     image_role: str = "",
+    image_size: str = "",
     quality: str = "",
 ) -> dict:
     params: dict[str, str] = {}
@@ -372,7 +383,7 @@ def _image_selection_billing_params(
         params.update(
             _image_billing_params(
                 model=model,
-                image_size="1K" if clean_role in {"character", "identity"} else "",
+                image_size=image_size or ("1K" if clean_role in {"character", "identity"} else ""),
                 quality=quality or OPENAI_IMAGE_QUALITY,
             )
         )
