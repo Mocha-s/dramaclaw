@@ -17,6 +17,10 @@ from novelvideo.director_world import (
 
 
 @pytest.mark.parametrize(
+    ("suffix", "media_type"),
+    [(".jpg", "image/jpeg"), (".png", "image/png")],
+)
+@pytest.mark.parametrize(
     ("module", "model_env", "alias", "tokens"),
     [
         (
@@ -40,10 +44,12 @@ async def test_analysis_sends_image_and_business_alias_to_gateway(
     model_env,
     alias,
     tokens,
+    suffix,
+    media_type,
 ):
     requests = []
     factory_calls = []
-    image = tmp_path / "sheet.jpg"
+    image = tmp_path / f"sheet{suffix}"
     image.write_bytes(b"reference-sheet")
     monkeypatch.setenv("OPENROUTER_API_KEY", "unused-legacy-key")
     monkeypatch.setenv("OPENROUTER_VISION_MODEL", "unused-legacy-model")
@@ -101,7 +107,7 @@ async def test_analysis_sends_image_and_business_alias_to_gateway(
     payload = json.loads(requests[0].content)
     assert payload["model"] == alias
     assert payload["messages"][0]["content"][1]["image_url"]["url"].startswith(
-        "data:image/jpeg;base64,"
+        f"data:{media_type};base64,"
     )
     assert payload["response_format"] == {"type": "json_object"}
     assert payload["max_completion_tokens"] == tokens

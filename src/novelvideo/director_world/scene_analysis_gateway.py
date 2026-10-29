@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import mimetypes
 import os
 from pathlib import Path
 
@@ -11,6 +12,12 @@ OVERLAP_MODEL_ENV = "SCENE_OVERLAP_ANALYSIS_MODEL"
 OVERLAP_MODEL = "DC-scene-overlap-analyzer-LLM"
 SPATIAL_MODEL_ENV = "SCENE_SPATIAL_CONTRACT_MODEL"
 SPATIAL_MODEL = "DC-scene-spatial-contract-LLM"
+
+
+def _scene_reference_media_type(image_path: Path) -> str:
+    """Return the real MIME type for a scene reference sent to vision models."""
+    media_type, _ = mimetypes.guess_type(str(image_path))
+    return media_type if media_type in {"image/jpeg", "image/png", "image/webp"} else "image/jpeg"
 
 
 def resolve_scene_analysis_model(
@@ -134,7 +141,10 @@ async def analyze_scene_references(
         agent.run(
             [
                 prompt,
-                BinaryContent(data=image_path.read_bytes(), media_type="image/jpeg"),
+                BinaryContent(
+                    data=image_path.read_bytes(),
+                    media_type=_scene_reference_media_type(image_path),
+                ),
             ]
         ),
         timeout=timeout_seconds,
