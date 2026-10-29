@@ -189,16 +189,7 @@ def normalize_freezone_generation_resolution(value: str | None) -> str:
     return normalize_video_resolution(value)
 
 
-FREEZONE_SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL: dict[str, tuple[str, ...]] = {
-    "seedance-2.0-fast": ("480p", "720p"),
-    "seedance-2.0": ("480p", "720p", "1080p"),
-    "seedance-2.0-value": ("720p", "1080p"),
-    "seedance-2.0-fast-value": ("720p", "1080p"),
-}
-FREEZONE_DEFAULT_VIDEO_RESOLUTION_OPTIONS = ("480p", "720p", "1080p")
-FREEZONE_DEFAULT_SEEDANCE2_RESOLUTION_OPTIONS = ("480p", "720p")
-FREEZONE_HAPPYHORSE_RESOLUTION_OPTIONS = ("720p", "1080p")
-FREEZONE_GROK_VIDEO_CHANNEL_RESOLUTION_OPTIONS = ("720p", "480p")
+FREEZONE_GLOBAL_VIDEO_RESOLUTION_OPTIONS = ("720p", "768p", "1080p", "2k", "4k")
 
 
 def _freezone_video_model_from_backend(backend: str | None) -> str:
@@ -210,17 +201,7 @@ def _freezone_video_model_from_backend(backend: str | None) -> str:
 
 
 def freezone_video_resolution_options(backend: str | None) -> tuple[str, ...]:
-    model = _freezone_video_model_from_backend(backend)
-    if model == "grok-video-channel":
-        return FREEZONE_GROK_VIDEO_CHANNEL_RESOLUTION_OPTIONS
-    if model == "happyhorse-1.0":
-        return FREEZONE_HAPPYHORSE_RESOLUTION_OPTIONS
-    if model.startswith("seedance-2.0"):
-        return FREEZONE_SEEDANCE2_RESOLUTION_OPTIONS_BY_MODEL.get(
-            model,
-            FREEZONE_DEFAULT_SEEDANCE2_RESOLUTION_OPTIONS,
-        )
-    return FREEZONE_DEFAULT_VIDEO_RESOLUTION_OPTIONS
+    return FREEZONE_GLOBAL_VIDEO_RESOLUTION_OPTIONS
 
 
 def is_freezone_seedance2_value_backend(backend: str | None) -> bool:
@@ -251,23 +232,6 @@ def normalize_video_resolution_for_backend(
     configured_options: list[str] | tuple[str, ...] | None = None,
 ) -> str:
     resolution = normalize_video_resolution(value)
-    configured = tuple(
-        str(option).strip()
-        for option in (configured_options or ())
-        if str(option).strip()
-    )
-    if configured:
-        matched = next(
-            (option for option in configured if option.lower() == resolution.lower()),
-            None,
-        )
-        if matched is not None:
-            return normalize_video_resolution(matched)
-        preferred = next(
-            (option for option in configured if option.lower() == "720p"),
-            None,
-        )
-        return normalize_video_resolution(preferred or configured[0])
     options = freezone_video_resolution_options(backend)
     if resolution in options:
         return resolution

@@ -418,12 +418,13 @@ def test_video_model_options_and_resolution_work() -> None:
     assert "Grok Video Channel" not in labels
     assert normalize_video_resolution("720P") == "720p"
     happyhorse = next(item for item in options if item["id"] == "happyhorse-1.0")
-    assert happyhorse["resolutionOptions"] == ["720p", "1080p"]
+    assert happyhorse["resolutionOptions"] == ["720p", "768p", "1080p", "2k", "4k"]
     assert happyhorse["minDuration"] == 3
     assert happyhorse["maxDuration"] == 15
+    assert normalize_video_resolution_for_backend("happyhorse-1.0", "4k") == "4k"
     assert normalize_video_resolution_for_backend("happyhorse-1.0", "480p") == "720p"
     seedance_fast = next(item for item in options if item["id"] == "seedance-2.0-fast")
-    assert "1080p" not in seedance_fast["resolutionOptions"]
+    assert seedance_fast["resolutionOptions"] == ["720p", "768p", "1080p", "2k", "4k"]
 
 
 def test_freezone_generation_preserves_requested_unadvertised_resolution():
@@ -431,6 +432,13 @@ def test_freezone_generation_preserves_requested_unadvertised_resolution():
 
     assert normalize_freezone_generation_resolution("768P") == "768p"
     assert normalize_freezone_generation_resolution("4K") == "4k"
+
+
+def test_freezone_resolution_is_canonicalized_before_backend_capability_handling():
+    from novelvideo.freezone.video_node import normalize_freezone_generation_resolution
+
+    assert normalize_freezone_generation_resolution("4K") == "4k"
+    assert normalize_freezone_generation_resolution("768P") == "768p"
 
 
 def test_catalog_resolution_options_override_legacy_video_whitelist() -> None:
@@ -441,6 +449,34 @@ def test_catalog_resolution_options_override_legacy_video_whitelist() -> None:
             ["1080p", "4K"],
         )
         == "4k"
+    )
+
+
+def test_global_resolution_options_ignore_model_specific_whitelists():
+    from novelvideo.freezone.video_node import freezone_video_resolution_options
+
+    expected = ("720p", "768p", "1080p", "2k", "4k")
+    assert freezone_video_resolution_options("seedance-2.0-fast") == expected
+    assert freezone_video_resolution_options("happyhorse-1.0") == expected
+    assert freezone_video_resolution_options("grok-video-channel") == expected
+
+
+def test_backend_resolution_normalizer_does_not_downgrade_global_values():
+    expected = ("720p", "768p", "1080p", "2k", "4k")
+    for backend in ("seedance-2.0-fast", "happyhorse-1.0", "grok-video-channel"):
+        for resolution in expected:
+            assert normalize_video_resolution_for_backend(backend, resolution) == resolution
+
+
+def test_canvas_video_node_quality_options_are_global():
+    from novelvideo.freezone.video_node import freezone_video_resolution_options
+
+    assert freezone_video_resolution_options("catalog-model-with-one-option") == (
+        "720p",
+        "768p",
+        "1080p",
+        "2k",
+        "4k",
     )
 
 

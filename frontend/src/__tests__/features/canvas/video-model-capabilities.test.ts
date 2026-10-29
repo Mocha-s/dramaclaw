@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import type { VideoGenMode } from "@/features/canvas/domain/canvasNodes";
+import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
+import { qualityToResolution } from "@/features/canvas/nodes/VideoNode";
 import {
   audioReferenceDurationRejection,
   audioReferenceTotalDurationLimitMs,
@@ -50,6 +52,13 @@ describe("视频模式有效比例", () => {
     ["allReference", false],
   ] as const)("%s 是否强制跟随输入素材", (mode, expected) => {
     expect(videoModeForcesAutomaticAspectRatio(mode)).toBe(expected);
+  });
+});
+
+describe("Canvas video generation resolution contract", () => {
+  it("exposes every global resolution and serializes the selected tier unchanged", () => {
+    expect(FREEZONE_VIDEO_RESOLUTIONS).toEqual(["720p", "768p", "1080p", "2k", "4k"]);
+    expect(qualityToResolution("4k")).toBe("4k");
   });
 });
 

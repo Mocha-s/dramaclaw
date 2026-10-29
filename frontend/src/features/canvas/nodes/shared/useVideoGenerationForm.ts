@@ -118,8 +118,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { filterMediaModelParamsForMode } from "@/features/canvas/domain/mediaModelParameters";
 import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
 
-// 媒体目录声明的分辨率档位原样使用；无声明时只保留安全的 720p 默认档。
-// 大小写按后端口径统一成小写（`qualityToResolution` 因此退化成恒等函数）。
+// Generated-video resolution is global; other capabilities remain model-scoped.
 const SCENE_OPTIMIZE_OPTIONS: ReadonlyArray<Seedance2SceneOptimize> = ["anime", "realistic"];
 const DEFAULT_DURATION_MIN = 5;
 const DEFAULT_DURATION_MAX = 15;
