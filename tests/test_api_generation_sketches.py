@@ -218,3 +218,23 @@ def test_regenerate_sketches_forwards_legacy_default_image_size(
     payload = start_calls[0]["payload"]
     assert payload["config"]["image_size"] == "1K"
     assert payload["billing"]["pricing_params"]["size"] == "1K"
+
+
+def test_regenerate_sketches_forwards_explicit_project_image_size(
+    monkeypatch, tmp_path
+):
+    client, _clean_calls, start_calls, _scene_split_calls = _client(
+        monkeypatch,
+        tmp_path,
+        {"sketch_image_size": "4K"},
+    )
+
+    response = client.post(
+        "/api/v1/projects/demo/episodes/2/sketches/regenerate",
+        json={"beat_indices": [1], "mode_key": "1x1_2-3_sketch"},
+    )
+
+    assert response.status_code == 200
+    payload = start_calls[0]["payload"]
+    assert payload["config"]["image_size"] == "4K"
+    assert payload["billing"]["pricing_params"]["size"] == "4K"
