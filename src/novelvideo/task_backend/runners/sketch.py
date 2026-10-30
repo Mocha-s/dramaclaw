@@ -567,7 +567,7 @@ async def _run_sketch_generation_async(
         if not result.success:
             raise RuntimeError(f"草图生成失败 (Pass 1): {result.error}")
         log(f"[Two-Pass] Pass 1 完成，耗时 {_format_generation_time(result.generation_time)}")
-        target_size = REGEN_MODE_CONFIGS.get(effective_mk, {}).get("image_size", "1K")
+        target_size = image_size
         result2 = await generator.reformat_sketch(
             source_path=pass1_path,
             output_path=output_path,

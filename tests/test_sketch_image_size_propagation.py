@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from PIL import Image
 from novelvideo.project_context import ProjectContext
@@ -42,7 +44,10 @@ def test_explicit_sketch_size_rejects_google_models_without_size_support():
 
 
 @pytest.mark.asyncio
-async def test_sketch_runner_passes_project_size_to_generator(tmp_path, monkeypatch):
+@pytest.mark.parametrize("two_pass", [False, True])
+async def test_sketch_runner_passes_project_size_to_generator(
+    tmp_path, monkeypatch, two_pass
+):
     from novelvideo.generators import nanobanana_grid, pool_indexer
     from novelvideo.task_backend.runners import sketch as sketch_runner
 
@@ -57,12 +62,19 @@ async def test_sketch_runner_passes_project_size_to_generator(tmp_path, monkeypa
 
         async def generate_grid(self, **kwargs):
             captured.update(kwargs)
-            output_path = tmp_path / "sketch.jpg"
+            output_path = Path(kwargs["output_path"])
             output_path.parent.mkdir(parents=True, exist_ok=True)
             Image.new("RGB", (160, 90), "blue").save(output_path)
             return type("Result", (), {"success": True, "error": None, "generation_time": 0})()
 
+        async def reformat_sketch(self, **kwargs):
+            captured["reformat_target_size"] = kwargs["target_size"]
+            Image.new("RGB", (160, 90), "blue").save(kwargs["output_path"])
+            return type("Result", (), {"success": True, "error": None, "generation_time": 0})()
+
     monkeypatch.setattr(nanobanana_grid, "NanoBananaGridGenerator", FakeGridGenerator)
+    if two_pass:
+        monkeypatch.setattr(nanobanana_grid, "sketch_pass1_mode_key", lambda _mode: "1x1_1-1")
     monkeypatch.setattr(
         pool_indexer,
         "save_grid_and_split",
@@ -116,6 +128,8 @@ async def test_sketch_runner_passes_project_size_to_generator(tmp_path, monkeypa
     assert captured["force_image_size"] == "4K"
     assert captured["generator_config"]["image_size"] == "4K"
     assert captured["generator_config"]["strict_image_size"] is True
+    if two_pass:
+        assert captured["reformat_target_size"] == "4K"
 
 
 @pytest.mark.asyncio
