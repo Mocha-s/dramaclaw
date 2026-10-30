@@ -399,6 +399,7 @@ def _sketch_settings_payload(username: str, project: str) -> dict:
     project_config = load_project_config(username, project)
     return {
         "sketch_image_selection": _resolve_sketch_image_selection(project_config),
+        "sketch_image_size": project_config.get("sketch_image_size") or "1K",
         "options": configured_image_generation_selection_options(),
     }
 
@@ -1992,6 +1993,9 @@ async def update_sketch_settings(
                 },
             )
         updates["sketch_image_selection"] = selection
+
+    if body.sketch_image_size is not None:
+        updates["sketch_image_size"] = body.sketch_image_size
 
     if updates:
         save_project_config(username, project_name, config=updates)

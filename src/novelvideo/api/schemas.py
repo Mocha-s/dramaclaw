@@ -116,6 +116,7 @@ class RenderSettingsUpdate(BaseModel):
 
 class SketchSettingsUpdate(BaseModel):
     sketch_image_selection: Optional[str] = None
+    sketch_image_size: Optional[ImageSize] = None
 
 
 class BeatBackgroundAnchorUpdate(BaseModel):
