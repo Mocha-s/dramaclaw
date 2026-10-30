@@ -29,7 +29,7 @@ async def test_sketch_runner_passes_project_size_to_generator(tmp_path, monkeypa
         model = "fake"
 
         def __init__(self, **_kwargs):
-            pass
+            captured["generator_config"] = _kwargs["config"]
 
         async def generate_grid(self, **kwargs):
             captured.update(kwargs)
@@ -73,8 +73,9 @@ async def test_sketch_runner_passes_project_size_to_generator(tmp_path, monkeypa
             "scope": "grid_0",
             "payload": {
                 "output_dir": str(tmp_path),
-                "config": {
-                    "image_size": "4K",
+                    "config": {
+                        "image_size": "4K",
+                        "strict_image_size": True,
                     "direct_sketch_beats": True,
                     "mode_key": "1x1_16-9",
                     "beat_numbers": [1],
@@ -89,3 +90,59 @@ async def test_sketch_runner_passes_project_size_to_generator(tmp_path, monkeypa
 
     assert result["beat_numbers"] == [1]
     assert captured["force_image_size"] == "4K"
+    assert captured["generator_config"]["image_size"] == "4K"
+    assert captured["generator_config"]["strict_image_size"] is True
+
+
+@pytest.mark.asyncio
+async def test_openai_rejection_of_explicit_sketch_size_is_not_retried(monkeypatch):
+    import openai
+
+    from novelvideo.generators import nanobanana_grid
+
+    requests: list[dict] = []
+
+    class FakeImages:
+        async def generate(self, **kwargs):
+            requests.append(kwargs)
+            raise RuntimeError("Unsupported parameter: 'size'")
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.images = FakeImages()
+
+    class FakeUsageMeter:
+        async def reserve_current_model_call_credit(self, **_kwargs):
+            return "reservation"
+
+        async def refund_model_call_credit_reservation(self, *_args, **_kwargs):
+            return None
+
+    monkeypatch.setattr(openai, "AsyncOpenAI", FakeClient)
+    monkeypatch.setattr(nanobanana_grid, "get_usage_meter", lambda: FakeUsageMeter())
+    monkeypatch.setattr(
+        nanobanana_grid,
+        "_mark_paid_image_attempt_accepted",
+        _noop_async,
+    )
+
+    image_bytes, _text, error = await nanobanana_grid._call_openai_image_api(
+        api_key="test-key",
+        model="gpt-image-2",
+        prompt="sketch",
+        image_config={
+            "aspect_ratio": "16:9",
+            "image_size": "4K",
+            "quality": "low",
+            "strict_image_size": True,
+        },
+    )
+
+    assert len(requests) == 1
+    assert requests[0]["size"] == nanobanana_grid.resolve_openai_image_size("16:9", "4K")
+    assert image_bytes is None
+    assert "size" in error
+
+
+async def _noop_async(*_args, **_kwargs):
+    return None

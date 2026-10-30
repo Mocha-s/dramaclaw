@@ -3824,7 +3824,13 @@ async def _call_openai_image_api(
                 if (
                     unknown_parameter
                     and unknown_parameter in request_options
-                    and not (strict_quality and unknown_parameter == "quality")
+                    and not (
+                        (strict_quality and unknown_parameter == "quality")
+                        or (
+                            image_config.get("strict_image_size") is True
+                            and unknown_parameter == "size"
+                        )
+                    )
                 ):
                     print(
                         f"[OpenAI Image] 参数 {unknown_parameter!r} 不被当前端点接受，" "移除后重试"
@@ -4754,6 +4760,7 @@ class NanoBananaGridGenerator:
         self.base_url = config.get("base_url", "")
         self.openai_image_quality = config.get("openai_image_quality", "medium")
         self.strict_image_quality = bool(config.get("strict_image_quality", False))
+        self.strict_image_size = bool(config.get("strict_image_size", False))
         self.openai_sketch_image_quality = config.get(
             "openai_sketch_image_quality", "low"
         )
@@ -5509,6 +5516,7 @@ class NanoBananaGridGenerator:
                             else self.openai_image_quality
                         ),
                         "strict_quality": self.strict_image_quality,
+                        "strict_image_size": self.strict_image_size,
                         "output_format": "png",
                     },
                 )

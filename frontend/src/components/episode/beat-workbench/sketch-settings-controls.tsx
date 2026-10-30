@@ -17,9 +17,11 @@ import {
 import {
   useSketchSettings,
   useUpdateSketchSettings,
+  type SketchImageSize,
   type SketchAspectRatio,
   type SketchSettingsUpdate,
 } from "@/lib/queries/sketch-settings";
+import { FREEZONE_IMAGE_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
 import {
   WORKBENCH_SELECT_CONTENT_CLASS,
   WORKBENCH_SELECT_ITEM_CLASS,
@@ -101,6 +103,40 @@ export function SketchModelSelect({
               className={WORKBENCH_SELECT_ITEM_CLASS}
             >
               {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Label className="whitespace-nowrap text-[11px] text-muted-foreground">
+        {t("episode.sketchSettings.imageSize")}
+      </Label>
+      <Select
+        value={data.sketch_image_size ?? "1K"}
+        onValueChange={(value) => {
+          if (
+            FREEZONE_IMAGE_RESOLUTIONS.includes(value as SketchImageSize) &&
+            value !== data.sketch_image_size
+          ) {
+            void patchSettings({ sketch_image_size: value as SketchImageSize });
+          }
+        }}
+        disabled={disabled}
+      >
+        <SelectTrigger
+          aria-label={t("episode.sketchSettings.imageSize")}
+          className={cn(WORKBENCH_SELECT_TRIGGER_CLASS, "w-[70px]")}
+        >
+          <SelectValue>{() => data.sketch_image_size ?? "1K"}</SelectValue>
+        </SelectTrigger>
+        <SelectContent
+          align="start"
+          sideOffset={8}
+          alignItemWithTrigger={false}
+          className={WORKBENCH_SELECT_CONTENT_CLASS}
+        >
+          {FREEZONE_IMAGE_RESOLUTIONS.map((size) => (
+            <SelectItem key={size} value={size} className={WORKBENCH_SELECT_ITEM_CLASS}>
+              {size}
             </SelectItem>
           ))}
         </SelectContent>

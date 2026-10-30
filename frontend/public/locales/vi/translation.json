@@ -4490,6 +4490,7 @@
     "sketchSettings": {
       "model": "Model phác thảo",
       "modelPlaceholder": "Chọn model phác thảo",
+      "imageSize": "Kích thước ảnh",
       "aspectRatio": "Tỉ lệ",
       "wide16x9": "16:9",
       "aspectChangeHint": "Đổi tỉ lệ khung hình chỉ ảnh hưởng tới nội dung tạo mới; asset đã có phải tạo lại mới cập nhật theo tỉ lệ mới."

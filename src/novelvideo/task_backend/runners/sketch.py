@@ -512,6 +512,9 @@ async def _run_sketch_generation_async(
         )
         generator_config = get_sketch_generation_config(selection_override=sketch_image_selection)
 
+    generator_config["image_size"] = image_size
+    generator_config["strict_image_size"] = bool(config.get("strict_image_size"))
+
     generator = NanoBananaGridGenerator(config=generator_config)
     if use_director_refs and generator.provider != "openai":
         raise RuntimeError(
