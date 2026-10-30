@@ -287,6 +287,43 @@ def test_unmapped_scene_analysis_alias_uses_explicit_fallback_route(monkeypatch)
     )
 
 
+def test_scene_analysis_rejects_generic_text_writer_fallback(monkeypatch):
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setenv(
+        "SCENE_ANALYSIS_FALLBACK_MODEL", "DC-freezone-text-writer-LLM"
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_model_gateway_settings",
+        lambda: {"model_gateway_mode": model_gateway_settings.MODE_CUSTOM},
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_third_party_gateway_groups",
+        lambda: [
+            {
+                "id": "text",
+                "baseUrl": "https://gateway.invalid/v1",
+                "apiKey": "text-key",
+                "capabilities": ["text"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "DC-freezone-text-writer-LLM",
+                        "upstreamModel": "text-only-model",
+                    }
+                ],
+            }
+        ],
+    )
+
+    with pytest.raises(ValueError, match="scene analysis model route"):
+        scene_analysis_gateway.resolve_scene_analysis_model(
+            "SCENE_SPATIAL_CONTRACT_MODEL",
+            "DC-scene-spatial-contract-LLM",
+        )
+
+
 def test_mapped_scene_analysis_alias_remains_authoritative(monkeypatch):
     from novelvideo import model_gateway_settings
     from novelvideo import config as config_module

@@ -345,6 +345,39 @@ def get_sub2api_groups(*, masked: bool = False) -> list[dict[str, Any]]:
     return result
 
 
+def _get_preserved_legacy_sub2api_groups() -> list[dict[str, Any]]:
+    """Read pre-migration groups without falling through to canonical groups.
+
+    The migration intentionally keeps ``sub2api_groups`` so fields that were not
+    copied into the canonical group model can still be recovered.  In particular,
+    image edit format is needed when an active third-party mapping is incomplete.
+    """
+    if not _uses_ce_gateway_settings():
+        return []
+    raw = _read_all().get("sub2api_groups", "")
+    try:
+        decoded = json.loads(raw) if raw else []
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(decoded, list):
+        return []
+    try:
+        return _normalize_sub2api_groups(decoded)
+    except ValueError:
+        return [item for item in decoded if isinstance(item, dict)]
+
+
+def _legacy_image_edit_format(model: str) -> str:
+    legacy = _resolve_sub2api_group(
+        capability=CAPABILITY_IMAGE,
+        model=model,
+        groups=_get_preserved_legacy_sub2api_groups(),
+    )
+    if legacy is None:
+        return ""
+    return str(legacy[2].get("imageEditFormat") or "").strip().lower()
+
+
 def _resolve_sub2api_group(
     *, capability: str, model: str, groups: list[dict[str, Any]] | None = None
 ) -> dict[str, Any] | None:
@@ -1716,7 +1749,11 @@ def get_third_party_media_model_catalog(media_type: str) -> list[dict[str, Any]]
             if capability == CAPABILITY_IMAGE:
                 request = {
                     "endpoint": "images/generations",
-                    "referenceFormat": mapping.get("imageEditFormat") or "images",
+                    "referenceFormat": (
+                        mapping.get("imageEditFormat")
+                        or _legacy_image_edit_format(request_model)
+                        or "images"
+                    ),
                     "parameters": [],
                 }
             else:
@@ -1765,7 +1802,11 @@ def resolve_third_party_image_request(model: str) -> dict[str, Any] | None:
         (
             item
             for item in get_third_party_media_model_catalog(CAPABILITY_IMAGE)
-            if str(item.get("apiModel") or item.get("id") or "").strip() == requested
+            if requested
+            in {
+                str(item.get("apiModel") or item.get("id") or "").strip(),
+                str(item.get("gatewayModel") or item.get("upstreamModel") or "").strip(),
+            }
         ),
         None,
     )
@@ -1997,6 +2038,13 @@ def get_ce_newapi_config_for_mode(
     space even when the installation's general model gateway is switched later.
     """
 
+    def image_edit_format(mapping: dict[str, Any], requested_model: str) -> str:
+        explicit = str(mapping.get("imageEditFormat") or "").strip().lower()
+        if explicit:
+            return explicit
+        return _legacy_image_edit_format(requested_model) or "images"
+
+
     if not _uses_ce_gateway_settings():
         raise RuntimeError("CE model gateway settings are not available in EE")
 
@@ -2047,7 +2095,7 @@ def get_ce_newapi_config_for_mode(
                 protocol=protocol,
                 model=upstream_model,
                 native_base_url=_sub2api_gemini_base_url(group) if protocol == "gemini" else "",
-                image_edit_reference_format=str(mapping.get("imageEditFormat") or "images"),
+                image_edit_reference_format=image_edit_format(mapping, model),
             )
         # Once canonical groups exist (including an empty result after a
         # rejected legacy endpoint), never select the preserved legacy URL.
@@ -2090,7 +2138,7 @@ def get_ce_newapi_config_for_mode(
                 protocol=protocol,
                 model=upstream_model,
                 native_base_url=_sub2api_gemini_base_url(group) if protocol == "gemini" else "",
-                image_edit_reference_format=str(mapping.get("imageEditFormat") or "images"),
+                image_edit_reference_format=image_edit_format(mapping, model),
             )
         return EffectiveNewApiConfig(
             mode=MODE_HYBRID,

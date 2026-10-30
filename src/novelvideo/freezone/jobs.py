@@ -127,6 +127,18 @@ async def run_freezone_gen(
         ):
             if not str(provider or "").strip():
                 cfg["provider"] = "newapi"
+            cfg.setdefault(
+                "newapi_request_schema",
+                dict(catalog_request.get("request_schema") or {}),
+            )
+            cfg.setdefault(
+                "newapi_model_params",
+                dict(catalog_request.get("model_params") or {}),
+            )
+            cfg.setdefault(
+                "image_edit_reference_format",
+                str(catalog_request.get("reference_image_format") or "dc-media"),
+            )
             if catalog_request.get("api_key"):
                 cfg["api_key"] = catalog_request["api_key"]
             if not cfg.get("base_url") and catalog_request.get("base_url"):
@@ -143,8 +155,10 @@ async def run_freezone_gen(
                 cfg["api_key"] = gateway.api_key or cfg.get("api_key", "")
                 cfg["base_url"] = gateway.base_url or cfg.get("base_url", "")
                 cfg["model"] = gateway.model or cfg.get("model", "")
-    cfg["newapi_model_params"] = model_params or {}
-    cfg["newapi_request_schema"] = request_schema or {}
+    if model_params is not None:
+        cfg["newapi_model_params"] = model_params
+    if request_schema is not None:
+        cfg["newapi_request_schema"] = request_schema
     if reference_paths:
         await generate_reference_edit_image(
             prompt=prompt,
@@ -391,8 +405,10 @@ async def run_freezone_edit(
     # 与 run_freezone_gen 同一口径：目录声明的动态参数按 schema 里的 requestPath
     # 写进网关请求体。少了这两行，图编辑侧的 model_params 会在这里被丢掉。
     # 组织支同样要带上——请求作用域凭据只换掉出网身份，不改请求体形状。
-    cfg["newapi_model_params"] = model_params or {}
-    cfg["newapi_request_schema"] = request_schema or {}
+    if model_params is not None:
+        cfg["newapi_model_params"] = model_params
+    if request_schema is not None:
+        cfg["newapi_request_schema"] = request_schema
     await generate_reference_edit_image(
         prompt=prompt,
         reference_images=refs,

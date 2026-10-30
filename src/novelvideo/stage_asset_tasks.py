@@ -64,6 +64,14 @@ def _scene_360_strict_spatial_contract() -> bool:
     return compatibility not in {"1", "true", "yes", "on"}
 
 
+def _scene_analysis_subprocess_timeout() -> int:
+    raw = str(os.environ.get("SCENE_ANALYSIS_SUBPROCESS_TIMEOUT_SECONDS") or "600").strip()
+    try:
+        return max(int(raw), 60)
+    except ValueError:
+        return 600
+
+
 def _run_credit_coro(coro_factory):
     """Run async credit helpers from this synchronous subprocess wrapper."""
     try:
@@ -1412,7 +1420,7 @@ def run_scene_360(
                             analyzer_cmd,
                             capture_output=True,
                             text=True,
-                            timeout=240,
+                            timeout=_scene_analysis_subprocess_timeout(),
                         )
                         if analyzer_proc.returncode != 0:
                             logger.warning(
@@ -1480,7 +1488,7 @@ def run_scene_360(
                             contract_cmd,
                             capture_output=True,
                             text=True,
-                            timeout=240,
+                            timeout=_scene_analysis_subprocess_timeout(),
                         )
                         if contract_proc.returncode != 0:
                             logger.warning(
@@ -1525,11 +1533,6 @@ def run_scene_360(
                 )
                 if contract_is_fresh:
                     cmd.extend(["--spatial-contract", spatial_contract_path])
-                from novelvideo.director_world.scene_360_reference_audit import (
-                    Scene360ReferenceAudit,
-                    Scene360SpatialContractUnavailable,
-                )
-
                 try:
                     audit = Scene360ReferenceAudit.collect(
                         master_path=master_path,

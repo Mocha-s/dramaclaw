@@ -1597,7 +1597,18 @@ def get_grid_generation_config(
         selection_override=selection_override,
     )
 
-    return {
+    request_metadata: dict[str, object] | None = None
+    if provider_config.get("provider") == "newapi" and provider_config.get(
+        "gateway_source"
+    ) in {"third_party", "sub2api"}:
+        from novelvideo.model_gateway_settings import resolve_third_party_image_request
+
+        logical_model = str(
+            model_override or selection_override or provider_config.get("model") or ""
+        ).strip()
+        request_metadata = resolve_third_party_image_request(logical_model)
+
+    result = {
         "provider": provider_config["provider"],
         "api_key": provider_config["api_key"],
         "model": provider_config["model"],
@@ -1620,6 +1631,23 @@ def get_grid_generation_config(
         "batch_size": GRID_BATCH_SIZE,
         "total_panels": GRID_TOTAL_PANELS,
     }
+    if request_metadata:
+        request_schema = dict(request_metadata.get("request_schema") or {})
+        reference_format = str(
+            request_metadata.get("reference_image_format")
+            or result["image_edit_reference_format"]
+        ).strip().lower()
+        if reference_format and "referenceFormat" not in request_schema:
+            request_schema["referenceFormat"] = reference_format
+        result["newapi_request_schema"] = request_schema
+        result["newapi_model_params"] = dict(request_metadata.get("model_params") or {})
+        result["image_edit_reference_format"] = reference_format
+        for key in ("api_key", "base_url"):
+            if request_metadata.get(key):
+                result[key] = request_metadata[key]
+        if request_metadata.get("upstream_model"):
+            result["model"] = request_metadata["upstream_model"]
+    return result
 
 
 def get_sketch_generation_config(

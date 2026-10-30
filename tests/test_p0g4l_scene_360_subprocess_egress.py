@@ -226,7 +226,12 @@ class _SceneHarness:
             module_name = _child_module(list(cmd))
             events.append(f"launch:{module_name.rsplit('.', 1)[-1]}")
             launches.append(
-                {"cmd": list(cmd), "env": kwargs.get("env"), "module": module_name}
+                {
+                    "cmd": list(cmd),
+                    "env": kwargs.get("env"),
+                    "timeout": kwargs.get("timeout"),
+                    "module": module_name,
+                }
             )
             if module_name.endswith("scene_360_builder") and returncode == 0:
                 out_dir = Path(cmd[cmd.index("--output-dir") + 1])
@@ -480,6 +485,34 @@ def test_platform_launches_scene_analysis_with_gateway_only(
     assert "scene_overlap_analyzer" in launched
     assert "scene_spatial_contract" in launched
     assert "scene_360_builder" in launched
+
+
+def test_scene_analysis_subprocesses_use_configured_timeout(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from novelvideo.director_world import scene_analysis_gateway
+
+    monkeypatch.setenv("SCENE_ANALYSIS_SUBPROCESS_TIMEOUT_SECONDS", "720")
+    monkeypatch.setattr(
+        scene_analysis_gateway, "scene_analysis_gateway_configured", lambda: True
+    )
+    pair = _master_pair(tmp_path)
+    harness = _SceneHarness(monkeypatch, None)
+
+    _run_pano(
+        tmp_path,
+        source="master",
+        master_path_override=pair["master"],
+        reverse_master_path_override=pair["reverse"],
+    )
+
+    analysis_launches = [
+        entry
+        for entry in harness.launches
+        if str(entry["module"]).endswith(("scene_overlap_analyzer", "scene_spatial_contract"))
+    ]
+    assert len(analysis_launches) == 2
+    assert [entry["timeout"] for entry in analysis_launches] == [720, 720]
 
 
 def test_scene_360_passes_fresh_reference_contract_paths_to_builder(

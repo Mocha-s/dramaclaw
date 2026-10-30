@@ -14,6 +14,15 @@ SPATIAL_MODEL_ENV = "SCENE_SPATIAL_CONTRACT_MODEL"
 SPATIAL_MODEL = "DC-scene-spatial-contract-LLM"
 
 
+def scene_analysis_timeout_seconds() -> float:
+    """Return the bounded timeout for one gateway vision-analysis call."""
+    raw = str(os.environ.get("SCENE_ANALYSIS_TIMEOUT_SECONDS") or "300").strip()
+    try:
+        return max(float(raw), 30.0)
+    except ValueError:
+        return 300.0
+
+
 def _scene_reference_media_type(image_path: Path) -> str:
     """Return the real MIME type for a scene reference sent to vision models."""
     media_type, _ = mimetypes.guess_type(str(image_path))
@@ -40,7 +49,14 @@ def resolve_scene_analysis_model(
     else:
         active_groups = []
 
+    generic_text_aliases = {
+        "dc-freezone-text-writer-llm",
+        str(os.environ.get("FREEZONE_TEXT_WRITER_MODEL") or "").strip().lower(),
+    }
+
     def has_explicit_route(candidate: str) -> bool:
+        if str(candidate or "").strip().lower() in generic_text_aliases:
+            return False
         selected = model_gateway_settings._resolve_sub2api_group(
             capability="text", model=candidate, groups=active_groups
         )
@@ -61,8 +77,8 @@ def resolve_scene_analysis_model(
         return fallback
 
     raise ValueError(
-        "No explicit scene analysis model route; configure the requested alias "
-        "or SCENE_ANALYSIS_FALLBACK_MODEL"
+        "No explicit vision-capable scene analysis model route; configure the "
+        "requested alias or a dedicated SCENE_ANALYSIS_FALLBACK_MODEL"
     )
 
 
@@ -99,7 +115,7 @@ async def analyze_scene_references(
     default_model: str,
     model: str | None = None,
     max_tokens: int,
-    timeout_seconds: float = 120.0,
+    timeout_seconds: float | None = None,
 ) -> str:
     """Send a reference sheet through the edition's configured LLM gateway.
 
@@ -116,6 +132,7 @@ async def analyze_scene_references(
     from novelvideo.task_backend.subprocesses import require_direct_model_egress_allowed
 
     require_direct_model_egress_allowed(None)
+    timeout_seconds = timeout_seconds or scene_analysis_timeout_seconds()
     transport = get_newapi_text_pydantic_model(
         model_env,
         default_model,
