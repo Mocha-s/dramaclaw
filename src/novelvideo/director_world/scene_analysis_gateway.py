@@ -49,14 +49,7 @@ def resolve_scene_analysis_model(
     else:
         active_groups = []
 
-    generic_text_aliases = {
-        "dc-freezone-text-writer-llm",
-        str(os.environ.get("FREEZONE_TEXT_WRITER_MODEL") or "").strip().lower(),
-    }
-
     def has_explicit_route(candidate: str) -> bool:
-        if str(candidate or "").strip().lower() in generic_text_aliases:
-            return False
         selected = model_gateway_settings._resolve_sub2api_group(
             capability="text", model=candidate, groups=active_groups
         )
@@ -77,8 +70,8 @@ def resolve_scene_analysis_model(
         return fallback
 
     raise ValueError(
-        "No explicit vision-capable scene analysis model route; configure the "
-        "requested alias or a dedicated SCENE_ANALYSIS_FALLBACK_MODEL"
+        "No explicit scene analysis model route; configure the requested alias "
+        "or SCENE_ANALYSIS_FALLBACK_MODEL"
     )
 
 
