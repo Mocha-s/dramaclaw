@@ -535,6 +535,10 @@ async def test_scene_analysis_passes_configured_timeout_to_model(monkeypatch, tm
 
         monkeypatch.setenv("SCENE_ANALYSIS_TIMEOUT_SECONDS", "420")
         monkeypatch.setattr(config, "get_newapi_text_pydantic_model", gateway_model)
+        monkeypatch.setattr(
+            "novelvideo.director_world.scene_analysis_gateway.resolve_scene_analysis_model",
+            lambda *_args, **_kwargs: "DC-scene-spatial-contract-LLM",
+        )
         await scene_spatial_contract.ask_gateway(
             image_path=image,
             prompt="Analyze references",
@@ -543,3 +547,62 @@ async def test_scene_analysis_passes_configured_timeout_to_model(monkeypatch, tm
 
     assert calls[0]["timeout_seconds_override"] == 420.0
     assert len(requests) == 1
+
+
+@pytest.mark.asyncio
+async def test_scene_analysis_passes_resolved_fallback_alias_to_model_factory(
+    monkeypatch, tmp_path
+):
+    from novelvideo import config
+    from novelvideo.director_world import scene_analysis_gateway
+
+    image = tmp_path / "sheet.png"
+    image.write_bytes(b"reference")
+    calls = []
+
+    def capture_factory(model_env, default_model, **kwargs):
+        calls.append((model_env, default_model, kwargs))
+        raise RuntimeError("captured model factory arguments")
+
+    monkeypatch.setattr(
+        scene_analysis_gateway,
+        "resolve_scene_analysis_model",
+        lambda *_args, **_kwargs: "vision-fallback",
+    )
+    monkeypatch.setattr(
+        config, "get_newapi_text_pydantic_model", capture_factory
+    )
+
+    with pytest.raises(RuntimeError, match="captured model factory arguments"):
+        await scene_analysis_gateway.analyze_scene_references(
+            image_path=image,
+            prompt="Analyze references",
+            model_env="SCENE_SPATIAL_CONTRACT_MODEL",
+            default_model="DC-scene-spatial-contract-LLM",
+            max_tokens=96,
+        )
+
+    assert calls[0][2]["model_name_override"] == "vision-fallback"
+
+
+def test_structured_output_settings_follow_selected_anthropic_route(monkeypatch):
+    from types import SimpleNamespace
+
+    from novelvideo import config, model_gateway_settings
+
+    calls = []
+
+    def effective_config(*, model=""):
+        calls.append(model)
+        return SimpleNamespace(source="third_party", protocol="anthropic")
+
+    monkeypatch.setattr(
+        model_gateway_settings, "get_effective_llm_config", effective_config
+    )
+
+    settings = config.get_newapi_structured_output_model_settings(
+        model="claude-sonnet-5-5"
+    )
+
+    assert calls == ["claude-sonnet-5-5"]
+    assert settings == {}

@@ -133,10 +133,13 @@ async def analyze_scene_references(
 
     require_direct_model_egress_allowed(None)
     timeout_seconds = timeout_seconds or scene_analysis_timeout_seconds()
+    resolved_model = resolve_scene_analysis_model(
+        model_env, default_model, model=model or ""
+    )
     transport = get_newapi_text_pydantic_model(
         model_env,
         default_model,
-        model_name_override=model or None,
+        model_name_override=resolved_model,
         timeout_seconds_override=timeout_seconds,
         brainclaw_profile=BrainClawProfile.FREEZONE_VISION_ANALYSIS,
         capability="vision.analyze",
@@ -151,7 +154,7 @@ async def analyze_scene_references(
         model_settings={
             "temperature": 0.0,
             "max_tokens": max_tokens,
-            **get_newapi_structured_output_model_settings(),
+            **get_newapi_structured_output_model_settings(model=resolved_model),
         },
     )
     result = await asyncio.wait_for(

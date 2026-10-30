@@ -95,6 +95,11 @@ async def test_analysis_sends_image_and_business_alias_to_gateway(
             )
 
         monkeypatch.setattr(config, "get_newapi_text_pydantic_model", gateway_model)
+        monkeypatch.setattr(
+            scene_analysis_gateway,
+            "resolve_scene_analysis_model",
+            lambda *_args, **_kwargs: alias,
+        )
         kwargs = {"image_path": image, "prompt": "Analyze references"}
         if module is scene_spatial_contract:
             kwargs["max_tokens"] = tokens
@@ -139,6 +144,11 @@ async def test_gateway_rejection_preserves_status_and_reason(monkeypatch, tmp_pa
                     http_client=client,
                 ),
             ),
+        )
+        monkeypatch.setattr(
+            scene_analysis_gateway,
+            "resolve_scene_analysis_model",
+            lambda *_args, **_kwargs: "DC-scene-overlap-analyzer-LLM",
         )
         with pytest.raises(Exception, match="403.*Model access denied"):
             await scene_overlap_analyzer.ask_gateway(image_path=image, prompt="Analyze")

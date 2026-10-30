@@ -491,7 +491,7 @@ def get_newapi_text_pydantic_model(
     )
 
 
-def get_newapi_structured_output_model_settings() -> dict:
+def get_newapi_structured_output_model_settings(*, model: str = "") -> dict:
     """Resolve reasoning settings for PydanticAI structured output requests.
 
     DramaClaw sends opaque ``DC-*`` aliases through an OpenAI-compatible
@@ -511,7 +511,7 @@ def get_newapi_structured_output_model_settings() -> dict:
     )
 
     try:
-        llm_config = get_effective_llm_config()
+        llm_config = get_effective_llm_config(model=model)
         if llm_config.source == "third_party":
             if getattr(llm_config, "protocol", "openai") == "anthropic":
                 return {}
