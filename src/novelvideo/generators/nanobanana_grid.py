@@ -925,6 +925,20 @@ def normalize_openai_quality(value: str | None, default: str = "medium") -> str:
     return quality if quality in _OPENAI_VALID_QUALITIES else default
 
 
+def explicit_image_size_support_error(
+    *, provider: str, model: str, strict: bool
+) -> str | None:
+    if not strict:
+        return None
+    provider_name = str(provider or "").strip().lower()
+    model_name = str(model or "").strip().lower()
+    if provider_name == "google" and "gemini-3" not in model_name:
+        return (
+            f"Provider {provider} model {model} does not support explicit image_size"
+        )
+    return None
+
+
 def _extract_openai_unknown_parameter(error_detail: str) -> str:
     match = re.search(r"Unknown parameter:\s*'([^']+)'", error_detail or "")
     if match:
@@ -5445,6 +5459,14 @@ class NanoBananaGridGenerator:
 
             if force_image_size:
                 image_size = force_image_size
+
+            size_error = explicit_image_size_support_error(
+                provider=self.provider,
+                model=self.model,
+                strict=self.strict_image_size,
+            )
+            if size_error:
+                return _usage_fail(size_error)
 
             if self.provider == "openrouter":
                 # ===== OpenRouter 分支 =====

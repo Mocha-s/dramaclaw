@@ -17,6 +17,24 @@ def test_sketch_billing_metadata_uses_explicit_image_size():
     assert billing["pricing_params"]["size"] == "4K"
 
 
+def test_explicit_sketch_size_rejects_google_models_without_size_support():
+    from novelvideo.generators.nanobanana_grid import explicit_image_size_support_error
+
+    error = explicit_image_size_support_error(
+        provider="google",
+        model="gemini-2.5-flash-image",
+        strict=True,
+    )
+
+    assert error is not None
+    assert "does not support explicit image_size" in error
+    assert explicit_image_size_support_error(
+        provider="google",
+        model="gemini-3-pro-image-preview",
+        strict=True,
+    ) is None
+
+
 @pytest.mark.asyncio
 async def test_sketch_runner_passes_project_size_to_generator(tmp_path, monkeypatch):
     from novelvideo.generators import nanobanana_grid, pool_indexer
