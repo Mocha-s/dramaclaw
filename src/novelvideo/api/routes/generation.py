@@ -4636,7 +4636,6 @@ async def director_control_to_sketch(
             output_dir=str(project_dir),
             state_dir=state_dir,
             scope=payload["scope"],
-            image_size=sketch_image_size if sketch_image_size_explicit else None,
         )
     except Exception as exc:
         return {"ok": False, "error": str(exc), "data": payload}
