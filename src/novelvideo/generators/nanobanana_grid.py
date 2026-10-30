@@ -5485,7 +5485,7 @@ class NanoBananaGridGenerator:
                     return _usage_fail(message)
             elif self.provider == "openai":
                 # ===== OpenAI Image API 分支 =====
-                openai_image_size = "1K" if sketch else image_size
+                openai_image_size = image_size
                 openai_size = resolve_openai_image_size(aspect_ratio, openai_image_size)
                 print(
                     f"[NanoBananaPro] 调用 OpenAI Image API ({self.model}) 生成网格图 "

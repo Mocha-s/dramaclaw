@@ -233,6 +233,7 @@ def _image_selection_billing_metadata(
     *,
     image_role: str,
     quality: str = "",
+    image_size: str = "",
 ) -> dict:
     from novelvideo.config import (
         IMAGE_GENERATION_SELECTIONS,
@@ -272,6 +273,7 @@ def _image_selection_billing_metadata(
         mode_key=mode_key,
         image_role=image_role,
         quality=quality,
+        image_size=image_size,
     )
     return {
         "image_selection": selection,
@@ -283,11 +285,16 @@ def _image_selection_billing_metadata(
     }
 
 
-def _sketch_regen_billing_metadata(image_selection: str, mode_key: str) -> dict:
+def _sketch_regen_billing_metadata(
+    image_selection: str,
+    mode_key: str,
+    image_size: str = "1K",
+) -> dict:
     return _image_selection_billing_metadata(
         image_selection,
         mode_key,
         image_role="sketch",
+        image_size=image_size,
     )
 
 
@@ -399,9 +406,25 @@ def _sketch_settings_payload(username: str, project: str) -> dict:
     project_config = load_project_config(username, project)
     return {
         "sketch_image_selection": _resolve_sketch_image_selection(project_config),
-        "sketch_image_size": project_config.get("sketch_image_size") or "1K",
+        "sketch_image_size": _resolve_sketch_image_size(project_config),
         "options": configured_image_generation_selection_options(),
     }
+
+
+def _resolve_sketch_image_size(project_config: dict) -> str:
+    from novelvideo.media_parameters import validate_image_size
+
+    stored = str(project_config.get("sketch_image_size") or "").strip()
+    if not stored:
+        return "1K"
+    try:
+        return validate_image_size(stored)
+    except ValueError:
+        return "1K"
+
+
+def _sketch_image_size_is_explicit(project_config: dict) -> bool:
+    return bool(str(project_config.get("sketch_image_size") or "").strip())
 
 
 def _plan_entry_to_dict(entry: Any) -> dict:
@@ -2370,6 +2393,8 @@ async def generate_sketches(
         proj_config,
         body.image_generation_selection,
     )
+    sketch_image_size = _resolve_sketch_image_size(proj_config)
+    sketch_image_size_explicit = _sketch_image_size_is_explicit(proj_config)
     base_config = {
         "beats": beats,
         "character_map": character_map,
@@ -2378,6 +2403,8 @@ async def generate_sketches(
         "sketch_scene_grouping": use_scene_grouping,
         "aspect_ratio": body.aspect_ratio,
         "image_generation_selection": sketch_image_selection,
+        "image_size": sketch_image_size,
+        "strict_image_size": sketch_image_size_explicit,
         "sketch_colors": store.get_sketch_colors(episode_num) or {},
         "prop_menu": prop_menu,
     }
@@ -2397,6 +2424,7 @@ async def generate_sketches(
             billing = _sketch_regen_billing_metadata(
                 sketch_image_selection,
                 billing_mode_keys[grid_index],
+                sketch_image_size,
             )
             try:
                 queued = await get_task_backend().enqueue_project_task(
@@ -3705,13 +3733,21 @@ async def regenerate_sketches(
         proj_config,
         body.image_generation_selection,
     )
-    billing = _sketch_regen_billing_metadata(sketch_image_selection, mode_key)
+    sketch_image_size = _resolve_sketch_image_size(proj_config)
+    sketch_image_size_explicit = _sketch_image_size_is_explicit(proj_config)
+    billing = _sketch_regen_billing_metadata(
+        sketch_image_selection,
+        mode_key,
+        sketch_image_size,
+    )
     config = {
         "beats": beats,
         "character_map": character_map,
         "style": style,
         "model": body.model,
         "image_generation_selection": sketch_image_selection,
+        "image_size": sketch_image_size,
+        "strict_image_size": sketch_image_size_explicit,
         "selected_beat_numbers": body.beat_indices,
         "sketch_colors": store.get_sketch_colors(episode_num) or {},
         "prop_menu": prop_menu,
@@ -4535,8 +4571,14 @@ async def director_control_to_sketch(
 
     project_config = load_project_config(username, project_name)
     sketch_image_selection = _resolve_sketch_image_selection(project_config)
+    sketch_image_size = _resolve_sketch_image_size(project_config)
+    sketch_image_size_explicit = _sketch_image_size_is_explicit(project_config)
     mode_key = str(payload.get("mode_key") or "1x1_2-3_sketch")
-    billing = _sketch_regen_billing_metadata(sketch_image_selection, mode_key)
+    billing = _sketch_regen_billing_metadata(
+        sketch_image_selection,
+        mode_key,
+        sketch_image_size,
+    )
 
     if ctx is not None:
         queued = await get_task_backend().enqueue_project_task(
@@ -4554,6 +4596,8 @@ async def director_control_to_sketch(
                 "output_dir": str(project_dir),
                 "state_dir": state_dir,
                 "mode_key": mode_key,
+                "image_size": sketch_image_size,
+                "strict_image_size": sketch_image_size_explicit,
                 "billing": billing,
             },
         )
@@ -4592,6 +4636,7 @@ async def director_control_to_sketch(
             output_dir=str(project_dir),
             state_dir=state_dir,
             scope=payload["scope"],
+            image_size=sketch_image_size if sketch_image_size_explicit else None,
         )
     except Exception as exc:
         return {"ok": False, "error": str(exc), "data": payload}
@@ -4842,6 +4887,8 @@ async def generate_missing_manual_sketches(
     proj_config = load_project_config(username, project_name)
     style = proj_config.get("visual_style", "chinese_period_drama")
     sketch_image_selection = _resolve_sketch_image_selection(proj_config)
+    sketch_image_size = _resolve_sketch_image_size(proj_config)
+    sketch_image_size_explicit = _sketch_image_size_is_explicit(proj_config)
     character_map = await _build_character_map(
         store,
         beats,
@@ -4864,6 +4911,8 @@ async def generate_missing_manual_sketches(
             "style": style,
             "model": None,
             "image_generation_selection": sketch_image_selection,
+            "image_size": sketch_image_size,
+            "strict_image_size": sketch_image_size_explicit,
             "selected_beat_numbers": beat_indices,
             "composite_key": f"{mode_key}:sketch",
             "sketch_colors": sketch_colors,
@@ -4883,6 +4932,11 @@ async def generate_missing_manual_sketches(
                         "mode_key": mode_key,
                         "output_dir": output_dir,
                         "config": {**config, "mode_key": mode_key},
+                        "billing": _sketch_regen_billing_metadata(
+                            sketch_image_selection,
+                            mode_key,
+                            sketch_image_size,
+                        ),
                     },
                 )
             except _FANOUT_ACTIVE_LIMIT_ERRORS as exc:

@@ -26,7 +26,7 @@ class _SketchStore:
         return {"hero_main": "#ffffff"}
 
 
-def _client(monkeypatch, tmp_path):
+def _client(monkeypatch, tmp_path, project_config=None):
     from novelvideo.api.routes import generation
     from novelvideo.api.deps import ProjectResolution
     from novelvideo.generators import nanobanana_grid
@@ -97,7 +97,11 @@ def _client(monkeypatch, tmp_path):
         )
 
     monkeypatch.setattr(generation, "resolve_project_scope", fake_resolve_project_scope)
-    monkeypatch.setattr(generation, "load_project_config", lambda username, project: {})
+    monkeypatch.setattr(
+        generation,
+        "load_project_config",
+        lambda username, project: dict(project_config or {}),
+    )
     monkeypatch.setattr(generation, "make_sqlite_store", fake_make_sqlite_store)
     monkeypatch.setattr(
         generation, "make_sqlite_store_for_context", fake_make_sqlite_store_for_context
@@ -174,3 +178,43 @@ def test_generate_sketches_forwards_sketch_model_and_aspect_ratio(
     billing = start_calls[0]["payload"]["billing"]
     assert billing["image_selection"] == "nano-banana-2"
     assert billing["pricing_kind"] == "image"
+
+
+def test_generate_sketches_forwards_project_image_size_to_task_and_billing(
+    monkeypatch, tmp_path
+):
+    client, _clean_calls, start_calls, _scene_split_calls = _client(
+        monkeypatch,
+        tmp_path,
+        {"sketch_image_size": "4K"},
+    )
+
+    response = client.post(
+        "/api/v1/projects/demo/episodes/2/sketches/generate",
+        json={"grid_index": 0, "sketch_scene_grouping": True},
+    )
+
+    assert response.status_code == 200
+    payload = start_calls[0]["payload"]
+    assert payload["config"]["image_size"] == "4K"
+    assert payload["billing"]["pricing_params"]["size"] == "4K"
+
+
+def test_regenerate_sketches_forwards_legacy_default_image_size(
+    monkeypatch, tmp_path
+):
+    client, _clean_calls, start_calls, _scene_split_calls = _client(
+        monkeypatch,
+        tmp_path,
+        {},
+    )
+
+    response = client.post(
+        "/api/v1/projects/demo/episodes/2/sketches/regenerate",
+        json={"beat_indices": [1], "mode_key": "1x1_2-3_sketch"},
+    )
+
+    assert response.status_code == 200
+    payload = start_calls[0]["payload"]
+    assert payload["config"]["image_size"] == "1K"
+    assert payload["billing"]["pricing_params"]["size"] == "1K"

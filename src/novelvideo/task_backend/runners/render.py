@@ -565,7 +565,9 @@ async def _run_selected_regen_async(
         output_base_dir.mkdir(parents=True, exist_ok=True)
         promote_dir = paths.sketches_dir()
         grid_type = "sketch"
-        force_kwargs = {}
+        force_kwargs = {
+            "force_image_size": str(config.get("image_size") or "1K"),
+        }
     else:
         output_base_dir = paths.render_dir()
         output_base_dir.mkdir(parents=True, exist_ok=True)

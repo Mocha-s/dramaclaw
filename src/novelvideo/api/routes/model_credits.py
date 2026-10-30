@@ -369,7 +369,7 @@ def _image_selection_billing_params(
         if mode_cfg is None:
             raise HTTPException(status_code=400, detail="invalid image mode key")
         params["size"] = normalize_image_size(
-            str(mode_cfg.get("image_size") or ""), "newapi"
+            str(image_size or mode_cfg.get("image_size") or "1K"), "newapi"
         )
 
     clean_role = image_role.strip().lower()
@@ -379,7 +379,7 @@ def _image_selection_billing_params(
         params.update(
             _image_billing_params(
                 model=model,
-                image_size="",
+                image_size=image_size or params.get("size", "1K"),
                 quality=OPENAI_SKETCH_IMAGE_QUALITY,
             )
         )
