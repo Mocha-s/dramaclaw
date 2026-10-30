@@ -116,6 +116,77 @@ def test_third_party_image_request_reuses_legacy_format_in_request_schema(
     assert resolved["request_schema"]["referenceFormat"] == "multipart"
 
 
+def test_ambiguous_legacy_mapping_does_not_break_other_image_metadata_resolution(
+    monkeypatch, tmp_path
+):
+    from novelvideo import model_gateway_settings
+
+    monkeypatch.setattr(
+        model_gateway_settings, "_settings_db_path", lambda: tmp_path / "settings.db"
+    )
+    model_gateway_settings.save_third_party_gateway_groups(
+        [
+            {
+                "id": "active-image",
+                "name": "Active image",
+                "protocol": "openai",
+                "baseUrl": "https://image.example/v1",
+                "apiKey": "image-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "gpt-image-2.5",
+                        "upstreamModel": "gpt-image-2.5",
+                    },
+                    {
+                        "requestPattern": "gpt-image-2.5-flare-2k",
+                        "upstreamModel": "gpt-image-2.5-flare-2k",
+                    },
+                ],
+            }
+        ],
+        activate=True,
+    )
+    legacy_groups = []
+    for group_id, upstream, reference_format in (
+        ("legacy-clean", "gpt-image-2.5", "multipart"),
+        ("legacy-flare-a", "flare-a", "multipart"),
+        ("legacy-flare-b", "flare-b", "images"),
+    ):
+        request_model = (
+            "gpt-image-2.5"
+            if group_id == "legacy-clean"
+            else "gpt-image-2.5-flare-2k"
+        )
+        legacy_groups.append(
+            {
+                "id": group_id,
+                "name": group_id,
+                "protocol": "openai",
+                "baseUrl": "https://image.example/v1",
+                "apiKey": "image-key",
+                "capabilities": ["image"],
+                "modelMappings": [
+                    {
+                        "requestPattern": request_model,
+                        "upstreamModel": upstream,
+                        "imageEditFormat": reference_format,
+                    }
+                ],
+            }
+        )
+    model_gateway_settings._write_many(
+        {"sub2api_groups": json.dumps(legacy_groups)}
+    )
+
+    resolved = model_gateway_settings.resolve_third_party_image_request(
+        "gpt-image-2.5"
+    )
+
+    assert resolved is not None
+    assert resolved["reference_image_format"] == "multipart"
+
+
 def test_grid_generation_config_injects_canvas_metadata_for_reference_calls(
     monkeypatch,
 ):

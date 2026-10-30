@@ -368,11 +368,17 @@ def _get_preserved_legacy_sub2api_groups() -> list[dict[str, Any]]:
 
 
 def _legacy_image_edit_format(model: str) -> str:
-    legacy = _resolve_sub2api_group(
-        capability=CAPABILITY_IMAGE,
-        model=model,
-        groups=_get_preserved_legacy_sub2api_groups(),
-    )
+    try:
+        legacy = _resolve_sub2api_group(
+            capability=CAPABILITY_IMAGE,
+            model=model,
+            groups=_get_preserved_legacy_sub2api_groups(),
+        )
+    except ValueError:
+        # Conflicting preserved mappings cannot safely select a request dialect.
+        # Leave the caller on its canonical default rather than breaking the
+        # entire image catalog while resolving an unrelated model.
+        return ""
     if legacy is None:
         return ""
     return str(legacy[2].get("imageEditFormat") or "").strip().lower()
