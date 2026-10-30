@@ -424,7 +424,16 @@ def _resolve_sketch_image_size(project_config: dict) -> str:
 
 
 def _sketch_image_size_is_explicit(project_config: dict) -> bool:
-    return bool(str(project_config.get("sketch_image_size") or "").strip())
+    from novelvideo.media_parameters import validate_image_size
+
+    stored = str(project_config.get("sketch_image_size") or "").strip()
+    if not stored:
+        return False
+    try:
+        validate_image_size(stored)
+        return True
+    except ValueError:
+        return False
 
 
 def _plan_entry_to_dict(entry: Any) -> dict:

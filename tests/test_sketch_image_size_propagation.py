@@ -17,6 +17,12 @@ def test_sketch_billing_metadata_uses_explicit_image_size():
     assert billing["pricing_params"]["size"] == "4K"
 
 
+def test_invalid_legacy_sketch_size_is_not_treated_as_explicit():
+    from novelvideo.api.routes.generation import _sketch_image_size_is_explicit
+
+    assert _sketch_image_size_is_explicit({"sketch_image_size": "8K"}) is False
+
+
 def test_explicit_sketch_size_rejects_google_models_without_size_support():
     from novelvideo.generators.nanobanana_grid import explicit_image_size_support_error
 
