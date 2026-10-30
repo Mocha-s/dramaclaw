@@ -6,14 +6,19 @@ import { api } from "@/lib/api";
 import { p } from "@/lib/api-path";
 import { queryKeys } from "@/lib/query-keys";
 import type { ErrorResponse, OkResponse } from "@/types/api";
+import { FREEZONE_IMAGE_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
+
+export type SketchImageSize = (typeof FREEZONE_IMAGE_RESOLUTIONS)[number];
 
 export interface SketchSettingsData {
   sketch_image_selection: string;
+  sketch_image_size: SketchImageSize;
   options: Record<string, string>;
 }
 
 export interface SketchSettingsUpdate {
   sketch_image_selection?: string;
+  sketch_image_size?: SketchImageSize;
 }
 
 export type SketchAspectRatio = "2:3" | "16:9";

@@ -41,6 +41,7 @@ describe("sketch settings query", () => {
             ok: true,
             data: {
               sketch_image_selection: "openrouter_nanobanana2",
+              sketch_image_size: "4K",
               options: { openrouter_nanobanana2: "OpenRouter NanoBanana 2" },
             },
           });
@@ -57,6 +58,7 @@ describe("sketch settings query", () => {
     expect(result.current.data?.data.sketch_image_selection).toBe(
       "openrouter_nanobanana2",
     );
+    expect(result.current.data?.data.sketch_image_size).toBe("4K");
   });
 
   it("patches Sketch-stage image model settings", async () => {
@@ -72,6 +74,7 @@ describe("sketch settings query", () => {
             ok: true,
             data: {
               sketch_image_selection: "openrouter_nanobanana2",
+              sketch_image_size: "4K",
               options: { openrouter_nanobanana2: "OpenRouter NanoBanana 2" },
             },
           });
@@ -84,13 +87,13 @@ describe("sketch settings query", () => {
     });
 
     result.current.mutate({
-      sketch_image_selection: "openrouter_nanobanana2",
+      sketch_image_size: "4K",
     });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(requestedPath).toBe("/api/v1/projects/demo/sketch-settings");
     expect(receivedBody).toEqual({
-      sketch_image_selection: "openrouter_nanobanana2",
+      sketch_image_size: "4K",
     });
   });
 });

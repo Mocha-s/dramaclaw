@@ -340,6 +340,7 @@ async def _run_sketch_generation_async(
     payload = envelope.get("payload") or {}
     task_type = str(envelope.get("task_type") or "sketch_generation")
     config = dict(payload.get("config") or {})
+    image_size = str(config.get("image_size") or "1K")
     episode = int(envelope.get("episode") or payload.get("episode") or 0)
     scope = envelope.get("scope")
     output_dir = str(payload.get("output_dir") or ctx.output_dir)
@@ -511,6 +512,9 @@ async def _run_sketch_generation_async(
         )
         generator_config = get_sketch_generation_config(selection_override=sketch_image_selection)
 
+    generator_config["image_size"] = image_size
+    generator_config["strict_image_size"] = bool(config.get("strict_image_size"))
+
     generator = NanoBananaGridGenerator(config=generator_config)
     if use_director_refs and generator.provider != "openai":
         raise RuntimeError(
@@ -558,11 +562,12 @@ async def _run_sketch_generation_async(
             director_sheet_path=director_sheet_path,
             director_ref_beat_numbers=selected_director_ref_beats,
             scene_refs_override=scene_refs_override,
+            force_image_size=image_size,
         )
         if not result.success:
             raise RuntimeError(f"草图生成失败 (Pass 1): {result.error}")
         log(f"[Two-Pass] Pass 1 完成，耗时 {_format_generation_time(result.generation_time)}")
-        target_size = REGEN_MODE_CONFIGS.get(effective_mk, {}).get("image_size", "1K")
+        target_size = image_size
         result2 = await generator.reformat_sketch(
             source_path=pass1_path,
             output_path=output_path,
@@ -600,6 +605,7 @@ async def _run_sketch_generation_async(
             director_sheet_path=director_sheet_path,
             director_ref_beat_numbers=selected_director_ref_beats,
             scene_refs_override=scene_refs_override,
+            force_image_size=image_size,
         )
         if not result.success:
             raise RuntimeError(f"草图生成失败: {result.error}")
@@ -721,6 +727,11 @@ async def _run_control_frame_to_sketch_async(
         state_dir=state_dir,
         control_frames_dir=control_frames_dir or None,
         mode_key=str(payload.get("mode_key") or ""),
+        image_size=(
+            payload.get("image_size")
+            if payload.get("strict_image_size") is True
+            else None
+        ),
     )
     promoted = result.get("promoted_sketch") or str(paths.sketch(beat_num))
     _log(manager, ctx, task_type, episode, scope, f"草图已写入: {promoted}", progress=1.0)

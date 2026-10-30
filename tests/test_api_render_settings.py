@@ -299,6 +299,47 @@ def test_sketch_settings_patch_rejects_unknown_selection(monkeypatch, tmp_path):
     assert saved == []
 
 
+def test_sketch_settings_returns_legacy_default_image_size(monkeypatch, tmp_path):
+    client, _saved = _client(monkeypatch, tmp_path, {})
+
+    response = client.get("/api/v1/projects/demo/sketch-settings")
+
+    assert response.status_code == 200
+    assert response.json()["data"]["sketch_image_size"] == "1K"
+
+
+def test_sketch_settings_patch_persists_image_size_without_changing_model(
+    monkeypatch, tmp_path
+):
+    client, saved = _client(
+        monkeypatch,
+        tmp_path,
+        {"sketch_image_selection": "nano-banana-2"},
+    )
+
+    response = client.patch(
+        "/api/v1/projects/demo/sketch-settings",
+        json={"sketch_image_size": "4K"},
+    )
+
+    assert response.status_code == 200
+    assert saved == [{"sketch_image_size": "4K"}]
+    assert response.json()["data"]["sketch_image_selection"] == "nano-banana-2"
+    assert response.json()["data"]["sketch_image_size"] == "4K"
+
+
+def test_sketch_settings_patch_rejects_invalid_image_size(monkeypatch, tmp_path):
+    client, saved = _client(monkeypatch, tmp_path)
+
+    response = client.patch(
+        "/api/v1/projects/demo/sketch-settings",
+        json={"sketch_image_size": "8K"},
+    )
+
+    assert response.status_code == 422
+    assert saved == []
+
+
 def test_director_control_frame_status_reports_missing_and_ready(monkeypatch, tmp_path):
     client, _saved = _client(monkeypatch, tmp_path)
 

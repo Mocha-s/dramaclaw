@@ -925,6 +925,20 @@ def normalize_openai_quality(value: str | None, default: str = "medium") -> str:
     return quality if quality in _OPENAI_VALID_QUALITIES else default
 
 
+def explicit_image_size_support_error(
+    *, provider: str, model: str, strict: bool
+) -> str | None:
+    if not strict:
+        return None
+    provider_name = str(provider or "").strip().lower()
+    model_name = str(model or "").strip().lower()
+    if provider_name == "google" and "gemini-3" not in model_name:
+        return (
+            f"Provider {provider} model {model} does not support explicit image_size"
+        )
+    return None
+
+
 def _extract_openai_unknown_parameter(error_detail: str) -> str:
     match = re.search(r"Unknown parameter:\s*'([^']+)'", error_detail or "")
     if match:
@@ -3824,7 +3838,13 @@ async def _call_openai_image_api(
                 if (
                     unknown_parameter
                     and unknown_parameter in request_options
-                    and not (strict_quality and unknown_parameter == "quality")
+                    and not (
+                        (strict_quality and unknown_parameter == "quality")
+                        or (
+                            image_config.get("strict_image_size") is True
+                            and unknown_parameter == "size"
+                        )
+                    )
                 ):
                     print(
                         f"[OpenAI Image] 参数 {unknown_parameter!r} 不被当前端点接受，" "移除后重试"
@@ -4754,6 +4774,7 @@ class NanoBananaGridGenerator:
         self.base_url = config.get("base_url", "")
         self.openai_image_quality = config.get("openai_image_quality", "medium")
         self.strict_image_quality = bool(config.get("strict_image_quality", False))
+        self.strict_image_size = bool(config.get("strict_image_size", False))
         self.openai_sketch_image_quality = config.get(
             "openai_sketch_image_quality", "low"
         )
@@ -5439,6 +5460,14 @@ class NanoBananaGridGenerator:
             if force_image_size:
                 image_size = force_image_size
 
+            size_error = explicit_image_size_support_error(
+                provider=self.provider,
+                model=self.model,
+                strict=self.strict_image_size,
+            )
+            if size_error:
+                return _usage_fail(size_error)
+
             if self.provider == "openrouter":
                 # ===== OpenRouter 分支 =====
                 effective_image_size = normalize_image_size(
@@ -5485,7 +5514,7 @@ class NanoBananaGridGenerator:
                     return _usage_fail(message)
             elif self.provider == "openai":
                 # ===== OpenAI Image API 分支 =====
-                openai_image_size = "1K" if sketch else image_size
+                openai_image_size = image_size
                 openai_size = resolve_openai_image_size(aspect_ratio, openai_image_size)
                 print(
                     f"[NanoBananaPro] 调用 OpenAI Image API ({self.model}) 生成网格图 "
@@ -5509,6 +5538,7 @@ class NanoBananaGridGenerator:
                             else self.openai_image_quality
                         ),
                         "strict_quality": self.strict_image_quality,
+                        "strict_image_size": self.strict_image_size,
                         "output_format": "png",
                     },
                 )

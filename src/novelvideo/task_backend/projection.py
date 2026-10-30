@@ -226,6 +226,7 @@ async def _build_director_control_sketch_fields(
         "characters": [_character_to_dict(item) for item in store.get_all_characters()],
         "visual_style": project_config.get("visual_style", "chinese_period_drama"),
         "sketch_image_selection": project_config.get("sketch_image_selection"),
+        "sketch_image_size": project_config.get("sketch_image_size"),
     }
 
 

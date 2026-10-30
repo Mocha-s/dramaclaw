@@ -565,7 +565,9 @@ async def _run_selected_regen_async(
         output_base_dir.mkdir(parents=True, exist_ok=True)
         promote_dir = paths.sketches_dir()
         grid_type = "sketch"
-        force_kwargs = {}
+        force_kwargs = {
+            "force_image_size": str(config.get("image_size") or "1K"),
+        }
     else:
         output_base_dir = paths.render_dir()
         output_base_dir.mkdir(parents=True, exist_ok=True)
@@ -602,6 +604,9 @@ async def _run_selected_regen_async(
         fallback=default_selection,
     )
     generator_config = get_generation_config(selection_override=image_selection)
+    if is_sketch:
+        generator_config["image_size"] = str(config.get("image_size") or "1K")
+        generator_config["strict_image_size"] = bool(config.get("strict_image_size"))
     _apply_render_image_quality(generator_config, config.get("image_quality"))
     log(
         f"[{'Sketch' if is_sketch else 'Render'} Image] "

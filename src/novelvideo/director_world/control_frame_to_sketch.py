@@ -426,6 +426,7 @@ async def convert_control_frame_to_sketch(
     require_control_frame_path: bool = False,
     candidate_output_path: str | Path | None = None,
     promote: bool = True,
+    image_size: str | None = None,
     projection: Any = None,
     egress_context: TrustedEgressContext | None = None,
 ) -> dict[str, Any]:
@@ -565,6 +566,8 @@ async def convert_control_frame_to_sketch(
         prop_menu = list(script.get("prop_menu") or [])
 
         generator_config = get_director_sketch_generation_config(projected_image_selection)
+        if image_size:
+            generator_config["image_size"] = image_size
         generator = NanoBananaGridGenerator(config=generator_config)
         if generator.provider not in {"openai", "huimeng", "openrouter", "google", "newapi"}:
             raise RuntimeError(
@@ -623,6 +626,7 @@ async def convert_control_frame_to_sketch(
             use_director_refs=True,
             director_ref_beat_numbers=[beat],
             director_control_frames_dir=str(effective_control_frames_root),
+            force_image_size=image_size,
         )
         if not result.success:
             raise RuntimeError(result.error or "director control sketch generation failed")

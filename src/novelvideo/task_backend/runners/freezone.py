@@ -1326,6 +1326,7 @@ async def _run_mainline_director_control_sketch_async(
             require_control_frame_path=True,
             candidate_output_path=output_path,
             promote=False,
+            image_size=payload.get("image_size") if payload.get("strict_image_size") else None,
             projection=read_projection(payload),
         ),
         project_id=ctx.project_id,

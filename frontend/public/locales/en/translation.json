@@ -4594,6 +4594,7 @@
     "sketchSettings": {
       "model": "Sketch model",
       "modelPlaceholder": "Select sketch model",
+      "imageSize": "Image size",
       "aspectRatio": "Aspect",
       "wide16x9": "16:9",
       "aspectChangeHint": "Switching aspect ratio only affects newly generated content; existing assets must be regenerated to update to the new ratio."

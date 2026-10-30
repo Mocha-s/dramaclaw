@@ -1,10 +1,29 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SketchAspectCheckbox } from "@/components/episode/beat-workbench/sketch-settings-controls";
+const { mutateAsync } = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
+
+vi.mock("@/lib/queries/sketch-settings", () => ({
+  useSketchSettings: () => ({
+    data: {
+      data: {
+        sketch_image_selection: "openrouter_nanobanana2",
+        sketch_image_size: "1K",
+        options: { openrouter_nanobanana2: "OpenRouter NanoBanana 2" },
+      },
+    },
+    isLoading: false,
+  }),
+  useUpdateSketchSettings: () => ({ isPending: false, mutateAsync }),
+}));
+
+import {
+  SketchAspectCheckbox,
+  SketchModelSelect,
+} from "@/components/episode/beat-workbench/sketch-settings-controls";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -38,5 +57,29 @@ describe("SketchAspectCheckbox", () => {
     await user.click(screen.getByRole("option", { name: "2:3" }));
 
     expect(onAspectRatioChange).toHaveBeenCalledWith("2:3");
+  });
+});
+
+describe("SketchModelSelect image size", () => {
+  beforeEach(() => mutateAsync.mockReset().mockResolvedValue({ ok: true }));
+
+  it("offers all global image sizes and persists 4K", async () => {
+    const user = userEvent.setup();
+    render(<SketchModelSelect project="demo" />);
+
+    const sizeSelect = screen.getByRole("combobox", {
+      name: "episode.sketchSettings.imageSize",
+    });
+    expect(sizeSelect).toHaveTextContent("1K");
+    await user.click(sizeSelect);
+
+    for (const size of ["1K", "2K", "4K"]) {
+      expect(screen.getByRole("option", { name: size })).toBeInTheDocument();
+    }
+    await user.click(screen.getByRole("option", { name: "4K" }));
+
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledWith({ sketch_image_size: "4K" }),
+    );
   });
 });
