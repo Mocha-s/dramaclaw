@@ -727,7 +727,11 @@ async def _run_control_frame_to_sketch_async(
         state_dir=state_dir,
         control_frames_dir=control_frames_dir or None,
         mode_key=str(payload.get("mode_key") or ""),
-        image_size=payload.get("image_size"),
+        image_size=(
+            payload.get("image_size")
+            if payload.get("strict_image_size") is True
+            else None
+        ),
     )
     promoted = result.get("promoted_sketch") or str(paths.sketch(beat_num))
     _log(manager, ctx, task_type, episode, scope, f"草图已写入: {promoted}", progress=1.0)
