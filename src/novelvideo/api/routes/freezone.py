@@ -1636,6 +1636,7 @@ def _director_sketch_task_billing(
     project_name: str,
     mode_key: str,
     projection_payload: dict | None = None,
+    image_size: str | None = None,
 ) -> dict:
     from novelvideo.director_world.control_frame_to_sketch import (
         get_director_sketch_generation_config,
@@ -1657,11 +1658,13 @@ def _director_sketch_task_billing(
         else load_project_config_file(username, project_name)
     )
     generation_config = get_director_sketch_generation_config(selection)
-    generation_config["image_size"] = str(
-        (projection.get("sketch_image_size") if projection is not None else None)
+    effective_size = (
+        image_size
+        or (projection.get("sketch_image_size") if projection is not None else None)
         or project_config.get("sketch_image_size")
-        or "1K"
     )
+    if effective_size:
+        generation_config["image_size"] = str(effective_size)
     return _mainline_generator_billing(
         "mainline.director_control_to_sketch",
         generation_config,
@@ -2550,6 +2553,7 @@ async def _start_or_enqueue_mainline_director_control_sketch_job(
                 username=ctx.owner_username, project_name=ctx.project_name,
                 mode_key=_mainline_mode_key_for_aspect(aspect_ratio, is_sketch=True),
                 projection_payload=projection_payload,
+                image_size=sketch_image_size if strict_image_size else None,
             ),
             "task_family": "mainline_skill",
             "task_label": "导演合成图转草图",

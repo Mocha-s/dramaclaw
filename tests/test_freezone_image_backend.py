@@ -284,6 +284,21 @@ def test_mainline_sketch_billing_uses_explicit_project_image_size():
     assert billing["pricing_params"]["size"] == "4K"
 
 
+def test_director_sketch_billing_uses_legacy_environment_size_when_unset(
+    monkeypatch,
+):
+    from novelvideo.api.routes import freezone
+
+    monkeypatch.setenv("DIRECTOR_CONTROL_SKETCH_IMAGE_SIZE", "4K")
+    billing = freezone._director_sketch_task_billing(
+        username="admin",
+        project_name="demo",
+        mode_key="1x1_16-9_sketch",
+    )
+
+    assert billing["pricing_params"]["size"] == "4K"
+
+
 def _project_ctx(tmp_path: Path) -> ProjectContext:
     return ProjectContext(
         project_id="proj_freezone",
