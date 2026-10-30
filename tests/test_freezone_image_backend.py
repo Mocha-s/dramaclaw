@@ -93,6 +93,7 @@ async def test_mainline_canvas_enqueue_carries_effective_feature_price(
         lambda *_: {
             "render_image_selection": selection,
             "sketch_image_selection": selection,
+            "sketch_image_size": "4K",
         },
     )
     monkeypatch.setattr(
@@ -100,6 +101,7 @@ async def test_mainline_canvas_enqueue_carries_effective_feature_price(
         "load_project_config_file",
         lambda *_: {
             "sketch_image_selection": selection,
+            "sketch_image_size": "4K",
         },
     )
     monkeypatch.setattr(image_config, "OPENAI_SKETCH_IMAGE_QUALITY", quality)
@@ -199,7 +201,11 @@ async def test_mainline_canvas_enqueue_carries_effective_feature_price(
         if "frame" in entry
         else "director_control_to_sketch" if entry == "director" else "sketch_regen"
     )
-    params = {"size": "1K"}
+    params = {
+        "size": "4K"
+        if entry in {"sketch", "beat_sketch", "director"}
+        else "1K"
+    }
     if selection == "gpt-image-2":
         params["quality"] = quality
     assert captured["payload"]["billing"] == {
@@ -208,6 +214,11 @@ async def test_mainline_canvas_enqueue_carries_effective_feature_price(
         "pricing_model": model,
         "pricing_params": params,
     }
+    if entry in {"sketch", "beat_sketch"}:
+        assert captured["payload"]["config"]["image_size"] == "4K"
+        assert captured["payload"]["config"]["strict_image_size"] is True
+    elif entry == "director":
+        assert captured["payload"]["image_size"] == "4K"
     if entry != "director":
         assert captured["payload"]["config"]["image_generation_selection"] == selection
 
@@ -253,6 +264,24 @@ def test_director_canvas_billing_uses_projection_and_director_override(monkeypat
         == freezone_routes.IMAGE_GENERATION_SELECTIONS["gpt-image-2"]["model"]
     )
     assert billing["pricing_params"] == {"size": "1K", "quality": "high"}
+
+
+def test_mainline_sketch_billing_uses_explicit_project_image_size():
+    from novelvideo.api.routes import freezone
+
+    billing = freezone._mainline_generator_billing(
+        "mainline.sketch_regen",
+        {
+            "provider": "newapi",
+            "model": "LingShan-G2",
+            "image_size": "4K",
+            "openai_sketch_image_quality": "low",
+        },
+        "1x1_2-3_sketch",
+        is_sketch=True,
+    )
+
+    assert billing["pricing_params"]["size"] == "4K"
 
 
 def _project_ctx(tmp_path: Path) -> ProjectContext:

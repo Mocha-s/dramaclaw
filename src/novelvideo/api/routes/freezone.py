@@ -1583,6 +1583,8 @@ def _mainline_image_task_billing(config: dict, *, is_sketch: bool) -> dict:
         if is_sketch
         else get_render_generation_config(selection_override=selection)
     )
+    if is_sketch and config.get("image_size"):
+        generation_config["image_size"] = str(config["image_size"])
     image_quality = str(config.get("image_quality") or "").strip().lower()
     if image_quality in {"low", "medium", "high"}:
         generation_config["openai_image_quality"] = image_quality
@@ -1605,8 +1607,10 @@ def _mainline_generator_billing(
     )
 
     provider = generation_config["provider"]
-    # generate_grid takes size from mode_key, even for director conversion.
-    size = normalize_image_size(REGEN_MODE_CONFIGS[mode_key]["image_size"], provider)
+    size = normalize_image_size(
+        str(generation_config.get("image_size") or REGEN_MODE_CONFIGS[mode_key]["image_size"]),
+        provider,
+    )
     quality_key = (
         "huimeng_image_quality"
         if provider == "huimeng"
@@ -1647,9 +1651,20 @@ def _director_sketch_task_billing(
             "sketch_image_selection"
         )
     )
+    project_config = (
+        {}
+        if projection is not None
+        else load_project_config_file(username, project_name)
+    )
+    generation_config = get_director_sketch_generation_config(selection)
+    generation_config["image_size"] = str(
+        (projection.get("sketch_image_size") if projection is not None else None)
+        or project_config.get("sketch_image_size")
+        or "1K"
+    )
     return _mainline_generator_billing(
         "mainline.director_control_to_sketch",
-        get_director_sketch_generation_config(selection),
+        generation_config,
         mode_key,
         is_sketch=True,
     )
@@ -1673,6 +1688,8 @@ async def _mainline_single_beat_config(
         _resolve_mainline_image_quality,
         _resolve_render_image_selection,
         _resolve_sketch_image_selection,
+        _resolve_sketch_image_size,
+        _sketch_image_size_is_explicit,
         _runtime_prop_menu_with_global_props,
     )
     from novelvideo.project_config import load_project_config
@@ -1704,6 +1721,7 @@ async def _mainline_single_beat_config(
             else {}
         )
         image_selection = _resolve_sketch_image_selection(project_config, None)
+        image_size = _resolve_sketch_image_size(project_config)
         return {
             "beats": beats,
             "character_map": character_map,
@@ -1711,6 +1729,8 @@ async def _mainline_single_beat_config(
             "ethnicity": project_config.get("ethnicity", "Chinese"),
             "model": None,
             "image_generation_selection": image_selection,
+            "image_size": image_size,
+            "strict_image_size": _sketch_image_size_is_explicit(project_config),
             "sketch_colors": sketch_colors,
             "prop_menu": prop_menu,
             "direct_sketch_beats": True,
@@ -2496,6 +2516,15 @@ async def _start_or_enqueue_mainline_director_control_sketch_job(
         episode=int(episode),
         task_type=task_type,
     )
+    from novelvideo.api.routes.generation import (
+        _resolve_sketch_image_size,
+        _sketch_image_size_is_explicit,
+    )
+    from novelvideo.project_config import load_project_config
+
+    project_config = load_project_config(ctx.owner_username, ctx.project_name)
+    sketch_image_size = _resolve_sketch_image_size(project_config)
+    strict_image_size = _sketch_image_size_is_explicit(project_config)
     queued = await get_task_backend().enqueue_project_task(
         ctx,
         product_surface="freezone",
@@ -2513,6 +2542,8 @@ async def _start_or_enqueue_mainline_director_control_sketch_job(
             "control_frame_path": source_path.as_posix(),
             "mode_key": _mainline_mode_key_for_aspect(aspect_ratio, is_sketch=True),
             "aspect_ratio": _normalize_mainline_skill_aspect_ratio(aspect_ratio),
+            "image_size": sketch_image_size,
+            "strict_image_size": strict_image_size,
             "canvas_id": canvas_id or "",
             "node_id": node_id or "",
             "billing": _director_sketch_task_billing(
