@@ -167,6 +167,8 @@ async def test_frame_skill_render_uses_canvas_sketch_input_without_mainline_sket
                 "mode_key": "1x1_16-9",
                 "config": {
                     "mode_key": "1x1_16-9",
+                    "image_size": "2K",
+                    "strict_image_size": True,
                     "selected_beat_numbers": [3],
                     "beats": [
                         {
@@ -198,6 +200,8 @@ async def test_frame_skill_render_uses_canvas_sketch_input_without_mainline_sket
     )
 
     assert captured["sketch_dir"].endswith("grids/ep001/sketch")
+    assert captured["generator_config"]["image_size"] == "2K"
+    assert captured["force_image_size"] == "2K"
     assert captured["beat_sketch_paths_override"] == {3: str(canvas_sketch_path)}
     assert captured["character_map"]["杜晨"]["ref_path"] == str(identity_path)
     assert captured["prop_refs_override"][1][0].base_id == "纸箱"

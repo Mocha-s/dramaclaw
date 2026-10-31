@@ -18,8 +18,10 @@ import {
   useRenderSettings,
   useUpdateRenderSettings,
   type ImageQuality,
+  type RenderImageSize,
   type RenderSettingsUpdate,
 } from "@/lib/queries/render-settings";
+import { FREEZONE_IMAGE_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
 import { IMAGE_QUALITY_OPTIONS } from "@/features/canvas/nodes/shared/imageGenerationOptions";
 import {
   WORKBENCH_SELECT_CONTENT_CLASS,
@@ -144,6 +146,40 @@ export function RenderModelSelect({ project }: { project: string }) {
         </SelectContent>
       </Select>
       <Label className="whitespace-nowrap text-[11px] text-muted-foreground">
+        {t("episode.renderSettings.imageSize")}
+      </Label>
+      <Select
+        value={data.render_image_size ?? "1K"}
+        onValueChange={(value) => {
+          if (
+            FREEZONE_IMAGE_RESOLUTIONS.includes(value as RenderImageSize) &&
+            value !== data.render_image_size
+          ) {
+            void patchSettings({ render_image_size: value as RenderImageSize });
+          }
+        }}
+        disabled={disabled}
+      >
+        <SelectTrigger
+          aria-label={t("episode.renderSettings.imageSize")}
+          className={cn(WORKBENCH_SELECT_TRIGGER_CLASS, "w-[70px]")}
+        >
+          <SelectValue>{() => data.render_image_size ?? "1K"}</SelectValue>
+        </SelectTrigger>
+        <SelectContent
+          align="start"
+          sideOffset={8}
+          alignItemWithTrigger={false}
+          className={WORKBENCH_SELECT_CONTENT_CLASS}
+        >
+          {FREEZONE_IMAGE_RESOLUTIONS.map((size) => (
+            <SelectItem key={size} value={size} className={WORKBENCH_SELECT_ITEM_CLASS}>
+              {size}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Label className="whitespace-nowrap text-[11px] text-muted-foreground">
         {t("episode.renderSettings.quality")}
       </Label>
       <RenderQualitySelect
@@ -213,6 +249,35 @@ export function RenderSettingsControls({
           {options.map(([value, label]) => (
             <SelectItem key={value} value={value}>
               {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Label className="text-xs text-muted-foreground">
+        {t("episode.renderSettings.imageSize")}
+      </Label>
+      <Select
+        value={data.render_image_size ?? "1K"}
+        onValueChange={(value) => {
+          if (
+            FREEZONE_IMAGE_RESOLUTIONS.includes(value as RenderImageSize) &&
+            value !== data.render_image_size
+          ) {
+            void patchSettings({ render_image_size: value as RenderImageSize });
+          }
+        }}
+        disabled={disabled}
+      >
+        <SelectTrigger
+          aria-label={t("episode.renderSettings.imageSize")}
+          className="h-7 w-[70px] text-xs"
+        >
+          <SelectValue>{() => data.render_image_size ?? "1K"}</SelectValue>
+        </SelectTrigger>
+        <SelectContent alignItemWithTrigger={false}>
+          {FREEZONE_IMAGE_RESOLUTIONS.map((size) => (
+            <SelectItem key={size} value={size}>
+              {size}
             </SelectItem>
           ))}
         </SelectContent>

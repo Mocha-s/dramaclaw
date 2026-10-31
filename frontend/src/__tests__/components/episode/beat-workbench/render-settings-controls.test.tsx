@@ -11,6 +11,7 @@ vi.mock("@/lib/queries/render-settings", () => ({
     data: {
       data: {
         render_image_selection: "gpt-image-2",
+        render_image_size: "1K",
         image_quality: "medium",
         options: { "gpt-image-2": "GPT Image 2" },
         sketch_aspect_padding: true,
@@ -53,6 +54,23 @@ describe("RenderModelSelect image quality", () => {
 
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({ image_quality: "max" }),
+    );
+  });
+
+  it("shows render image sizes and persists 2K", async () => {
+    const user = userEvent.setup();
+    render(<RenderModelSelect project="demo" />);
+
+    const sizeButton = screen.getByRole("combobox", {
+      name: "episode.renderSettings.imageSize",
+    });
+    expect(sizeButton).toHaveTextContent("1K");
+
+    await user.click(sizeButton);
+    await user.click(screen.getByRole("option", { name: "2K" }));
+
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledWith({ render_image_size: "2K" }),
     );
   });
 });

@@ -1683,6 +1683,7 @@ def get_sketch_generation_config(
 def get_render_generation_config(
     selection_override: str | None = None,
     model_override: str | None = None,
+    image_size_override: str | None = None,
 ) -> dict:
     """获取首帧渲染图像配置。"""
     selection = selection_override
@@ -1697,6 +1698,7 @@ def get_render_generation_config(
         selection_override=selection,
         provider_override=provider_override,
         model_override=model_override,
+        image_size_override=image_size_override,
     )
 
 

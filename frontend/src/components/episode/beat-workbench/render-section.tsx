@@ -167,6 +167,7 @@ export function RenderSection({
   const regenerate = useRegenerateRenderBeats(project, episode);
   const renderSettings = useRenderSettings(project);
   const renderImageSelection = renderSettings.data?.data.render_image_selection;
+  const renderImageSize = renderSettings.data?.data.render_image_size ?? "1K";
   const renderSceneId =
     beat.scene_ref?.scene_id?.trim() || beat.location?.trim() || "";
   const renderVariantId = beat.scene_ref?.variant_id?.trim() || "";
@@ -185,7 +186,12 @@ export function RenderSection({
       surface: "supertale",
       imageRole: "render",
       modeKey: singleRenderModeKey,
-      params: renderImageSelection ? { image_selection: renderImageSelection } : null,
+      params: renderImageSelection
+        ? {
+            image_selection: renderImageSelection,
+            ...(renderImageSize !== "1K" ? { size: renderImageSize } : {}),
+          }
+        : null,
     },
   );
   const uploadRender = useUploadBeatImage(project, episode, "render");
@@ -211,6 +217,7 @@ export function RenderSection({
       taskType: "selected_regen",
       project,
       episode,
+      coversBeat: beat.beat_number,
     },
     invalidateKeys: [
       queryKeys.grids(project, episode),
@@ -242,9 +249,9 @@ export function RenderSection({
   // comes from the active task's SSE stream (0–1) and survives refresh because
   // the controller reconciles against the persisted task row.
   //
-  // `regenTask` is keyed episode-wide (the BE's `selected_regen` row has
-  // beat_num=None and a hashed scope), so every beat's panel shares one entry.
-  // Gate on `covers` or an untouched beat mirrors the running beat's progress.
+  // The BE's `selected_regen` row has beat_num=None and a hashed scope. Keep a
+  // registry entry per beat so one render does not disable every other beat's
+  // action while the backend queues independent selection scopes.
   const renderActive = regenTask.started && regenTask.covers(beat.beat_number);
   const renderPercent = Math.max(
     0,
@@ -566,12 +573,7 @@ export function RenderSection({
                   size="xs"
                   variant="outline"
                   onClick={() => setRegenConfirm(true)}
-                  // Also blocked while a regen this beat is NOT part of is
-                  // running: all beats share one `selected_regen` registry
-                  // entry, so starting a second run would repoint its scope/
-                  // task id/beat coverage and the in-flight beat would lose its
-                  // progress bar and Stop button.
-                  disabled={!hasCurrentSketch || regenerate.isPending || regenTask.started}
+                  disabled={!hasCurrentSketch || regenerate.isPending || renderActive}
                   className={MEDIA_PRIMARY_ACTION_BUTTON_CLASS}
                 >
                   {regenerate.isPending ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}

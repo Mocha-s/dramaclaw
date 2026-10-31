@@ -92,6 +92,7 @@ const updateBackgroundAnchorMock: Mock = vi.fn();
 const cropBackgroundAnchorMock: Mock = vi.fn();
 const uploadBackgroundAnchorMock: Mock = vi.fn();
 const taskStartMock: Mock = vi.fn();
+const taskControllerMock: Mock = vi.fn();
 const invalidateQueriesMock: Mock = vi.fn();
 const generationCreditCostMock: Mock = vi.fn();
 
@@ -184,11 +185,14 @@ vi.mock("@/lib/queries/generation-credit-cost", () => ({
 }));
 
 vi.mock("@/hooks/use-task-controller", () => ({
-  useTaskController: () => ({
+  useTaskController: (...args: unknown[]) => {
+    taskControllerMock(...args);
+    return {
     start: taskStartMock,
     started: false,
     stopping: false,
-  }),
+    };
+  },
 }));
 
 vi.mock("sonner", () => ({
@@ -358,6 +362,7 @@ beforeEach(() => {
   uploadBackgroundAnchorMock.mockReset();
   uploadBackgroundAnchorMock.mockResolvedValue({ ok: true });
   taskStartMock.mockReset();
+  taskControllerMock.mockReset();
   invalidateQueriesMock.mockReset();
   generationCreditCostMock.mockReset();
   generationCreditCostMock.mockReturnValue({
@@ -370,6 +375,29 @@ beforeEach(() => {
 });
 
 describe("RenderSection", () => {
+  it("tracks render work by beat so another beat is not disabled", () => {
+    render(
+      <I18nextProvider i18n={i18n}>
+        <RenderSection
+          beat={beat}
+          project="demo"
+          episode={1}
+          images={[renderImage, sketchImage]}
+          assignments={{ "5": "render-5" }}
+        />
+      </I18nextProvider>,
+    );
+
+    expect(taskControllerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: expect.objectContaining({
+          taskType: "selected_regen",
+          coversBeat: 5,
+        }),
+      }),
+    );
+  });
+
   it("blocks Render generation when the beat has no sketch", () => {
     render(
       <I18nextProvider i18n={i18n}>

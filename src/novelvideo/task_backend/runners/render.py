@@ -33,6 +33,14 @@ def _apply_render_image_quality(
     return generator_config
 
 
+def _render_force_image_size(config: dict[str, Any]) -> str | None:
+    if config.get("force_half_k"):
+        return "0.5K"
+    if config.get("strict_image_size") and config.get("image_size"):
+        return str(config["image_size"])
+    return None
+
+
 def _identity_character(identity_id: str) -> str:
     text = str(identity_id or "").strip()
     if not text:
@@ -296,7 +304,12 @@ async def _run_batch_render_async(
         config.get("image_generation_selection"),
         fallback=DEFAULT_RENDER_IMAGE_SELECTION,
     )
-    generator_config = get_render_generation_config(selection_override=render_image_selection)
+    generator_config = get_render_generation_config(
+        selection_override=render_image_selection,
+        image_size_override=(
+            config.get("image_size") if config.get("strict_image_size") else None
+        ),
+    )
     _apply_render_image_quality(generator_config, config.get("image_quality"))
     generator = NanoBananaGridGenerator(config=generator_config)
     log(f"[Render Image] provider={generator.provider}, model={generator.model}")
@@ -341,7 +354,7 @@ async def _run_batch_render_async(
             sketch_dir=sketch_dir_str,
             beat_sketch_paths=beat_sketch_paths,
             mode_key=mk,
-            force_image_size="0.5K" if config.get("force_half_k") else None,
+            force_image_size=_render_force_image_size(config),
         )
         batch_requests.append(req)
         processed_beats += len(grid_beats)
@@ -583,7 +596,7 @@ async def _run_selected_regen_async(
             "sketch_dir": render_sketch_dir,
             "episode_grids_dir": episode_grids_dir.as_posix(),
             "sketch_aspect_padding": config.get("sketch_aspect_padding", False),
-            "force_image_size": "0.5K" if config.get("force_half_k") else None,
+            "force_image_size": _render_force_image_size(config),
             "beat_sketch_paths_override": beat_sketch_paths_override,
             "scene_refs_override": scene_refs_override,
             "prop_refs_override": prop_refs_override,
@@ -607,6 +620,9 @@ async def _run_selected_regen_async(
     if is_sketch:
         generator_config["image_size"] = str(config.get("image_size") or "1K")
         generator_config["strict_image_size"] = bool(config.get("strict_image_size"))
+    elif config.get("strict_image_size"):
+        generator_config["image_size"] = str(config.get("image_size") or "1K")
+        generator_config["strict_image_size"] = True
     _apply_render_image_quality(generator_config, config.get("image_quality"))
     log(
         f"[{'Sketch' if is_sketch else 'Render'} Image] "
@@ -811,7 +827,12 @@ async def _run_grid_regenerate_async(
         config.get("image_generation_selection"),
         fallback=DEFAULT_RENDER_IMAGE_SELECTION,
     )
-    grid_config = get_render_generation_config(selection_override=render_image_selection)
+    grid_config = get_render_generation_config(
+        selection_override=render_image_selection,
+        image_size_override=(
+            config.get("image_size") if config.get("strict_image_size") else None
+        ),
+    )
     _apply_render_image_quality(grid_config, config.get("image_quality"))
     grid_mode = str(config.get("grid_mode") or grid_config.get("mode", "3x3"))
     scene_grouping = bool(config.get("scene_grouping", False))
@@ -883,7 +904,7 @@ async def _run_grid_regenerate_async(
         sketch_dir=str(paths.sketch_dir()) if paths.has_sketch() else "",
         beat_sketch_paths=beat_sketch_paths,
         sketch_aspect_padding=config.get("sketch_aspect_padding", False),
-        force_image_size="0.5K" if config.get("force_half_k") else None,
+        force_image_size=_render_force_image_size(config),
     )
     if not result.success:
         raise RuntimeError(f"网格重新生成失败: {result.error}")

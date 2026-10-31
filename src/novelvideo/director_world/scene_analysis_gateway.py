@@ -16,11 +16,11 @@ SPATIAL_MODEL = "DC-scene-spatial-contract-LLM"
 
 def scene_analysis_timeout_seconds() -> float:
     """Return the bounded timeout for one gateway vision-analysis call."""
-    raw = str(os.environ.get("SCENE_ANALYSIS_TIMEOUT_SECONDS") or "300").strip()
+    raw = str(os.environ.get("SCENE_ANALYSIS_TIMEOUT_SECONDS") or "600").strip()
     try:
         return max(float(raw), 30.0)
     except ValueError:
-        return 300.0
+        return 600.0
 
 
 def _scene_reference_media_type(image_path: Path) -> str:
