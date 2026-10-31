@@ -2515,12 +2515,13 @@ Show the STARTING pose, NOT the ending result."""
             "SINGLE-BEAT VISUAL DESCRIPTION REFERENCE:",
             f"- Visual description: {visual_desc}",
         ]
-        scene_id = beat_scene_id(beat)
-        if scene_id:
-            lines.append(f"- Scene: {scene_id}")
-        time_of_day = str(beat.get("time_of_day", "") or "").strip()
-        if time_of_day:
-            lines.append(f"- Time of day: {time_of_day}")
+        if brief.kind not in ("black", "title_card"):
+            scene_id = beat_scene_id(beat)
+            if scene_id:
+                lines.append(f"- Scene: {scene_id}")
+            time_of_day = str(beat.get("time_of_day", "") or "").strip()
+            if time_of_day:
+                lines.append(f"- Time of day: {time_of_day}")
         lines.extend(
             [
                 "- Use this text only to understand action intent, object identity, and ambiguous marker meaning in the existing sketch.",
