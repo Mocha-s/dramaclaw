@@ -79,6 +79,10 @@ export interface Beat {
   audio_type?: string; // "silence" | "narration" | "dialogue"
   video_prompt?: string;
   keyframe_prompt?: string;
+  /** Per-beat custom sketch prompt; see sketch_prompt_mode. */
+  sketch_prompt?: string;
+  /** "append" adds to the visual description, "override" replaces it. */
+  sketch_prompt_mode?: "append" | "override";
   video_mode?: string; // "first_frame" | "keyframe"
   seedance2_config_json?: string;
   estimated_duration?: number;

@@ -232,6 +232,30 @@ export interface BeatBackgroundReference {
     url?: string | null;
 }
 
+export type SketchPanelKind = "normal" | "black" | "title_card" | "prop_insert";
+
+export interface SketchBriefData {
+  beat_number: number;
+  kind: SketchPanelKind;
+  has_characters: boolean;
+  allow_unnamed_people: boolean;
+  no_characters: boolean;
+  description: string;
+  prop_anchor_lines: string[];
+  attach_prop_refs: boolean;
+}
+
+export function useSketchBrief(project: string, episode: number, beatNum: number) {
+  return useQuery({
+    queryKey: queryKeys.sketchBrief(project, episode, beatNum),
+    queryFn: ({ signal }) =>
+      api
+        .get(p`api/v1/projects/${project}/episodes/${episode}/beats/${beatNum}/sketch-brief`, { signal })
+        .json<OkResponse<SketchBriefData> | ErrorResponse>(),
+    enabled: !!project && episode > 0 && beatNum > 0,
+  });
+}
+
 export function useBeatBackgroundAnchors(project: string, episode: number, beatNum: number) {
   return useQuery({
     queryKey: queryKeys.beatBackgroundAnchors(project, episode, beatNum),

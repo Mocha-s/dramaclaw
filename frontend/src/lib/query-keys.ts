@@ -98,6 +98,8 @@ export const queryKeys = {
     ["projects", p, "episodes", ep, "sketch-image-usage"] as const,
   sketchPoseEditor: (p: string, ep: number, beat: number) =>
     ["projects", p, "episodes", ep, "beats", beat, "sketch-pose-editor"] as const,
+  sketchBrief: (p: string, ep: number, beat: number) =>
+    ["projects", p, "episodes", ep, "beats", beat, "sketch-brief"] as const,
   beatPanoBackgroundManifest: (p: string, ep: number, beat: number) =>
     ["projects", p, "episodes", ep, "beats", beat, "pano-background-manifest"] as const,
   beatDirectorStageManifest: (p: string, ep: number, beat: number) =>

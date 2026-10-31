@@ -69,6 +69,7 @@ import {
 } from "@/components/ui/dialog";
 import { SketchPoseEditorDialog } from "./sketch-pose-editor-dialog";
 import { SketchCropDialog } from "./sketch-crop-dialog";
+import { SketchPromptEditor } from "./sketch-prompt-editor";
 import { CreditCostInline } from "@/components/credit-cost-inline";
 import {
   MEDIA_PRIMARY_ACTION_BUTTON_CLASS,
@@ -858,6 +859,7 @@ export function SketchSection({
           </Button>
         </div>
       </div>
+      <SketchPromptEditor project={project} episode={episode} beat={beat} />
 
       <Dialog
         open={backgroundDialogOpen}

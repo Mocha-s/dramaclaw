@@ -18,6 +18,8 @@ export interface BeatUpdate {
   time_of_day?: string;
   video_prompt?: string;
   keyframe_prompt?: string;
+  sketch_prompt?: string;
+  sketch_prompt_mode?: "append" | "override";
   video_mode?: string;
   seedance2_config_json?: string;
   audio_type?: string;
