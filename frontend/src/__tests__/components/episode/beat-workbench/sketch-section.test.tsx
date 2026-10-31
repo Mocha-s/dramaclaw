@@ -133,6 +133,10 @@ vi.mock("@/components/episode/beat-workbench/sketch-crop-dialog", () => ({
     open ? <div data-testid="sketch-crop-dialog" /> : null,
 }));
 
+vi.mock("@/components/episode/beat-workbench/sketch-prompt-editor", () => ({
+  SketchPromptEditor: () => null,
+}));
+
 vi.mock("@/features/viewer-kit/three-d/ThreeDDirectorDialog", () => ({
   ThreeDDirectorDialog: ({ open }: { open: boolean }) =>
     open ? <div data-testid="three-d-director-dialog" /> : null,
