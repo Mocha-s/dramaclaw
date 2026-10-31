@@ -6394,6 +6394,74 @@ async def export_zip(project: str, episode_num: int, user: dict = Depends(get_ap
 # ---------------------------------------------------------------------------
 
 
+@router.get("/projects/{project}/episodes/{episode_num}/beats/{beat_num}/sketch-brief")
+async def get_beat_sketch_brief(
+    project: str,
+    episode_num: int,
+    beat_num: int,
+    user: dict = Depends(get_api_user),
+):
+    """Return the sketch panel brief (kind, final panel text, prop anchors) for one beat."""
+    from novelvideo.generators.prompt_builder import PromptMode, create_prompt_context
+    from novelvideo.generators.sketch_panel_brief import build_panel_brief
+    from novelvideo.utils.asset_resolver import AssetResolver
+
+    resolved = await _resolve_generation_project(project, user, required_role="viewer")
+    store = (
+        await make_sqlite_store_for_context(resolved.ctx)
+        if resolved.ctx
+        else await make_sqlite_store(resolved.username, resolved.project_name)
+    )
+    beats = await store.get_beats_as_dicts(episode_num)
+    beat = next((item for item in beats if int(item.get("beat_number") or 0) == beat_num), None)
+    if beat is None:
+        return {"ok": False, "error": f"Beat {beat_num} not found"}
+
+    character_map = await _build_character_map(
+        store,
+        beats,
+        resolved.username,
+        resolved.project_name,
+        episode_num=episode_num,
+        use_detected_identities=False,
+    )
+    episode_obj = _episode_from_store_or_none(store, episode_num)
+    prop_menu = await _runtime_prop_menu_with_global_props(store, episode_obj, beats)
+    resolver = AssetResolver(
+        Path(resolved.project_dir),
+        episode_number=episode_num,
+        prop_menu=prop_menu,
+        scene_reference_kind="sketch",
+    )
+    scene_refs, prop_asset_refs = resolver.resolve_all_for_beats([beat])
+    ctx = create_prompt_context(
+        mode=PromptMode.SKETCH,
+        beats=[beat],
+        rows=1,
+        cols=1,
+        character_map=character_map,
+        scene_refs=scene_refs,
+        prop_asset_refs=prop_asset_refs,
+        sketch_colors=store.get_sketch_colors(episode_num) or {},
+        prop_marker_colors=_prop_marker_colors_from_menu(prop_menu),
+        project_dir=str(resolved.project_dir),
+    )
+    brief = build_panel_brief(beat, panel_idx=1, ctx=ctx)
+    return {
+        "ok": True,
+        "data": {
+            "beat_number": beat_num,
+            "kind": brief.kind,
+            "has_characters": brief.has_characters,
+            "allow_unnamed_people": brief.allow_unnamed_people,
+            "no_characters": brief.no_characters,
+            "description": brief.description,
+            "prop_anchor_lines": brief.prop_anchor_lines,
+            "attach_prop_refs": brief.attach_prop_refs,
+        },
+    }
+
+
 @router.post("/projects/{project}/episodes/{episode_num}/sketches/assign-colors")
 async def assign_sketch_colors(
     project: str,
