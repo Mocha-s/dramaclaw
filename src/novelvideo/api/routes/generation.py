@@ -302,12 +302,14 @@ def _render_regen_billing_metadata(
     image_selection: str,
     mode_key: str,
     image_quality: str = "",
+    image_size: str = "",
 ) -> dict:
     return _image_selection_billing_metadata(
         image_selection,
         mode_key,
         image_role="render",
         quality=image_quality,
+        image_size=image_size,
     )
 
 
@@ -389,6 +391,7 @@ def _render_settings_payload(username: str, project: str) -> dict:
     project_config = load_project_config(username, project)
     return {
         "render_image_selection": _resolve_render_image_selection(project_config),
+        "render_image_size": _resolve_render_image_size(project_config),
         "options": configured_image_generation_selection_options(),
         "image_quality": _resolve_mainline_image_quality(project_config),
         "sketch_aspect_padding": _resolve_render_bool_setting(
@@ -421,6 +424,31 @@ def _resolve_sketch_image_size(project_config: dict) -> str:
         return validate_image_size(stored)
     except ValueError:
         return "1K"
+
+
+def _resolve_render_image_size(project_config: dict) -> str:
+    from novelvideo.media_parameters import validate_image_size
+
+    stored = str(project_config.get("render_image_size") or "").strip()
+    if not stored:
+        return "1K"
+    try:
+        return validate_image_size(stored)
+    except ValueError:
+        return "1K"
+
+
+def _render_image_size_is_explicit(project_config: dict) -> bool:
+    from novelvideo.media_parameters import validate_image_size
+
+    stored = str(project_config.get("render_image_size") or "").strip()
+    if not stored:
+        return False
+    try:
+        validate_image_size(stored)
+        return True
+    except ValueError:
+        return False
 
 
 def _sketch_image_size_is_explicit(project_config: dict) -> bool:
@@ -1968,6 +1996,8 @@ async def update_render_settings(
                 },
             )
         updates["render_image_selection"] = selection
+    if body.render_image_size is not None:
+        updates["render_image_size"] = body.render_image_size
     if body.sketch_aspect_padding is not None:
         updates["sketch_aspect_padding"] = bool(body.sketch_aspect_padding)
     if body.image_quality is not None:
@@ -3149,6 +3179,12 @@ async def regenerate_grid(
         "style": style,
         "model": body.model,
         "image_generation_selection": render_image_selection,
+        "image_size": (
+            _resolve_render_image_size(proj_config)
+            if _render_image_size_is_explicit(proj_config)
+            else ""
+        ),
+        "strict_image_size": _render_image_size_is_explicit(proj_config),
         "render_mode": "Render",
         "scene_grouping": body.scene_grouping,
         "character_grouping": body.character_grouping,
@@ -3167,6 +3203,7 @@ async def regenerate_grid(
             render_image_selection,
             billing_mode_key,
             config.get("image_quality") or "medium",
+            config.get("image_size") or "",
         )
         queued = await get_task_backend().enqueue_project_task(
             ctx,
@@ -3466,6 +3503,12 @@ async def render_execute(
         "style": style,
         "model": "nanobanana",
         "image_generation_selection": render_image_selection,
+        "image_size": (
+            _resolve_render_image_size(project_config)
+            if _render_image_size_is_explicit(project_config)
+            else ""
+        ),
+        "strict_image_size": _render_image_size_is_explicit(project_config),
         "sketch_colors": sketch_colors,
         "prop_menu": prop_menu,
         "sketch_aspect_padding": _resolve_render_bool_setting(
@@ -3491,6 +3534,7 @@ async def render_execute(
                 render_image_selection,
                 entry.mode_key,
                 base_config.get("image_quality") or "medium",
+                base_config.get("image_size") or "",
             )
             try:
                 queued = await get_task_backend().enqueue_project_task(
@@ -3632,6 +3676,11 @@ async def regenerate_beats(
         render_image_selection,
         mode_key,
         _stored_mainline_image_quality(proj_config) or "medium",
+        (
+            _resolve_render_image_size(proj_config)
+            if _render_image_size_is_explicit(proj_config)
+            else ""
+        ),
     )
     config = {
         "beats": beats,
@@ -3639,6 +3688,12 @@ async def regenerate_beats(
         "style": style,
         "model": body.model,
         "image_generation_selection": render_image_selection,
+        "image_size": (
+            _resolve_render_image_size(proj_config)
+            if _render_image_size_is_explicit(proj_config)
+            else ""
+        ),
+        "strict_image_size": _render_image_size_is_explicit(proj_config),
         "selected_beat_numbers": body.beat_indices,
         "sketch_colors": store.get_sketch_colors(episode_num) or {},
         "prop_menu": prop_menu,

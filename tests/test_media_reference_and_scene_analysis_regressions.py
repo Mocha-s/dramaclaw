@@ -460,12 +460,12 @@ async def test_freezone_edit_preserves_shared_image_metadata_without_overrides(
     assert captured["config"]["newapi_model_params"] == {"quality": "high"}
 
 
-def test_scene_analysis_timeout_defaults_are_longer_than_legacy_window(monkeypatch):
+def test_scene_analysis_timeout_defaults_allow_slow_reference_analysis(monkeypatch):
     from novelvideo.director_world import scene_analysis_gateway
 
     monkeypatch.delenv("SCENE_ANALYSIS_TIMEOUT_SECONDS", raising=False)
 
-    assert scene_analysis_gateway.scene_analysis_timeout_seconds() >= 300
+    assert scene_analysis_gateway.scene_analysis_timeout_seconds() == 600
 
 
 def test_scene_analysis_timeout_is_configurable(monkeypatch):
@@ -476,12 +476,12 @@ def test_scene_analysis_timeout_is_configurable(monkeypatch):
     assert scene_analysis_gateway.scene_analysis_timeout_seconds() == 420.0
 
 
-def test_scene_analysis_subprocess_timeout_defaults_to_ten_minutes(monkeypatch):
+def test_scene_analysis_subprocess_timeout_defaults_to_two_analysis_windows(monkeypatch):
     from novelvideo import stage_asset_tasks
 
     monkeypatch.delenv("SCENE_ANALYSIS_SUBPROCESS_TIMEOUT_SECONDS", raising=False)
 
-    assert stage_asset_tasks._scene_analysis_subprocess_timeout() == 600
+    assert stage_asset_tasks._scene_analysis_subprocess_timeout() == 1800
 
 
 @pytest.mark.asyncio

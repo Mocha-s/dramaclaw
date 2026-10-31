@@ -168,6 +168,7 @@ async def test_frame_skill_render_uses_canvas_sketch_input_without_mainline_sket
                 "config": {
                     "mode_key": "1x1_16-9",
                     "image_size": "2K",
+                    "strict_image_size": True,
                     "selected_beat_numbers": [3],
                     "beats": [
                         {

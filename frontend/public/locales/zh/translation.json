@@ -4589,6 +4589,7 @@
       "model": "渲染模型",
       "modelPlaceholder": "选择模型",
       "quality": "图片画质",
+      "imageSize": "图片尺寸",
       "qualityOptions": { "auto": "自动", "low": "低", "medium": "中", "high": "高", "xhigh": "超高", "max": "最高" }
     },
     "sketchSettings": {

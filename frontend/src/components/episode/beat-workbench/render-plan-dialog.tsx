@@ -147,6 +147,7 @@ export function RenderPlanDialog({
   });
   const taskRows = (tasksCache.data as OkResponse<Task[]> | undefined)?.data;
   const renderImageSelection = renderSettings.data?.data.render_image_selection ?? null;
+  const renderImageSize = renderSettings.data?.data.render_image_size ?? "1K";
   const renderImageQuality = renderSettings.data?.data.image_quality ?? "medium";
   const renderCostModeKeys = useMemo(
     () => [...new Set((plan?.plan ?? []).map((entry) => entry.mode_key).filter(Boolean))],
@@ -158,7 +159,12 @@ export function RenderPlanDialog({
         surface: "supertale",
         modeKey,
         imageRole: "render",
-        params: renderImageSelection ? { image_selection: renderImageSelection } : null,
+        params: renderImageSelection
+          ? {
+              image_selection: renderImageSelection,
+              ...(renderImageSize !== "1K" ? { size: renderImageSize } : {}),
+            }
+          : null,
       }),
       queryFn: () =>
         jsonWithBackendError<OkResponse<GenerationCreditCost>>(
@@ -170,7 +176,12 @@ export function RenderPlanDialog({
               mode_key: modeKey,
               image_role: "render",
               ...(renderImageSelection
-                ? { params: JSON.stringify({ image_selection: renderImageSelection }) }
+                ? {
+                    params: JSON.stringify({
+                      image_selection: renderImageSelection,
+                      ...(renderImageSize !== "1K" ? { size: renderImageSize } : {}),
+                    }),
+                  }
                 : {}),
             },
             throwHttpErrors: false,

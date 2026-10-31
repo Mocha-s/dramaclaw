@@ -65,11 +65,11 @@ def _scene_360_strict_spatial_contract() -> bool:
 
 
 def _scene_analysis_subprocess_timeout() -> int:
-    raw = str(os.environ.get("SCENE_ANALYSIS_SUBPROCESS_TIMEOUT_SECONDS") or "600").strip()
+    raw = str(os.environ.get("SCENE_ANALYSIS_SUBPROCESS_TIMEOUT_SECONDS") or "1800").strip()
     try:
         return max(int(raw), 60)
     except ValueError:
-        return 600
+        return 1800
 
 
 def _run_credit_coro(coro_factory):

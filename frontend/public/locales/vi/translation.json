@@ -4485,6 +4485,7 @@
       "model": "Model render",
       "modelPlaceholder": "Chọn model",
       "quality": "Chất lượng hình ảnh",
+      "imageSize": "Kích thước ảnh",
       "qualityOptions": { "auto": "Tự động", "low": "Thấp", "medium": "Trung bình", "high": "Cao", "xhigh": "Siêu cao", "max": "Tối đa" }
     },
     "sketchSettings": {

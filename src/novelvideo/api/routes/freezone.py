@@ -1583,7 +1583,9 @@ def _mainline_image_task_billing(config: dict, *, is_sketch: bool) -> dict:
         if is_sketch
         else get_render_generation_config(selection_override=selection)
     )
-    if is_sketch and config.get("image_size"):
+    if config.get("image_size") and (
+        is_sketch or config.get("strict_image_size") is True
+    ):
         generation_config["image_size"] = str(config["image_size"])
     image_quality = str(config.get("image_quality") or "").strip().lower()
     if image_quality in {"low", "medium", "high"}:
@@ -1688,6 +1690,8 @@ async def _mainline_single_beat_config(
         _build_character_map,
         _episode_from_store_or_none,
         _resolve_render_bool_setting,
+        _resolve_render_image_size,
+        _render_image_size_is_explicit,
         _resolve_mainline_image_quality,
         _resolve_render_image_selection,
         _resolve_sketch_image_selection,
@@ -1762,6 +1766,12 @@ async def _mainline_single_beat_config(
         "ethnicity": project_config.get("ethnicity", "Chinese"),
         "model": None,
         "image_generation_selection": image_selection,
+        "image_size": (
+            _resolve_render_image_size(project_config)
+            if _render_image_size_is_explicit(project_config)
+            else ""
+        ),
+        "strict_image_size": _render_image_size_is_explicit(project_config),
         "selected_beat_numbers": [int(beat)],
         "sketch_colors": sketch_colors,
         "prop_menu": prop_menu,

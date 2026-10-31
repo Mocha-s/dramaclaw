@@ -6,11 +6,14 @@ import { api } from "@/lib/api";
 import { p } from "@/lib/api-path";
 import { queryKeys } from "@/lib/query-keys";
 import type { ErrorResponse, OkResponse } from "@/types/api";
+import { FREEZONE_IMAGE_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
 
 export type ImageQuality = "auto" | "low" | "medium" | "high" | "xhigh" | "max";
+export type RenderImageSize = (typeof FREEZONE_IMAGE_RESOLUTIONS)[number];
 
 export interface RenderSettingsData {
   render_image_selection: string;
+  render_image_size: RenderImageSize;
   options: Record<string, string>;
   sketch_aspect_padding: boolean;
   image_quality: ImageQuality;
@@ -18,6 +21,7 @@ export interface RenderSettingsData {
 
 export interface RenderSettingsUpdate {
   render_image_selection?: string;
+  render_image_size?: RenderImageSize;
   sketch_aspect_padding?: boolean;
   image_quality?: ImageQuality;
 }

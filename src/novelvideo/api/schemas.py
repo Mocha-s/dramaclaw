@@ -110,6 +110,7 @@ class ProjectUpdate(BaseModel):
 
 class RenderSettingsUpdate(BaseModel):
     render_image_selection: Optional[str] = None
+    render_image_size: Optional[ImageSize] = None
     sketch_aspect_padding: Optional[bool] = None
     image_quality: Optional[ImageQuality] = None
 
