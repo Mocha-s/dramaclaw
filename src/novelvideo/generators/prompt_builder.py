@@ -2360,7 +2360,13 @@ Show the STARTING pose, NOT the ending result."""
             prev_scene = scene_id if scene_id else prev_scene
             panel_scenes.append(scene_id)
 
+        panel_briefs = build_panel_briefs(ctx)
         for i, beat in enumerate(actual_beats, start=1):
+            brief = panel_briefs[i - 1]
+            if brief.kind in ("black", "title_card"):
+                lines.append(f"- **Panel {i}** {brief.panel_prefix}:")
+                lines.append(f"  {brief.description}")
+                continue
             # per-panel 出场角色：直接用 detected_identities（草图工作台颜色检测结果）
             markers = real_detected_identities(beat.get("detected_identities") or [])
             char_color_lines = []
@@ -2486,20 +2492,24 @@ Show the STARTING pose, NOT the ending result."""
         if not visual_desc:
             return ""
 
-        visual_desc = _resolve_prop_marker_tags(visual_desc)
-        if ctx.characters:
-            from novelvideo.utils.identity_resolver import (
-                build_identity_to_char_map,
-                resolve_visual_description_markers,
-            )
+        brief = build_panel_brief(beat, panel_idx=1, ctx=ctx)
+        if brief.kind in ("black", "title_card"):
+            visual_desc = brief.description
+        else:
+            visual_desc = _resolve_prop_marker_tags(visual_desc)
+            if ctx.characters:
+                from novelvideo.utils.identity_resolver import (
+                    build_identity_to_char_map,
+                    resolve_visual_description_markers,
+                )
 
-            id_to_char = build_identity_to_char_map(ctx.characters)
-            visual_desc = resolve_visual_description_markers(
-                visual_desc,
-                ctx.characters,
-                id_to_char,
-                use_identity_id=True,
-            )
+                id_to_char = build_identity_to_char_map(ctx.characters)
+                visual_desc = resolve_visual_description_markers(
+                    visual_desc,
+                    ctx.characters,
+                    id_to_char,
+                    use_identity_id=True,
+                )
 
         lines = [
             "SINGLE-BEAT VISUAL DESCRIPTION REFERENCE:",

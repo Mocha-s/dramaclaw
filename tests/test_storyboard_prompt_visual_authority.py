@@ -741,3 +741,21 @@ def test_sketch_branches_in_nanobanana_grid_allow_prop_kind():
     source = inspect.getsource(nanobanana_grid)
     assert 'allowed_kinds={"scene"},' not in source
     assert source.count('allowed_kinds={"scene", "prop"},') == 4
+
+
+def test_render_panel_roster_replaces_black_panel_text():
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=1, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[{"beat_number": 1, "visual_description": "黑场，画面全黑。", "scene_ref": {"scene_id": "步道"}}],
+        mode=PromptMode.RENDER,
+    )
+
+    roster = PromptComponents.build_panel_roster(ctx)
+    single = PromptComponents.build_single_beat_render_visual_reference(ctx)
+
+    assert "- **Panel 1** [SOLID BLACK]:" in roster
+    assert "SOLID BLACK PANEL" in roster
+    assert "Scene: 步道" not in roster
+    assert "Visual description: SOLID BLACK PANEL" in single
