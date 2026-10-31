@@ -788,6 +788,42 @@ def _prop_marker_colors_from_menu(prop_menu: list[dict] | None) -> dict[str, str
     return colors
 
 
+async def ensure_global_prop_marker_colors(
+    store: Any,
+    episode_num: int,
+    beats: list[dict],
+    prop_menu: list[dict],
+    sketch_colors: dict[str, str],
+) -> list[dict]:
+    """Assign marker colors to global props marked in beats and persist them on the episode."""
+    from novelvideo.generators.nanobanana_grid import _global_prop_marker_colors
+
+    assigned = _global_prop_marker_colors(
+        beats, prop_menu=prop_menu, sketch_colors=sketch_colors or {}, assign_missing=True
+    )
+    if not assigned:
+        return prop_menu
+    changed = False
+    for item in prop_menu or []:
+        if not isinstance(item, dict):
+            continue
+        prop_id = str(item.get("prop_id") or item.get("name") or "").strip()
+        color = assigned.get(prop_id, "")
+        if color and not str(item.get("marker_color") or "").strip():
+            item["marker_color"] = color
+            changed = True
+    if not changed:
+        return prop_menu
+    patch_episode = getattr(store, "patch_episode", None)
+    if patch_episode is None:
+        return prop_menu
+    try:
+        await patch_episode(episode_num, prop_menu=prop_menu)
+    except Exception:
+        logger.exception("prop marker color persist failed: episode=%s", episode_num)
+    return prop_menu
+
+
 def _episode_from_store_or_none(store: Any, episode_num: int) -> Any | None:
     get_episode = getattr(store, "get_episode", None)
     if get_episode is None:
@@ -2428,6 +2464,9 @@ async def generate_sketches(
 
     episode_obj = _episode_from_store_or_none(store, episode_num)
     prop_menu = await _runtime_prop_menu_with_global_props(store, episode_obj, beats)
+    prop_menu = await ensure_global_prop_marker_colors(
+        store, episode_num, beats, prop_menu, store.get_sketch_colors(episode_num) or {}
+    )
     sketch_image_selection = _resolve_sketch_image_selection(
         proj_config,
         body.image_generation_selection,
@@ -3793,6 +3832,9 @@ async def regenerate_sketches(
     mode_key = body.mode_key
     episode_obj = _episode_from_store_or_none(store, episode_num)
     prop_menu = await _runtime_prop_menu_with_global_props(store, episode_obj, beats)
+    prop_menu = await ensure_global_prop_marker_colors(
+        store, episode_num, beats, prop_menu, store.get_sketch_colors(episode_num) or {}
+    )
     sketch_image_selection = _resolve_sketch_image_selection(
         proj_config,
         body.image_generation_selection,
@@ -6512,11 +6554,11 @@ async def assign_sketch_colors(
         prop_menu=runtime_prop_menu,
         sketch_colors=previous_colors,
     )
+    runtime_prop_menu = await ensure_global_prop_marker_colors(
+        store, episode_num, beats, runtime_prop_menu, colors
+    )
     prop_marker_colors = _global_prop_marker_colors(
-        beats,
-        prop_menu=runtime_prop_menu,
-        sketch_colors=colors,
-        assign_missing=True,
+        beats, prop_menu=runtime_prop_menu, sketch_colors=colors
     )
     if not colors and not prop_marker_colors:
         return {"ok": False, "error": "No identity or global prop markers found in beats"}
@@ -6524,19 +6566,8 @@ async def assign_sketch_colors(
     try:
         if colors:
             await store.set_sketch_colors(episode_num, colors)
-        if prop_marker_colors and runtime_prop_menu:
-            for item in runtime_prop_menu:
-                if not isinstance(item, dict):
-                    continue
-                prop_id = str(item.get("prop_id") or item.get("name") or "").strip()
-                if prop_id in prop_marker_colors:
-                    item["marker_color"] = prop_marker_colors[prop_id]
-            # Marker colours are written back into the menu this request loaded
-            # earlier, so a whole-row write here discards whatever scene, prop
-            # or identity planning stored meanwhile.
-            await store.patch_episode(episode_num, prop_menu=runtime_prop_menu)
     except Exception:
-        pass
+        logger.exception("sketch color persist failed: episode=%s", episode_num)
 
     previous_marker_colors = {
         **{f"identity:{key}": value for key, value in previous_colors.items()},

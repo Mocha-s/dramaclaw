@@ -22,6 +22,7 @@ from novelvideo.models import (
     NovelScene,
     PropMenuItem,
     SceneMenuItem,
+    build_prop_menu,
 )
 from novelvideo.sqlite_store import load_episode_planning_content
 from novelvideo.cognee.screenplay_normalizer import (
@@ -762,6 +763,9 @@ class AssetCompiler:
 
         report(0.25, "编译道具资产...")
         prop_menu = await self._compile_props(scene_blocks, episode, log)
+        prop_menu = self._carry_over_marker_colors(
+            prop_menu, getattr(episode, "prop_menu", []) or []
+        )
 
         report(0.9, "写入本集道具规划...")
         committed_episode = await self._write_menus(
@@ -1574,6 +1578,24 @@ class AssetCompiler:
             if len(requirements) >= 8:
                 break
         return requirements
+
+    @staticmethod
+    def _carry_over_marker_colors(
+        prop_menu: list[PropMenuItem], previous_menu: list[Any]
+    ) -> list[PropMenuItem]:
+        """重新规划后按道具名沿用旧菜单的标记色，避免每次规划都清空颜色。"""
+        previous = {
+            str(item.prop_id or "").strip(): str(item.marker_color or "").strip()
+            for item in build_prop_menu(prop_menu=previous_menu or [])
+        }
+        merged: list[PropMenuItem] = []
+        for item in prop_menu:
+            old_color = previous.get(str(item.prop_id or "").strip(), "")
+            if old_color and not str(item.marker_color or "").strip():
+                merged.append(item.model_copy(update={"marker_color": old_color}))
+            else:
+                merged.append(item)
+        return merged
 
     @staticmethod
     def _add_to_prop_menu(
