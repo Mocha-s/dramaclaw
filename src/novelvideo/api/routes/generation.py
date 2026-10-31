@@ -795,7 +795,16 @@ async def ensure_global_prop_marker_colors(
     prop_menu: list[dict],
     sketch_colors: dict[str, str],
 ) -> list[dict]:
-    """Assign marker colors to global props marked in beats and persist them on the episode."""
+    """Assign marker colors to global props marked in beats and persist them on the episode.
+
+    Mutates the item dicts of ``prop_menu`` in place (only empty ``marker_color``
+    fields are filled) and returns the same list object.
+
+    Caveat: ``patch_episode(prop_menu=...)`` writes back the whole prop_menu this
+    request loaded earlier, so any prop-menu change persisted concurrently (e.g. a
+    prop planning run finishing in between) is overwritten by this write.
+    ``patch_episode`` is column-level, so other episode columns are unaffected.
+    """
     from novelvideo.generators.nanobanana_grid import _global_prop_marker_colors
 
     assigned = _global_prop_marker_colors(
