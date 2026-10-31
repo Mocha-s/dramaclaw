@@ -644,3 +644,47 @@ def test_sketch_prompt_appends_custom_direction():
     ])
 
     assert "| ADDITIONAL DIRECTION: 巴掌大小的木牌挂件，特写" in prompt
+
+
+def test_sketch_attaches_prop_refs_for_prop_insert_panel():
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=1, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[{"beat_number": 10, "visual_description": "[[寻迹牌]]静静躺在石阶上。"}],
+        mode=PromptMode.SKETCH,
+        prop_marker_colors={},
+        prop_asset_refs={
+            1: [
+                ResolvedAssetRef(
+                    asset_type="prop",
+                    base_id="寻迹牌",
+                    variant_id=None,
+                    image_paths=["/tmp/prop_xunjipai.png"],
+                    text_description="横向不规则山形寻迹牌，单手可握。",
+                    source_level="base_image",
+                )
+            ]
+        },
+    )
+
+    plan = PromptComponents.build_reference_image_plan(ctx, [])
+    prompt = SketchModeStrategy().build(ctx, PromptComponents())
+
+    assert any(entry.get("kind") == "prop" for entry in plan)
+    assert 'Prop "寻迹牌" shape reference for sketching' in prompt
+    assert "ignore material, color, and surface detail" in prompt
+    assert 'prop identity reference' not in prompt
+
+
+def test_resolved_asset_ref_carries_prop_type():
+    ref = ResolvedAssetRef(
+        asset_type="prop",
+        base_id="七星剑",
+        variant_id=None,
+        image_paths=[],
+        text_description="",
+        source_level="base_text",
+        prop_type="weapon",
+    )
+    assert ref.prop_type == "weapon"

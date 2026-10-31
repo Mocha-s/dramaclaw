@@ -53,6 +53,7 @@ class ResolvedAssetRef:
     owner: str = ""
     scope: str = ""
     time_baked: bool = False
+    prop_type: str = ""
 
 
 PANO_VIEW_REF_ORDER = (
@@ -549,6 +550,11 @@ class AssetResolver:
                     source_level=source_level,
                     owner=getattr(prop_obj, "owner", "") if prop_obj else "",
                     scope="global" if prop_obj else "",
+                    prop_type=str(
+                        (getattr(prop_obj, "prop_type", "") if prop_obj else "")
+                        or menu_meta.get("prop_type")
+                        or ""
+                    ).strip(),
                 )
             )
         return refs

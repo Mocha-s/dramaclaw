@@ -27,7 +27,7 @@ from pypinyin import pinyin, Style
 
 from novelvideo.config import get_style_preset, IMAGE_DEFAULT_STYLE
 from novelvideo.models import beat_scene_id, real_detected_identities, real_detected_props
-from novelvideo.generators.sketch_panel_brief import build_panel_briefs
+from novelvideo.generators.sketch_panel_brief import build_panel_brief, build_panel_briefs
 from novelvideo.services.style_service import StyleService
 
 
@@ -333,10 +333,13 @@ class PromptComponents:
     def _filter_panel_prop_asset_refs(ctx: PromptContext, panel_idx: int) -> list[Any]:
         refs = list(ctx.prop_asset_refs.get(panel_idx, []) or [])
         if ctx.mode == PromptMode.SKETCH:
-            # Sketch generation uses prop names and marker colors only. Prop reference
-            # sheets are reserved for Render/colorization so sketch blocking is not
-            # biased by final prop material or detailed shape.
-            return []
+            # 草图阶段只给“道具特写”面板附参考图：没有具名角色时参考图用于轮廓、
+            # 比例和持握方式；有人物的面板维持纯文字，避免参考图干扰调度。
+            try:
+                beat = ctx.beats[panel_idx - 1]
+            except IndexError:
+                return []
+            return refs if build_panel_brief(beat, panel_idx=panel_idx, ctx=ctx).attach_prop_refs else []
         if ctx.mode != PromptMode.RENDER:
             return refs
         try:
@@ -1415,12 +1418,20 @@ ONE continuous image. ZERO visible boundaries between regions."""
                 anchor_text = PromptComponents._asset_anchor_text(ref)
                 if anchor_text:
                     anchor_suffix = f" Anchor description: {anchor_text}."
-                lines.append(
-                    f"  Image {img_idx} = Prop \"{getattr(ref, 'base_id', '')}\" prop identity reference (front/side/back 3-view reference sheet). "
-                    "Use it to lock the prop identity exactly: overall proportions, silhouette, material, surface texture, color, wear, and key details. "
-                    "Do not redesign, simplify, or substitute it with another object."
-                    f"{anchor_suffix}"
-                )
+                if ctx.mode == PromptMode.SKETCH:
+                    lines.append(
+                        f"  Image {img_idx} = Prop \"{getattr(ref, 'base_id', '')}\" shape reference for sketching: "
+                        "use it only for silhouette, proportions, scale, and how it is held. "
+                        "Draw it as black/gray line art; ignore material, color, and surface detail."
+                        f"{anchor_suffix}"
+                    )
+                else:
+                    lines.append(
+                        f"  Image {img_idx} = Prop \"{getattr(ref, 'base_id', '')}\" prop identity reference (front/side/back 3-view reference sheet). "
+                        "Use it to lock the prop identity exactly: overall proportions, silhouette, material, surface texture, color, wear, and key details. "
+                        "Do not redesign, simplify, or substitute it with another object."
+                        f"{anchor_suffix}"
+                    )
             else:
                 continue
             img_idx += 1
@@ -1626,12 +1637,9 @@ ONE continuous image. ZERO visible boundaries between regions."""
 
         plan.extend(PromptComponents.collect_scene_image_entries(ctx))
 
-        # Sketch generation keeps named props as marker-colored simple shapes in text only.
-        # Prop identity sheets are for render/colorization; attaching them during sketch
-        # makes the blocking pass too visually heavy and diverges from the actual submit path.
-        if ctx.mode != PromptMode.SKETCH:
-            for ref in PromptComponents.collect_prop_image_refs(ctx):
-                plan.append({"kind": "prop", "ref": ref})
+        # 道具参考图的取舍由 _filter_panel_prop_asset_refs 决定：Render 全量，Sketch 仅道具特写面板。
+        for ref in PromptComponents.collect_prop_image_refs(ctx):
+            plan.append({"kind": "prop", "ref": ref})
 
         return plan
 
