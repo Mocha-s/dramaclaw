@@ -573,3 +573,74 @@ def test_director_augmented_beat_extracts_staging_items(tmp_path):
             "scale": "1.8, 1.4, 0.6",
         }
     ]
+
+
+def test_sketch_prompt_marks_black_panel_and_lists_kind_rules():
+    prompt = _build_sketch_prompt([{"beat_number": 1, "visual_description": "黑场，画面全黑。"}])
+
+    assert "PANEL KIND RULES:" in prompt
+    assert "- **Panel 1** [SOLID BLACK]: SOLID BLACK PANEL" in prompt
+    assert "场，画面全" not in prompt
+
+
+def test_sketch_prompt_marks_title_card_panel():
+    prompt = _build_sketch_prompt([{"beat_number": 13, "visual_description": "屏幕出现文字“明崇祯十一年（1638）｜情景再现”。"}])
+
+    assert "- **Panel 1** [TITLE CARD]: TITLE CARD PANEL" in prompt
+    assert "明崇祯十一年" not in prompt
+
+
+def test_sketch_prompt_marks_no_character_panel():
+    prompt = _build_sketch_prompt([{"beat_number": 2, "visual_description": "近景：一股瀑布水流冲过岩石。"}])
+
+    assert "- **Panel 1** [NO CHARACTERS]: 近景：一股瀑布水流冲过岩石" in prompt
+    assert "must not contain any human figure" in prompt
+    assert "only when the panel description explicitly mentions them" in prompt
+
+
+def test_sketch_prompt_keeps_place_names_with_color_chars():
+    prompt = _build_sketch_prompt([{"beat_number": 26, "visual_description": "镜头从树隙间缓慢推开，黄果树主瀑布由远及近出现。"}])
+
+    assert "黄果树主瀑布" in prompt
+
+
+def test_sketch_prompt_adds_prop_form_anchor():
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=1, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[{"beat_number": 10, "visual_description": "[[寻迹牌]]上的山脊纹样短暂泛起微光。"}],
+        mode=PromptMode.SKETCH,
+        prop_marker_colors={},
+        prop_asset_refs={
+            1: [
+                ResolvedAssetRef(
+                    asset_type="prop",
+                    base_id="寻迹牌",
+                    variant_id=None,
+                    image_paths=[],
+                    text_description="横向不规则山形寻迹牌，约7到8厘米宽，单手可握。牌面为灰黑木。",
+                    source_level="base_text",
+                )
+            ]
+        },
+    )
+
+    prompt = SketchModeStrategy().build(ctx, PromptComponents())
+
+    assert 'LOCAL / EPISODE PROP "寻迹牌"' in prompt
+    assert "— FORM: 横向不规则山形寻迹牌，约7到8厘米宽，单手可握" in prompt
+    assert "- **Panel 1** [PROP INSERT]:" in prompt
+
+
+def test_sketch_prompt_appends_custom_direction():
+    prompt = _build_sketch_prompt([
+        {
+            "beat_number": 10,
+            "visual_description": "[[寻迹牌]]泛起微光。",
+            "sketch_prompt": "巴掌大小的木牌挂件，特写",
+            "sketch_prompt_mode": "append",
+        }
+    ])
+
+    assert "| ADDITIONAL DIRECTION: 巴掌大小的木牌挂件，特写" in prompt

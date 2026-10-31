@@ -27,6 +27,7 @@ from pypinyin import pinyin, Style
 
 from novelvideo.config import get_style_preset, IMAGE_DEFAULT_STYLE
 from novelvideo.models import beat_scene_id, real_detected_identities, real_detected_props
+from novelvideo.generators.sketch_panel_brief import build_panel_briefs
 from novelvideo.services.style_service import StyleService
 
 
@@ -2673,6 +2674,11 @@ class SketchModeStrategy:
         prop_label_map: dict[str, str] = {}
         director_staging_lines: list[str] = []
         actual_beats_for_chars = ctx.beats[:total_panels]
+        panel_briefs = build_panel_briefs(ctx)
+        prop_form_map: dict[str, str] = {}
+        for brief in panel_briefs:
+            for prop_id, anchor in brief.prop_anchors:
+                prop_form_map.setdefault(prop_id, anchor)
         prop_tag_panel_map: dict[str, list[int]] = {}
         for panel_idx, beat in enumerate(actual_beats_for_chars, start=1):
             for prop_id in components._collect_prop_marker_ids([beat]):
@@ -2847,11 +2853,14 @@ class SketchModeStrategy:
                     "similar untagged object in the same panel or outside those panel(s) remains "
                     "ordinary black/gray line art."
                 )
+                if prop_form_map.get(prop_id):
+                    prop_lines[-1] = f"{prop_lines[-1]} — FORM: {prop_form_map[prop_id]}"
             else:
                 prop_label_map[prop_tag] = f"{prop_id} {prop_tag}"
                 local_prop_lines.append(
                     f"- {prop_tag} — LOCAL / EPISODE PROP \"{prop_id}\". No color fill. "
                     "Draw only as black/gray line art if visible."
+                    + (f" — FORM: {prop_form_map[prop_id]}" if prop_form_map.get(prop_id) else "")
                 )
 
         if has_director_scene_ref_inputs:
@@ -2896,7 +2905,7 @@ DIRECTOR STAGING OBJECTS (draw the user's listed object; marker color is locator
 These {len(colored_targets)} named characters / panel-scoped global props have assigned color fills: {', '.join(colored_targets)}
 Character color applies regardless of pose — sitting, crouching, lying on floor, being held down = STILL colored.
 Global prop color applies ONLY to the exact tagged prop instance in the panel(s) listed for that prop. Do NOT propagate a global prop color to similar-looking untagged objects in the same panel or any other panel.
-Unnamed people and extras must be gray directional mannequins only, NO color fill.
+Unnamed people and extras appear only when the panel description explicitly mentions them; then they are gray directional mannequins only, NO color fill.
 Do not add arbitrary new color fills to furniture/background/staging. Only named characters and listed-panel global props keep marker colors.
 Only GLOBAL TABLE PROPS can keep prop marker color. Local / episode props are black/gray line art only, even when written with [[prop]] markers.
 For global props, the assigned marker color wins over the object's real-world material color inside its listed panel(s). Use the listed marker color only; do not render the object's normal material color.
@@ -3040,7 +3049,7 @@ HARD CONSTRAINTS:
 - Do NOT silently rotate to a different scene side.
 - Do NOT duplicate major fixtures on both sides of the room/street/carriage.
 - Any signage, menus, posters, labels, clock faces, screens, and wall notices must stay unreadable. Replace them with abstract shapes or illegible marks only.
-- Panels explicitly marked as BLANK PLACEHOLDER are exempt from scene geometry inheritance and should remain empty placeholders.
+- Panels explicitly marked as BLANK PLACEHOLDER, SOLID BLACK, or TITLE CARD are exempt from scene geometry inheritance and should remain empty placeholders.
 
 This environment anchor defines the visible background. The panel visual_description defines the action.
 Keep scene lines minimal and clean — this is still a storyboard sketch, not a rendered scene.
@@ -3071,7 +3080,7 @@ LIGHT GEOMETRY HYGIENE (soft, not enforced):
 - Stay roughly inside the same location identity across consecutive panels in the same scene; do not switch venues mid-conversation.
 - Major fixed fixtures (counter side / entry direction / window wall) should stay consistent across closely-related panels so shot/reverse-shot reads coherently. Minor furniture count may shift between shots.
 - Any signage, menus, posters, labels, clock faces, screens, and wall notices must stay unreadable. Replace them with abstract shapes or illegible marks only.
-- Panels explicitly marked as BLANK PLACEHOLDER remain empty placeholders.
+- Panels explicitly marked as BLANK PLACEHOLDER, SOLID BLACK, or TITLE CARD remain empty placeholders.
 """.strip()
             else:
                 scene_geometry_block = """
@@ -3115,7 +3124,7 @@ HARD CONSTRAINTS:
 - Keep MASTER / TOP_DOWN / REVERSE as complementary evidence for one fixed space, not as alternative redesigns.
 - In highly symmetrical spaces such as train cars, hallways, and corridors, keep doors, windows, seats, poles, signage blocks, and ceiling fixtures consistent with the chosen camera direction, using other references only to confirm continuity.
 - Any signage, menus, posters, labels, clock faces, screens, and wall notices must stay unreadable. Replace them with abstract shapes or illegible marks only.
-- Panels explicitly marked as BLANK PLACEHOLDER are exempt from scene geometry inheritance and should remain empty placeholders.
+- Panels explicitly marked as BLANK PLACEHOLDER, SOLID BLACK, or TITLE CARD are exempt from scene geometry inheritance and should remain empty placeholders.
 
 The scene reference defines WHERE the environment is. Your job is to add WHO is there and WHAT they do.
 Keep scene lines minimal and clean — this is still a storyboard sketch, not a rendered scene.
@@ -3235,12 +3244,19 @@ VISUAL DESCRIPTION AUTHORITY:
 - If a panel description does NOT specify shot/camera/framing, then choose the best shot yourself using the directing guidelines below.
 - Never override explicit panel wording with a generic directing rule; use directing freedom only where the panel description leaves room.
 
+PANEL KIND RULES:
+- [SOLID BLACK] panels are flat black only: no scenery, no characters, no objects, no text.
+- [TITLE CARD] panels are a plain blank card: no scenery, no characters, no readable text.
+- [NO CHARACTERS] panels must not contain any human figure, silhouette, mannequin, or crowd.
+- [UNNAMED PEOPLE ONLY] panels may contain gray unnamed mannequins but no color-coded characters.
+- [PROP INSERT] panels show the named prop as the single subject, drawn to its FORM anchor (shape, proportions, scale, how it is held); no human figures.
+
 {style_block}
 
 {color_law}{prop_block}{staging_block}RENDERING RULES:
 {rendering_preface}- Named characters → very simple COLOR-CODED DIRECTIONAL MANNEQUINS / featureless identity proxies with marker color fill/outline. Marker color identifies the character; it is not final character art.
 - Global props (listed in COLOR-CODED GLOBAL PROPS) → ONLY in the listed panel(s), REPLACE the exact tagged prop instance with a flat solid marker shape entirely filled in its exact assigned marker color, with ZERO internal detail (no edges, no flaps, no logos, no shading). The marker color is mandatory and overrides real material color only for that tagged prop instance in those panel(s). Similar boxes/tissue boxes/packages in the same panel or any other panel are NOT color-coded unless they are explicitly tagged as this global prop; draw them as black/gray line art only.
-- Unnamed people → gray directional mannequins only, no fill
+- Unnamed people → only when the panel description explicitly mentions them; gray directional mannequins only, no fill
 {environment_rules}
 - Anchor scale lock: identity proxies must fit the nearby support surface / seat / fixture scale. Do NOT draw giant foreground heads or oversized identity markers in any panel.
 - Close-up rule: for close-ups, show only the necessary head oval, facing tick, shoulder direction line, and nearby support-surface / wall / fixture cues. Do NOT crop into a giant colored head or poster-like portrait.
@@ -3280,29 +3296,13 @@ LAYOUT (CRITICAL - MUST BE EXACT):
         actual_beats = ctx.beats[:total_panels]
 
         for i, beat in enumerate(actual_beats, start=1):
-            visual_desc = beat.get("visual_description", "")
-            visual_desc = _resolve_prop_marker_tags(visual_desc)
-
-            # 草图路径：剥离颜色词（颜色由标记系统控制，避免污染调色盘）
-            from novelvideo.utils.text_utils import strip_color_words
-
-            visual_desc = strip_color_words(visual_desc)
-
-            # 替换 {{}} 标记为 identity_id（兼容 {{identity_id}} 和 {{角色名}}）
-            from novelvideo.utils.identity_resolver import (
-                resolve_visual_description_markers,
-                build_identity_to_char_map,
-            )
-
-            id_to_char = build_identity_to_char_map(ctx.characters)
-            visual_desc = resolve_visual_description_markers(
-                visual_desc, ctx.characters, id_to_char, use_identity_id=True
-            )
-
-            visual_desc = visual_desc.rstrip("。！？，、；：")
+            brief = panel_briefs[i - 1]
+            if brief.kind in ("black", "title_card"):
+                lines.append(f"- **Panel {i}** {brief.panel_prefix}: {brief.description}")
+                continue
 
             # Sketch 模式：Nanobanana 自主构图（Master Director），不注入导演手册的镜头语言
-            panel_desc = visual_desc
+            panel_desc = brief.description
             # 默认 sketch 不再注入大段 BLOCKING 约束；仅在 render 模式或 3GS director 修图模式下保留几何约束
             blocking_hints = (
                 []
@@ -3346,7 +3346,8 @@ LAYOUT (CRITICAL - MUST BE EXACT):
                     )
             if blocking_hints:
                 panel_desc = f"{panel_desc} | BLOCKING: {' '.join(blocking_hints)}"
-            lines.append(f"- **Panel {i}**: {panel_desc}")
+            prefix = f" {brief.panel_prefix}" if brief.panel_prefix else ""
+            lines.append(f"- **Panel {i}**{prefix}: {panel_desc}")
 
         # 填充不足的 panels（使用明确的占位符，避免模型自作主张）
         if len(actual_beats) < total_panels:
@@ -3477,7 +3478,7 @@ LAYOUT (CRITICAL - MUST BE EXACT):
         if char_names_for_color_law:
             color_check = (
                 f"- {num_chars} colored directional mannequins: {', '.join(char_names_for_color_law)}; "
-                "unnamed people are gray directional mannequins"
+                "unnamed people appear only when the panel description explicitly mentions them, as gray directional mannequins"
             )
         else:
             color_check = ""
