@@ -84,6 +84,7 @@ def test_render_settings_returns_current_selection_and_options(monkeypatch, tmp_
         tmp_path,
         {
             "render_image_selection": "nano-banana-2",
+            "render_image_size": "2K",
             "sketch_aspect_padding": True,
             "image_quality": "high",
         },
@@ -95,6 +96,7 @@ def test_render_settings_returns_current_selection_and_options(monkeypatch, tmp_
     body = response.json()
     assert body["ok"] is True
     assert body["data"]["render_image_selection"] == "nano-banana-2"
+    assert body["data"]["render_image_size"] == "2K"
     assert body["data"]["options"] == {
         "gpt-image-2": "LingShan-G2",
         "nano-banana-2": "LingShan-NB-2",
@@ -129,6 +131,7 @@ def test_render_settings_patch_persists_valid_settings(monkeypatch, tmp_path):
         "/api/v1/projects/demo/render-settings",
         json={
             "render_image_selection": "nano-banana-2",
+            "render_image_size": "2K",
             "sketch_aspect_padding": True,
             "image_quality": "high",
         },
@@ -140,11 +143,24 @@ def test_render_settings_patch_persists_valid_settings(monkeypatch, tmp_path):
     assert saved == [
         {
             "render_image_selection": "nano-banana-2",
+            "render_image_size": "2K",
             "sketch_aspect_padding": True,
             "image_quality": "high",
         }
     ]
     assert "force_half_k" not in body["data"]
+
+
+def test_render_settings_patch_rejects_invalid_image_size(monkeypatch, tmp_path):
+    client, saved = _client(monkeypatch, tmp_path)
+
+    response = client.patch(
+        "/api/v1/projects/demo/render-settings",
+        json={"render_image_size": "8K"},
+    )
+
+    assert response.status_code == 422
+    assert saved == []
 
 
 @pytest.mark.m09

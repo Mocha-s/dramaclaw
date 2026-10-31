@@ -221,6 +221,25 @@ def test_render_selected_regen_returns_scope_and_passes_render_settings(
     assert billing["pricing_params"]
 
 
+def test_render_selected_regen_passes_configured_image_size(monkeypatch, tmp_path):
+    client, calls = _client(monkeypatch, tmp_path)
+    from novelvideo.api.routes import generation
+
+    monkeypatch.setattr(
+        generation,
+        "load_project_config",
+        lambda username, project: {"render_image_size": "2K"},
+    )
+
+    response = client.post(
+        "/api/v1/projects/demo/episodes/2/beats/regenerate",
+        json={"beat_indices": [1], "mode_key": "1x1_2-3"},
+    )
+
+    assert response.status_code == 200
+    assert calls[0]["payload"]["config"]["image_size"] == "2K"
+
+
 def test_render_regen_rejects_missing_selected_sketch_before_enqueue(monkeypatch, tmp_path):
     client, calls = _client(monkeypatch, tmp_path)
     (tmp_path / "sketches" / "ep002" / "beat_02.png").unlink()
