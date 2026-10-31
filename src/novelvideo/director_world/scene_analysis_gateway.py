@@ -32,51 +32,71 @@ def _scene_reference_media_type(image_path: Path) -> str:
 def resolve_scene_analysis_model(
     model_env: str, default_model: str, model: str = ""
 ) -> str:
-    requested = str(model or "").strip() or str(os.environ.get(model_env) or "").strip()
-    requested = requested or default_model
     from novelvideo import model_gateway_settings
+    explicit_model = str(model or "").strip()
+    env_model = str(os.environ.get(model_env) or "").strip()
+    # stage_asset_tasks passes the business alias as the child-process default.
+    # That is not a scene-specific override: analysis must inherit the unified
+    # text capability selected in Settings unless the operator explicitly sets
+    # a scene-analysis model or CLI override.
+    if explicit_model and explicit_model != default_model:
+        return explicit_model
+    if env_model:
+        return env_model
 
     settings = model_gateway_settings.get_model_gateway_settings()
-    raw_mode = str(settings.get("model_gateway_mode") or "").strip().lower()
-    normalized_mode = model_gateway_settings.normalize_gateway_mode(raw_mode)
-    if raw_mode == model_gateway_settings.MODE_SUB2API:
-        active_groups = model_gateway_settings.get_sub2api_groups()
-    elif normalized_mode in {
+    gateway_mode = model_gateway_settings.normalize_gateway_mode(
+        settings.get("model_gateway_mode")
+    )
+    if gateway_mode not in {
         model_gateway_settings.MODE_CUSTOM,
         model_gateway_settings.MODE_HYBRID,
     }:
-        active_groups = model_gateway_settings.get_third_party_gateway_groups()
-    else:
-        active_groups = []
+        from novelvideo.config import get_effective_newapi_text_model_name
 
-    def has_explicit_route(candidate: str) -> bool:
-        selected = model_gateway_settings._resolve_sub2api_group(
-            capability="text", model=candidate, groups=active_groups
+        return get_effective_newapi_text_model_name(model_env, default_model)
+
+    text_defaults = model_gateway_settings.get_capability_defaults()
+    if not text_defaults.get("textGroupId") or not text_defaults.get("textModel"):
+        raise ValueError(
+            "No unified text model is configured for scene analysis; select a text model in Settings"
         )
-        if selected is None:
-            return False
-        group, upstream_model, _mapping = selected
-        return bool(
-            str(group.get("baseUrl") or "").strip()
-            and str(group.get("apiKey") or "").strip()
-            and str(upstream_model or "").strip()
+    capability_default = model_gateway_settings.resolve_capability_default(
+        model_gateway_settings.CAPABILITY_TEXT
+    )
+    if capability_default is not None and capability_default.model:
+        groups = model_gateway_settings.get_third_party_gateway_groups()
+        group = next(
+            (
+                item
+                for item in groups
+                if str(item.get("id") or "") == capability_default.group_id
+            ),
+            None,
         )
-
-    if has_explicit_route(requested):
-        return requested
-
-    fallback = str(os.environ.get("SCENE_ANALYSIS_FALLBACK_MODEL") or "").strip()
-    if fallback and has_explicit_route(fallback):
-        return fallback
+        if group is not None:
+            mapping = next(
+                (
+                    item
+                    for item in group.get("modelMappings", [])
+                    if str(item.get("upstreamModel") or "").strip()
+                    == capability_default.model
+                    and not str(item.get("requestPattern") or "").strip().endswith("*")
+                ),
+                None,
+            )
+            if mapping is not None and str(mapping.get("requestPattern") or "").strip():
+                return str(mapping["requestPattern"]).strip()
+        return capability_default.model
 
     raise ValueError(
-        "No explicit scene analysis model route; configure the requested alias "
-        "or SCENE_ANALYSIS_FALLBACK_MODEL"
+        "No unified text model is configured for scene analysis; select a text model in Settings"
     )
 
 
+
 def scene_analysis_gateway_configured() -> bool:
-    """Check credentials for at least one active scene-analysis route."""
+    """Check that a configured scene-analysis route can reach its gateway."""
     from novelvideo.config import get_newapi_runtime_credentials
     from novelvideo.model_gateway_settings import get_effective_llm_config
 
@@ -86,10 +106,10 @@ def scene_analysis_gateway_configured() -> bool:
     ):
         try:
             model = resolve_scene_analysis_model(model_env, default_model)
-            config = get_effective_llm_config(model=model)
+            llm_config = get_effective_llm_config(model=model)
             api_key, base_url = get_newapi_runtime_credentials(
-                api_key_override=config.api_key,
-                base_url_override=config.base_url,
+                api_key_override=llm_config.api_key,
+                base_url_override=llm_config.base_url,
                 env_api_key="MODEL_API_KEY",
                 env_base_url="MODEL_BASE_URL",
             )

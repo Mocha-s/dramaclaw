@@ -157,6 +157,9 @@ async def test_gateway_rejection_preserves_status_and_reason(monkeypatch, tmp_pa
 def test_analysis_checks_effective_gateway_credentials(monkeypatch):
     from novelvideo import model_gateway_settings
 
+    route_alias = "configured-text-alias"
+    resolved_routes = []
+    effective_models = []
     monkeypatch.setattr(
         model_gateway_settings,
         "get_model_gateway_settings",
@@ -183,11 +186,23 @@ def test_analysis_checks_effective_gateway_credentials(monkeypatch):
     monkeypatch.setattr(
         model_gateway_settings,
         "get_effective_llm_config",
-        lambda **_kwargs: SimpleNamespace(
-            source="third_party",
-            api_key="effective-key", base_url="https://gateway.invalid/v1"
+        lambda **kwargs: (
+            effective_models.append(kwargs.get("model"))
+            or SimpleNamespace(
+                source="third_party",
+                api_key="effective-key",
+                base_url="https://gateway.invalid/v1",
+            )
+            if kwargs.get("model") == route_alias
+            else SimpleNamespace(source="custom", api_key="", base_url="")
         ),
     )
+
+    def resolve_route(model_env, default_model, model=""):
+        resolved_routes.append((model_env, default_model))
+        return route_alias
+
+    monkeypatch.setattr(scene_analysis_gateway, "resolve_scene_analysis_model", resolve_route)
     calls = []
 
     def credentials(**kwargs):
@@ -197,15 +212,22 @@ def test_analysis_checks_effective_gateway_credentials(monkeypatch):
     monkeypatch.setattr(config, "get_newapi_runtime_credentials", credentials)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     assert scene_analysis_gateway.scene_analysis_gateway_configured()
+    assert effective_models == [route_alias]
+    assert resolved_routes
     assert calls[0]["api_key_override"] == "effective-key"
     monkeypatch.setattr(config, "get_newapi_runtime_credentials", lambda **kw: ("", ""))
     assert not scene_analysis_gateway.scene_analysis_gateway_configured()
 
 
-def test_scene_analysis_readiness_uses_explicit_fallback_not_generic_chat_route(monkeypatch):
+def test_scene_analysis_uses_configured_unified_model_not_group_wildcard(monkeypatch):
+    from types import SimpleNamespace
+
     from novelvideo import model_gateway_settings
 
-    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "claude-sonnet-5-5")
+    unified_alias = "selected-unified-alias"
+    unified_model = "selected-unified-model"
+    monkeypatch.delenv("SCENE_OVERLAP_ANALYSIS_MODEL", raising=False)
+    monkeypatch.delenv("SCENE_SPATIAL_CONTRACT_MODEL", raising=False)
     monkeypatch.setattr(
         model_gateway_settings,
         "get_model_gateway_settings",
@@ -216,93 +238,47 @@ def test_scene_analysis_readiness_uses_explicit_fallback_not_generic_chat_route(
         "get_third_party_gateway_groups",
         lambda: [
             {
-                "id": "claude",
-                "baseUrl": "https://gateway.invalid/v1",
-                "apiKey": "fallback-key",
-                "capabilities": ["text"],
-                "modelMappings": [
-                    {
-                        "requestPattern": "claude-sonnet-5-5",
-                        "upstreamModel": "claude-sonnet-5-5",
-                    }
-                ],
-            }
-        ],
-    )
-
-    def effective_config(*, model=""):
-        if model == "claude-sonnet-5-5":
-            return SimpleNamespace(
-                source="third_party",
-                api_key="fallback-key",
-                base_url="https://gateway.invalid/v1",
-            )
-        return SimpleNamespace(source="custom", api_key="", base_url="")
-
-    monkeypatch.setattr(model_gateway_settings, "get_effective_llm_config", effective_config)
-    monkeypatch.setattr(
-        config,
-        "get_newapi_runtime_credentials",
-        lambda **kwargs: (
-            kwargs.get("api_key_override", ""),
-            kwargs.get("base_url_override", ""),
-        ),
-    )
-
-    assert scene_analysis_gateway.scene_analysis_gateway_configured()
-
-
-def test_unmapped_scene_analysis_alias_uses_explicit_fallback_route(monkeypatch):
-    from novelvideo import model_gateway_settings
-
-    from novelvideo import config as config_module
-
-    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "vision-fallback")
-    monkeypatch.setattr(
-        model_gateway_settings,
-        "get_model_gateway_settings",
-        lambda: {"model_gateway_mode": model_gateway_settings.MODE_CUSTOM},
-    )
-    monkeypatch.setattr(
-        config_module,
-        "get_effective_newapi_text_model_name",
-        lambda _env, default, model_name_override=None: model_name_override or default,
-    )
-    monkeypatch.setattr(
-        model_gateway_settings,
-        "get_third_party_gateway_groups",
-        lambda: [
-            {
-                "id": "vision-group",
-                "name": "vision",
+                "id": "selected-text-group",
                 "baseUrl": "https://gateway.invalid/v1",
                 "apiKey": "test-key",
                 "capabilities": ["text"],
                 "modelMappings": [
-                    {
-                        "requestPattern": "vision-fallback",
-                        "upstreamModel": "available-vision-model",
-                    }
+                    {"requestPattern": "*", "upstreamModel": "stale-wildcard-model"},
+                    {"requestPattern": unified_alias, "upstreamModel": unified_model},
                 ],
             }
         ],
     )
-
-    assert (
-        scene_analysis_gateway.resolve_scene_analysis_model(
-            "SCENE_SPATIAL_CONTRACT_MODEL",
-            "DC-scene-spatial-contract-LLM",
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "get_capability_defaults",
+        lambda: {
+            "textGroupId": "selected-text-group",
+            "textModel": unified_model,
+        },
+    )
+    monkeypatch.setattr(
+        model_gateway_settings,
+        "resolve_capability_default",
+        lambda capability: SimpleNamespace(
+            model=unified_model, group_id="selected-text-group"
         )
-        == "vision-fallback"
+        if capability == model_gateway_settings.CAPABILITY_TEXT
+        else None,
     )
 
+    assert scene_analysis_gateway.resolve_scene_analysis_model(
+        "SCENE_SPATIAL_CONTRACT_MODEL", "DC-scene-spatial-contract-LLM"
+    ) == unified_alias
 
-def test_scene_analysis_accepts_configured_text_writer_vision_fallback(monkeypatch):
+
+def test_explicit_scene_model_override_beats_unified_text_default(monkeypatch):
+    from types import SimpleNamespace
+
     from novelvideo import model_gateway_settings
 
-    monkeypatch.setenv(
-        "SCENE_ANALYSIS_FALLBACK_MODEL", "DC-freezone-text-writer-LLM"
-    )
+    explicit_scene_alias = "operator-selected-scene-alias"
+    monkeypatch.setenv("SCENE_SPATIAL_CONTRACT_MODEL", explicit_scene_alias)
     monkeypatch.setattr(
         model_gateway_settings,
         "get_model_gateway_settings",
@@ -310,189 +286,56 @@ def test_scene_analysis_accepts_configured_text_writer_vision_fallback(monkeypat
     )
     monkeypatch.setattr(
         model_gateway_settings,
-        "get_third_party_gateway_groups",
-        lambda: [
-            {
-                "id": "text",
-                "baseUrl": "https://gateway.invalid/v1",
-                "apiKey": "text-key",
-                "capabilities": ["text"],
-                "modelMappings": [
-                    {
-                        "requestPattern": "DC-freezone-text-writer-LLM",
-                        "upstreamModel": "text-only-model",
-                    }
-                ],
-            }
-        ],
+        "resolve_capability_default",
+        lambda _capability: SimpleNamespace(model="unified-model", group_id="text"),
     )
 
-    assert (
-        scene_analysis_gateway.resolve_scene_analysis_model(
-            "SCENE_SPATIAL_CONTRACT_MODEL",
-            "DC-scene-spatial-contract-LLM",
-        )
-        == "DC-freezone-text-writer-LLM"
-    )
+    assert scene_analysis_gateway.resolve_scene_analysis_model(
+        "SCENE_SPATIAL_CONTRACT_MODEL", "DC-scene-spatial-contract-LLM"
+    ) == explicit_scene_alias
 
 
-def test_mapped_scene_analysis_alias_remains_authoritative(monkeypatch):
+def test_scene_analysis_requires_configured_unified_text_model(monkeypatch):
     from novelvideo import model_gateway_settings
-    from novelvideo import config as config_module
 
+    monkeypatch.delenv("SCENE_SPATIAL_CONTRACT_MODEL", raising=False)
     monkeypatch.setattr(
         model_gateway_settings,
         "get_model_gateway_settings",
         lambda: {"model_gateway_mode": model_gateway_settings.MODE_CUSTOM},
     )
     monkeypatch.setattr(
-        config_module,
-        "get_effective_newapi_text_model_name",
-        lambda _env, default, model_name_override=None: model_name_override or default,
+        model_gateway_settings, "get_capability_defaults", lambda: {}
     )
     monkeypatch.setattr(
-        model_gateway_settings,
-        "get_third_party_gateway_groups",
-        lambda: [
-            {
-                "id": "vision-group",
-                "baseUrl": "https://gateway.invalid/v1",
-                "apiKey": "test-key",
-                "capabilities": ["text"],
-                "modelMappings": [
-                    {
-                        "requestPattern": "DC-scene-spatial-contract-LLM",
-                        "upstreamModel": "available-vision-model",
-                    }
-                ],
-            }
-        ],
+        model_gateway_settings, "resolve_capability_default", lambda _capability: None
     )
 
-    assert (
+    with pytest.raises(ValueError, match="unified text model"):
         scene_analysis_gateway.resolve_scene_analysis_model(
-            "SCENE_SPATIAL_CONTRACT_MODEL",
-            "DC-scene-spatial-contract-LLM",
+            "SCENE_SPATIAL_CONTRACT_MODEL", "DC-scene-spatial-contract-LLM"
         )
-        == "DC-scene-spatial-contract-LLM"
-    )
 
 
-def test_scene_analysis_route_reports_missing_fallback_without_credentials(monkeypatch):
+def test_official_mode_uses_configured_runtime_text_route(monkeypatch):
     from novelvideo import model_gateway_settings
     from novelvideo import config as config_module
 
-    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "missing-analysis-model")
-    monkeypatch.setattr(
-        config_module,
-        "get_effective_newapi_text_model_name",
-        lambda _env, default, model_name_override=None: model_name_override or default,
-    )
-    monkeypatch.setattr(model_gateway_settings, "get_third_party_gateway_groups", lambda: [])
-
-    with pytest.raises(ValueError, match="scene analysis model route") as exc_info:
-        scene_analysis_gateway.resolve_scene_analysis_model(
-            "SCENE_SPATIAL_CONTRACT_MODEL",
-            "DC-scene-spatial-contract-LLM",
-        )
-
-    assert "api" not in str(exc_info.value).lower()
-    assert "key" not in str(exc_info.value).lower()
-
-
-def test_scene_analysis_route_does_not_accept_inactive_group_mapping(monkeypatch):
-    from novelvideo import model_gateway_settings
-
-    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "inactive-analysis")
-    monkeypatch.setattr(model_gateway_settings, "get_third_party_gateway_groups", lambda: [])
-    monkeypatch.setattr(
-        model_gateway_settings,
-        "get_effective_llm_config",
-        lambda **_kwargs: SimpleNamespace(
-            source="custom",
-            base_url="",
-            api_key="",
-            model="",
-            is_brainclaw=False,
-        ),
-    )
-
-    with pytest.raises(ValueError, match="scene analysis model route"):
-        scene_analysis_gateway.resolve_scene_analysis_model(
-            "SCENE_SPATIAL_CONTRACT_MODEL",
-            "DC-scene-spatial-contract-LLM",
-        )
-
-
-def test_scene_analysis_fallback_does_not_use_group_outside_active_gateway_mode(monkeypatch):
-    from novelvideo import model_gateway_settings
-
-    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "inactive-analysis")
-    monkeypatch.setattr(
-        model_gateway_settings,
-        "get_model_gateway_settings",
-        lambda: {"model_gateway_mode": model_gateway_settings.MODE_SUB2API},
-    )
-    monkeypatch.setattr(model_gateway_settings, "get_sub2api_groups", lambda: [])
-    monkeypatch.setattr(
-        model_gateway_settings,
-        "get_third_party_gateway_groups",
-        lambda: [
-            {
-                "id": "inactive-third-party",
-                "baseUrl": "https://inactive.invalid/v1",
-                "apiKey": "inactive-test-key",
-                "capabilities": ["text"],
-                "modelMappings": [
-                    {
-                        "requestPattern": "inactive-analysis",
-                        "upstreamModel": "inactive-upstream",
-                    }
-                ],
-            }
-        ],
-    )
-
-    with pytest.raises(ValueError, match="scene analysis model route"):
-        scene_analysis_gateway.resolve_scene_analysis_model(
-            "SCENE_SPATIAL_CONTRACT_MODEL",
-            "DC-scene-spatial-contract-LLM",
-        )
-
-
-def test_scene_analysis_route_does_not_use_third_party_group_in_official_mode(monkeypatch):
-    from novelvideo import model_gateway_settings
-
-    monkeypatch.setenv("SCENE_ANALYSIS_FALLBACK_MODEL", "inactive-analysis")
     monkeypatch.setattr(
         model_gateway_settings,
         "get_model_gateway_settings",
         lambda: {"model_gateway_mode": model_gateway_settings.MODE_OFFICIAL},
     )
+    configured_route = "runtime-configured-text-route"
     monkeypatch.setattr(
-        model_gateway_settings,
-        "get_third_party_gateway_groups",
-        lambda: [
-            {
-                "id": "inactive-third-party",
-                "baseUrl": "https://inactive.invalid/v1",
-                "apiKey": "inactive-test-key",
-                "capabilities": ["text"],
-                "modelMappings": [
-                    {
-                        "requestPattern": "inactive-analysis",
-                        "upstreamModel": "inactive-upstream",
-                    }
-                ],
-            }
-        ],
+        config_module,
+        "get_effective_newapi_text_model_name",
+        lambda _env, _default: configured_route,
     )
 
-    with pytest.raises(ValueError, match="scene analysis model route"):
-        scene_analysis_gateway.resolve_scene_analysis_model(
-            "SCENE_SPATIAL_CONTRACT_MODEL",
-            "DC-scene-spatial-contract-LLM",
-        )
+    assert scene_analysis_gateway.resolve_scene_analysis_model(
+        "SCENE_SPATIAL_CONTRACT_MODEL", "DC-scene-spatial-contract-LLM"
+    ) == configured_route
 
 
 @pytest.mark.parametrize("module", [scene_overlap_analyzer, scene_spatial_contract])
