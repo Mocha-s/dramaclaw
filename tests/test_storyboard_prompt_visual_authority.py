@@ -688,3 +688,56 @@ def test_resolved_asset_ref_carries_prop_type():
         prop_type="weapon",
     )
     assert ref.prop_type == "weapon"
+
+
+def test_sketch_submit_path_uploads_prop_ref_for_prop_insert_panel(tmp_path):
+    from PIL import Image
+
+    from novelvideo.generators.nanobanana_grid import NanoBananaGridGenerator
+
+    prop_path = tmp_path / "prop_xunjipai.png"
+    Image.new("RGB", (64, 64), (200, 200, 200)).save(prop_path)
+
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=1, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[{"beat_number": 10, "visual_description": "[[寻迹牌]]静静躺在石阶上。"}],
+        mode=PromptMode.SKETCH,
+        prop_marker_colors={},
+        prop_asset_refs={
+            1: [
+                ResolvedAssetRef(
+                    asset_type="prop",
+                    base_id="寻迹牌",
+                    variant_id=None,
+                    image_paths=[str(prop_path)],
+                    text_description="横向不规则山形寻迹牌，单手可握。",
+                    source_level="base_image",
+                )
+            ]
+        },
+    )
+
+    generator = NanoBananaGridGenerator.__new__(NanoBananaGridGenerator)
+    generator.provider = "gemini"
+    contents: list = ["prompt"]
+    audit: list[dict] = []
+    # 与 nanobanana_grid.py 中 sketch 分支的 allowed_kinds 保持一致
+    generator._append_reference_parts_from_plan(
+        contents, ctx, [], {}, allowed_kinds={"scene", "prop"}, audit_refs=audit
+    )
+
+    assert len(contents) == 2
+    assert [entry["kind"] for entry in audit] == ["prop"]
+    assert audit[0]["path"] == str(prop_path)
+
+
+def test_sketch_branches_in_nanobanana_grid_allow_prop_kind():
+    import inspect
+
+    from novelvideo.generators import nanobanana_grid
+
+    source = inspect.getsource(nanobanana_grid)
+    assert 'allowed_kinds={"scene"},' not in source
+    assert source.count('allowed_kinds={"scene", "prop"},') == 4

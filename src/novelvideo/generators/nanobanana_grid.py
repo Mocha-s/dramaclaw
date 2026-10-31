@@ -5339,9 +5339,8 @@ class NanoBananaGridGenerator:
             submitted_refs: list[dict] = []
 
             # Render 模式：草图必须是 Image 1。它是唯一构图底图；角色/场景/道具只提供身份和材质。
-            # Render 模式传角色/身份/场景/道具；Sketch 模式只传场景参考图。
-            # 道具在草图阶段只保留名称和 marker 颜色，不传道具参考图，避免最终
-            # 材质/三视图干扰 blocking。
+            # Render 模式传角色/身份/场景/道具；Sketch 模式传场景参考图，道具参考图
+            # 仅在道具特写面板放行（见 _filter_panel_prop_asset_refs）。
             if not sketch and previous_grid_path and os.path.exists(previous_grid_path):
                 previous_grid_image = self._load_image_as_part(previous_grid_path)
                 if previous_grid_image:
@@ -5370,7 +5369,7 @@ class NanoBananaGridGenerator:
                         ctx,
                         [],
                         valid_character_map,
-                        allowed_kinds={"scene"},
+                        allowed_kinds={"scene", "prop"},
                         verbose=True,
                         audit_refs=submitted_refs,
                     )
@@ -5380,7 +5379,7 @@ class NanoBananaGridGenerator:
                         ctx,
                         [],
                         valid_character_map,
-                        allowed_kinds={"scene"},
+                        allowed_kinds={"scene", "prop"},
                         verbose=True,
                         audit_refs=submitted_refs,
                     )
@@ -6500,7 +6499,7 @@ class NanoBananaGridGenerator:
                     ctx,
                     [],
                     valid_character_map,
-                    allowed_kinds={"scene"},
+                    allowed_kinds={"scene", "prop"},
                     verbose=True,
                 )
             elif scene_refs or prop_asset_refs:
@@ -6509,7 +6508,7 @@ class NanoBananaGridGenerator:
                     ctx,
                     [],
                     valid_character_map,
-                    allowed_kinds={"scene"},
+                    allowed_kinds={"scene", "prop"},
                     verbose=True,
                 )
         else:

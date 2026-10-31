@@ -474,3 +474,29 @@ def test_sync_beat_asset_refs_preserves_render_anchor_id() -> None:
     assert beat["scene_ref"]["scene_id"] == "兰州拉面馆_雨夜"
     assert "render_anchor_path" not in beat["scene_ref"]
     assert beat["scene_ref"]["render_anchor_id"] == "selected_background"
+
+
+def test_resolve_props_for_beat_prop_type_falls_back_to_menu_and_strips(tmp_path: Path) -> None:
+    resolver = AssetResolver(
+        tmp_path,
+        scene_reference_kind="sketch",
+        prop_menu=[{"prop_id": "七星剑", "prop_type": " weapon "}],
+    )
+
+    refs = resolver.resolve_props_for_beat({"visual_description": "[[七星剑]]出鞘"})
+
+    assert len(refs) == 1
+    assert refs[0].prop_type == "weapon"
+
+
+def test_resolve_props_for_beat_prefers_prop_object_prop_type(tmp_path: Path) -> None:
+    resolver = AssetResolver(
+        tmp_path,
+        scene_reference_kind="sketch",
+        props=[SimpleNamespace(name="七星剑", prop_type=" blade ")],
+        prop_menu=[{"prop_id": "七星剑", "prop_type": "weapon"}],
+    )
+
+    refs = resolver.resolve_props_for_beat({"visual_description": "[[七星剑]]出鞘"})
+
+    assert refs[0].prop_type == "blade"
