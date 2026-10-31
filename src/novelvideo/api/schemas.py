@@ -177,6 +177,8 @@ class BeatUpdate(BaseModel):
     time_of_day: Optional[str] = None
     video_prompt: Optional[str] = None
     keyframe_prompt: Optional[str] = None
+    sketch_prompt: Optional[str] = Field(default=None, max_length=500)
+    sketch_prompt_mode: Optional[Literal["append", "override"]] = None
     video_mode: Optional[str] = None  # "first_frame" | "keyframe"
     seedance2_config_json: Optional[str] = None
     audio_type: Optional[str] = None  # "silence" | "narration" | "dialogue"

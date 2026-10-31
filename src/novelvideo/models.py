@@ -1441,6 +1441,8 @@ class NovelVisualBeat(BaseModel):
     video_mode: str = Field(default="first_frame", description="first_frame / keyframe")
     video_prompt: str = Field(default="", description="视频运动提示词")
     keyframe_prompt: str = Field(default="", description="首尾帧过渡提示词")
+    sketch_prompt: str = Field(default="", description="每拍自定义草图提示词")
+    sketch_prompt_mode: str = Field(default="append", description="append=追加到画面描述后；override=替换画面描述")
 
     # Seedance 2.0 per-beat config overrides (Stage B; Stage A persists '{}' default)
     seedance2_config_json: str = Field(

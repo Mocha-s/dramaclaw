@@ -443,6 +443,8 @@ async def update_beat(
                     "video_prompt",
                     "keyframe_prompt",
                     "seedance2_config_json",
+                    "sketch_prompt",
+                    "sketch_prompt_mode",
                 )
             },
         )

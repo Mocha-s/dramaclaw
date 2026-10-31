@@ -608,6 +608,8 @@ class SQLiteStore:
             "video_mode": "TEXT DEFAULT 'first_frame'",
             "video_prompt": "TEXT DEFAULT ''",
             "keyframe_prompt": "TEXT DEFAULT ''",
+            "sketch_prompt": "TEXT DEFAULT ''",
+            "sketch_prompt_mode": "TEXT DEFAULT 'append'",
             "shot_order": "INTEGER",
             "duration_seconds": "REAL",
             "is_manual_shot": "INTEGER DEFAULT 0",
@@ -2445,6 +2447,11 @@ class SQLiteStore:
             video_mode=row["video_mode"] if "video_mode" in row.keys() else "first_frame",
             video_prompt=row["video_prompt"] if "video_prompt" in row.keys() else "",
             keyframe_prompt=row["keyframe_prompt"] if "keyframe_prompt" in row.keys() else "",
+            sketch_prompt=row["sketch_prompt"] if "sketch_prompt" in row.keys() else "",
+            sketch_prompt_mode=(
+                row["sketch_prompt_mode"] if "sketch_prompt_mode" in row.keys() else "append"
+            )
+            or "append",
             seedance2_config_json=(
                 row["seedance2_config_json"] if "seedance2_config_json" in row.keys() else "{}"
             ),
@@ -2541,6 +2548,8 @@ class SQLiteStore:
                     "video_mode": getattr(b, "video_mode", "first_frame"),
                     "video_prompt": getattr(b, "video_prompt", ""),
                     "keyframe_prompt": getattr(b, "keyframe_prompt", ""),
+                    "sketch_prompt": getattr(b, "sketch_prompt", "") or "",
+                    "sketch_prompt_mode": getattr(b, "sketch_prompt_mode", "append") or "append",
                     "seedance2_config_json": getattr(b, "seedance2_config_json", "{}"),
                     "detected_identities": normalize_detected_identities(
                         json.loads(b.detected_identities_json or "[]")
@@ -2590,6 +2599,8 @@ class SQLiteStore:
         video_mode: str | None = None,
         video_prompt: str | None = None,
         keyframe_prompt: str | None = None,
+        sketch_prompt: str | None = None,
+        sketch_prompt_mode: str | None = None,
         seedance2_config_json: str | None = None,
         time_of_day: str | None = None,
         shot_order: int | None = None,
@@ -2627,6 +2638,12 @@ class SQLiteStore:
             properties["video_prompt"] = video_prompt
         if keyframe_prompt is not None:
             properties["keyframe_prompt"] = keyframe_prompt
+        if sketch_prompt is not None:
+            properties["sketch_prompt"] = str(sketch_prompt)
+        if sketch_prompt_mode is not None:
+            properties["sketch_prompt_mode"] = (
+                "override" if str(sketch_prompt_mode).strip().lower() == "override" else "append"
+            )
         if seedance2_config_json is not None:
             properties["seedance2_config_json"] = str(seedance2_config_json or "{}")
         if time_of_day is not None:
