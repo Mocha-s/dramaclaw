@@ -6,7 +6,6 @@ import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 from novelvideo.sqlite_pragmas import configure_sqlite_connection
 

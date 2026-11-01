@@ -24,6 +24,21 @@ from novelvideo import official_media_catalog_remote
 from novelvideo.api.routes import freezone as freezone_routes
 from novelvideo.api.routes import model_gateway
 from novelvideo.official_defaults import OFFICIAL_NEWAPI_BASE_URL
+from novelvideo.newapi_provisioner import (
+    _merge_channel_payload,
+    AdminToken,
+    build_channel_payload,
+    ensure_newapi_setup,
+    get_provisioner_config,
+    list_channel_types,
+    NewApiSetupCredentials,
+    NewApiProvisionerConfig,
+    normalize_admin_base_url,
+    open_newapi_db,
+    require_provisioner_enabled,
+    update_provider_channel_credentials,
+    upsert_channel,
+)
 from novelvideo.model_gateway_settings import (
     CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
     EffectiveMediaRelayConfig,
@@ -32,11 +47,8 @@ from novelvideo.model_gateway_settings import (
     MODE_HYBRID,
     MODE_OFFICIAL,
     MODE_SUB2API,
-    CAPABILITY_AUDIO,
-    CAPABILITY_EMBEDDING,
     CAPABILITY_IMAGE,
     CAPABILITY_TEXT,
-    CAPABILITY_VIDEO,
     build_newapi_database_status,
     build_model_gateway_status,
     get_effective_cognee_embedding_config,
@@ -481,21 +493,6 @@ def test_anthropic_model_discovery_uses_native_headers(monkeypatch, tmp_path):
     assert request.headers["x-api-key"] == "sk-ant-test"
     assert request.headers["anthropic-version"] == "2023-06-01"
     assert "authorization" not in request.headers
-from novelvideo.newapi_provisioner import (
-    _merge_channel_payload,
-    AdminToken,
-    build_channel_payload,
-    ensure_newapi_setup,
-    get_provisioner_config,
-    list_channel_types,
-    NewApiSetupCredentials,
-    NewApiProvisionerConfig,
-    normalize_admin_base_url,
-    open_newapi_db,
-    require_provisioner_enabled,
-    update_provider_channel_credentials,
-    upsert_channel,
-)
 
 
 def test_platform_gateway_defaults_to_owned_endpoint_and_neutral_identity(
@@ -585,7 +582,6 @@ def test_sub2api_media_catalog_keeps_custom_logical_names_without_newapi_prefix(
 def test_settings_initialization_retries_lock_and_closes_connections(
     monkeypatch, tmp_path, failures
 ):
-    import sqlite3
     from novelvideo import model_gateway_settings as settings
 
     monkeypatch.setattr(settings, "_settings_db_path", lambda: tmp_path / "settings.db")

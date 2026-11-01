@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -13,6 +12,8 @@ from pydantic import BaseModel, Field
 from novelvideo import config as app_config
 from novelvideo.chat.codex_app_server import restart_shared_codex_runtime_when_idle
 from novelvideo.model_gateway_settings import (
+    get_newapi_provider_channel,
+    save_newapi_database_config,
     AGENT_LLM_MODE_INHERIT,
     AGENT_LLM_MODE_THIRD_PARTY,
     MODE_CUSTOM,
@@ -20,7 +21,6 @@ from novelvideo.model_gateway_settings import (
     CUSTOM_LLM_MODE_RELAYCLAW_BRAINCLAW,
     MODE_OFFICIAL,
     MODE_HYBRID,
-    MODE_SUB2API,
     SUB2API_PROTOCOLS,
     build_media_relay_status,
     build_model_gateway_status,
@@ -29,15 +29,11 @@ from novelvideo.model_gateway_settings import (
     get_official_media_catalog_update_status,
     normalize_relay_base_url,
     normalize_api_key,
-    parse_comfyui_channel_workflows,
     save_media_relay_config,
     save_agent_llm_config,
     save_official_media_catalog_auto_update,
     save_official_newapi_key,
     save_relayclaw_brainclaw_key,
-    save_custom_newapi_gateway,
-    save_sub2api_groups,
-    get_sub2api_groups,
     save_third_party_gateway_groups,
     get_third_party_gateway_groups,
     save_capability_defaults,
@@ -51,8 +47,6 @@ from novelvideo.model_gateway_runtime import refresh_model_gateway_runtime
 from novelvideo.model_gateway_protocols import (
     extract_model_names,
     model_discovery_request,
-    normalize_gateway_protocol,
-    normalize_protocol_base_url,
     validate_protocol_capabilities,
     validate_gateway_protocol,
 )
@@ -66,19 +60,11 @@ from novelvideo.storage.media_relay import MINIO_MAX_PRESIGNED_TTL_SECONDS
 from novelvideo.newapi_provisioner import (
     build_channel_payload,
     build_provisioner_status,
-    create_or_reuse_relay_token,
-    delete_channel_by_name,
-    ensure_newapi_setup,
-    ensure_admin_access_token,
-    fetch_provider_channel_models,
     get_provisioner_config,
-    list_channel_types,
     mask_token,
     NewApiSetupCredentials,
     ServiceControlEgressDenied,
     require_provisioner_enabled,
-    upsert_channel,
-    update_provider_channel_credentials,
 )
 
 router = APIRouter(prefix="/model-gateway")
