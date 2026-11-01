@@ -82,7 +82,7 @@ The commercial EE ships adapters for the same interfaces as a separate package r
   `ST_CONTROL_PLANE_DSN` non-empty implying EE. CE + DSN together is a hard error.
 - Business code obtains ports through the facade getters in `ports/__init__.py`
   (`get_task_backend()`, `get_project_registry()`, …), never by importing an implementation.
-- Never import `novelvideo_ee`, `supertale_admin`, or `novelvideo.control_plane` — CI's
+- Never import `novelvideo_ee`, `supertale_admin`, or `novelvideo.control_plane` — CI's <!-- banned-word-allow -->
   import-lint and ee-terms gates are hard-zero (no baseline). Exemptions for legitimate mentions go
   in `ce-allowlist.toml`.
 - `tests/conftest.py` snapshots/restores the port registry around every test; if a test needs a

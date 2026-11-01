@@ -72,6 +72,7 @@ path,license_expression,copyright,evidence
 .pre-commit-config.yaml,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 .superpowers/sdd/2026-10-24-generic-third-party-gateway/final-suite-fix-report.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 AGENTS.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+CLAUDE.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 CODE_OF_CONDUCT.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 CONTRIBUTING.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 DCO,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
