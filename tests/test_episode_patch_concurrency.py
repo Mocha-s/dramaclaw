@@ -359,6 +359,10 @@ def test_the_marker_colour_write_is_column_atomic():
 
     from novelvideo.api.routes import generation
 
-    source = inspect.getsource(generation.assign_sketch_colors)
-    assert "patch_episode(episode_num, prop_menu=" in source
-    assert "update_episode" not in source
+    helper_source = inspect.getsource(generation.ensure_global_prop_marker_colors)
+    assert "patch_episode(episode_num, prop_menu=" in helper_source
+    assert "update_episode" not in helper_source
+
+    route_source = inspect.getsource(generation.assign_sketch_colors)
+    assert "ensure_global_prop_marker_colors(" in route_source
+    assert "update_episode" not in route_source

@@ -69,7 +69,7 @@ def test_people_words_allow_unnamed_people():
     assert brief.panel_prefix == "[UNNAMED PEOPLE ONLY]"
 
 
-def test_detected_identities_count_as_characters():
+def test_detected_identities_ignored_in_sketch_mode():
     beat = {"beat_number": 5, "visual_description": "抬头看向水声传来的方向。", "detected_identities": ["寻禾_青年时期"]}
     brief = build_panel_brief(beat, panel_idx=1, ctx=_ctx([{}]))
     assert brief.has_characters is False
