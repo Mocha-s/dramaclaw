@@ -1692,6 +1692,9 @@ async def run_freezone_audio_separate(
             ]
         )
 
+    # moov 放到文件头：这条静音视频会被浏览器直接播放，画面裁切/智能续写/深度动作捕捉还会整段
+    # fetch 它。moov 在尾部时 Chrome 得反复 Range 回跳才能起播，还会把稀疏/截断的缓存条目喂给
+    # 同一 URL 的 fetch()（见前端 runDepthCapture.ts 取源视频处的说明）。
     await _run_cmd(
         [
             "ffmpeg",
@@ -1701,6 +1704,8 @@ async def run_freezone_audio_separate(
             "-c:v",
             "copy",
             "-an",
+            "-movflags",
+            "+faststart",
             str(mute_video_path),
         ]
     )

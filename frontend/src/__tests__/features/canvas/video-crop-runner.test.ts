@@ -45,7 +45,7 @@ describe("cropAndUploadVideo", () => {
 
     const result = await cropAndUploadVideo(options);
 
-    expect(fetchMock).toHaveBeenCalledWith("resolved:https://oss/src.mp4", { signal: undefined });
+    expect(fetchMock).toHaveBeenCalledWith("resolved:https://oss/src.mp4", { signal: undefined, cache: "no-store" });
     expect(cropVideoBlob).toHaveBeenCalledWith(
       expect.objectContaining({ box: BOX, sourceWidth: 720, sourceHeight: 1280, blob: expect.any(Blob) }),
     );
@@ -91,7 +91,7 @@ describe("cropAndUploadVideo", () => {
 
     await cropAndUploadVideo({ ...options, signal: controller.signal });
 
-    expect(fetchMock).toHaveBeenCalledWith("resolved:https://oss/src.mp4", { signal: controller.signal });
+    expect(fetchMock).toHaveBeenCalledWith("resolved:https://oss/src.mp4", { signal: controller.signal, cache: "no-store" });
     expect(cropVideoBlob).toHaveBeenCalledWith(expect.objectContaining({ signal: controller.signal }));
     expect(uploadFreezoneVideo).toHaveBeenCalledWith(
       "p1",

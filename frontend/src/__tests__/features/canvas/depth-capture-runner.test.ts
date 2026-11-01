@@ -83,6 +83,13 @@ describe("startDepthCapture", () => {
 
     await startDepthCapture(options);
 
+    // 源视频必须绕过 HTTP 缓存：同一 URL 正被节点里的 <video> 分段加载，Chrome 会把稀疏/截断的
+    // 缓存条目喂给同 URL 的 fetch()，mediabunny 嗅探不到容器（见 runDepthCapture 取源处的说明）。
+    expect(fetch).toHaveBeenCalledWith(
+      "https://oss/src.mp4",
+      expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
+    );
+
     expect(uploadFreezoneVideo).toHaveBeenCalledWith(
       "p1",
       expect.any(Blob),

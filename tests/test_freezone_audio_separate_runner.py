@@ -89,3 +89,43 @@ def test_audio_separate_output_path_prefers_mp3_and_keeps_legacy_m4a(tmp_path: P
 
     (output_dir / "old.mp3").write_bytes(b"audio")
     assert freezone_routes._audio_separate_audio_output_path(project_dir, "old").name == "old.mp3"
+
+
+@pytest.mark.asyncio
+async def test_audio_separate_mute_video_is_written_faststart(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """静音视频的 moov 必须在文件头。
+
+    浏览器端会直接播放它，画面裁切/智能续写/深度动作捕捉还会整段 fetch 它。moov 在尾部时
+    Chrome 得反复 Range 回跳才能起播，还会把稀疏/截断的缓存条目喂给同一 URL 的 fetch()。
+    """
+    from novelvideo.freezone import jobs
+
+    commands: list[list[str]] = []
+
+    async def fake_run_cmd(cmd: list[str], **_kwargs) -> None:
+        commands.append(cmd)
+        Path(cmd[-1]).write_bytes(b"out")
+
+    async def fake_probe_has_audio(*_args, **_kwargs) -> bool:
+        return False
+
+    monkeypatch.setattr(jobs.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(jobs, "_run_cmd", fake_run_cmd)
+    monkeypatch.setattr(jobs, "_probe_has_audio", fake_probe_has_audio)
+
+    result = await jobs.run_freezone_audio_separate(
+        project_dir=tmp_path / "project",
+        job_id="job",
+        source_path=str(tmp_path / "source.mp4"),
+    )
+
+    assert result["mute_video_path"] is not None
+    assert result["mute_video_path"].name == "job_mute.mp4"
+    mute_cmd = commands[-1]
+    assert mute_cmd[:2] == ["ffmpeg", "-y"]
+    assert "-an" in mute_cmd
+    assert "-movflags" in mute_cmd
+    assert mute_cmd[mute_cmd.index("-movflags") + 1] == "+faststart"

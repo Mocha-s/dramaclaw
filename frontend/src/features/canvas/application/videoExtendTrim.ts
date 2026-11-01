@@ -36,7 +36,8 @@ export function trimAndUploadExtendClip(options: {
 }
 
 async function run(projectId: string, videoUrl: string, range: ExtendClipRange): Promise<ExtendTrimResult> {
-  const response = await fetch(resolveImageDisplayUrl(videoUrl));
+  // cache: "no-store"：同一 URL 正被节点里的 <video> 分段加载，见 runDepthCapture 取源视频处的说明。
+  const response = await fetch(resolveImageDisplayUrl(videoUrl), { cache: "no-store" });
   if (!response.ok) throw new VideoCropError("fetchFailed", String(response.status));
   const trimmed = await cropVideoBlob({ blob: await response.blob(), trim: range });
   const { url } = await uploadFreezoneVideo(projectId, trimmed.blob, `video-extend-${Date.now()}.mp4`);

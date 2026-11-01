@@ -139,8 +139,15 @@ export async function startDepthCapture({
     if (!holdsSlot || cancelled) {
       return;
     }
+    // 必须绕过 HTTP 缓存。源节点里的 <video> 正用同一个 URL 分段（Range）加载这条视频；moov 在
+    // 文件尾的 mp4（ffmpeg 不加 +faststart 的默认产物、不少用户上传）会被 Chrome 拆成大量区间
+    // 请求和中途放弃的整文件 GET，缓存里留下稀疏/截断的条目。之后对同一 URL 的普通 fetch() 会被
+    // 喂这份条目，拿到的 body 不从第 0 字节开始，mediabunny 嗅探不到 ftyp，整个任务以
+    // "Input has an unsupported or unrecognizable format" 失败，重试也一样（Chromium 436025873；
+    // mediabunny 自己的 UrlSource 同样为此改成了 cache: "no-store"）。画面裁切、智能续写截取同理。
     const response = await fetch(resolveImageDisplayUrl(sourceVideoUrl), {
       signal: abort.signal,
+      cache: "no-store",
     });
     if (!response.ok) {
       throw new DepthCaptureError("failed", `source video HTTP ${response.status}`);

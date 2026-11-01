@@ -31,7 +31,8 @@ export async function cropAndUploadVideo(options: CropAndUploadOptions): Promise
     // response.blob() 跟 fetch() 放同一个 try 里：body 还没读完时中止，fetch()
     // 本身早就 resolve 了，真正抛 AbortError 的是这一步的流读取，不在这里接就会
     // 被当成普通失败，走到「裁剪失败」而不是「已取消裁剪」。
-    response = await fetch(resolveImageDisplayUrl(options.videoUrl), { signal });
+    // cache: "no-store"：同一 URL 正被节点里的 <video> 分段加载，见 runDepthCapture 取源视频处的说明。
+    response = await fetch(resolveImageDisplayUrl(options.videoUrl), { signal, cache: "no-store" });
     if (!response.ok) throw new VideoCropError("fetchFailed", String(response.status));
     source = await response.blob();
   } catch (error) {
