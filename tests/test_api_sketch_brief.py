@@ -9,6 +9,7 @@ class _BriefStore:
         assert episode_num == 1
         return [
             {"beat_number": 1, "visual_description": "黑场，画面全黑。"},
+            {"beat_number": 9, "visual_description": "{{甲_成年}}掌心托住[[寻迹牌]]。"},
             {"beat_number": 10, "visual_description": "[[寻迹牌]]上的山脊纹样泛起微光。", "sketch_prompt": "巴掌大小", "sketch_prompt_mode": "append"},
         ]
 
@@ -78,6 +79,8 @@ def test_sketch_brief_reports_prop_insert_with_direction(monkeypatch, tmp_path):
     assert body["data"]["kind"] == "prop_insert"
     assert body["data"]["attach_prop_refs"] is True
     assert body["data"]["description"].endswith("| ADDITIONAL DIRECTION: 巴掌大小")
+    assert "CONTINUITY:" in body["data"]["description"]
+    assert body["data"]["held_by_previous"] is True
     assert body["data"]["prop_anchor_lines"] == ["寻迹牌 — FORM: 寻迹牌（物件）"]
 
 

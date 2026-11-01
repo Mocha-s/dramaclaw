@@ -12,7 +12,7 @@ Every beat is classified before the sketch prompt is built. The classification d
 | Title card | Description contains 屏幕出现文字 / 来源字幕 / 事实卡 / 标题卡 / 屏幕文字 / 字幕 / 片名 / 片尾 | Blank card, no readable text |
 | Prop insert | No named character and at least one `[[prop]]` marker | Prop as the single subject; the prop reference image is attached for shape and scale |
 
-Panels without a named character get a `[NO CHARACTERS]` prefix; prop-insert panels get `[PROP INSERT]` instead. If the description mentions people (crowd, passers-by, tourists, a man, a woman), the panel is marked `[UNNAMED PEOPLE ONLY]` instead and gray mannequins are allowed.
+Panels without a named character get a `[NO CHARACTERS]` prefix; prop-insert panels get `[PROP INSERT]` instead. When the previous beat (same scene) carries a `{{identity}}` marker, the same `[[prop]]` marker and a holding verb (palm, in hand, holding, gripping, cupping, …), the panel is upgraded to `[PROP INSERT · HELD]`: a `CONTINUITY:` directive is appended so the prop stays in the holder's hand and only the hand and prop are drawn at close range. The check is marker- and verb-driven only; nothing is script-specific. Override mode disables continuity. In sketch mode, black and title-card panels no longer attach a scene reference image, so the blank directive is not overridden by the "do not leave the background blank" rule. If the description mentions people (crowd, passers-by, tourists, a man, a woman), the panel is marked `[UNNAMED PEOPLE ONLY]` instead and gray mannequins are allowed.
 
 ## Prop FORM anchors
 

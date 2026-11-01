@@ -66,6 +66,7 @@ from novelvideo.generators.nanobanana_grid import (
     hash_plan,
 )
 from novelvideo.generators.render_identity_guard import render_ai_detection_error
+from novelvideo.generators.sketch_panel_brief import annotate_beat_context
 from novelvideo.media_parameters import IMAGE_QUALITY_OPTIONS
 from novelvideo.manual_shots import pick_beats_by_number
 from novelvideo.render_plan.ref_image_hash import RefImageHasher
@@ -2415,6 +2416,7 @@ async def generate_sketches(
         else await make_sqlite_store(username, project_name)
     )
     beats = await store.get_beats_as_dicts(episode_num)
+    annotate_beat_context(beats)
 
     if not beats:
         return {"ok": False, "error": f"No beats found for episode {episode_num}"}
@@ -3814,6 +3816,7 @@ async def regenerate_sketches(
         else await make_sqlite_store(username, project_name)
     )
     beats = await store.get_beats_as_dicts(episode_num)
+    annotate_beat_context(beats)
 
     if not beats:
         return {"ok": False, "error": f"No beats found for episode {episode_num}"}
@@ -6464,6 +6467,7 @@ async def get_beat_sketch_brief(
         else await make_sqlite_store(resolved.username, resolved.project_name)
     )
     beats = await store.get_beats_as_dicts(episode_num)
+    annotate_beat_context(beats)
     beat = next((item for item in beats if int(item.get("beat_number") or 0) == beat_num), None)
     if beat is None:
         return {"ok": False, "error": f"Beat {beat_num} not found"}
@@ -6509,6 +6513,7 @@ async def get_beat_sketch_brief(
             "description": brief.description,
             "prop_anchor_lines": brief.prop_anchor_lines,
             "attach_prop_refs": brief.attach_prop_refs,
+            "held_by_previous": brief.held_by_previous,
         },
     }
 

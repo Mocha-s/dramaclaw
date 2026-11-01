@@ -857,3 +857,81 @@ def test_render_single_beat_reference_keeps_scene_and_time_for_normal_beat():
 
     assert "- Scene: 步道" in single
     assert "- Time of day: 白天" in single
+
+
+def test_sketch_prompt_renders_form_anchor_for_global_prop():
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=1, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[{"beat_number": 1, "visual_description": "[[信物]]上的纹样泛起微光。"}],
+        mode=PromptMode.SKETCH,
+        prop_marker_colors={"信物": "#6D4C41 UMBER BROWN"},
+        prop_asset_refs={
+            1: [
+                ResolvedAssetRef(
+                    asset_type="prop",
+                    base_id="信物",
+                    variant_id=None,
+                    image_paths=[],
+                    text_description="巴掌大的木牌，单手可握。牌面有浮雕。",
+                    source_level="base_text",
+                )
+            ]
+        },
+    )
+
+    prompt = SketchModeStrategy().build(ctx, PromptComponents())
+
+    assert "COLOR-CODED GLOBAL PROPS:" in prompt
+    assert "— FORM: 巴掌大的木牌，单手可握" in prompt
+
+
+def _scene_ref(base_id: str, path: str) -> ResolvedAssetRef:
+    return ResolvedAssetRef(
+        asset_type="scene",
+        base_id=base_id,
+        variant_id=None,
+        image_paths=[path],
+        text_description="",
+        source_level="base_image",
+    )
+
+
+def test_sketch_title_card_panel_drops_scene_reference():
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=1, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[{"beat_number": 1, "visual_description": "屏幕出现文字“资料记载”。"}],
+        mode=PromptMode.SKETCH,
+        scene_refs={1: [_scene_ref("山路", "/tmp/scene_shanlu.png")]},
+    )
+
+    plan = PromptComponents.build_reference_image_plan(ctx, [])
+    prompt = SketchModeStrategy().build(ctx, PromptComponents())
+
+    assert not any(entry.get("kind") == "scene" for entry in plan)
+    assert "Image 1 = Scene" not in prompt
+    assert "- **Panel 1** [TITLE CARD]:" in prompt
+
+
+def test_sketch_mixed_grid_keeps_scene_reference_for_normal_panel():
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=2, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[
+            {"beat_number": 1, "visual_description": "黑场，画面全黑。"},
+            {"beat_number": 2, "visual_description": "近景：瀑布水流冲过岩石。"},
+        ],
+        mode=PromptMode.SKETCH,
+        scene_refs={
+            1: [_scene_ref("山路", "/tmp/scene_shanlu.png")],
+            2: [_scene_ref("山路", "/tmp/scene_shanlu.png")],
+        },
+    )
+
+    entries = PromptComponents.collect_scene_image_entries(ctx)
+
+    assert [entry["panels"] for entry in entries if entry["kind"] == "scene"] == [[2]]

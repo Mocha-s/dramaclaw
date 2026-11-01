@@ -524,10 +524,24 @@ class PromptComponents:
         )
 
     @staticmethod
+    def _blank_panel_indexes(ctx: PromptContext) -> set[int]:
+        """草图模式下黑场 / 字幕卡面板不附场景图，否则“有场景图就不留白”会压过空白指令。"""
+        if ctx.mode != PromptMode.SKETCH:
+            return set()
+        return {
+            idx
+            for idx, brief in enumerate(build_panel_briefs(ctx), start=1)
+            if brief.kind in ("black", "title_card")
+        }
+
+    @staticmethod
     def collect_scene_image_refs(ctx: PromptContext, limit: int | None = 8) -> List[Any]:
         refs = []
         seen = set()
+        excluded = PromptComponents._blank_panel_indexes(ctx)
         for panel_idx in sorted(ctx.scene_refs.keys()):
+            if panel_idx in excluded:
+                continue
             for ref in ctx.scene_refs.get(panel_idx, []):
                 if not getattr(ref, "image_paths", None):
                     continue
@@ -557,7 +571,10 @@ class PromptComponents:
     def collect_scene_image_entries(ctx: PromptContext, limit: int | None = 8) -> list[dict]:
         entries: list[dict] = []
         by_key: dict[tuple, dict] = {}
+        excluded = PromptComponents._blank_panel_indexes(ctx)
         for panel_idx in sorted(ctx.scene_refs.keys()):
+            if panel_idx in excluded:
+                continue
             for ref in ctx.scene_refs.get(panel_idx, []):
                 if not getattr(ref, "image_paths", None):
                     continue
@@ -2684,7 +2701,6 @@ class SketchModeStrategy:
         # ----- 先构建角色颜色信息（COLOR LAW 和 intro 都需要） -----
         char_lines = []
         char_names_for_color_law = []  # 用于 COLOR LAW 点名
-        prop_lines = []
         local_prop_lines = []
         tag_color_map: dict[str, str] = {}  # tag → color_name（仅角色）
         prop_tag_color_map: dict[str, str] = {}  # prop tag -> marker color
@@ -2861,19 +2877,8 @@ class SketchModeStrategy:
                     "global prop unless their own object is explicitly marked with this tag; "
                     "draw them as black/gray line art only."
                 )
-                prop_lines.append(
-                    f"- {prop_tag} — GLOBAL TABLE PROP \"{prop_id}\". It MUST be entirely "
-                    f"{marker_color} ONLY in Panel(s): {scoped_panel_text}. Every visible part of "
-                    "this global prop marker must use this exact marker "
-                    "color only. Do not use any other hue, material tint, texture, shading, "
-                    "or real-object surface color. Draw it as a flat solid "
-                    "simple prop marker with ZERO internal detail. Like a mannequin stands "
-                    "in for a person, this colored shape stands in for the prop. Any visually "
-                    "similar untagged object in the same panel or outside those panel(s) remains "
-                    "ordinary black/gray line art."
-                )
                 if prop_form_map.get(prop_id):
-                    prop_lines[-1] = f"{prop_lines[-1]} — FORM: {prop_form_map[prop_id]}"
+                    prop_color_lines[-1] = f"{prop_color_lines[-1]} — FORM: {prop_form_map[prop_id]}"
             else:
                 prop_label_map[prop_tag] = f"{prop_id} {prop_tag}"
                 local_prop_lines.append(
@@ -3269,6 +3274,7 @@ PANEL KIND RULES:
 - [NO CHARACTERS] panels must not contain any human figure, silhouette, mannequin, or crowd.
 - [UNNAMED PEOPLE ONLY] panels may contain gray unnamed mannequins but no color-coded characters.
 - [PROP INSERT] panels show the named prop as the single subject, drawn to its FORM anchor (shape, proportions, scale, how it is held); no human figures.
+- [PROP INSERT · HELD] panels continue the previous shot: the prop stays in the holder's hand; draw only the hand and palm (wrist at most) as line art, no face, no full figure.
 
 {style_block}
 

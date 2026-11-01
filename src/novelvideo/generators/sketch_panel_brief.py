@@ -3,6 +3,10 @@
 SKETCH 模式下 ``has_characters`` 只信任 ``{{身份}}`` 标记，不读 ``detected_identities``，
 避免上一张误画的人物在重生成时自我强化；其他模式仍兼顾检测结果。
 
+道具特写的“持有延续”完全由标记驱动：前一拍（同场景）里有 ``{{身份}}`` 标记、
+含同一个 ``[[道具]]`` 标记、且出现通用持有动词时，本拍按手持特写处理；不依赖任何
+具体剧本、角色或道具名。
+
 纯函数模块，不访问存储或网络。``prompt_builder`` 在函数内延迟导入，避免循环引用。
 """
 
@@ -16,6 +20,7 @@ from novelvideo.models import (
     beat_scene_id,
     collect_prop_marker_ids_from_beat,
     extract_char_identities_from_markers,
+    extract_prop_ids_from_markers,
     real_detected_identities,
 )
 from novelvideo.utils.text_utils import strip_color_words
@@ -35,6 +40,15 @@ PEOPLE_TERMS: tuple[str, ...] = (
     "人群", "路人", "行人", "游客", "众人", "人影", "村民", "士兵", "孩子", "围观", "人们",
     "男人", "女人", "男子", "女子", "老人", "少年", "少女", "青年", "男孩", "女孩",
     "身影", "人物", "乘客", "顾客", "观众",
+)
+HOLDING_TERMS: tuple[str, ...] = (
+    "掌心", "手中", "手里", "手上", "托住", "托着", "拿着", "拿起", "握", "捧", "持",
+    "举", "取下", "摸", "触", "抚", "递",
+)
+CONTINUITY_HELD_DIRECTIVE = (
+    "CONTINUITY: the previous shot had this prop in a character's hand — {prev}. "
+    "Keep the prop held exactly the same way; show only the holder's hand and palm "
+    "at close range, no face, no full figure."
 )
 BLACK_PANEL_DIRECTIVE = (
     "SOLID BLACK PANEL: fill the entire panel with flat black. "
@@ -66,6 +80,7 @@ class PanelBrief:
     description: str
     prop_anchors: tuple[tuple[str, str], ...]
     attach_prop_refs: bool
+    held_by_previous: bool = False
 
     @property
     def no_characters(self) -> bool:
@@ -82,7 +97,7 @@ class PanelBrief:
         if self.kind == "title_card":
             return "[TITLE CARD]"
         if self.kind == "prop_insert":
-            return "[PROP INSERT]"
+            return "[PROP INSERT · HELD]" if self.held_by_previous else "[PROP INSERT]"
         if self.allow_unnamed_people and not self.has_characters:
             return "[UNNAMED PEOPLE ONLY]"
         if self.no_characters:
@@ -172,6 +187,37 @@ def _prop_anchors(panel_idx: int, ctx: "PromptContext", protected_terms: list[st
     return tuple(anchors)
 
 
+def annotate_beat_context(beats: list[dict]) -> list[dict]:
+    """原地给每拍挂上前一拍的最小上下文（画面描述、场景引用），供持有延续判定。"""
+    prev: dict | None = None
+    for beat in beats:
+        if not isinstance(beat, dict):
+            continue
+        if prev is not None:
+            beat["prev_beat"] = {
+                "beat_number": prev.get("beat_number"),
+                "visual_description": str(prev.get("visual_description") or ""),
+                "scene_ref": prev.get("scene_ref") or None,
+            }
+        prev = beat
+    return beats
+
+
+def _held_in_previous(beat: dict, prop_ids: list[str]) -> bool:
+    prev = beat.get("prev_beat")
+    if not isinstance(prev, dict) or not prop_ids:
+        return False
+    text = str(prev.get("visual_description") or "")
+    if not extract_char_identities_from_markers(text, strict=False):
+        return False
+    if not set(extract_prop_ids_from_markers(text, strict=False)) & set(prop_ids):
+        return False
+    cur_scene, prev_scene = beat_scene_id(beat), beat_scene_id(prev)
+    if cur_scene and prev_scene and cur_scene != prev_scene:
+        return False
+    return any(term in text for term in HOLDING_TERMS)
+
+
 def build_panel_brief(beat: dict, *, panel_idx: int, ctx: "PromptContext") -> PanelBrief:
     beat = beat if isinstance(beat, dict) else {}
     raw = str(beat.get("visual_description") or "")
@@ -191,11 +237,13 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: "PromptContext") -> Pa
         allow_unnamed_people=allow_unnamed,
     )
     protected = _protected_terms(beat, panel_idx, ctx, prop_ids)
+    held = kind == "prop_insert" and _held_in_previous(beat, prop_ids)
 
     custom = str(beat.get("sketch_prompt") or "").strip()
     mode = str(beat.get("sketch_prompt_mode") or "append").strip().lower()
     if mode == "override" and custom:
         description = _process_description(custom, ctx, protected)
+        held = False
         if kind in ("black", "title_card"):
             kind = "normal"
     elif kind == "black":
@@ -204,6 +252,11 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: "PromptContext") -> Pa
         description = TITLE_CARD_DIRECTIVE
     else:
         description = _process_description(raw, ctx, protected)
+        if held:
+            prev_text = _process_description(
+                str(beat["prev_beat"].get("visual_description") or ""), ctx, protected
+            )
+            description = f"{description} | {CONTINUITY_HELD_DIRECTIVE.format(prev=prev_text)}"
     if mode == "append" and custom:
         extra = _process_description(custom, ctx, protected)
         description = f"{description} | ADDITIONAL DIRECTION: {extra}"
@@ -216,6 +269,7 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: "PromptContext") -> Pa
         description=description,
         prop_anchors=_prop_anchors(panel_idx, ctx, protected),
         attach_prop_refs=kind == "prop_insert",
+        held_by_previous=held,
     )
 
 

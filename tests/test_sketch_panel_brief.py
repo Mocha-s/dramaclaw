@@ -9,6 +9,7 @@ from novelvideo.generators.sketch_panel_brief import (
     BLACK_PANEL_DIRECTIVE,
     TITLE_CARD_DIRECTIVE,
     PanelBrief,
+    annotate_beat_context,
     build_panel_brief,
     build_panel_briefs,
     condense_prop_anchor,
@@ -160,3 +161,75 @@ def test_build_panel_briefs_handles_bad_input():
     briefs = build_panel_briefs(ctx)
     assert [b.kind for b in briefs] == ["normal", "normal"]
     assert all(isinstance(b, PanelBrief) for b in briefs)
+
+
+def test_annotate_beat_context_links_previous_beat():
+    beats = [
+        {"beat_number": 1, "visual_description": "甲"},
+        {"beat_number": 2, "visual_description": "乙", "scene_ref": {"scene_id": "S"}},
+        {"beat_number": 3, "visual_description": "丙"},
+    ]
+    out = annotate_beat_context(beats)
+    assert out is beats
+    assert "prev_beat" not in beats[0]
+    assert beats[1]["prev_beat"] == {"beat_number": 1, "visual_description": "甲", "scene_ref": None}
+    assert beats[2]["prev_beat"]["scene_ref"] == {"scene_id": "S"}
+
+
+def _held_pair(prev_desc, cur_desc="[[信物]]上的纹样泛起微光。", prev_scene="S", cur_scene="S"):
+    prev = {"beat_number": 1, "visual_description": prev_desc, "scene_ref": {"scene_id": prev_scene}}
+    cur = {"beat_number": 2, "visual_description": cur_desc, "scene_ref": {"scene_id": cur_scene}}
+    annotate_beat_context([prev, cur])
+    return cur
+
+
+def test_prop_insert_continues_when_previous_shot_holds_same_prop():
+    cur = _held_pair("{{甲_成年}}掌心托住[[信物]]，拇指轻触牌面。")
+    brief = build_panel_brief(cur, panel_idx=1, ctx=_ctx([{}]))
+    assert brief.kind == "prop_insert"
+    assert brief.held_by_previous is True
+    assert brief.panel_prefix == "[PROP INSERT · HELD]"
+    assert "CONTINUITY:" in brief.description
+    assert "掌心托住" in brief.description
+    assert "hand" in brief.description
+    assert brief.description.index("上的纹样泛起微光") < brief.description.index("CONTINUITY:")
+
+
+def test_prop_insert_not_held_without_character_marker():
+    cur = _held_pair("路人掌心托住[[信物]]。")
+    brief = build_panel_brief(cur, panel_idx=1, ctx=_ctx([{}]))
+    assert brief.held_by_previous is False
+    assert brief.panel_prefix == "[PROP INSERT]"
+    assert "CONTINUITY" not in brief.description
+
+
+def test_prop_insert_not_held_for_different_prop():
+    cur = _held_pair("{{甲_成年}}拿着[[竹杖]]。")
+    assert build_panel_brief(cur, panel_idx=1, ctx=_ctx([{}])).held_by_previous is False
+
+
+def test_prop_insert_not_held_without_holding_verb():
+    cur = _held_pair("{{甲_成年}}看着[[信物]]。")
+    assert build_panel_brief(cur, panel_idx=1, ctx=_ctx([{}])).held_by_previous is False
+
+
+def test_prop_insert_not_held_across_scenes():
+    cur = _held_pair("{{甲_成年}}掌心托住[[信物]]。", prev_scene="S1", cur_scene="S2")
+    assert build_panel_brief(cur, panel_idx=1, ctx=_ctx([{}])).held_by_previous is False
+
+
+def test_override_mode_skips_continuity():
+    cur = _held_pair("{{甲_成年}}掌心托住[[信物]]。")
+    cur["sketch_prompt"] = "桌上的信物特写"
+    cur["sketch_prompt_mode"] = "override"
+    brief = build_panel_brief(cur, panel_idx=1, ctx=_ctx([{}]))
+    assert brief.held_by_previous is False
+    assert "CONTINUITY" not in brief.description
+
+
+def test_append_mode_keeps_continuity_before_direction():
+    cur = _held_pair("{{甲_成年}}掌心托住[[信物]]。")
+    cur["sketch_prompt"] = "特写"
+    cur["sketch_prompt_mode"] = "append"
+    brief = build_panel_brief(cur, panel_idx=1, ctx=_ctx([{}]))
+    assert brief.description.index("CONTINUITY:") < brief.description.index("ADDITIONAL DIRECTION:")
