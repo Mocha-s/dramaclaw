@@ -84,7 +84,7 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: PromptContext) -> Pane
 3. 无具名角色（无 `{{身份}}` 标记且 `real_detected_identities` 为空）且存在 `[[道具]]` 标记 → `prop_insert`。
 4. 其余 → `normal`。
 
-`has_characters`：存在 `{{身份}}` 标记，或 `real_detected_identities` 非空。
+`has_characters`：SKETCH 模式下只读 `{{身份}}` 标记（不读 `detected_identities`，避免上一张误画的人物在重生成时自我强化）；其他模式为存在 `{{身份}}` 标记或 `real_detected_identities` 非空。
 
 `allow_unnamed_people`：`has_characters` 为假且原始描述含人群词之一：`人群`、`路人`、`行人`、`游客`、`众人`、`人影`、`村民`、`士兵`、`孩子`、`围观`、`人们`。
 
@@ -97,7 +97,7 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: PromptContext) -> Pane
 
 自定义提示词合并：
 
-- `sketch_prompt_mode == "append"` 且 `sketch_prompt` 非空：`description = f"{description} | ADDITIONAL DIRECTION: {sketch_prompt}"`。黑场与字幕卡面板同样追加。
+- `sketch_prompt_mode == "append"` 且 `sketch_prompt` 非空：`description = f"{description} | ADDITIONAL DIRECTION: {processed}"`，其中 `processed` 为 `sketch_prompt` 经过同一条处理链（第 1 到 4 步）并把空白折叠为单行后的结果。黑场与字幕卡面板同样追加。
 - `sketch_prompt_mode == "override"` 且 `sketch_prompt` 非空：`description = sketch_prompt`（同样经过第 1 到 3 步处理，覆盖文本里的 `[[ ]]`、`{{ }}` 会被解析）；若自动判定为 `black` 或 `title_card`，`kind` 回退为 `normal`；`prop_insert` 的判定仍依据原始描述的标记。
 - `has_characters`、`allow_unnamed_people`、`attach_prop_refs` 始终基于原始 `visual_description` 计算。
 
@@ -143,7 +143,7 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: PromptContext) -> Pane
 数据层：
 
 - `SQLiteStore._ensure_beat_current_columns` 新增 `sketch_prompt TEXT DEFAULT ''`、`sketch_prompt_mode TEXT DEFAULT 'append'`。
-- `models.VisualBeat` 新增同名字段；`update_beat_asset` 新增两个关键字参数；`get_beats_as_dicts` 导出两字段；`add_beats` 的 upsert 不写这两列，重写剧本后同编号拍保留旧值，界面可见、不自动清空。
+- `models.VisualBeat` 新增同名字段；`update_beat_asset` 新增两个关键字参数；`get_beats_as_dicts` 导出两字段；重写剧本会删除并重建全部 beat，`sketch_prompt` 随之清空；编辑单拍不影响。
 
 接口层：
 

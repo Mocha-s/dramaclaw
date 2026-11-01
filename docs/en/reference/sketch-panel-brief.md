@@ -8,11 +8,11 @@ Every beat is classified before the sketch prompt is built. The classification d
 | Kind | Trigger | Panel text sent to the model |
 |---|---|---|
 | Normal | Default | Processed visual description |
-| Black screen | Description contains 黑场 / 黑屏 / 画面全黑 / 切黑 | Flat black panel, no scenery, no characters |
-| Title card | Description contains 屏幕出现文字 / 字幕 / 片名 / 片尾 / 事实卡 | Blank card, no readable text |
+| Black screen | Description contains 黑场 / 黑屏 / 画面全黑 / 画面切黑 / 切黑 / 淡出至黑 / 全黑 | Flat black panel, no scenery, no characters |
+| Title card | Description contains 屏幕出现文字 / 来源字幕 / 事实卡 / 标题卡 / 屏幕文字 / 字幕 / 片名 / 片尾 | Blank card, no readable text |
 | Prop insert | No named character and at least one `[[prop]]` marker | Prop as the single subject; the prop reference image is attached for shape and scale |
 
-Panels without a named character get a `[NO CHARACTERS]` prefix. If the description mentions people (crowd, passers-by, tourists, a man, a woman), the panel is marked `[UNNAMED PEOPLE ONLY]` instead and gray mannequins are allowed.
+Panels without a named character get a `[NO CHARACTERS]` prefix; prop-insert panels get `[PROP INSERT]` instead. If the description mentions people (crowd, passers-by, tourists, a man, a woman), the panel is marked `[UNNAMED PEOPLE ONLY]` instead and gray mannequins are allowed.
 
 ## Prop FORM anchors
 
@@ -22,10 +22,12 @@ Each prop line in the sketch prompt carries a short form anchor taken from the p
 
 In the beat workbench, open **Sketch prompt** under the sketch panel.
 
-- **Append** (default) adds your text after the processed description as `ADDITIONAL DIRECTION`.
+- **Append** (default) adds your text after the processed description as `ADDITIONAL DIRECTION`. The appended text goes through the same processing as the description: color words are removed, `{{character}}` / `[[prop]]` markers are resolved, and it is collapsed to a single line.
 - **Override** replaces the description. Character and prop markers are still read from the original visual description. An override also cancels an automatic black-screen or title-card classification, so you can correct a misdetection.
 
 The preview below the editor shows the kind badges and the exact panel text that will be submitted. It is produced by the same code path as generation.
+
+Regenerating the episode script rebuilds all beats and clears per-beat sketch prompts; editing a single beat keeps them.
 
 ## Color words
 
