@@ -1,6 +1,6 @@
 """Generated from schemas/workflow/v1/stable-contract.json; do not edit."""
 
-SOURCE_SHA256 = "1d3add9e7fc736e3ae534db40069e84882b9f00159bcb1bdf22e04a48c5f1666"
+SOURCE_SHA256 = "a9e877b2e5d34570fbd4a5c41e54ddfd25f4fa130d1cac9711f1bab5993c3c9e"
 WORKFLOW_CONTRACT_SCHEMA_VERSION = "freezone_workflow_contract.v1"
 WORKFLOW_PLAN_SCHEMA_VERSION = "freezone_workflow_plan.v1"
 WORKFLOW_INTENT_SCHEMA_VERSION = "freezone_workflow_intent.v1"
@@ -66,10 +66,6 @@ MODEL_ALIASES_BY_NODE_TYPE = {
         "huimeng_seedance-2.0": "seedance-2.0",
         "huimeng_seedance-1.5-pro": "seedance-1.5-pro",
         "huimeng_seedance-1.0-pro-fast": "seedance-1.0-pro-fast",
-        "seedance-2.0-fast": "seedance-2.0-fast",
-        "seedance-2.0": "seedance-2.0",
-        "seedance-1.5-pro": "seedance-1.5-pro",
-        "seedance-1.0-pro-fast": "seedance-1.0-pro-fast",
     },
 }
 RECIPE_ENVELOPE_CONTRACT = {
