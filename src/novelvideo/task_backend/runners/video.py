@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from novelvideo.project_context import ProjectContext
+from novelvideo.i18n_message import lmsg
 from novelvideo.task_backend.cancel import (
     TaskTimedOut,
     await_envelope_with_cancel_watch,
@@ -812,7 +813,7 @@ async def _run_global_optimize_video_async(
                     }
                     failed_beats.append(failure)
                     failure_messages.append(f"Beat {beat_num}: {failure['message']}")
-                    log(f"Beat {beat_num}: 生成失败（已尝试 {attempts} 次）")
+                    log(lmsg("tasks.progress.video.beatOptimizeFailed", f"Beat {beat_num}: 生成失败（已尝试 {attempts} 次）", beatNum=beat_num, attempts=attempts))
                     continue
                 prompt = result["prompt"]
                 beat["video_mode"] = "first_frame"
@@ -836,7 +837,7 @@ async def _run_global_optimize_video_async(
                 }
                 failed_beats.append(failure)
                 failure_messages.append(f"Beat {beat_num}: {failure['message']}")
-                log(f"Beat {beat_num}: 生成失败（已尝试 {attempts} 次）")
+                log(lmsg("tasks.progress.video.beatOptimizeFailed", f"Beat {beat_num}: 生成失败（已尝试 {attempts} 次）", beatNum=beat_num, attempts=attempts))
 
         if updated_count == 0:
             error = f"全局优化失败：0/{len(sorted_beats)} 个 Beat 生成成功"
