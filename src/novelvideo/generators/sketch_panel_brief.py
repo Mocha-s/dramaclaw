@@ -1,5 +1,8 @@
 """草图面板简报：把每个 beat 判定为普通 / 黑场 / 字幕卡 / 道具特写并产出面板文本。
 
+SKETCH 模式下 ``has_characters`` 只信任 ``{{身份}}`` 标记，不读 ``detected_identities``，
+避免上一张误画的人物在重生成时自我强化；其他模式仍兼顾检测结果。
+
 纯函数模块，不访问存储或网络。``prompt_builder`` 在函数内延迟导入，避免循环引用。
 """
 
@@ -138,7 +141,7 @@ def _process_description(text: str, ctx: "PromptContext", protected_terms: list[
     processed = resolve_visual_description_markers(
         processed, ctx.characters, id_to_char, use_identity_id=True
     )
-    return processed.rstrip(_TRAILING_PUNCTUATION).strip()
+    return " ".join(processed.rstrip(_TRAILING_PUNCTUATION).split())
 
 
 def _protected_terms(beat: dict, panel_idx: int, ctx: "PromptContext", prop_ids: list[str]) -> list[str]:
@@ -174,9 +177,11 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: "PromptContext") -> Pa
     raw = str(beat.get("visual_description") or "")
     beat_number = int(beat.get("beat_number") or panel_idx)
     markers = extract_char_identities_from_markers(raw, strict=False)
-    has_characters = bool(markers) or bool(
-        real_detected_identities(beat.get("detected_identities") or [])
-    )
+    has_characters = bool(markers)
+    if getattr(ctx.mode, "name", "") != "SKETCH":
+        has_characters = has_characters or bool(
+            real_detected_identities(beat.get("detected_identities") or [])
+        )
     allow_unnamed = (not has_characters) and any(term in raw for term in PEOPLE_TERMS)
     prop_ids = collect_prop_marker_ids_from_beat(beat)
     kind = detect_panel_kind(
@@ -200,7 +205,8 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: "PromptContext") -> Pa
     else:
         description = _process_description(raw, ctx, protected)
     if mode == "append" and custom:
-        description = f"{description} | ADDITIONAL DIRECTION: {custom}"
+        extra = _process_description(custom, ctx, protected)
+        description = f"{description} | ADDITIONAL DIRECTION: {extra}"
 
     return PanelBrief(
         beat_number=beat_number,

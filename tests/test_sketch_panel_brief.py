@@ -18,12 +18,12 @@ from novelvideo.utils.asset_resolver import ResolvedAssetRef
 
 
 def _ctx(beats, **kwargs) -> PromptContext:
+    kwargs.setdefault("mode", PromptMode.SKETCH)
     return PromptContext(
         grid=GridConfig(rows=1, cols=len(beats), aspect_ratio="2:3"),
         characters={},
         style=StyleConfig(style_keywords="test", avoid_keywords=""),
         beats=beats,
-        mode=PromptMode.SKETCH,
         **kwargs,
     )
 
@@ -72,6 +72,13 @@ def test_people_words_allow_unnamed_people():
 def test_detected_identities_count_as_characters():
     beat = {"beat_number": 5, "visual_description": "抬头看向水声传来的方向。", "detected_identities": ["寻禾_青年时期"]}
     brief = build_panel_brief(beat, panel_idx=1, ctx=_ctx([{}]))
+    assert brief.has_characters is False
+    assert brief.panel_prefix == "[NO CHARACTERS]"
+
+
+def test_detected_identities_count_as_characters_in_render_mode():
+    beat = {"beat_number": 5, "visual_description": "抬头看向水声传来的方向。", "detected_identities": ["寻禾_青年时期"]}
+    brief = build_panel_brief(beat, panel_idx=1, ctx=_ctx([{}], mode=PromptMode.RENDER))
     assert brief.has_characters is True
     assert brief.panel_prefix == ""
 
@@ -115,6 +122,15 @@ def test_append_mode_adds_direction():
     brief = build_panel_brief(beat, panel_idx=1, ctx=_ctx([{}]))
     assert brief.description.endswith("| ADDITIONAL DIRECTION: 巴掌大小的挂件")
     assert brief.kind == "prop_insert"
+
+
+def test_append_text_is_processed_and_single_line():
+    prop_tag = PromptComponents.compute_prop_tag("木牌")
+    beat = {"beat_number": 10, "visual_description": "近景：石阶。", "sketch_prompt": "红色的[[木牌]]\n特写", "sketch_prompt_mode": "append"}
+    brief = build_panel_brief(beat, panel_idx=1, ctx=_ctx([{}]))
+    assert f"木牌 {prop_tag}" in brief.description
+    assert "红色" not in brief.description
+    assert "\n" not in brief.description
 
 
 def test_override_mode_replaces_and_resets_auto_kind():
