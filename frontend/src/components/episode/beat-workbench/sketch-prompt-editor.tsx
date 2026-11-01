@@ -70,7 +70,13 @@ export function SketchPromptEditor({ project, episode, beat }: SketchPromptEdito
 
   return (
     <div className="col-span-2 flex flex-col gap-2 pt-1">
-      <Button size="xs" variant="ghost" className="w-fit gap-1" onClick={() => setOpen((v) => !v)}>
+      <Button
+        size="xs"
+        variant="ghost"
+        className="w-fit gap-1"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
         {open ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
         {t("episode.workbench.sketch.promptEditorTitle")}
       </Button>
@@ -82,6 +88,7 @@ export function SketchPromptEditor({ project, episode, beat }: SketchPromptEdito
                 key={value}
                 size="xs"
                 variant={mode === value ? "default" : "outline"}
+                aria-pressed={mode === value}
                 onClick={() => setMode(value)}
               >
                 {value === "append"

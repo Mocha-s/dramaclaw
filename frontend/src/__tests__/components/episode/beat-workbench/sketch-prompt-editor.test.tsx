@@ -101,6 +101,7 @@ describe("SketchPromptEditor", () => {
     await userEvent.click(screen.getByRole("button", { name: "草图提示词" }));
     await userEvent.type(screen.getByPlaceholderText("补充或覆盖本拍的草图描述"), "巴掌大小的木牌挂件");
     await userEvent.click(screen.getByRole("button", { name: "覆盖" }));
+    expect(screen.getByRole("button", { name: "覆盖" })).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(screen.getByRole("button", { name: "保存" }));
 
     expect(mutateAsync).toHaveBeenCalledWith({
