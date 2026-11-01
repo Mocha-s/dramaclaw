@@ -677,6 +677,73 @@ def test_sketch_attaches_prop_refs_for_prop_insert_panel():
     assert 'prop identity reference' not in prompt
 
 
+def test_sketch_does_not_attach_prop_refs_when_panel_has_character():
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=1, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[{"beat_number": 1, "visual_description": "{{寻禾_青年时期}}掌心托住[[寻迹牌]]"}],
+        mode=PromptMode.SKETCH,
+        prop_marker_colors={},
+        prop_asset_refs={
+            1: [
+                ResolvedAssetRef(
+                    asset_type="prop",
+                    base_id="寻迹牌",
+                    variant_id=None,
+                    image_paths=["/tmp/prop_xunjipai.png"],
+                    text_description="",
+                    source_level="base_image",
+                )
+            ]
+        },
+    )
+
+    plan = PromptComponents.build_reference_image_plan(ctx, [])
+
+    assert not any(entry.get("kind") == "prop" for entry in plan)
+
+
+def test_sketch_mixed_grid_attaches_only_prop_insert_panel_refs():
+    ctx = PromptContext(
+        grid=GridConfig(rows=1, cols=2, aspect_ratio="2:3"),
+        characters={},
+        style=StyleConfig(style_keywords="test", avoid_keywords=""),
+        beats=[
+            {"beat_number": 1, "visual_description": "[[寻迹牌]]静静躺在石阶上。"},
+            {"beat_number": 2, "visual_description": "{{寻禾_青年时期}}掌心托住[[竹杖]]"},
+        ],
+        mode=PromptMode.SKETCH,
+        prop_marker_colors={},
+        prop_asset_refs={
+            1: [
+                ResolvedAssetRef(
+                    asset_type="prop",
+                    base_id="寻迹牌",
+                    variant_id=None,
+                    image_paths=["/tmp/prop_xunjipai.png"],
+                    text_description="",
+                    source_level="base_image",
+                )
+            ],
+            2: [
+                ResolvedAssetRef(
+                    asset_type="prop",
+                    base_id="竹杖",
+                    variant_id=None,
+                    image_paths=["/tmp/prop_zhuzhang.png"],
+                    text_description="",
+                    source_level="base_image",
+                )
+            ],
+        },
+    )
+
+    plan = PromptComponents.build_reference_image_plan(ctx, [])
+
+    assert {entry["ref"].base_id for entry in plan if entry.get("kind") == "prop"} == {"寻迹牌"}
+
+
 def test_resolved_asset_ref_carries_prop_type():
     ref = ResolvedAssetRef(
         asset_type="prop",
