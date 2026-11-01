@@ -1192,6 +1192,7 @@ function CapabilityDefaultRow({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-md border border-border/60 px-3 py-2.5">
       <div className="text-[11px] text-muted-foreground">{label}</div>
@@ -1202,9 +1203,9 @@ function CapabilityDefaultRow({
             {available.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
           </SelectContent>
         </Select>
-      ) : <div className="mt-1 font-mono text-xs text-foreground">{model || (optional ? "未配置（可选）" : "未配置")}</div>}
+      ) : <div className="mt-1 font-mono text-xs text-foreground">{model || t(optional ? "settings.modelConfig.capabilityDefaults.notConfiguredOptional" : "settings.modelConfig.capabilityDefaults.notConfigured")}</div>}
       {available.length > 1 ? (
-        <div className="mt-1 text-[10px] text-muted-foreground">已发现 {available.length} 个上游模型</div>
+        <div className="mt-1 text-[10px] text-muted-foreground">{t("settings.modelConfig.capabilityDefaults.discoveredUpstream", { n: available.length })}</div>
       ) : null}
     </div>
   );

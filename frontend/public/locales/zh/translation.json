@@ -3240,6 +3240,9 @@
       "pipeline": {
         "normalizingScenes": "AI 规范化剧本场景块..."
       },
+      "video": {
+        "beatOptimizeFailed": "Beat {{beatNum}}: 生成失败（已尝试 {{attempts}} 次）"
+      },
       "script": {
         "start": "开始生成脚本...",
         "beatVideoPromptStart": "开始生成 Beat {{beatNum}} 视频提示词",
@@ -5650,7 +5653,9 @@
     "imageModel": {
       "modeEdit": "编辑",
       "modeGenerate": "生成",
-      "noneAvailable": "无可用模型"
+      "noneAvailable": "无可用模型",
+      "catalogLoadFailed": "图片模型目录加载失败，请检查连接后重试",
+      "gridTemplateNoModel": "图片模型目录没有可用模型，无法提交宫格模板"
     },
     "skillParams": {
       "aspectRatio": "比例",
@@ -7717,7 +7722,7 @@
         "save": "保存第三方网关配置", "saved": "第三方网关组已保存。", "missingFields": "请填写每组的名称、Base URL、密钥、能力和模型映射。",
         "warning": "部分旧配置无法迁移，请在所选第三方网关中手动重建。",
         "capabilities": { "text": "文本 / 视觉", "embedding": "Embedding", "image": "图片", "video": "视频", "audio": "音频" },
-        "capabilityDefaults": { "title": "能力默认模型", "description": "文本和视觉理解共用文本网关模型；图像、视频、音频使用已配置的独立媒体组。", "text": "文本 / 视觉模型", "reasoning": "文本思考级别", "reasoningHint": "仅作用于第三方文本 / 视觉理解请求。", "embedding": "Embedding 模型" }
+        "capabilityDefaults": { "title": "能力默认模型", "description": "文本和视觉理解共用文本网关模型；图像、视频、音频使用已配置的独立媒体组。", "text": "文本 / 视觉模型", "reasoning": "文本思考级别", "reasoningHint": "仅作用于第三方文本 / 视觉理解请求。", "embedding": "Embedding 模型", "notConfigured": "未配置", "notConfiguredOptional": "未配置（可选）", "discoveredUpstream": "已发现 {{n}} 个上游模型" }
       },
       "agent": {
         "title": "Agent 模型",

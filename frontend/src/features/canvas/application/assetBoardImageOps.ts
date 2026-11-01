@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
+// 取 i18next 默认实例而不是 `@/i18n`：这是纯模块，不能把 react-i18next 拉进底层链路。
+import i18n from 'i18next';
+
 import {
   fetchFreezoneJobResult,
   submitFreezoneScene360,
@@ -269,6 +272,23 @@ function resolveScene360AspectRatio(data: Record<string, unknown>): FreezoneScen
     : DEFAULT_FREEZONE_SCENE_360_ASPECT_RATIO;
 }
 
+/**
+ * 宫格模板提交前的模型前置条件：等图片目录就绪，取首个可用模型。
+ * 目录拉取失败 / 权威为空时抛出用户可见错误。故事板与画布工具条两条提交路径
+ * 共用，文案只维护这一份。
+ */
+export async function requireGridTemplateImageModel(project: string) {
+  const imageCatalog = await waitForFreezoneImageModels(project);
+  if (imageCatalog.isFallback) {
+    throw new Error(i18n.t('canvas.imageModel.catalogLoadFailed'));
+  }
+  const selectedModel = imageCatalog.models[0];
+  if (!selectedModel) {
+    throw new Error(i18n.t('canvas.imageModel.gridTemplateNoModel'));
+  }
+  return selectedModel;
+}
+
 async function submitOp(
   project: string,
   opKey: AssetBoardImageOpKey,
@@ -277,14 +297,7 @@ async function submitOp(
   data: Record<string, unknown>,
 ): Promise<FreezoneJobRef> {
   if (isGridOpKey(opKey)) {
-    const imageCatalog = await waitForFreezoneImageModels(project);
-    if (imageCatalog.isFallback) {
-      throw new Error('图片模型目录加载失败，请检查连接后重试');
-    }
-    const selectedModel = imageCatalog.models[0];
-    if (!selectedModel) {
-      throw new Error('图片模型目录没有可用模型，无法提交宫格模板');
-    }
+    const selectedModel = await requireGridTemplateImageModel(project);
     return submitFreezoneTemplateEdit(project, {
       sourceUrl,
       mode: GRID_ACTION_MODE_MAP[opKey],

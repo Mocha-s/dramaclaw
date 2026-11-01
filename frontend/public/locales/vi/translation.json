@@ -3136,6 +3136,9 @@
       "pipeline": {
         "normalizingScenes": "AI đang chuẩn hoá các khối cảnh trong kịch bản..."
       },
+      "video": {
+        "beatOptimizeFailed": "Beat {{beatNum}}: tạo thất bại (đã thử {{attempts}} lần)"
+      },
       "script": {
         "start": "Đang tạo kịch bản...",
         "beatVideoPromptStart": "Đang tạo prompt video cho beat {{beatNum}}",
@@ -5546,7 +5549,9 @@
     "imageModel": {
       "modeEdit": "Sửa ảnh",
       "modeGenerate": "Tạo ảnh",
-      "noneAvailable": "Không có model nào dùng được"
+      "noneAvailable": "Không có model nào dùng được",
+      "catalogLoadFailed": "Không tải được danh mục model ảnh. Kiểm tra kết nối rồi thử lại.",
+      "gridTemplateNoModel": "Danh mục model ảnh không có model khả dụng nên không thể gửi mẫu lưới."
     },
     "skillParams": {
       "aspectRatio": "Tỉ lệ khung hình",
@@ -7275,8 +7280,37 @@
     "pages": {
       "models": "Model & Kênh",
       "storage": "Lưu trữ media",
+      "taskLimits": "Tác vụ & Hàng đợi",
       "freezoneSkills": "Skill Freezone",
       "freezoneRecipes": "Recipe Freezone"
+    },
+    "taskLimits": {
+      "title": "Tác vụ & Hàng đợi",
+      "description": "Điều chỉnh giới hạn đồng thời và hàng đợi theo thời gian thực. Giảm giới hạn sẽ không làm gián đoạn các tác vụ đang chạy.",
+      "loading": "Đang tải cài đặt hàng đợi",
+      "loadFailed": "Không tải được cài đặt hàng đợi",
+      "saveFailed": "Không lưu được cài đặt hàng đợi",
+      "saved": "Đã lưu cài đặt hàng đợi",
+      "saving": "Đang lưu…",
+      "save": "Lưu cài đặt hàng đợi",
+      "invalid": "Nhập một số nguyên trong phạm vi cho phép.",
+      "lane": {
+        "default": "Hàng đợi mặc định",
+        "video": "Hàng đợi video",
+        "world": "Hàng đợi thế giới",
+        "ffmpeg": "Hàng đợi FFmpeg"
+      },
+      "fields": {
+        "globalConcurrency": "Đồng thời toàn cục",
+        "globalQueueLimit": "Giới hạn hàng đợi chờ",
+        "projectActiveLimit": "Giới hạn tác vụ đang chạy của dự án",
+        "projectUserActiveLimit": "Giới hạn tác vụ đang chạy mỗi người dùng"
+      },
+      "headers": {
+        "active": "Đang chạy",
+        "queued": "Đang chờ",
+        "concurrency": "Đồng thời"
+      }
     },
     "modelConfig": {
       "title": "Cấu hình model",
@@ -7403,7 +7437,10 @@
           "text": "Model văn bản / thị giác",
           "reasoning": "Mức suy luận văn bản",
           "reasoningHint": "Chỉ áp dụng cho yêu cầu hiểu văn bản / thị giác từ gateway bên thứ ba.",
-          "embedding": "Model Embedding"
+          "embedding": "Model Embedding",
+          "notConfigured": "Chưa cấu hình",
+          "notConfiguredOptional": "Chưa cấu hình (tùy chọn)",
+          "discoveredUpstream": "Đã phát hiện {{n}} model upstream"
         }
       },
       "quick": {

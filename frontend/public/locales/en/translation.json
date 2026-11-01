@@ -3240,6 +3240,9 @@
       "pipeline": {
         "normalizingScenes": "Normalizing screenplay scene blocks with AI..."
       },
+      "video": {
+        "beatOptimizeFailed": "Beat {{beatNum}}: generation failed (tried {{attempts}} times)"
+      },
       "script": {
         "start": "Generating script...",
         "beatVideoPromptStart": "Generating video prompt for beat {{beatNum}}",
@@ -5650,7 +5653,9 @@
     "imageModel": {
       "modeEdit": "Edit",
       "modeGenerate": "Generate",
-      "noneAvailable": "No model available"
+      "noneAvailable": "No model available",
+      "catalogLoadFailed": "Failed to load the image model catalog. Check your connection and retry.",
+      "gridTemplateNoModel": "No image model is available in the catalog, so the grid template cannot be submitted."
     },
     "skillParams": {
       "aspectRatio": "Aspect ratio",
@@ -7717,7 +7722,7 @@
         "save": "Save third-party gateway settings", "saved": "Third-party gateway groups saved.", "missingFields": "Complete each group name, Base URL, key, capability, and model mapping.",
         "warning": "Some legacy settings could not be migrated. Recreate them manually in your selected third-party gateway.",
         "capabilities": { "text": "Text / Vision", "embedding": "Embedding", "image": "Image", "video": "Video", "audio": "Audio" },
-        "capabilityDefaults": { "title": "Capability defaults", "description": "Text and visual understanding share the text gateway; image, video, and audio use configured independent media groups.", "text": "Text / vision model", "reasoning": "Text reasoning effort", "reasoningHint": "Applies only to third-party text / visual understanding requests.", "embedding": "Embedding model" }
+        "capabilityDefaults": { "title": "Capability defaults", "description": "Text and visual understanding share the text gateway; image, video, and audio use configured independent media groups.", "text": "Text / vision model", "reasoning": "Text reasoning effort", "reasoningHint": "Applies only to third-party text / visual understanding requests.", "embedding": "Embedding model", "notConfigured": "Not configured", "notConfiguredOptional": "Not configured (optional)", "discoveredUpstream": "{{n}} upstream models found" }
       },
       "agent": {
         "title": "Agent model",

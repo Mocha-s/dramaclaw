@@ -74,7 +74,10 @@ import { RotateEditorOverlay } from './RotateEditorOverlay';
 import { ImageResizeOverlay } from './ImageResizeOverlay';
 import type { GridActionKey } from '@/features/canvas/application/gridTemplateAction';
 import type { GridActionRequest } from './NodeActionToolbar';
-import { spawnAssetBoardImageOpNode } from '@/features/canvas/application/assetBoardImageOps';
+import {
+  requireGridTemplateImageModel,
+  spawnAssetBoardImageOpNode,
+} from '@/features/canvas/application/assetBoardImageOps';
 import { readUrl } from '@/lib/url-params';
 import { inheritMainlineFields } from '../domain/inheritMainlineFields';
 
@@ -933,14 +936,7 @@ export const SelectedNodeOverlay = memo(() => {
 
       void (async () => {
         try {
-          const imageCatalog = await waitForFreezoneImageModels(project);
-          if (imageCatalog.isFallback) {
-            throw new Error('图片模型目录加载失败，请检查连接后重试');
-          }
-          const selectedModel = imageCatalog.models[0];
-          if (!selectedModel) {
-            throw new Error('图片模型目录没有可用模型，无法提交宫格模板');
-          }
+          const selectedModel = await requireGridTemplateImageModel(project);
           const ref = await submitFreezoneTemplateEdit(project, {
             sourceUrl: imageSource.split('?')[0],
             mode: runAction.mode,
