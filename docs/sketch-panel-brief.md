@@ -81,7 +81,7 @@ def build_panel_brief(beat: dict, *, panel_idx: int, ctx: PromptContext) -> Pane
 
 1. 黑场词命中 → `black`。关键词：`黑场`、`黑屏`、`画面全黑`、`切黑`、`画面切黑`、`【黑屏】`、`淡出至黑`、`全黑`。面板文本替换为固定英文指令：`SOLID BLACK PANEL: fill the entire panel with flat black. No scenery, no characters, no objects, no text.`
 2. 字幕卡词命中 → `title_card`。关键词：`屏幕出现文字`、`字幕`、`片名`、`片尾`、`事实卡`、`来源字幕`、`标题卡`、`屏幕文字`。面板文本替换为：`TITLE CARD PANEL: a plain blank card on a neutral background. No scenery, no characters, no readable text.`
-3. 无具名角色（无 `{{身份}}` 标记且 `real_detected_identities` 为空）且存在 `[[道具]]` 标记 → `prop_insert`。
+3. 无具名角色（草图模式只看 `{{身份}}` 标记；渲染模式还参考 `real_detected_identities`）且存在 `[[道具]]` 标记 → `prop_insert`。
 4. 其余 → `normal`。
 
 `has_characters`：SKETCH 模式下只读 `{{身份}}` 标记（不读 `detected_identities`，避免上一张误画的人物在重生成时自我强化）；其他模式为存在 `{{身份}}` 标记或 `real_detected_identities` 非空。
