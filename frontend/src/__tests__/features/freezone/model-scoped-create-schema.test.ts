@@ -70,20 +70,23 @@ async function createSchema(modelId?: string, nodeType: CanvasNodeType = CANVAS_
   return payload.responses[0].data;
 }
 
+// Resolution / quality tiers are the global product tiers (FREEZONE_*_RESOLUTIONS in
+// canvasNodeActionCatalog) and are never narrowed by the catalog entry; aspect ratio and
+// duration still come from the selected model's catalog entry.
 describe("model-scoped node create schema", () => {
   beforeEach(() => {
     catalogState.video = { isLoading: false, isFallback: false };
     catalogState.image = { isLoading: false, isFallback: false };
   });
 
-  it("returns the selected model's exact video options", async () => {
+  it("returns global video tiers with the selected model's catalog ratio and duration", async () => {
     const schema = await createSchema("minimax-h3");
     const fields = schema.create_schema as Record<string, { options?: string[]; description?: string }>;
 
     expect(schema.model_id).toBe("minimax-h3");
     expect(schema.model_found).toBe(true);
     expect(schema.catalog_ready).toBe(true);
-    expect(fields.quality.options).toEqual(["768p", "2k"]);
+    expect(fields.quality.options).toEqual(["720p", "768p", "1080p", "2k", "4k"]);
     expect(fields.aspectRatio.options).toEqual(["16:9"]);
     expect(fields.durationSec.description).toContain("6-10");
   });
@@ -97,13 +100,13 @@ describe("model-scoped node create schema", () => {
     expect(schema.available_model_ids).toEqual(["minimax-h3"]);
   });
 
-  it("omits quality choices for an image model without quality support", async () => {
+  it("returns global image size and quality tiers regardless of the catalog entry", async () => {
     const schema = await createSchema("image-no-quality", CANVAS_NODE_TYPES.imageGen);
     const fields = schema.create_schema as Record<string, { options?: string[] }>;
 
-    expect(fields.size.options).toEqual(["1K", "2K"]);
+    expect(fields.size.options).toEqual(["1K", "2K", "4K"]);
     expect(fields.aspectRatio.options).toEqual(["16:9"]);
-    expect(fields.quality.options).toEqual([]);
+    expect(fields.quality.options).toEqual(["auto", "low", "medium", "high", "xhigh", "max"]);
   });
 
   it.each([
@@ -147,7 +150,7 @@ describe("model-scoped node create schema", () => {
     expect(loaded.available_model_ids).toEqual(["minimax-h3"]);
   });
 
-  it("returns exact model options after the live catalog finishes loading", async () => {
+  it("returns global video tiers only after the live catalog finishes loading", async () => {
     catalogState.video = { isLoading: true, isFallback: true };
     expect((await createSchema("minimax-h3")).create_schema).toBeUndefined();
 
@@ -156,7 +159,7 @@ describe("model-scoped node create schema", () => {
     expect(loaded.model_found).toBe(true);
     expect(loaded.catalog_ready).toBe(true);
     expect((loaded.create_schema as Record<string, { options?: string[] }>).quality.options)
-      .toEqual(["768p", "2k"]);
+      .toEqual(["720p", "768p", "1080p", "2k", "4k"]);
   });
 
   it.each([

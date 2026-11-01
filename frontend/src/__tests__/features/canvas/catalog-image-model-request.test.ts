@@ -81,12 +81,12 @@ beforeEach(() => {
 });
 
 describe("目录模型的 provider/model 往返", () => {
-  it("小写分辨率目录仍默认选择 2k 档位", () => {
+  it("分辨率档位独立于目录大小写，默认仍落在全局 2K 档位", () => {
     const definition = toImageModelDefinition(
       entry({ resolutionOptions: ["1k", "2k", "4k"] }),
     );
 
-    expect(definition.defaultResolution).toBe("2k");
+    expect(definition.defaultResolution).toBe("2K");
   });
 
   it("OpenRouter 命名空间模型：provider 归 openrouter，model 保留完整多段名", async () => {
