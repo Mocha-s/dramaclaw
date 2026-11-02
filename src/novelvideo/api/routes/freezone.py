@@ -7028,7 +7028,7 @@ async def freezone_multi_view(
         prompt=_build_multi_view_prompt(body),
         base_url=body.source_url,
         extra_reference_urls=[],
-        aspect_ratio="16:9",
+        aspect_ratio="original",  # 保留源图比例，前端结果节点按源图比例展示
         image_size=body.image_size or "2K",
         camera=body.camera,
         style=body.style,
@@ -7065,7 +7065,7 @@ async def freezone_relight(
         extra_reference_urls=(
             [body.lighting_reference_url] if body.lighting_reference_url else []
         ),
-        aspect_ratio="16:9",
+        aspect_ratio="original",  # 保留源图比例，前端结果节点按源图比例展示
         image_size=body.image_size or "2K",
         camera=None,
         style=None,
