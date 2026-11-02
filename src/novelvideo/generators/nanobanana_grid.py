@@ -3361,6 +3361,7 @@ async def _generate_image(
                 "quality": quality or generator.openai_image_quality,
                 "request_schema": generator.newapi_request_schema,
                 "model_params": generator.newapi_model_params,
+                "gateway_source": generator.gateway_source,
                 **(
                     {
                         "reference_image_format": (
@@ -3970,6 +3971,7 @@ async def _call_newapi_image_api(
         return None, "", "Unsupported reference image format"
     aspect_ratio = str(image_config.get("aspect_ratio") or "1:1").strip().lower() or "1:1"
     image_size = normalize_image_size(str(image_config.get("image_size") or "1K"), "newapi")
+    gateway_source = str(image_config.get("gateway_source") or "").strip().lower()
     from novelvideo.media_model_request_schema import normalize_media_resolution_value
 
     resolution = normalize_media_resolution_value(image_size)
@@ -4010,7 +4012,13 @@ async def _call_newapi_image_api(
             )
         except ValueError as exc:
             return None, "", str(exc)
-        payload["size"] = size
+        if gateway_source in {"third_party", "sub2api"}:
+            # Third-party groups follow the documented "ratio or WIDTHxHEIGHT"
+            # size contract, but the variant models (flare/sunburst) only
+            # honour the ratio string and answer a square frame for WxH pairs.
+            payload["size"] = aspect_ratio
+        else:
+            payload["size"] = size
     include_quality = True
     if include_quality:
         quality = _normalize_newapi_image_quality(image_config.get("quality"))
@@ -4811,6 +4819,7 @@ class NanoBananaGridGenerator:
         self.default_image_size = config.get("image_size", "1K")
         self.newapi_request_schema = config.get("newapi_request_schema") or {}
         self.newapi_model_params = config.get("newapi_model_params") or {}
+        self.gateway_source = str(config.get("gateway_source") or "").strip().lower()
         self.newapi_protocol = str(config.get("gateway_protocol") or "openai").strip().lower()
         self.gateway_native_base_url = str(
             config.get("gateway_native_base_url") or ""
@@ -5616,6 +5625,7 @@ class NanoBananaGridGenerator:
                             "reference_image_format": self.newapi_image_edit_reference_format,
                             "request_schema": self.newapi_request_schema,
                             "model_params": self.newapi_model_params,
+                            "gateway_source": self.gateway_source,
                         },
                         base_url=self.base_url,
                         delivery_path=output_path,

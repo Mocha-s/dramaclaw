@@ -664,6 +664,71 @@ def test_newapi_image_call_applies_admin_min_pixels(monkeypatch):
     assert "extra_fields" not in posted["json"]
 
 
+def test_newapi_image_size_form_follows_gateway_source(monkeypatch):
+    import httpx
+    from novelvideo.generators import nanobanana_grid
+
+    posted = []
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            import base64
+
+            return {"data": [{"b64_json": base64.b64encode(b"image-bytes").decode()}]}
+
+    class FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def post(self, url, *, headers, json, **kwargs):
+            posted.append(json)
+            return FakeResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
+
+    # Third-party groups take the ratio string (variant models ignore WxH pairs).
+    run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="newapi-token",
+            model="gpt-image-2.5-sunburst-4k",
+            prompt="prompt",
+            image_config={
+                "aspect_ratio": "9:16",
+                "image_size": "4K",
+                "gateway_source": "third_party",
+            },
+            base_url="http://newapi.test/v1",
+        )
+    )
+    # The legacy DC-media dialect keeps the computed WIDTHxHEIGHT pair.
+    run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="newapi-token",
+            model="LingShan-G2",
+            prompt="prompt",
+            image_config={"aspect_ratio": "9:16", "image_size": "1K"},
+            base_url="http://newapi.test/v1",
+        )
+    )
+
+    from novelvideo.generators.nanobanana_grid import resolve_openai_image_size
+
+    legacy_size = resolve_openai_image_size(
+        "9:16", "1K", "LingShan-G2", allow_dynamic_resolution=True
+    )
+    assert posted[0]["size"] == "9:16"
+    assert posted[1]["size"] == legacy_size
+
+
 def test_newapi_image_call_sends_gpt_image2_params(monkeypatch):
     import httpx
     from novelvideo.generators import nanobanana_grid
@@ -820,14 +885,18 @@ def test_newapi_image_auto_ratio_follows_reference_geometry(monkeypatch):
             model="gpt-image-2.5-flare-2k",
             prompt="follow the reference geometry",
             reference_images=[buffer.getvalue()],
-            image_config={"aspect_ratio": "auto", "image_size": "2K"},
+            image_config={
+                "aspect_ratio": "auto",
+                "image_size": "2K",
+                "gateway_source": "third_party",
+            },
             base_url="http://newapi.test/v1",
         )
     )
 
     assert image_bytes == b"image-bytes"
     assert error == ""
-    assert posted["json"]["size"] == "2048x1152"
+    assert posted["json"]["size"] == "16:9"
     assert posted["json"]["metadata"]["ratio"] == "16:9"
     assert posted["json"]["metadata"]["resolution"] == "2k"
 
@@ -2894,8 +2963,9 @@ def test_freezone_single_image_generation_routes_newapi(monkeypatch, tmp_path):
         "aspect_ratio": "1:1",
         "image_size": "2K",
         "quality": "medium",
-    "request_schema": {},
+        "request_schema": {},
         "model_params": {},
+        "gateway_source": "",
     }
 
 
