@@ -7550,6 +7550,15 @@
           "legacy": "Cũ /video/generations"
         },
         "modelsHint": "Ánh xạ mẫu model yêu cầu sang model upstream; khớp chính xác được ưu tiên.",
+        "supportedModes": "Chế độ hỗ trợ",
+        "upscaleResolutions": "Độ phân giải đích nâng cấp",
+        "modes": {
+          "videoUpscale": "Nâng cấp video (HD)",
+          "videoFrameRate": "Chuyển đổi tốc độ khung hình",
+          "videoEdit": "Chỉnh sửa video",
+          "videoExtend": "Kéo dài video",
+          "allReference": "Tham chiếu toàn bộ"
+        },
         "modelSearch": "Lọc model",
         "fetchModels": "Lấy danh sách model",
         "availableModels": "Model khả dụng",

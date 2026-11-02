@@ -643,6 +643,12 @@ function ThirdPartyGatewayPanel({
             ...(group.capabilities.includes("video")
               ? { videoEndpoint: mapping.videoEndpoint ?? "videos" }
               : {}),
+            ...(group.capabilities.includes("video") && mapping.supportedModes?.length
+              ? { supportedModes: mapping.supportedModes }
+              : {}),
+            ...(group.capabilities.includes("video") && mapping.resolutionOptions?.length
+              ? { resolutionOptions: mapping.resolutionOptions }
+              : {}),
           })),
           ...(group.apiKey.trim() ? { apiKey: group.apiKey.trim() } : {}),
         })),
@@ -1002,6 +1008,63 @@ function ThirdPartyGroupCard({
                   </label>
                 ) : null}
               </div>
+              {group.capabilities.includes("video") ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[120px_1fr] items-start gap-2 text-[11px] text-muted-foreground">
+                    <span>{t("settings.modelConfig.thirdParty.supportedModes")}</span>
+                    <div className="flex flex-wrap gap-1">
+                      {THIRD_PARTY_VIDEO_MODE_TOGGLES.map((modeOption) => {
+                        const active = (mapping.supportedModes ?? []).includes(modeOption.value);
+                        return (
+                          <button
+                            key={modeOption.value}
+                            type="button"
+                            aria-pressed={active}
+                            className={
+                              active
+                                ? "rounded-full border border-primary bg-primary/10 px-2 py-0.5 text-[11px] text-primary"
+                                : "rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
+                            }
+                            onClick={() => onChange({
+                              ...group,
+                              modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
+                                ? {
+                                    ...item,
+                                    supportedModes: active
+                                      ? (item.supportedModes ?? []).filter((value) => value !== modeOption.value)
+                                      : [...(item.supportedModes ?? []), modeOption.value],
+                                  }
+                                : item),
+                            })}
+                          >
+                            {t(modeOption.labelKey)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{t("settings.modelConfig.thirdParty.upscaleResolutions")}</span>
+                    <Input
+                      aria-label={t("settings.modelConfig.thirdParty.upscaleResolutions")}
+                      value={(mapping.resolutionOptions ?? []).join(", ")}
+                      placeholder="1080p, 2k, 4k"
+                      onChange={(event) => onChange({
+                        ...group,
+                        modelMappings: group.modelMappings.map((item, itemIndex) => itemIndex === index
+                          ? {
+                              ...item,
+                              resolutionOptions: event.target.value
+                                .split(",")
+                                .map((value) => value.trim())
+                                .filter(Boolean),
+                            }
+                          : item),
+                      })}
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -1011,6 +1074,14 @@ function ThirdPartyGroupCard({
     </section>
   );
 }
+
+const THIRD_PARTY_VIDEO_MODE_TOGGLES: ReadonlyArray<{ value: string; labelKey: string }> = [
+  { value: "video_upscale", labelKey: "settings.modelConfig.thirdParty.modes.videoUpscale" },
+  { value: "video_frame_rate", labelKey: "settings.modelConfig.thirdParty.modes.videoFrameRate" },
+  { value: "video_edit", labelKey: "settings.modelConfig.thirdParty.modes.videoEdit" },
+  { value: "video_extend", labelKey: "settings.modelConfig.thirdParty.modes.videoExtend" },
+  { value: "all_reference", labelKey: "settings.modelConfig.thirdParty.modes.allReference" },
+];
 
 function CustomLlmSettings({
   config,

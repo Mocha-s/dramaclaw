@@ -7881,6 +7881,15 @@
           "legacy": "旧版 /video/generations"
         },
         "modelsHint": "将请求模型规则映射到上游模型；精确匹配优先。",
+        "supportedModes": "支持模式",
+        "upscaleResolutions": "超分目标分辨率",
+        "modes": {
+          "videoUpscale": "视频超分（高清）",
+          "videoFrameRate": "视频补帧",
+          "videoEdit": "视频编辑",
+          "videoExtend": "视频续写",
+          "allReference": "全能参考"
+        },
         "modelSearch": "筛选模型",
         "fetchModels": "拉取模型列表",
         "availableModels": "可用模型列表",

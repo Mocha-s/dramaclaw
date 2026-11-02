@@ -52,6 +52,8 @@ export interface Sub2ApiModelMapping {
   upstreamModel: string;
   imageEditFormat?: Sub2ApiImageEditFormat;
   videoEndpoint?: Sub2ApiVideoEndpoint;
+  supportedModes?: string[];
+  resolutionOptions?: string[];
 }
 
 export interface Sub2ApiAccountGroup {

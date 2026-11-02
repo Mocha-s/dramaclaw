@@ -7881,6 +7881,15 @@
           "legacy": "Legacy /video/generations"
         },
         "modelsHint": "Map request model patterns to upstream models; exact matches take precedence.",
+        "supportedModes": "Modos suportados",
+        "upscaleResolutions": "Resoluções de destino do upscale",
+        "modes": {
+          "videoUpscale": "Upscale de vídeo (HD)",
+          "videoFrameRate": "Conversão de taxa de quadros",
+          "videoEdit": "Edição de vídeo",
+          "videoExtend": "Extensão de vídeo",
+          "allReference": "Referência total"
+        },
         "modelSearch": "Filter models",
         "fetchModels": "Fetch models",
         "availableModels": "Available models",

@@ -273,6 +273,23 @@ def _normalize_sub2api_groups(groups: list[dict[str, Any]]) -> list[dict[str, An
                         mapping[option_key] = [
                             str(value).strip() for value in options if str(value).strip()
                         ]
+                supported_modes = item.get("supportedModes")
+                if supported_modes is not None:
+                    if not isinstance(supported_modes, list):
+                        raise ValueError("Sub2API supportedModes must be a list")
+                    from novelvideo.media_model_request_schema import PARAMETER_MODES
+
+                    cleaned_modes: list[str] = []
+                    for mode in supported_modes:
+                        text = str(mode or "").strip()
+                        if not text:
+                            continue
+                        if text not in PARAMETER_MODES:
+                            raise ValueError("unsupported media mode: " + text)
+                        if text not in cleaned_modes:
+                            cleaned_modes.append(text)
+                    if cleaned_modes:
+                        mapping["supportedModes"] = cleaned_modes
                 mappings.append(mapping)
         else:
             raise ValueError("Sub2API modelMappings must be a list")
@@ -1710,6 +1727,9 @@ def get_sub2api_media_model_catalog(media_type: str) -> list[dict[str, Any]]:
                 options = mapping.get(option_key)
                 if isinstance(options, list) and options:
                     catalog_entry[option_key] = list(options)
+            supported_modes = mapping.get("supportedModes")
+            if isinstance(supported_modes, list) and supported_modes:
+                catalog_entry["supportedModes"] = list(supported_modes)
             if capability == CAPABILITY_IMAGE and (
                 "gpt-image-2" in request_model.lower()
                 or "gpt-image-2" in upstream_model.lower()
@@ -1796,6 +1816,9 @@ def get_third_party_media_model_catalog(media_type: str) -> list[dict[str, Any]]
                 options = mapping.get(option_key)
                 if isinstance(options, list) and options:
                     catalog_entry[option_key] = list(options)
+            supported_modes = mapping.get("supportedModes")
+            if isinstance(supported_modes, list) and supported_modes:
+                catalog_entry["supportedModes"] = list(supported_modes)
             if capability == CAPABILITY_IMAGE and (
                 "gpt-image" in request_model.lower()
                 or "gpt-image" in upstream_model.lower()

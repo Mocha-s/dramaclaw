@@ -578,6 +578,60 @@ def test_sub2api_media_catalog_keeps_custom_logical_names_without_newapi_prefix(
     assert video_entry["gatewayModel"] == "seedance-2.0-fast"
 
 
+def test_sub2api_video_mappings_expose_declared_supported_modes(
+    monkeypatch, tmp_path
+):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    save_sub2api_groups(
+        [
+            {
+                "id": "upscale-gw",
+                "name": "Upscale gw",
+                "protocol": "openai",
+                "baseUrl": "https://api.example/v1",
+                "apiKey": "sk-upscale",
+                "capabilities": ["video"],
+                "modelMappings": [
+                    {
+                        "requestPattern": "huoshang-upscale-1080p",
+                        "upstreamModel": "huoshang-upscale-1080p",
+                        "videoEndpoint": "videos",
+                        "supportedModes": ["video_upscale"],
+                        "resolutionOptions": ["1080p"],
+                    }
+                ],
+            }
+        ],
+        activate=True,
+    )
+
+    video = get_sub2api_media_model_catalog("video")
+    entry = next(item for item in video if item["id"] == "huoshang-upscale-1080p")
+    assert entry["supportedModes"] == ["video_upscale"]
+    assert entry["resolutionOptions"] == ["1080p"]
+
+    with pytest.raises(ValueError):
+        save_sub2api_groups(
+            [
+                {
+                    "id": "bad-gw",
+                    "name": "Bad gw",
+                    "protocol": "openai",
+                    "baseUrl": "https://api.example/v1",
+                    "apiKey": "sk-bad",
+                    "capabilities": ["video"],
+                    "modelMappings": [
+                        {
+                            "requestPattern": "bad-model",
+                            "upstreamModel": "bad-model",
+                            "supportedModes": ["not_a_mode"],
+                        }
+                    ],
+                }
+            ]
+        )
+
+
 @pytest.mark.parametrize("failures", [1, 3])
 def test_settings_initialization_retries_lock_and_closes_connections(
     monkeypatch, tmp_path, failures
