@@ -566,7 +566,8 @@ export function useImageGenerationForm(
     const genPayload = {
       prompt: effectivePrompt,
       // 后端只接受固定的几个比例；节点上的 aspectRatio 可能是图片自然尺寸约分出的
-      // 非标准值（如 "43:24"）或 "auto"，提交前吸附到最接近的合法比例（auto→1:1）。
+      // 非标准值（如 "43:24"），提交前吸附到最接近的合法比例；"auto"/未识别值回落到
+      // 选项首位（自适应），由后端按参考图解析几何。
       aspectRatio: effectiveAspectRatio as typeof aspectRatio,
       imageSize: effectiveImageSize,
       // Global quality is always sent; unsupported values are rejected upstream.

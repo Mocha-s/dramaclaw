@@ -800,7 +800,11 @@ export const ImageGenNode = memo(({ id, data, selected, width, height }: ImageGe
                   updateNodeSize(id, nextSize, {
                     lockManualSize: forceNaturalSize ? false : undefined,
                     data: {
-                      aspectRatio: nextAspectRatio,
+                      // 用户手选过比例时不再用图片自然比例回写 data.aspectRatio，
+                      // 否则提交下发的比例会被上一张图悄悄改掉。
+                      ...(data.isAspectRatioManuallyAdjusted === true
+                        ? {}
+                        : { aspectRatio: nextAspectRatio }),
                       imageNaturalWidth: event.currentTarget.naturalWidth,
                       imageNaturalHeight: event.currentTarget.naturalHeight,
                       imageAspectRatioUpdatedAt: Date.now(),

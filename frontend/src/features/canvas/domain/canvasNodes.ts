@@ -471,6 +471,8 @@ export interface ImageGenNodeData extends NodeImageData {
   quality?: ImageQuality;
   modelParams?: Record<string, unknown>;
   requestAspectRatio?: string;
+  /** 用户手动选过画面比例后置位；图片 onLoad 不再自动回写 aspectRatio。 */
+  isAspectRatioManuallyAdjusted?: boolean;
   count?: ImageGenCount;
   styleTemplateId?: string | null;
   focusRegion?: ImageGenFocusRegion | null;

@@ -773,7 +773,15 @@ export const ImageGenerationForm = memo((props: ImageGenerationFormProps) => {
             quality={quality}
             qualityOptions={qualityOptions}
             showQuality={showQuality}
-            onChange={(patch) => updateNodeData(nodeId, patch)}
+            onChange={(patch) =>
+              updateNodeData(nodeId, {
+                ...patch,
+                // 手动选过比例就锁定它：节点图片 onLoad 的自动比例回写不得再覆盖用户选择。
+                ...(typeof patch.aspectRatio === 'string'
+                  ? { isAspectRatioManuallyAdjusted: true }
+                  : {}),
+              })
+            }
           />
           <MediaModelParameterChip
             parameters={modelParameters}
