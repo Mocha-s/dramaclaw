@@ -108,9 +108,10 @@ describe('image node form localization', () => {
     expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveValue('用户填写的中文提示词不应被改写');
   });
 
+  // 本仓 UX 契约：触发器按「质量 · 比例 · 尺寸」排列（见 catalog-image-model-params）。
   it('localizes quality, aspect, count and style popovers without changing submitted values', async () => {
     await mount();
-    fireEvent.click(screen.getByRole('button', { name: /16:9.*Standard.*2K/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Standard.*16:9.*2K/ }));
     expect(screen.getByText('Quality')).toBeInTheDocument();
     expect(screen.getByText('Resolution')).toBeInTheDocument();
     expect(screen.getByText('Aspect ratio')).toBeInTheDocument();
@@ -127,6 +128,6 @@ describe('image node form localization', () => {
 
   it('preserves model-specific quality labels instead of showing an untranslated key', async () => {
     await mount(formProps({ quality: 'Ultra', qualityOptions: ['Ultra'] }));
-    expect(screen.getByRole('button', { name: /16:9.*Ultra.*2K/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Ultra.*16:9.*2K/ })).toBeInTheDocument();
   });
 });
