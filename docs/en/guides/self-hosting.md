@@ -79,5 +79,6 @@ upgrade.
 | Port 8780 is busy | Change the host-side API port in Compose or use another project name |
 | Model call errors | Confirm the selected external base URL, API key, protocol, capabilities, and upstream model mapping |
 | External gateway unreachable | Ensure the URL is reachable from the `api` container and is not a loopback-only host address |
+| Browser-side tools fail (depth capture, video crop) | These use WebCodecs/WebGPU, which browsers expose only in secure contexts. When the app is opened over plain HTTP (e.g. a LAN IP), use HTTPS instead, or allow the origin via `chrome://flags/#unsafely-treat-insecure-origin-as-secure` in Chrome and relaunch the browser |
 
 See [Quickstart](../getting-started/quickstart.md) and [Configuring Model Providers](../getting-started/configuring-models.md).

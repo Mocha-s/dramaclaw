@@ -6470,6 +6470,8 @@
           "noProject": "No current project found; cannot save the result",
           "fetchFailed": "Failed to load the source video ({{detail}})",
           "cannotDecode": "This browser cannot decode the video (common with HEVC sources). Try Chrome or transcode it first",
+          "insecureContext": "This page is not served over HTTPS or localhost, so the browser has disabled video codecs; cropping cannot run. Please use HTTPS",
+          "unsupportedBrowser": "This browser lacks WebCodecs codec support; cropping cannot run. Please update to a recent Chrome or Edge",
           "noVideoTrack": "The source video has no usable picture",
           "tooLarge": "The video is too large ({{detail}}) to crop",
           "failed": "Crop failed: {{detail}}"
@@ -6526,6 +6528,8 @@
           "tooLong": "Videos longer than {{seconds}} seconds are not supported",
           "noVideoTrack": "The source video has no usable frames",
           "cannotDecode": "This browser cannot decode the video format",
+          "insecureContext": "This page is not served over HTTPS or localhost, so the browser has disabled video codecs; depth capture cannot run. Please use HTTPS",
+          "unsupportedBrowser": "This browser lacks WebCodecs codec support; depth capture cannot run. Please update to a recent Chrome or Edge",
           "cancelled": "Processing was cancelled",
           "failed": "Processing error",
           "noProject": "No current project found, so the result cannot be saved",

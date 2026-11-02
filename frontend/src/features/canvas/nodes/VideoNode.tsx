@@ -126,6 +126,7 @@ import {
   type CropRatioId,
 } from "@/features/canvas/application/videoCrop/cropMath";
 import { VideoCropError, type VideoCropErrorCode } from "@/features/canvas/application/videoCrop/cropVideo";
+import { browserCodecBlockReason } from "@/features/canvas/application/browserCodecSupport";
 import { cropAndUploadVideo } from "@/features/canvas/application/videoCrop/runVideoCrop";
 import {
   cancelVideoCrop,
@@ -2107,6 +2108,19 @@ export const VideoNode = memo(
       const projectId = readUrl().project;
       if (!projectId) {
         toast.error(t("node.videoNode.crop.errors.noProject"));
+        return;
+      }
+      // 与深度动作捕捉同一限制：WebCodecs 在非安全上下文不存在，裁切只会死在
+      // canDecode，先在提交处说明原因。
+      const codecBlock = browserCodecBlockReason();
+      if (codecBlock) {
+        toast.error(
+          t(
+            codecBlock === "insecureContext"
+              ? "node.videoNode.crop.errors.insecureContext"
+              : "node.videoNode.crop.errors.unsupportedBrowser",
+          ),
+        );
         return;
       }
       const toastId = toast.loading(t("node.videoNode.crop.processing"));

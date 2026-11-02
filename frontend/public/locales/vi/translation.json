@@ -6357,6 +6357,8 @@
           "noProject": "Không tìm thấy dự án hiện tại, không thể lưu kết quả",
           "fetchFailed": "Không tải được video nguồn ({{detail}})",
           "cannotDecode": "Trình duyệt không giải mã được video này (thường gặp với nguồn HEVC). Hãy dùng Chrome hoặc chuyển mã trước",
+          "insecureContext": "Trang này không chạy HTTPS hay localhost nên trình duyệt đã chặn bộ giải mã video; không thể cắt video. Vui lòng dùng HTTPS.",
+          "unsupportedBrowser": "Trình duyệt này không hỗ trợ WebCodecs; không thể cắt video. Vui lòng cập nhật Chrome hoặc Edge.",
           "noVideoTrack": "Video nguồn không có hình ảnh dùng được",
           "tooLarge": "Video quá lớn ({{detail}}), chưa hỗ trợ cắt",
           "failed": "Cắt thất bại: {{detail}}"
@@ -6413,6 +6415,8 @@
           "tooLong": "Không hỗ trợ video dài hơn {{seconds}} giây",
           "noVideoTrack": "Video nguồn không có khung hình dùng được",
           "cannotDecode": "Trình duyệt không giải mã được định dạng video này",
+          "insecureContext": "Trang này không chạy HTTPS hay localhost nên trình duyệt đã chặn bộ giải mã video; không thể bắt chuyển động chiều sâu. Vui lòng dùng HTTPS.",
+          "unsupportedBrowser": "Trình duyệt này không hỗ trợ WebCodecs; không thể bắt chuyển động chiều sâu. Vui lòng cập nhật Chrome hoặc Edge.",
           "cancelled": "Đã hủy xử lý",
           "failed": "Lỗi xử lý",
           "noProject": "Không tìm thấy dự án hiện tại nên không thể lưu kết quả",

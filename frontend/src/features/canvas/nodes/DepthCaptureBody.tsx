@@ -5,6 +5,7 @@
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { browserCodecBlockReason } from "@/features/canvas/application/browserCodecSupport";
 import { DEPTH_MAX_DURATION_SEC } from "@/features/canvas/application/depthCapture/depthMath";
 import {
   findActiveDepthCaptureNodeId,
@@ -43,6 +44,17 @@ export function DepthCaptureBody({ nodeId, state }: { nodeId: string; state: Dep
   const detail = state.status === "failed" && state.errorCode === "failed" ? state.errorDetail : null;
 
   const handleRetry = () => {
+    const codecBlock = browserCodecBlockReason();
+    if (codecBlock) {
+      toast.error(
+        t(
+          codecBlock === "insecureContext"
+            ? "node.videoNode.depthCapture.errors.insecureContext"
+            : "node.videoNode.depthCapture.errors.unsupportedBrowser",
+        ),
+      );
+      return;
+    }
     const projectId = readUrl().project;
     if (!projectId) {
       toast.error(t("node.videoNode.depthCapture.errors.noProject"));

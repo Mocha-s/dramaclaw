@@ -6470,6 +6470,8 @@
           "noProject": "未找到当前项目，无法保存结果",
           "fetchFailed": "读取源视频失败（{{detail}}）",
           "cannotDecode": "当前浏览器无法解码此视频（常见于 HEVC 源视频），请换用 Chrome 或先转码",
+          "insecureContext": "当前页面非 HTTPS 或 localhost，浏览器已禁用视频编解码能力，无法裁剪视频，请改用 HTTPS 访问",
+          "unsupportedBrowser": "当前浏览器缺少视频编解码能力（WebCodecs），无法裁剪视频，请升级 Chrome / Edge 后重试",
           "noVideoTrack": "源视频没有可用的画面",
           "tooLarge": "视频过大（{{detail}}），暂不支持裁剪",
           "failed": "裁剪失败：{{detail}}"
@@ -6526,6 +6528,8 @@
           "tooLong": "视频超过 {{seconds}} 秒，暂不支持深度动作捕捉",
           "noVideoTrack": "源视频没有可用的画面",
           "cannotDecode": "浏览器无法解码该视频格式",
+          "insecureContext": "当前页面非 HTTPS 或 localhost，浏览器已禁用视频编解码能力，无法进行深度动作捕捉，请改用 HTTPS 访问",
+          "unsupportedBrowser": "当前浏览器缺少视频编解码能力（WebCodecs），无法进行深度动作捕捉，请升级 Chrome / Edge 后重试",
           "cancelled": "处理已取消",
           "failed": "处理出错",
           "noProject": "未找到当前项目，无法保存结果",

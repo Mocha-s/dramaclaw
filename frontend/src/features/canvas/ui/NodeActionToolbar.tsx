@@ -141,6 +141,7 @@ import { analyzeVideoStory } from "@/features/canvas/application/videoAnalyzeSto
 import { separateVideoAudio } from "@/features/canvas/application/videoSeparateAudio";
 import { openHtmlArtifact, readHtmlArtifact, exportHtmlArtifact } from "@/features/html-artifacts/api";
 import { readUrl } from "@/lib/url-params";
+import { browserCodecBlockReason } from "@/features/canvas/application/browserCodecSupport";
 import { DEPTH_MAX_DURATION_SEC } from "@/features/canvas/application/depthCapture/depthMath";
 import {
   findActiveDepthCaptureNodeId,
@@ -1214,6 +1215,19 @@ export const NodeActionToolbar = memo(
     // 算完上传写回 videoUrl。时长上限在这里先挡一次，免得白建节点。
     const handleStartVideoDepthCapture = useCallback(() => {
       const url = requireVideoUrl();
+      // WebCodecs 只在安全上下文可用：http:// 局域网地址访问下接口整体不存在，任务
+      // 只会死在 canDecode。入口先给出可照做的原因，别让节点白建（agent 的
+      // run_video_depth_capture 走同一入口，报错文本会原样回到对话）。
+      const codecBlock = browserCodecBlockReason();
+      if (codecBlock) {
+        throw new Error(
+          t(
+            codecBlock === "insecureContext"
+              ? "node.videoNode.depthCapture.errors.insecureContext"
+              : "node.videoNode.depthCapture.errors.unsupportedBrowser",
+          ),
+        );
+      }
       const videoData = node.data as Record<string, unknown>;
       const projectId = readUrl().project;
       if (!projectId) {

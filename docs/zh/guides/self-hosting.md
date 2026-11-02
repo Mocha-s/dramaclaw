@@ -44,3 +44,4 @@ docker compose up -d --build
 - 容器启动失败：运行 `docker compose logs api` 和 `docker compose config --quiet`。
 - 模型调用失败：检查外部 URL、协议、API key、能力和上游模型映射。
 - 外部网关不可达：确认该地址能从 `api` 容器访问，且不是仅绑定宿主机回环地址。
+- 浏览器端工具报错（深度动作捕捉、画面裁切等）：这些功能依赖 WebCodecs / WebGPU，浏览器仅在安全上下文（HTTPS 或 localhost）开放这些接口。以 http:// 局域网地址访问时请改用 HTTPS，或在 Chrome 的 chrome://flags/#unsafely-treat-insecure-origin-as-secure 中把本站加入白名单并重启浏览器。
