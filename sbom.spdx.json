@@ -7,7 +7,7 @@
     ]
   },
   "dataLicense": "CC0-1.0",
-  "documentNamespace": "https://supertale.local/spdx/supertale-ce/de95fe7609309319",
+  "documentNamespace": "https://supertale.local/spdx/supertale-ce/723f56735ffc39b5",
   "name": "supertale-ce-p0b-sbom",
   "packages": [
     {
@@ -18,7 +18,7 @@
       "licenseConcluded": "Elastic-2.0",
       "licenseDeclared": "Elastic-2.0",
       "name": "supertale-ce",
-      "versionInfo": "2.0.6"
+      "versionInfo": "2.1.1"
     },
     {
       "SPDXID": "SPDXRef-Package-aiofiles",
@@ -249,6 +249,26 @@
       "licenseDeclared": "MIT",
       "name": "black",
       "versionInfo": "26.5.1"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-boto3",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "name": "boto3",
+      "versionInfo": "1.43.121"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-botocore",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "name": "botocore",
+      "versionInfo": "1.43.121"
     },
     {
       "SPDXID": "SPDXRef-Package-cbor2",
@@ -2001,6 +2021,16 @@
       "versionInfo": "0.15.20"
     },
     {
+      "SPDXID": "SPDXRef-Package-s3transfer",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "name": "s3transfer",
+      "versionInfo": "0.19.3"
+    },
+    {
       "SPDXID": "SPDXRef-Package-safetensors",
       "copyrightText": "NOASSERTION",
       "downloadLocation": "NOASSERTION",
@@ -2554,6 +2584,16 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-black",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-supertale-ce"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-boto3",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-supertale-ce"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-botocore",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Package-supertale-ce"
     },
@@ -3429,6 +3469,11 @@
     },
     {
       "relatedSpdxElement": "SPDXRef-Package-ruff",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-supertale-ce"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-s3transfer",
       "relationshipType": "DEPENDS_ON",
       "spdxElementId": "SPDXRef-Package-supertale-ce"
     },

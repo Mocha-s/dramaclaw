@@ -1,6 +1,7 @@
 """Model gateway configuration endpoints for CE."""
 
 from __future__ import annotations
+import asyncio
 
 from typing import Any
 from urllib.parse import urlsplit
@@ -236,6 +237,12 @@ class MediaRelayConfigBody(BaseModel):
     public_endpoint: str | None = Field(default=None, alias="publicEndpoint")
     port: int | None = None
     use_ssl: bool | None = Field(default=None, alias="useSSL")
+    s3_endpoint: str | None = Field(default=None, alias="s3Endpoint")
+    s3_bucket: str | None = Field(default=None, alias="s3Bucket")
+    s3_access_key_id: str | None = Field(default=None, alias="s3AccessKeyId")
+    s3_access_key_secret: str | None = Field(default=None, alias="s3AccessKeySecret")
+    s3_region: str | None = Field(default=None, alias="s3Region")
+    s3_path_style: bool | None = Field(default=None, alias="s3PathStyle")
 
 
 class NewApiDatabaseBody(BaseModel):
@@ -1105,7 +1112,7 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
     except PermissionError as exc:
         raise _permission_error(exc) from exc
     provider = body.provider.strip().lower()
-    if provider not in {"aliyun_oss", "cloudinary", "minio"}:
+    if provider not in {"aliyun_oss", "cloudinary", "minio", "s3"}:
         raise HTTPException(status_code=400, detail="unsupported media relay provider")
     if body.ttl_seconds <= 0:
         raise HTTPException(status_code=400, detail="ttlSeconds must be positive")
@@ -1114,6 +1121,8 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
             status_code=400,
             detail="MinIO presigned URL TTL must not exceed 7 days",
         )
+    if provider == "s3" and body.ttl_seconds > 604800:
+        raise HTTPException(status_code=400, detail="S3 ttlSeconds must not exceed 604800")
     current = get_effective_media_relay_config(
         env_provider=app_config.MEDIA_RELAY_PROVIDER,
         env_ttl_seconds=app_config.MEDIA_RELAY_TTL_SECONDS,
@@ -1172,6 +1181,14 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
     cloudinary_folder = merge_field(
         body.cloudinary_folder, current.cloudinary_folder
     ).strip("/")
+    s3_endpoint = merge_field(body.s3_endpoint, current.s3_endpoint)
+    s3_bucket = merge_field(body.s3_bucket, current.s3_bucket)
+    s3_access_key_id = merge_field(body.s3_access_key_id, current.s3_access_key_id, secret=True)
+    s3_access_key_secret = merge_field(
+        body.s3_access_key_secret, current.s3_access_key_secret, secret=True
+    )
+    s3_region = merge_field(body.s3_region, current.s3_region)
+    s3_path_style = current.s3_path_style if body.s3_path_style is None else body.s3_path_style
     minio_endpoint = (
         merge_field(body.endpoint, current.minio_endpoint)
         if provider == "minio"
@@ -1208,6 +1225,14 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
             "cloudName": cloud_name,
             "apiKey": cloudinary_api_key,
             "apiSecret": cloudinary_api_secret,
+        }
+    elif provider == "s3":
+        required = {
+            "s3Endpoint": s3_endpoint,
+            "s3Bucket": s3_bucket,
+            "s3AccessKeyId": s3_access_key_id,
+            "s3AccessKeySecret": s3_access_key_secret,
+            "s3Region": s3_region,
         }
     elif provider == "aliyun_oss":
         required = {
@@ -1273,6 +1298,40 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
         raise HTTPException(
             status_code=400, detail=f"missing fields: {', '.join(missing)}"
         )
+    from novelvideo.model_gateway_settings import EffectiveMediaRelayConfig
+    from novelvideo.storage.media_errors import MediaStorageUnavailable
+    from novelvideo.storage.media_preflight import verify_media_storage
+
+    candidate = EffectiveMediaRelayConfig(
+        source="database",
+        provider=provider,
+        ttl_seconds=body.ttl_seconds,
+        endpoint=endpoint,
+        bucket=bucket,
+        access_key_id=access_key_id,
+        access_key_secret=access_key_secret,
+        cloud_name=cloud_name,
+        cloudinary_api_key=cloudinary_api_key,
+        cloudinary_api_secret=cloudinary_api_secret,
+        cloudinary_folder=cloudinary_folder,
+        minio_endpoint=minio_endpoint,
+        minio_public_endpoint=minio_public_endpoint,
+        minio_port=int(minio_port),
+        minio_use_ssl=bool(minio_use_ssl),
+        minio_bucket=minio_bucket,
+        minio_access_key=minio_access_key,
+        minio_secret_key=minio_secret_key,
+        s3_endpoint=s3_endpoint,
+        s3_bucket=s3_bucket,
+        s3_access_key_id=s3_access_key_id,
+        s3_access_key_secret=s3_access_key_secret,
+        s3_region=s3_region,
+        s3_path_style=s3_path_style,
+    )
+    try:
+        await asyncio.to_thread(verify_media_storage, candidate, force=True)
+    except MediaStorageUnavailable as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
     save_media_relay_config(
         provider=provider,
         ttl_seconds=body.ttl_seconds,
@@ -1291,6 +1350,12 @@ async def save_media_relay_settings(body: MediaRelayConfigBody) -> dict[str, Any
         minio_bucket=minio_bucket,
         minio_access_key=minio_access_key,
         minio_secret_key=minio_secret_key,
+        s3_endpoint=s3_endpoint,
+        s3_bucket=s3_bucket,
+        s3_access_key_id=s3_access_key_id,
+        s3_access_key_secret=s3_access_key_secret,
+        s3_region=s3_region,
+        s3_path_style=s3_path_style,
     )
     return {"ok": True, "data": _media_relay_status()}
 

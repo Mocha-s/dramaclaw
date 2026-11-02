@@ -166,7 +166,7 @@ Xia Director turns natural-language creative briefs into executable canvas workf
 
 - **Canvas workflow orchestration** &mdash; plan, create, connect and arrange nodes from a creative brief; execute confirmed workflows with progress tracking and failure recovery.
 - **Workflow catalog and skill extensions** &mdash; 11 workflow skills and 60 recipes covering short drama, e-commerce ads, IP character ads and social content; install, export and share skill / recipe bundles.
-- **External agent integration** &mdash; [Agent Kit](agent-kit/README.md) exposes the same production workflows to Codex, Claude Code, OpenClaw, Hermes, WorkBuddy and other MCP clients.
+- **External agent integration** &mdash; [Agent Kit](agent-kit/README.md) exposes the same production workflows to Codex, Claude Code, OpenClaw, WorkBuddy and other MCP clients.
 - **Project context and task management** &mdash; inspect project progress, advance script and shot tasks, check deliverable completeness and identify the next production steps.
 
 <br/>
@@ -347,11 +347,24 @@ docker compose up -d --build   # builds and starts api / web
 
 The app connects to official or third-party gateways configured in Settings → Model Config.
 
-**No build** — pull published images instead (no gateway clone needed):
+**No build** — pull published images instead (nothing else to clone):
+
+For **v2.1.1**, add or update this entry in `.env` before starting:
+
+```dotenv
+DRAMACLAW_VERSION=2.1.1
+```
 
 ```bash
+docker compose -f docker-compose.release.yml config --images
+docker compose -f docker-compose.release.yml pull
 docker compose -f docker-compose.release.yml up -d
 ```
+
+These versions are also the release Compose defaults. Explicit pins make your intended
+release clear when upgrading. Do not add `--build` for this mode. The Agent defaults to
+the bundled credential-safe Codex 0.164.0 runtime; an existing `DRAMACLAW_CHAT_BACKEND`
+value in your shell or `.env` overrides that default.
 
 Open the app at <http://localhost:8080>; the REST API is at <http://localhost:8780>. In **Settings → Model Config** pick one of:
 
@@ -370,18 +383,23 @@ Pin versions or switch registry in `.env` (`DRAMACLAW_VERSION`, `DRAMACLAW_IMAGE
 git clone https://github.com/dramaclaw/dramaclaw.git
 cd dramaclaw
 
-uv sync
 cp .env.example .env && $EDITOR .env
-
-scripts/start-ce.sh   # installs dependencies, then starts the API and bundled frontend
+scripts/start-ce.sh
 ```
 
-For frontend development with hot reload: `cd frontend && pnpm install && pnpm dev`.
+The launcher installs dependencies and starts both the API at <http://localhost:8780>
+and the hot-reloading UI at <http://localhost:5173>. Stop both with Ctrl+C.
+Local development needs Python 3.11–3.12, `uv`, Node.js/pnpm, curl and ffmpeg.
+Source Docker builds are not hot-reloading: rebuild `api web` after changing their code.
 
-The local launcher installs Hermes in an isolated environment and explicitly uses it as the
-safe source-checkout chat runtime. Source-built Docker images ship the patched Codex App
-Server runtime and default to Codex. The pinned 2.0.4 release image uses Hermes. To run the API command directly, configure a supported chat backend
-first; do not rely on the stock Codex binary for gateway credentials.
+Docker builds at v2.1.1 include credential-safe Codex 0.164.0; both source and release
+Compose default to Codex. The native launcher downloads the public patched **0.164.0**
+runtime for macOS Apple Silicon/Intel or Linux x64/ARM64, verifies its pinned SHA256,
+and caches it under `runtime/codex/bin/` (or `NOVELVIDEO_RUNTIME_DIR`). No private
+repository access is needed. An explicit `CODEX_BIN` in `.env` selects your own patched
+executable and skips downloading; it is not automatically replaced or checksum-verified.
+Windows users should use WSL2 or Docker. Do not substitute the stock Codex CLI.
+See the [installation guide](docs/en/getting-started/installation.md) for API-only startup.
 
 **Gateway.** In **Official** mode paste the DC key in Settings. For **Custom** or **Hybrid**, add an external OpenAI-compatible or Gemini-compatible endpoint under Settings → Model Config.
 

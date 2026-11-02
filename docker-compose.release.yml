@@ -6,7 +6,7 @@
 # 服务：api（:8780）+ web（:8080）。第三方网关在应用的设置 → 模型中配置。
 services:
   api:
-    image: ${DRAMACLAW_IMAGE_PREFIX:-claymorelab}/dramaclaw:${DRAMACLAW_VERSION:-2.0.4}
+    image: ${DRAMACLAW_IMAGE_PREFIX:-claymorelab}/dramaclaw:${DRAMACLAW_VERSION:-2.1.1}
     restart: unless-stopped
     # 运行时从宿主 .env 注入 model/LLM key；镜像版允许没有 .env（首启后再补也行）。
     # environment: 块仍覆盖此处同名变量，保持 CE inline 模式强制不变。
@@ -24,8 +24,8 @@ services:
       NOVELVIDEO_STATE_DIR: /data/state
       NOVELVIDEO_RUNTIME_DIR: /data/runtime
       SOG_COMPRESSION_GPU: "${SOG_COMPRESSION_GPU:-cpu}"
-      DRAMACLAW_CHAT_BACKEND: "${DRAMACLAW_CHAT_BACKEND:-hermes}"
-      HERMES_CLI_PATH: /root/.local/bin/hermes
+      DRAMACLAW_CHAT_BACKEND: "${DRAMACLAW_CHAT_BACKEND:-codex}"
+      HERMES_CLI_PATH: /usr/local/bin/hermes
       SUPERTALE_ALLOW_UNSANDBOXED: "1"
     # 宿主发布端口可配，便于一机多套（每套换 ST_API_PORT + 换 -p 项目名）。
     # 冒号右侧 8780 是容器内端口，固定不变（web 经内部网络访问它）。
@@ -39,7 +39,7 @@ services:
   # they are overridden to the compose `api` service (internal port 8780). Open
   # the app at http://localhost:8080 — the browser only ever talks to web.
   web:
-    image: ${DRAMACLAW_IMAGE_PREFIX:-claymorelab}/dramaclaw-frontend:${DRAMACLAW_VERSION:-2.0.4}
+    image: ${DRAMACLAW_IMAGE_PREFIX:-claymorelab}/dramaclaw-frontend:${DRAMACLAW_VERSION:-2.1.1}
     restart: unless-stopped
     environment:
       BACKEND_HOST: api

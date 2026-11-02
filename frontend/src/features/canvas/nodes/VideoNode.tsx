@@ -831,8 +831,9 @@ export const VideoNode = memo(
     const videoEditAcceptsAudio =
       supportsVideoEdit &&
       (referenceCapsForMode(selectedVideoModel, "videoEdit")?.audio ?? 0) > 0;
-    const supportsHumanReview = selectedVideoModel?.humanReview === true;
-    const humanReview = Boolean(data.humanReview);
+    const supportsHumanReview =
+      genMode !== "textToVideo" && selectedVideoModel?.humanReview === true;
+    const humanReview = supportsHumanReview && Boolean(data.humanReview);
     const count: VideoGenCount = (data.count ?? 1) as VideoGenCount;
     const videoInputBilling = useMemo(() => {
       if (
@@ -3193,6 +3194,8 @@ export const VideoNode = memo(
           const diagnostics = resolveGenerationErrorDiagnostics(firstError, resolved.details);
           const haystack = `${displayErrorMessage}\n${diagnostics.details ?? ""}`;
           if (
+            supportsHumanReview &&
+            !humanReview &&
             haystack.includes(
               "InputImageSensitiveContentDetected.PrivateInformation",
             )
@@ -4330,8 +4333,8 @@ function VideoPlayerControls({
         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-dark/90 transition-colors hover:bg-white/[0.12] hover:text-text-dark"
         title={
           isPlaying
-            ? t("node.videoNode.player.pause", { defaultValue: "暂停" })
-            : t("node.videoNode.player.play", { defaultValue: "播放" })
+            ? t("node.videoNode.player.pause")
+            : t("node.videoNode.player.play")
         }
       >
         {isPlaying ? (
@@ -4367,8 +4370,8 @@ function VideoPlayerControls({
         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-dark/90 transition-colors hover:bg-white/[0.12] hover:text-text-dark"
         title={
           isMuted
-            ? t("node.videoNode.player.unmute", { defaultValue: "取消静音" })
-            : t("node.videoNode.player.mute", { defaultValue: "静音" })
+            ? t("node.videoNode.player.unmute")
+            : t("node.videoNode.player.mute")
         }
       >
         {isMuted ? (

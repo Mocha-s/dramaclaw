@@ -505,7 +505,8 @@
         "saving": "Đang lưu…",
         "error": "Tải ảnh đại diện thất bại, vui lòng thử lại"
       },
-      "setPassword": "Đặt mật khẩu"
+      "setPassword": "Đặt mật khẩu",
+      "languagePortuguese": "Português"
     }
   },
   "organization": {
@@ -904,7 +905,16 @@
     "waitingStageElapsed": "{{label}} · {{seconds}} giây",
     "waitingStageVeryLong": "Vẫn đang xử lý: {{label}} · {{seconds}} giây",
     "reconnectingAgent": "Đang kết nối lại với Xia Director",
-    "canvasReferenceOnlyPrompt": "Hãy tiếp tục từ node đã chọn trên canvas."
+    "canvasReferenceOnlyPrompt": "Hãy tiếp tục từ node đã chọn trên canvas.",
+    "directorRunMode": {
+      "manualLabel": "Chế độ thủ công",
+      "manualDescription": "Xác nhận từng bước tạo nội dung trước khi thực hiện",
+      "autoLabel": "Tự động chạy tập",
+      "autoDescription": "Sau lần xác nhận thứ hai, tự động xử lý tập này cho đến khi xảy ra lỗi hoặc hoàn thành video cuối cùng",
+      "running": "Tự động chạy tập · Đang chạy",
+      "awaitingIntervention": "Tự động chạy tập · Chờ xác nhận thay đổi",
+      "awaitingConfirmation": "Tự động chạy tập · Chờ xác nhận"
+    }
   },
   "freezone": {
     "chat": {
@@ -983,7 +993,34 @@
         "noAnswersSkipped": "Đã bỏ qua các câu hỏi này.",
         "noAnswersSubmitted": "Chưa gửi lựa chọn cụ thể nào.",
         "cancelledRequest": "Người dùng đã hủy yêu cầu trong lượt này."
-      }
+      },
+      "currentSelection": "Đang chọn",
+      "usedThisTurn": "Dùng trong lượt này",
+      "removeReference": "Xóa tham chiếu bảng vẽ",
+      "removeAllReferences": "Xóa tất cả tham chiếu bảng vẽ",
+      "clearReferences": "Xóa tất cả",
+      "selectSkill": "Chọn Skill",
+      "skillMenu": {
+        "title": "Kỹ năng",
+        "create": "Tạo",
+        "search": "Tìm Skill",
+        "noMatches": "Không có Skill phù hợp",
+        "empty": "Chưa có Skill ở đây",
+        "unavailable": "Chưa có Skill khả dụng",
+        "emptyHelp": "Yêu cầu Agent biến bảng vẽ hiện tại thành Skill, hoặc mô tả quy trình để tạo Skill riêng.",
+        "actions": {
+          "summarize-canvas": "Tạo Skill từ bảng vẽ",
+          "create-with-agent": "Tạo Skill cùng Agent"
+        }
+      },
+      "executionMode": {
+        "manualLabel": "Xác nhận thủ công",
+        "manualDescription": "Agent yêu cầu xác nhận trước khi thực hiện lệnh trên bảng vẽ",
+        "autoLabel": "Tạo tự động",
+        "autoDescription": "Agent tự động thực hiện các lệnh an toàn và báo cáo kết quả"
+      },
+      "canvasCommandsCancelled": "Thao tác canvas đã hết thờgi gian chờ và bị hủy tự động.",
+      "resizeWidth": "Điều chỉnh chiều rộng chat"
     },
     "canvases": {
       "defaultSection": "Canvas mặc định",
@@ -1473,7 +1510,31 @@
     "workflowRecovery": {
       "safetyReviewFailed": "Một số node không vượt qua kiểm duyệt an toàn",
       "editPrompt": "Sửa câu lệnh",
-      "skipNode": "Bỏ qua node"
+      "skipNode": "Bỏ qua node",
+      "discovered": "Phát hiện quy trình chưa hoàn thành",
+      "progress": "Đã hoàn thành {{completed}}/{{total}}, còn {{remaining}} nút",
+      "retryFailedOnly": "Chỉ thử lại các nút thất bại",
+      "resumeDownstream": "Tiếp tục phía dưới",
+      "dismiss": "Tạm bỏ qua",
+      "resumeFailed": "Không thể tiếp tục thực thi quy trình",
+      "retryFailed": "Không thể thử lại nút"
+    },
+    "canvasCommand": {
+      "commandValidation": "Xác thực lệnh",
+      "canvasContext": "Ngữ cảnh canvas"
+    },
+    "viewMode": {
+      "workflow": "Quy trình làm việc",
+      "board": "Storyboard",
+      "toggle": "Chuyển đổi chế độ xem canvas"
+    },
+    "agent": {
+      "create": "Tạo Agent mới",
+      "collapseHistory": "Thu gọn lịch sử Agent",
+      "expandHistory": "Mở rộng lịch sử Agent",
+      "resizeHistoryWidth": "Điều chỉnh chiều rộng lịch sử Agent",
+      "searchSessions": "Tìm kiếm phiên...",
+      "noMatches": "Không có Agent phù hợp"
     }
   },
   "theme": {
@@ -1512,7 +1573,11 @@
       "adminDecrease": "Quản trị viên trừ điểm",
       "adminRecharge": "Quản trị viên nạp điểm",
       "adminAdjustment": "Quản trị viên điều chỉnh thủ công",
-      "adminRechargeReceived": "Điểm nạp thủ công đã được cộng"
+      "adminRechargeReceived": "Điểm nạp thủ công đã được cộng",
+      "initialGrant": "Initial credit grant",
+      "accountInitialized": "Account initialization credits",
+      "subscriptionGrant": "Subscription credit grant",
+      "subscriptionReceived": "Credits granted for your paid subscription"
     },
     "balance": "Số dư credits hiện tại",
     "availableBalance": "Số dư credits khả dụng",
@@ -1672,7 +1737,8 @@
         "benefits": "Xem ưu đãi và quyền lợi dành cho tài khoản này.",
         "orders": "Xem các bản ghi nạp, cộng điểm, hoàn tiền và đơn bất thường.",
         "usage": "Xem điểm nhận được, điểm đã dùng và hoạt động gần đây.",
-        "help": "Tìm hiểu quy định cộng điểm, thời hạn và hoàn tiền."
+        "help": "Tìm hiểu quy định cộng điểm, thời hạn và hoàn tiền.",
+        "subscriptions": "Renew automatically through your payment account and receive credits according to the plan."
       },
       "firstPurchase": "Khách hàng mới",
       "mostPopular": "Phổ biến nhất",
@@ -2726,7 +2792,8 @@
     "listSeparator": ", ",
     "generationInputContentPolicyBlocked": "Loại lỗi: không vượt qua kiểm duyệt an toàn nội dung (ảnh đầu vào). Nếu ảnh có người thật đã cho phép sử dụng hình ảnh, hãy bật Kiểm duyệt người thật rồi thử lại; nếu không, hãy thay đầu vào.",
     "generationOutputContentPolicyBlocked": "Loại lỗi: không vượt qua kiểm duyệt an toàn nội dung (video hoặc ảnh đầu ra). Mô hình đã từ chối kết quả này. Hãy điều chỉnh các mô tả liên quan đến bạo lực, gây hại, quyền riêng tư hoặc nội dung nhạy cảm khác rồi thử lại.",
-    "generationContentPolicyBlocked": "Loại lỗi: không vượt qua kiểm duyệt an toàn nội dung. Mô hình đã từ chối yêu cầu tạo này. Hãy điều chỉnh câu lệnh hoặc thay đầu vào rồi thử lại."
+    "generationContentPolicyBlocked": "Loại lỗi: không vượt qua kiểm duyệt an toàn nội dung. Mô hình đã từ chối yêu cầu tạo này. Hãy điều chỉnh câu lệnh hoặc thay đầu vào rồi thử lại.",
+    "processing": "Đang xử lý…"
   },
   "ingest": {
     "title": "Nguồn truyện",
@@ -2852,7 +2919,9 @@
       "characterSeparator": ", ",
       "unknownLocation": "Không nhận diện được bối cảnh của phân cảnh",
       "empty": "Chương này không có nội dung phân cảnh",
-      "unparsedBody": "Phần văn bản nằm ngoài các phân cảnh nhận diện được"
+      "unparsedBody": "Phần văn bản nằm ngoài các phân cảnh nhận diện được",
+      "rowCount": "{{count}} phân cảnh",
+      "count": "{{count}} phân cảnh"
     },
     "chapterDetails": {
       "open": "Xem nội dung của {{chapter}}",
@@ -3387,7 +3456,11 @@
         "blocked": "Bị chặn do bước trước thất bại",
         "skipped": "Đã bỏ qua"
       }
-    }
+    },
+    "batchProgress": "Tiến độ lô {{settled}}/{{expected}}",
+    "runningCount": "Đang chạy {{count}}",
+    "waitingCount": "Đang chờ {{count}}",
+    "batchFailed": "{{failed}}/{{expected}} tác vụ thất bại"
   },
   "pikoMiniGame": {
     "statusEntry": "Giải lao cùng Piko",
@@ -4024,7 +4097,15 @@
         "generateGrokPrompt": "Tạo prompt Grok",
         "generateSubjectPrompt": "Tạo prompt chủ thể",
         "seedance2CropTitleWithAspect": "Cắt {{aspect}}",
-        "seedance2CropDragHandle": "Di chuyển vùng cắt"
+        "seedance2CropDragHandle": "Di chuyển vùng cắt",
+        "configureVoice": "Cấu hình giọng nói",
+        "audioDisabled": "Video này không có âm thanh",
+        "audioModeDefault": "Chế độ này dùng âm thanh mặc định. Dùng chế độ đa phương thức để sử dụng giọng nhân vật.",
+        "audioModelDefault": "Dùng âm thanh mặc định của mô hình",
+        "audioCharacterVoice": "Dùng giọng nhân vật",
+        "audioMissingVoiceTitle": "Chưa cấu hình giọng nói",
+        "audioMissingVoice": "Một số nhân vật hoặc người kể chưa có giọng nói. Tiếp tục dùng âm thanh mặc định? Không đảm bảo giọng nhất quán.",
+        "audioContinue": "Bật âm thanh"
       },
       "sketch": {
         "switched": "Đã đổi phác thảo",
@@ -4496,14 +4577,28 @@
         "invalidBeats": "Các beat đã chọn không thuộc tập phim này",
         "noBeats": "Tập này chưa có beat nào"
       },
-      "paddingCount": "+{{count}} ô trống"
+      "paddingCount": "+{{count}} ô trống",
+      "partial": {
+        "reason": {
+          "unknown": "Một số tác vụ chưa được gửi."
+        },
+        "summary": "Đã gửi {{ok}} / bị từ chối {{fail}}",
+        "continue": "Tiếp tục"
+      }
     },
     "renderSettings": {
       "model": "Model render",
       "modelPlaceholder": "Chọn model",
       "quality": "Chất lượng hình ảnh",
       "imageSize": "Kích thước ảnh",
-      "qualityOptions": { "auto": "Tự động", "low": "Thấp", "medium": "Trung bình", "high": "Cao", "xhigh": "Siêu cao", "max": "Tối đa" }
+      "qualityOptions": {
+        "auto": "Tự động",
+        "low": "Thấp",
+        "medium": "Trung bình",
+        "high": "Cao",
+        "xhigh": "Siêu cao",
+        "max": "Tối đa"
+      }
     },
     "sketchSettings": {
       "model": "Model phác thảo",
@@ -4948,7 +5043,9 @@
         "createHint": "Tạo xong là dùng ngay được để xếp và tải asset vào",
         "renameHint": "Tên mới hiện ra khắp thư viện asset"
       },
-      "commitDragHint": "Giữ và kéo sang thư viện tư liệu bên trái để thay thế tư liệu cùng loại"
+      "commitDragHint": "Giữ và kéo sang thư viện tư liệu bên trái để thay thế tư liệu cùng loại",
+      "itemCount": "{{count}} asset",
+      "bulkSelected": "Đã chọn {{count}} (chỉ xoá được asset tải lên từ máy)"
     },
     "referencePick": {
       "kind": {
@@ -5313,7 +5410,17 @@
       "batchDelete": "Xoá tất cả",
       "arrangeGrid": "Xếp lưới",
       "arrangeHorizontal": "Xếp ngang",
-      "arrangeVertical": "Xếp dọc"
+      "arrangeVertical": "Xếp dọc",
+      "workflowRunning": "Quy trình đang chạy",
+      "workflowRunningShort": "Đang chạy",
+      "workflowStoppedNext": "Đã dừng các node tiếp theo",
+      "workflowStopNextTitle": "Dừng khởi chạy các node tiếp theo trong quy trình",
+      "workflowWaitingCurrent": "Đang chờ node hiện tại",
+      "workflowStopNext": "Dừng các node tiếp theo",
+      "workflowCompleted": "Quy trình đã hoàn tất",
+      "workflowRun": "Chạy quy trình",
+      "workflowRerunAllTitle": "Chạy lại toàn bộ node trong quy trình",
+      "workflowRerunAll": "Chạy lại tất cả"
     },
     "nodeToolbar": {
       "mainlineLocked": "Bản chiếu từ luồng chính · đã khoá",
@@ -5331,7 +5438,9 @@
       "arrangeGrid": "Lưới",
       "arrangeHorizontal": "Ngang",
       "arrangeVertical": "Dọc",
-      "commitHint": "Ghi nội dung của node này về asset trong luồng chính"
+      "commitHint": "Ghi nội dung của node này về asset trong luồng chính",
+      "recipeFallbackTitle": "Biên dịch model Recipe đã hết thời gian; tác vụ tiếp tục với prompt dự phòng ổn định",
+      "recipeFallbackLabel": "Recipe đã biên dịch bằng phương án dự phòng"
     },
     "style": {
       "chip": "Phong cách",
@@ -5721,7 +5830,9 @@
       "m4aSourceOnlyHint": "chỉ khi nguồn là m4a",
       "m4aSourceOnly": "Nguồn không phải m4a nên không chuyển sang m4a được",
       "downloadFailed": "Tải âm thanh thất bại"
-    }
+    },
+    "nodeId": "ID nút",
+    "copyNodeId": "Sao chép ID nút"
   },
   "multiAngleEditor": {
     "title": "Trình chỉnh đa góc nhìn",
@@ -6422,7 +6533,8 @@
           "noProject": "Không tìm thấy dự án hiện tại nên không thể lưu kết quả",
           "alreadyRunning": "Video này vẫn đang được bắt chuyển động chiều sâu. Hãy chờ hoàn tất"
         }
-      }
+      },
+      "billingRuleMissingSubmit": "Chưa khởi động tạo video: quy tắc thanh toán chưa được cấu hình. Vui lòng liên hệ quản trị viên để thiết lập quy tắc tín dụng rồi thử lại."
     },
     "pano360": {
       "captureGroup2x2": "Bộ ảnh chụp toàn cảnh (4)",
@@ -6804,7 +6916,8 @@
       },
       "extendLockReason": "Nối tiếp thông minh luôn dùng Seedance 2.5, không thể đổi model hoặc chế độ",
       "extendPlaceholder": "Nhập nội dung cần nối tiếp",
-      "modeRestrictedDefault": "Node này không hỗ trợ chuyển chế độ tạo"
+      "modeRestrictedDefault": "Node này không hỗ trợ chuyển chế độ tạo",
+      "externalMedia": "Tư liệu bên ngoài"
     },
     "threeDWorld": {
       "upstreamNodeFallback": "Node phía trên",
@@ -6836,6 +6949,26 @@
       "directorCaptureSizeFailed": "Không đọc được kích thước ảnh chụp thế giới đạo diễn",
       "directorElement": "Phần tử đạo diễn",
       "directorExportLabel": "Xuất thế giới đạo diễn"
+    },
+    "imageGeneration": {
+      "quality": "Chất lượng",
+      "resolution": "Độ phân giải",
+      "aspectRatio": "Tỷ lệ khung hình",
+      "assetLibrary": "Thư viện tài nguyên",
+      "assetLibraryHint": "Chọn ảnh tham chiếu từ thư viện tài nguyên (nhân vật / cảnh / đạo cụ)",
+      "upstreamReference": "Từ nút nguồn · {{name}}",
+      "detachReference": "Bỏ liên kết tài nguyên tham chiếu này"
+    },
+    "stylePicker": {
+      "title": "Phong cách",
+      "other": "Khác",
+      "clear": "Xóa",
+      "close": "Đóng",
+      "loading": "Đang tải…",
+      "empty": "Không có mẫu phong cách"
+    },
+    "imageGenNode": {
+      "billingRuleMissingSubmit": "Chưa khởi động tạo ảnh: quy tắc thanh toán chưa được cấu hình. Vui lòng liên hệ quản trị viên để thiết lập quy tắc tín dụng rồi thử lại."
     }
   },
   "viewer": {
@@ -7614,7 +7747,8 @@
           "STAGING_PROP": "Lên kế hoạch đạo cụ tạm thời trong Director World",
           "COGNEE": "① Hiểu nội dung & trích xuất tri thức (LLM)",
           "FREEZONE_RECIPE_COMPILER": "Biên dịch và thực thi Recipe Freezone"
-        }
+        },
+        "addChannel": "Thêm kênh"
       },
       "embeddingModel": {
         "title": "② Vector hoá & tìm kiếm ngữ nghĩa (Embedding)",
@@ -7724,7 +7858,7 @@
     },
     "mediaStorage": {
       "title": "Image host / Lưu trữ media",
-      "description": "Cấu hình nơi trung chuyển media tham chiếu tạm thời mà NewAPI/các model dùng, qua Aliyun OSS hoặc Cloudinary.",
+      "description": "Cấu hình nơi trung chuyển media tham chiếu tạm thời mà NewAPI/các model dùng, qua Aliyun OSS, S3 hoặc Cloudinary.",
       "fullyManagedUpload": "Tải asset lên có quản lý toàn phần",
       "provider": "Nhà cung cấp",
       "providerAliyunOss": "Aliyun OSS",
@@ -7737,7 +7871,7 @@
       "configured": "Đã cấu hình",
       "notConfigured": "Chưa cấu hình",
       "warningIconLabel": "Chưa cấu hình lưu trữ media tham chiếu",
-      "notConfiguredImpact": "Chưa cấu hình lưu trữ media tham chiếu. Các luồng chỉ có chữ và text-to-image thường vẫn chạy được; nhưng những tính năng cần tải ảnh tham chiếu từ máy lên sẽ thất bại, gồm ảnh tham chiếu XiaHua, ảnh tham chiếu nhân vật, ảnh tạo hình, image-to-image, khung đầu của video và image-to-video. Hãy cấu hình Aliyun OSS hoặc Cloudinary.",
+      "notConfiguredImpact": "Chưa cấu hình lưu trữ media tham chiếu. Các luồng chỉ có chữ và text-to-image thường vẫn chạy được; nhưng những tính năng cần tải ảnh tham chiếu từ máy lên sẽ thất bại, gồm ảnh tham chiếu XiaHua, ảnh tham chiếu nhân vật, ảnh tạo hình, image-to-image, khung đầu của video và image-to-video. Hãy cấu hình Aliyun OSS, S3 hoặc Cloudinary.",
       "showSecret": "Hiện",
       "hideSecret": "Ẩn",
       "fieldsHint": "Giá trị đã lưu được cất trong CSDL cài đặt CE cục bộ; AccessKey đầy đủ không được trả về. Hãy để trống các thông tin đã lưu và chỉ nhập những trường bạn muốn thay.",
@@ -7754,7 +7888,8 @@
       "testUpload": "Thử tải lên",
       "testUploadPlaceholder": "Chức năng thử tải lên sắp có",
       "validation": {
-        "ttlSeconds": "TTL của signed URL phải lớn hơn 0"
+        "ttlSeconds": "TTL của signed URL phải lớn hơn 0",
+        "s3TtlSeconds": "Thời hạn URL S3 phải từ 1 đến 604800 giây"
       },
       "fields": {
         "cloudName": "Cloud Name",
@@ -7770,9 +7905,24 @@
         "minioPublicEndpoint": "Endpoint MinIO HTTPS công khai",
         "minioPort": "Cổng MinIO",
         "minioUseSSL": "Dùng HTTPS cho kết nối nội bộ",
-        "ttlSeconds": "TTL của signed URL (giây)"
+        "ttlSeconds": "TTL của signed URL (giây)",
+        "region": "Region / Khu vực",
+        "pathStyle": "Dùng địa chỉ path-style"
       },
-      "minioHint": "API dùng endpoint nội bộ. Endpoint HTTPS công khai phải truy cập được từ model upstream và không có đường dẫn. Thông tin xác thực MinIO chỉ lưu ở máy chủ."
+      "minioHint": "API dùng endpoint nội bộ. Endpoint HTTPS công khai phải truy cập được từ model upstream và không có đường dẫn. Thông tin xác thực MinIO chỉ lưu ở máy chủ.",
+      "providerS3": "Lưu trữ tương thích S3",
+      "saveS3": "Lưu cấu hình S3",
+      "s3SaveSuccess": "Đã lưu cấu hình S3",
+      "s3FieldsHint": "Nhập URL endpoint http(s) đầy đủ và thông tin xác thực dài hạn. Model phải truy cập được URL đã ký. Bật path-style nếu dịch vụ yêu cầu. Để trống để giữ khóa đã lưu.",
+      "errors": {
+        "MEDIA_STORAGE_TIMEOUT": "Kết nối lưu trữ media quá hạn. Hãy kiểm tra mạng và thử lại.",
+        "MEDIA_STORAGE_AUTH_INVALID": "Thông tin xác thực lưu trữ media không hợp lệ. Hãy kiểm tra AccessKey / API Key.",
+        "MEDIA_STORAGE_ACCESS_DENIED": "Bị từ chối truy cập lưu trữ media. Hãy kiểm tra thông tin xác thực và quyền tải lên/đọc.",
+        "MEDIA_STORAGE_TARGET_INVALID": "Đích lưu trữ media không khả dụng. Hãy kiểm tra bucket, endpoint hoặc thư mục.",
+        "MEDIA_STORAGE_CONFIG_INVALID": "Cấu hình lưu trữ media chưa đầy đủ hoặc tải lên thất bại. Hãy kiểm tra cài đặt lưu trữ đã chọn.",
+        "MEDIA_STORAGE_UNAVAILABLE": "Xác minh đọc/ghi lưu trữ media thất bại. Hãy kiểm tra kết nối và cài đặt rồi thử lại.",
+        "MEDIA_STORAGE_READ_MISMATCH": "Xác minh đọc lưu trữ media thất bại. Hãy kiểm tra cài đặt truy cập lưu trữ."
+      }
     },
     "codexBridge": {
       "title": "Cầu nối Codex cục bộ",
@@ -8100,14 +8250,54 @@
         "copyRawJson": "Sao chép JSON",
         "rawJsonCopied": "Đã sao chép JSON của Recipe",
         "rawJsonCopyFailed": "Sao chép thất bại; hãy sao chép thủ công"
-      }
+      },
+      "customizedShort": "Tùy chỉnh"
+    },
+    "freezoneSkillRecipe": {
+      "editTag": "Chỉnh sửa {{tag}}",
+      "deleteTag": "Xóa {{tag}}",
+      "collapseAssociatedRecipes": "Thu gọn các Recipes liên quan",
+      "expandAssociatedRecipes": "Mở rộng các Recipes liên quan",
+      "associatedRecipesCount": "{{count}} Recipe đã liên kết{{missing}}",
+      "noAssociatedRecipes": "Skill này hiện chưa có Recipe liên kết",
+      "addRecipe": "Thêm Recipe",
+      "localRecipeNotFound": "Không tìm thấy cấu hình Recipe cục bộ; ID liên kết này vẫn được giữ khi lưu.",
+      "view": "Xem",
+      "removeRecipe": "Xóa {{recipeId}}",
+      "addIdManually": "Thêm ID thủ công",
+      "enterRecipeId": "Nhập ID Recipe",
+      "add": "Thêm",
+      "noRecipesToAdd": "Không có Recipe nào để thêm",
+      "createSkillHint": "Bạn có thể nhờ XiaDao tóm tắt canvas hiện tại, hoặc mô tả quy trình làm việc để tạo Skill của riêng mình.",
+      "associatedRecipesMissing": ", {{count}} cấu hình không tìm thấy",
+      "searchRecipe": "Tìm Recipe",
+      "noDescription": "Không có mô tả",
+      "close": "Đóng",
+      "noSkills": "Chưa có Skill nào ở đây",
+      "generationType": {
+        "textGeneration": "Tạo văn bản",
+        "imageGeneration": "Tạo hình ảnh",
+        "videoGeneration": "Tạo video",
+        "audioGeneration": "Tạo âm thanh"
+      },
+      "closeRecipeDetailBackground": "Đóng nền chi tiết Recipe",
+      "closeRecipeDetail": "Đóng chi tiết Recipe",
+      "detail": {
+        "description": "Mô tả",
+        "resultSummary": "Tóm tắt kết quả",
+        "planningPrompt": "Gợi ý lập kế hoạch",
+        "mustHaveItems": "Các mục bắt buộc"
+      },
+      "mineTab": "Củati",
+      "use": "Sử dụng"
     }
   },
   "pricing": {
     "nativePrice": "Giá gốc nhà cung cấp: {{value}}",
     "originalPrice": "Giá niêm yết: {{value}}",
     "pointsCost": "Credits: {{count}}",
-    "grsaiTier": "Gói: {{price}} CNY / {{credits}} credits"
+    "grsaiTier": "Gói: {{price}} CNY / {{credits}} credits",
+    "perRunSuffix": "/lần"
   },
   "update": {
     "dialogTitle": "Đã có bản cập nhật",
@@ -8412,6 +8602,10 @@
       "characterFallback": "Nhân vật {{index}}",
       "roleLabel": "Vai",
       "descriptionLabel": "Mô tả"
+    },
+    "nodeSuggestions": {
+      "title": "Nút",
+      "noMatches": "Không có nút phù hợp"
     }
   },
   "productSurface": {
@@ -8704,5 +8898,379 @@
     "loadFailed": "Không thể đọc ảnh gốc. Vui lòng thử lại.",
     "saveFailed": "Không thể tạo kết quả. Hãy kiểm tra ảnh và dự án hiện tại.",
     "invalidSize": "Nhập số nguyên dương. Mỗi cạnh tối đa 16384 pixel; tổng tối đa 40 triệu pixel."
+  },
+  "subscriptions": {
+    "bill": {
+      "empty": "Chưa có hóa đơn",
+      "content": "Đăng ký {{name}}",
+      "pending": "Chờ thanh toán",
+      "unconfirmed": "Chưa xác nhận",
+      "paid": "Đã thanh toán",
+      "failed": "Thanh toán thất bại",
+      "closed": "Đã đóng",
+      "refunded": "Đã hoàn tiền",
+      "compensating": "Đang xử lý thanh toán trùng"
+    },
+    "createUnconfirmed": "Chưa xác nhận được kết quả yêu cầu. Bạn có thể chọn phương thức thanh toán khác trong khi hệ thống tự động kiểm tra yêu cầu trước đó.",
+    "periodPayment": "Số tiền thanh toán kỳ này: {{price}}",
+    "periodPaymentLabel": "Số tiền thanh toán kỳ này",
+    "currentPlan": "Gói hiện tại",
+    "previousPaymentUnconfirmed": "Kết quả thanh toán trước chưa được xác nhận. Vui lòng thử lại sau để tránh thanh toán trùng.",
+    "planPrice": "Giá gói: {{price}} mỗi {{months}} tháng",
+    "automaticRenewalEnabled": "Đã bật tự động gia hạn",
+    "automaticRenewalDisabled": "Đã tắt tự động gia hạn; quyền lợi đã trả phí được giữ đến khi hết hạn",
+    "automaticRenewalCancelling": "Đang xác nhận hủy tự động gia hạn",
+    "dodoQuoted": "Số tiền Dodo báo giá {{price}}",
+    "resubscribeAfterExpiry": "Quyền lợi thành viên hiện tại vẫn còn hiệu lực. Bạn có thể đăng ký lại sau khi hết hạn; không thể đăng ký trùng trong kỳ hiện tại.",
+    "cancelApplication": "Hủy yêu cầu đăng ký",
+    "cancelApplicationExplain": "Hệ thống sẽ kiểm tra với nhà cung cấp thanh toán và cố gắng hủy ủy quyền cùng các kỳ gia hạn sau. Nếu thanh toán đang xử lý, vẫn cần xác nhận kết quả. Thao tác này không yêu cầu hoàn tiền.",
+    "confirmCancelApplication": "Xác nhận yêu cầu hủy",
+    "pendingApplicationHint": "Nếu đã ủy quyền hoặc thanh toán, hãy kiểm tra trạng thái mới nhất trước để tránh thanh toán trùng. Nếu chưa hoàn tất, bạn có thể thử tiếp tục ủy quyền và thanh toán.",
+    "status": {
+      "awaitingPayment": "Chưa hoàn tất đăng ký; chưa xác nhận ủy quyền hoặc thanh toán đầu tiên",
+      "review": "Payment needs review; future renewal is stopped",
+      "cancellingSetup": "Setup is incomplete and cancellation was requested; authorization is still unconfirmed",
+      "cancelling": "Automatic renewal cancellation requested; checking the cancellation result with {{method}}",
+      "cancelled": "Future renewal cancelled; paid benefits remain",
+      "confirming": "Authorization or payment result is being confirmed",
+      "setupFailed": "Setup failed; you can select a plan again",
+      "active": "Automatic renewal enabled",
+      "paymentFailed": "Renewal payment failed; check your payment account"
+    },
+    "membershipActive": "{{name}} membership is valid until {{date}}.",
+    "membershipInactive": "No paid membership period is currently active.",
+    "renewAfterIntro": "After the first {{cycles}} cycles, renews every {{months}} month(s) at {{price}}.",
+    "monthlyEquivalent": "Equivalent to approximately {{price}} per month; the full period is charged at once.",
+    "introCycles": "First {{cycles}} billing cycles at {{price}} each.",
+    "title": "Subscription plans",
+    "intro": "Automatic renewal uses your payment account. Credits are granted under the plan rules and remain permanently valid.",
+    "refresh": "Refresh",
+    "loadError": "Unable to load subscriptions.",
+    "noPlans": "No subscription plans are currently available.",
+    "mine": "My subscriptions",
+    "current": "Current subscriptions / applications",
+    "currentEmpty": "No active subscriptions or pending applications.",
+    "history": "History ({{count}})",
+    "historyDescription": "Ended subscriptions and failed applications retained for reference.",
+    "details": "Details",
+    "paidUntil": "Paid period ends",
+    "cancel": "Cancel automatic renewal",
+    "retryPayment": "Retry this renewal",
+    "retryUnconfirmed": "Retry is not confirmed. Check the invoice status before trying again.",
+    "cancelExplain": "Stop future renewal charges. Your paid service period and already purchased monthly credit grants will continue. This does not request a refund.",
+    "confirmCancel": "Confirm cancellation",
+    "keep": "Keep subscription",
+    "cancelUnconfirmed": "Cancellation could not be confirmed. Refresh to check its status.",
+    "continueCheckout": "Continue authorization and payment",
+    "invoices": "Billing records",
+    "period": "Service period",
+    "amount": "Plan price / payment",
+    "dodoQuote": "At the configured exchange rate {{rate}}, Dodo payment is {{price}} before applicable tax. Confirm the amount at checkout.",
+    "dodoPaid": "Dodo payment {{price}}",
+    "quoteChanged": "The exchange-rate quote changed. No subscription was created. Review the updated payment amount and confirm the terms again.",
+    "creationRejected": "The payment channel cannot authorize this quote. No agreement or charge was requested. Ask an administrator to check the channel configuration.",
+    "state": "Status",
+    "grants": "Credit grants",
+    "method": "Payment method",
+    "renewPrice": "Renews every {{months}} month(s) at {{price}}.",
+    "monthlyCredits": "{{credits}} credits each month, permanently valid.",
+    "upfrontCredits": "{{credits}} credits granted after payment, permanently valid.",
+    "taxNote": "Applicable taxes, if any, are displayed at checkout.",
+    "consent": "I authorize automatic renewal and have read and accepted the",
+    "terms": "subscription terms",
+    "subscribe": "Subscribe",
+    "methods": {
+      "alipay": "Alipay",
+      "wxpay": "WeChat Pay",
+      "dodo": "Dodo"
+    },
+    "cycle": {
+      "1": "per month",
+      "3": "per quarter",
+      "12": "per year"
+    },
+    "invoiceStatus": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "paid": "Paid",
+      "failed": "Failed",
+      "refunded": "Refunded",
+      "closed": "Closed"
+    },
+    "grantStatus": {
+      "pending": "Scheduled",
+      "credited": "Granted",
+      "blocked": "Awaiting fulfillment",
+      "held": "Held for review"
+    },
+    "catalog": "Subscription plans",
+    "billingPeriod": "Billing period",
+    "perMonth": "/month",
+    "billingTotal": {
+      "1": "Billed {{price}} monthly",
+      "3": "Billed {{price}} quarterly",
+      "12": "Billed {{price}} annually"
+    },
+    "chooseTier": "Choose monthly credits for {{name}}",
+    "creditsLabel": "Monthly credits",
+    "grantLabel": "Credit delivery",
+    "periodUnavailable": "Unavailable for this option",
+    "billingPeriodLabels": {
+      "1": "Monthly",
+      "3": "Quarterly",
+      "12": "Yearly"
+    },
+    "allPeriods": "All periods",
+    "periodCredits": "Credits per period",
+    "grantModeShort": {
+      "monthly": "Monthly",
+      "upfront": "Upfront"
+    },
+    "renewalNote": "Auto renewal · Credits never expire",
+    "purchaseBlocked": "Your account has a subscription or an unresolved application. View it below and use Check latest status to reconcile it.",
+    "paymentUnavailable": "Some payment channels are unavailable. An administrator needs to check the payment service configuration. Please check again later.",
+    "recheckPayment": "Recheck payment channels",
+    "refreshStatus": "Check latest status",
+    "refreshingStatus": "Checking…",
+    "recoveryPending": "Your cancellation request is saved and awaiting provider confirmation. Check the latest status before subscribing again.",
+    "recoveryConfigUnavailable": "Unable to query this application because its payment configuration is unavailable. Ask an administrator to restore it, then retry. Cancellation is not confirmed.",
+    "recoveryUnavailable": "The payment provider result could not be confirmed. Please check again later. The application is retained to prevent duplicate charges.",
+    "statusUpdated": "The payment provider was queried and the current status updated."
+  },
+  "subscriptionReturn": {
+    "manage": "Xem hóa đơn",
+    "states": {
+      "compensating": {
+        "title": "Đang xử lý thanh toán trùng",
+        "description": "Hệ thống đang tự động xử lý khoản thanh toán trùng này. Gói đang hoạt động vẫn có thể sử dụng và quản lý bình thường. Kết quả sẽ được cập nhật trên hóa đơn."
+      },
+      "awaitingPayment": {
+        "title": "Chưa xác nhận ủy quyền và thanh toán đầu tiên",
+        "description": "Chưa xác nhận thanh toán đầu tiên. Bạn có thể quay lại chọn phương thức thanh toán. Khoản đã thanh toán sẽ được tự động kiểm tra và cập nhật trên hóa đơn."
+      },
+      "unconfirmed": {
+        "title": "Trạng thái vẫn chưa được xác nhận",
+        "description": "Hệ thống sẽ tiếp tục tự động kiểm tra và cập nhật hóa đơn. Bạn có thể quay lại để tiếp tục."
+      },
+      "checkoutUnavailable": {
+        "title": "Signup page unavailable",
+        "description": "This payment method cannot open its signup page right now. You can return to choose another method while we check the original attempt automatically."
+      },
+      "confirming": {
+        "title": "Confirming authorization and payment",
+        "description": "Checking the payment record. This page and your invoices will update automatically once confirmed."
+      },
+      "authorized": {
+        "title": "Authorized; awaiting first payment",
+        "description": "Renewal authorization is confirmed. The first payment and benefits are not yet confirmed."
+      },
+      "expired": {
+        "title": "Paid membership period ended",
+        "description": "The previous paid period has ended. Check renewal status in View subscription and invoices. Credits already granted remain available."
+      },
+      "paid": {
+        "title": "Period paid; credit grant processing",
+        "description": "Payment and membership are confirmed. Credits currently due are being processed. Do not pay again."
+      },
+      "active": {
+        "title": "Subscription active",
+        "description": "Payment, membership, and credits currently due are confirmed. Future grants follow the schedule below."
+      },
+      "failed": {
+        "title": "Authorization or payment incomplete",
+        "description": "This authorization or payment was not completed. You can return to choose a plan or another payment method."
+      },
+      "cancelled": {
+        "title": "Authorization cancelled",
+        "description": "The channel confirmed cancellation. Check paid benefits in My Benefits."
+      },
+      "review": {
+        "title": "Subscription needs review",
+        "description": "A payment or benefit requires review. Do not pay again; check your invoices."
+      },
+      "refunded": {
+        "title": "Subscription invoice refunded",
+        "description": "Check subscription invoices for the final refund and benefit outcome."
+      },
+      "unavailable": {
+        "title": "Subscription result unavailable",
+        "description": "Retry or check your invoices. A query failure does not mean payment failed."
+      }
+    },
+    "number": "Subscription ID",
+    "renewal": "Next renewal period starts {{date}}. Charge timing follows channel rules.",
+    "notRenewing": "Automatic renewal is off. Paid benefits remain."
+  },
+  "subscriptionCheckout": {
+    "linkUnavailable": "Chưa nhận được liên kết thanh toán. Bạn có thể chọn phương thức khác; hệ thống sẽ tự động kiểm tra yêu cầu trước đó.",
+    "existing": "Bạn đã có gói còn hiệu lực hoặc khoản thanh toán đã xác nhận đang được kích hoạt quyền lợi. Hãy xem quyền lợi của bạn.",
+    "recover": "Lấy lại liên kết thanh toán",
+    "orgCreditsInsufficient": "Tổ chức không đủ điểm khả dụng cho gói này. Vui lòng liên hệ quản trị viên tổ chức.",
+    "linkFailed": "Không thể tạo trang ủy quyền. Hãy chọn phương thức khác hoặc thử lại sau.",
+    "selectPlan": "Select plan",
+    "renewal": "Automatic renewal: {{price}} every {{months}} month(s)",
+    "amountDue": "Due for this billing period",
+    "renewalTiming": "The service period starts when the first payment is confirmed. The next renewal date appears after activation.",
+    "membership": "Paid membership period",
+    "months": "{{months}} month(s)",
+    "periodCredits": "Credits for this period",
+    "monthlyGrants": "{{credits}} credits per month, {{count}} grants this period. Granted credits remain permanently valid.",
+    "upfrontGrants": "{{credits}} credits granted after payment confirmation, permanently valid.",
+    "fullPeriod": "The full period is charged at once.",
+    "account": "Account receiving subscription benefits",
+    "cancelPolicy": "Cancel future automatic renewal in subscription management. Paid membership and scheduled grants for the paid period remain. Cancellation does not request a refund.",
+    "planChanged": "The plan version changed. Return and select it again to confirm the price and benefits.",
+    "confirm": "Confirm subscription and continue to payment",
+    "channelUnavailable": "This channel is currently unavailable. Choose another payment method or try again later.",
+    "viewStatus": "View request status",
+    "redirecting": "Opening payment page…",
+    "phoneRequiredTitle": "Bind a phone number first",
+    "phoneRequired": "To use the current Alipay subscription method, bind a phone number from the account menu at the top right of the workspace. Then return here and select Check again. You can also choose another payment method.",
+    "recheck": "Check again",
+    "checking": "Checking…",
+    "dodoDetails": "If email or billing details are needed, enter or confirm them at Dodo checkout.",
+    "agreementChanged": "Agreement terms changed or are unavailable. Review the current terms and confirm again.",
+    "agreementUnavailable": "This plan does not have published service terms and cannot be subscribed to yet."
+  },
+  "assetBoard": {
+    "referenceMaterials": "Tài liệu tham chiếu",
+    "zoomImage": "Xem ảnh lớn",
+    "prompt": "Câu lệnh",
+    "nodeMissing": "Nút này không còn tồn tại",
+    "clickToEdit": "Nhấp để chỉnh sửa",
+    "noText": "Không có nội dung văn bản",
+    "noScript": "Không có nội dung kịch bản",
+    "noShots": "Không có hàng cảnh quay",
+    "noDisplayContent": "Không có nội dung để hiển thị",
+    "shotNumber": "Cảnh quay",
+    "duration": "Thời lượng",
+    "visualDescription": "Mô tả hình ảnh",
+    "dialogue": "Lời thoại",
+    "contentSummary": "Tóm tắt nội dung",
+    "resolution": "Độ phân giải",
+    "referenceActions": "Thao tác cho {{name}}",
+    "edit": "Chỉnh sửa",
+    "locate": "Định vị",
+    "m4aOnly": "Chỉ có nguồn M4A",
+    "noKeyElements": "Không có yếu tố chính trong danh mục này",
+    "referenceDropHint": "Kéo asset, ảnh hoặc video vào đây để thêm làm tham chiếu",
+    "imageOpChipHint": "Nhấp để đổi chức năng; nhấn Backspace để xoá",
+    "upscaleResult": "Ảnh nâng độ phân giải",
+    "cropResult": "Kết quả cắt",
+    "rotateResult": "Kết quả xoay",
+    "crop": "Cắt",
+    "rotate": "Xoay",
+    "panoramaConfirm": "Tạo ảnh toàn cảnh 360° từ ảnh này?",
+    "panoramaResult": "Ảnh toàn cảnh 360°",
+    "durationSeconds": "{{count}} giây",
+    "generatingProgress": "Đang tạo {{percent}}%...",
+    "generating": "Đang tạo",
+    "assetDetail": "Chi tiết tài nguyên",
+    "back": "Quay lại",
+    "nodeActions": "Thao tác nút",
+    "duplicate": "Tạo bản sao",
+    "delete": "Xóa",
+    "closeDetail": "Đóng chi tiết",
+    "text": "Văn bản",
+    "image": "Hình ảnh",
+    "video": "Video",
+    "relightEditor": "Trình chỉnh sửa ánh sáng",
+    "multiAngleEditor": "Trình chỉnh sửa nhiều góc",
+    "ownReferenceImage": "Ảnh tham chiếu của nút",
+    "removeReferenceImage": "Xóa ảnh tham chiếu",
+    "panorama": "Toàn cảnh",
+    "panoramaTitle": "Tạo ảnh toàn cảnh 360° từ ảnh này và thêm nút xem toàn cảnh",
+    "multiAngle": "Nhiều góc",
+    "multiAngleTitle": "Mở trình chỉnh sửa nhiều góc (cầu chọn góc, chất lượng và câu lệnh)",
+    "relight": "Chiếu sáng lại",
+    "relightTitle": "Mở trình chỉnh sửa ánh sáng (hướng, độ sáng/nhiệt độ màu và chế độ thông minh)",
+    "moreActions": "Thao tác khác",
+    "download": "Tải xuống",
+    "regenerate": "Tạo lại",
+    "retryGeneration": "Gửi lại lần tạo này (thử lại sau lỗi)",
+    "gridTemplate": "Tạo từ ảnh này bằng mẫu lưới hoặc nhiều góc nhìn",
+    "editVideo": "Chỉnh sửa",
+    "composedVideo": "Video tổng hợp",
+    "upscaledVideoName": "Nâng độ phân giải ({{resolution}})",
+    "composeNeedsTwoVideos": "Cần ít nhất hai video đầu vào đã sẵn sàng",
+    "openComposeTimeline": "Mở dòng thời gian tổng hợp video",
+    "upscale": "Nâng độ phân giải",
+    "upscaleTitle": "Tăng độ phân giải bằng cách tạo nút kết quả mới trên canvas",
+    "fullscreen": "Toàn màn hình",
+    "fullscreenTitle": "Phát toàn màn hình",
+    "submitUpscale": "Gửi nâng độ phân giải",
+    "submitUpscaleTitle": "Tạo nút kết quả nâng độ phân giải trên canvas và gửi tác vụ",
+    "locateOnCanvas": "Định vị trên canvas",
+    "generationFailed": "Tạo thất bại",
+    "downloadConvert": "Tải xuống / chuyển đổi định dạng",
+    "resizeColumn": "Điều chỉnh độ rộng cột",
+    "all": "Tất cả",
+    "finalVideos": "Video hoàn chỉnh",
+    "clips": "Đoạn video",
+    "noTextNodes": "Không có nút văn bản trên canvas",
+    "noImageNodes": "Không có nút hình ảnh trên canvas",
+    "noVideoNodes": "Không có nút video trên canvas",
+    "noMatchingVideos": "Không có video phù hợp với bộ lọc hiện tại",
+    "filterVideos": "Lọc video",
+    "switchColumn": "Chuyển cột",
+    "expand": "Mở rộng",
+    "collapse": "Thu gọn",
+    "pendingGeneration": "Tạo sau khi xác nhận",
+    "sourceNotM4a": "Tệp nguồn không phải M4A nên không thể chuyển đổi sang M4A",
+    "audioDownloadFailed": "Tải âm thanh thất bại",
+    "downloadAs": "Tải xuống dưới dạng {{format}}",
+    "keyElements": "Yếu tố chính",
+    "setKeyElement": "Đặt làm yếu tố chính",
+    "clearKeyElement": "Bỏ yếu tố chính",
+    "current": "Hiện tại",
+    "audioLabel": "Âm thanh",
+    "categoryCharacter": "Nhân vật",
+    "categoryScene": "Cảnh",
+    "categoryObject": "Đồ vật",
+    "categoryOther": "Khác",
+    "audio": {
+      "musicDescription": "Mô tả âm nhạc",
+      "speechText": "Văn bản cần tổng hợp",
+      "musicPlaceholder": "Mô tả âm nhạc mong muốn: phong cách, nhạc cụ, nhịp điệu, không khí…",
+      "speechPlaceholder": "Nhập văn bản cần tổng hợp",
+      "fillerWords": "Hướng dẫn diễn đạt (tùy chọn)",
+      "fillerWordsPlaceholder": "Ví dụ: căng thẳng, hạ giọng, hơi sợ hãi",
+      "chooseVoice": "Chọn giọng tùy chỉnh",
+      "changeVoice": "Đổi giọng tùy chỉnh",
+      "voice": "Giọng",
+      "voiceNotSelected": "Chưa chọn (sẽ bỏ qua khi tạo)",
+      "customVoice": "Giọng tùy chỉnh",
+      "musicDuration": "Thời lượng nhạc",
+      "forceInstrumental": "Chỉ dùng nhạc không lời",
+      "respectSectionDurations": "Tuân theo thời lượng từng đoạn",
+      "textToMusic": "Văn bản thành nhạc",
+      "customVoiceNarration": "Thuyết minh bằng giọng tùy chỉnh",
+      "voiceSettings": "Cài đặt giọng (hiện tại: {{voice}})",
+      "notSelected": "Chưa chọn",
+      "advancedSettings": "Cài đặt nâng cao",
+      "enterMusicFirst": "Hãy nhập mô tả âm nhạc trước",
+      "enterSpeechFirst": "Hãy nhập văn bản cần tổng hợp trước",
+      "regenerate": "Tạo lại",
+      "generate": "Tạo"
+    }
+  },
+  "subscriptionAgreementDialog": {
+    "description": "Read the agreement, select the consent checkbox, and confirm to continue your current order.",
+    "body": "Agreement text",
+    "closeLabel": "Close agreement",
+    "close": "Close",
+    "consent": "I have read and agree to this agreement and authorize automatic renewal of my selected plan.",
+    "confirm": "Confirm and return to checkout",
+    "changed": "This agreement does not match the current plan or is not effective yet. Close this window and review the plan information."
+  },
+  "subscriptionAgreementPage": {
+    "back": "Back",
+    "backToSubscriptions": "Back to subscription plans",
+    "loading": "Loading agreement…",
+    "unavailable": "Agreement unavailable",
+    "unavailableHint": "This version may not be published or could not be loaded. Please retry later.",
+    "version": "Version v{{version}}",
+    "effectiveAt": "Effective: {{date}}",
+    "upcoming": "This version is not effective yet."
   }
 }

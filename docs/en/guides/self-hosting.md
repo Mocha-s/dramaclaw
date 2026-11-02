@@ -40,6 +40,8 @@ Never point a third-party group at the official endpoint or reuse the official k
 
 ## 3. Start, stop, and data
 
+Source build:
+
 ```bash
 docker compose ps
 docker compose logs -f api

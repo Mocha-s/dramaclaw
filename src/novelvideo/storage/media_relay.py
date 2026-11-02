@@ -13,9 +13,15 @@ import mimetypes
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
+from novelvideo.storage.media_errors import MediaRelayConfigError
+
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from novelvideo.storage.s3_relay import S3Relay
 
 AI_REFERENCE_JPEG_QUALITY = 95
 IMAGE_TRANSFORM_AI_REFERENCE_JPEG = "ai_reference_jpeg"
@@ -112,10 +118,6 @@ def validate_tenant_source_url(
     return str(value).strip()
 
 
-class MediaRelayConfigError(RuntimeError):
-    """Raised when the media relay is not configured for URL input."""
-
-
 class AliyunOSSRelay:
     """Upload transient bytes to Aliyun OSS and return a short-lived signed URL."""
 
@@ -126,6 +128,7 @@ class AliyunOSSRelay:
         bucket_name: str,
         access_key_id: str,
         access_key_secret: str,
+        connect_timeout: float | None = None,
     ) -> None:
         missing = [
             name
@@ -153,6 +156,7 @@ class AliyunOSSRelay:
             oss2.Auth(access_key_id, access_key_secret),
             f"https://{endpoint.strip()}",
             bucket_name.strip(),
+            **({"connect_timeout": connect_timeout} if connect_timeout is not None else {}),
         )
 
     def upload_bytes(
@@ -172,7 +176,16 @@ class AliyunOSSRelay:
         )
         if not _is_safe_object_key(key):
             raise ServiceEgressDenied("object-key")
-        self._bucket.put_object(key, data)
+        import oss2
+
+        try:
+            self._bucket.put_object(key, data)
+        except oss2.exceptions.RequestError as exc:
+            from requests.exceptions import Timeout
+
+            if isinstance(exc.exception, Timeout):
+                raise TimeoutError("OSS media relay upload timed out") from None
+            raise
         return self._bucket.sign_url("GET", key, int(ttl), slash_safe=True)
 
     def upload_file(self, path: str | Path, *, ttl: int = 1800) -> str:
@@ -318,6 +331,9 @@ class MinioRelay:
             ttl=ttl,
         )
 
+    def delete_object(self, key: str) -> None:
+        self._client.remove_object(self._bucket_name, key)
+
 
 class CloudinaryRelay:
     """Upload transient bytes to Cloudinary and return its secure delivery URL."""
@@ -329,6 +345,7 @@ class CloudinaryRelay:
         api_key: str,
         api_secret: str,
         folder: str = "",
+        request_timeout: float = 60.0,
     ) -> None:
         missing = [
             name
@@ -348,6 +365,7 @@ class CloudinaryRelay:
         self._api_key = api_key.strip()
         self._api_secret = api_secret.strip()
         self._folder = str(folder or "").strip().strip("/")
+        self._request_timeout = request_timeout
 
     def upload_bytes(
         self,
@@ -379,7 +397,7 @@ class CloudinaryRelay:
             f"{resource_type}/upload"
         )
         try:
-            with httpx.Client(timeout=60.0) as client:
+            with httpx.Client(timeout=self._request_timeout) as client:
                 response = client.post(
                     url,
                     data=payload,
@@ -414,7 +432,7 @@ class CloudinaryRelay:
         )
 
 
-def get_media_relay() -> AliyunOSSRelay | CloudinaryRelay | MinioRelay:
+def get_media_relay() -> AliyunOSSRelay | CloudinaryRelay | MinioRelay | S3Relay:
     """Build the configured media relay.
 
     The relay is intentionally not cached so tests can monkeypatch config and
@@ -443,6 +461,10 @@ def get_media_relay() -> AliyunOSSRelay | CloudinaryRelay | MinioRelay:
         env_minio_secret_key=getattr(config, "MINIO_RELAY_SECRET_KEY", ""),
     )
     provider = relay_config.provider
+    if provider == "s3":
+        from novelvideo.storage.s3_relay import build_s3_relay
+
+        return build_s3_relay(relay_config)
     if provider == "cloudinary":
         return CloudinaryRelay(
             cloud_name=relay_config.cloud_name,

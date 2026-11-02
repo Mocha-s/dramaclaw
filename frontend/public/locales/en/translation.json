@@ -18,18 +18,29 @@
     "confirm": "Confirm creation"
   },
   "referenceValidation": {
-    "firstFrame": "First frame", "lastFrame": "Last frame",
-    "title": "Reference media does not meet model requirements", "hint": "Correct the listed media before generating. Locate opens the corresponding canvas node.", "locate": "Locate media",
-    "image": "Image", "audio": "Audio", "video": "Video",
+    "firstFrame": "First frame",
+    "lastFrame": "Last frame",
+    "title": "Reference media does not meet model requirements",
+    "hint": "Correct the listed media before generating. Locate opens the corresponding canvas node.",
+    "locate": "Locate media",
+    "image": "Image",
+    "audio": "Audio",
+    "video": "Video",
     "format": "Actual format: {{actual}}; supported: {{expected}}.",
     "unreadable": "Unable to read or identify this media. Please upload a valid file.",
     "maxMB": "Actual size: {{actual}} MB; maximum: {{expected}} MB.",
-    "minWidth": "Width: {{actual}} px; minimum: {{expected}} px.", "maxWidth": "Width: {{actual}} px; maximum: {{expected}} px.",
-    "minHeight": "Height: {{actual}} px; minimum: {{expected}} px.", "maxHeight": "Height: {{actual}} px; maximum: {{expected}} px.",
-    "minAspectRatio": "Aspect ratio: {{actual}}; minimum: {{expected}}.", "maxAspectRatio": "Aspect ratio: {{actual}}; maximum: {{expected}}.",
-    "minFPS": "Frame rate: {{actual}} fps; minimum: {{expected}} fps.", "maxFPS": "Frame rate: {{actual}} fps; maximum: {{expected}} fps.",
-    "minDuration": "Duration: {{actual}} s; each clip must be at least {{expected}} s.", "maxDuration": "Duration: {{actual}} s; each clip must be at most {{expected}} s.",
-    "totalMinDuration": "Total reference duration: {{actual}} s; minimum: {{expected}} s.", "totalMaxDuration": "Total reference duration: {{actual}} s; maximum: {{expected}} s."
+    "minWidth": "Width: {{actual}} px; minimum: {{expected}} px.",
+    "maxWidth": "Width: {{actual}} px; maximum: {{expected}} px.",
+    "minHeight": "Height: {{actual}} px; minimum: {{expected}} px.",
+    "maxHeight": "Height: {{actual}} px; maximum: {{expected}} px.",
+    "minAspectRatio": "Aspect ratio: {{actual}}; minimum: {{expected}}.",
+    "maxAspectRatio": "Aspect ratio: {{actual}}; maximum: {{expected}}.",
+    "minFPS": "Frame rate: {{actual}} fps; minimum: {{expected}} fps.",
+    "maxFPS": "Frame rate: {{actual}} fps; maximum: {{expected}} fps.",
+    "minDuration": "Duration: {{actual}} s; each clip must be at least {{expected}} s.",
+    "maxDuration": "Duration: {{actual}} s; each clip must be at most {{expected}} s.",
+    "totalMinDuration": "Total reference duration: {{actual}} s; minimum: {{expected}} s.",
+    "totalMaxDuration": "Total reference duration: {{actual}} s; maximum: {{expected}} s."
   },
   "app": {
     "title": "SuperTale",
@@ -464,32 +475,32 @@
     "account": {
       "open": "Open account menu",
       "changeAvatar": "Change avatar",
-        "changePassword": "Change password",
-        "setPassword": "Set password",
-        "selectLanguage": "Select language",
-        "languageChinese": "中文",
-        "languageEnglish": "English",
-        "languageVietnamese": "Tiếng Việt",
-        "phoneBinding": {
-          "title": "Bind phone number",
-          "description": "Verify your current password and phone to link it to this account. You can then sign in by code. The phone cannot be changed or unlinked.",
-          "submit": "Confirm binding",
-          "success": "Phone linked. Your existing account and password still work.",
-          "inUse": "This phone belongs to another account and cannot be linked. Accounts are not merged automatically.",
-          "alreadyBound": "This account already has a phone. Refresh the page.",
-          "error": "Could not link the phone. Try again."
-        },
-        "avatarDialog": {
-          "title": "Change avatar",
-          "description": "Choose an image for your avatar. A clear square image works best.",
-          "previewHint": "Currently using the account initial avatar",
-          "choose": "Choose image",
-          "replace": "Replace image",
-          "fileHint": "PNG, JPG, WebP, or GIF",
-          "save": "Save avatar",
-          "saving": "Saving…",
-          "error": "Avatar upload failed, please try again"
-        },
+      "changePassword": "Change password",
+      "setPassword": "Set password",
+      "selectLanguage": "Select language",
+      "languageChinese": "中文",
+      "languageEnglish": "English",
+      "languageVietnamese": "Tiếng Việt",
+      "phoneBinding": {
+        "title": "Bind phone number",
+        "description": "Verify your current password and phone to link it to this account. You can then sign in by code. The phone cannot be changed or unlinked.",
+        "submit": "Confirm binding",
+        "success": "Phone linked. Your existing account and password still work.",
+        "inUse": "This phone belongs to another account and cannot be linked. Accounts are not merged automatically.",
+        "alreadyBound": "This account already has a phone. Refresh the page.",
+        "error": "Could not link the phone. Try again."
+      },
+      "avatarDialog": {
+        "title": "Change avatar",
+        "description": "Choose an image for your avatar. A clear square image works best.",
+        "previewHint": "Currently using the account initial avatar",
+        "choose": "Choose image",
+        "replace": "Replace image",
+        "fileHint": "PNG, JPG, WebP, or GIF",
+        "save": "Save avatar",
+        "saving": "Saving…",
+        "error": "Avatar upload failed, please try again"
+      },
       "passwordDialog": {
         "title": "Change password",
         "description": "Changing your password signs you out on every device. Sign in again with the new password.",
@@ -512,7 +523,8 @@
         "initializePartialSuccess": "Password set. Sign in again; some sessions are still being signed out.",
         "initializeExpired": "This OTP sign-in is no longer recent enough. Sign in with a new code and try again.",
         "error": "Could not change the password. Try again."
-      }
+      },
+      "languagePortuguese": "Português"
     }
   },
   "organization": {
@@ -911,7 +923,16 @@
     "scrollToBottom": "Back to bottom",
     "taskCompleteNotice": "✅ {{label}} is complete. Ask me to show the result, or move on to the next step.",
     "taskFailedNotice": "{{label}} failed: {{reason}}\nFix what the error points at before continuing.",
-    "taskFailedUnknownReason": "no specific reason was returned"
+    "taskFailedUnknownReason": "no specific reason was returned",
+    "directorRunMode": {
+      "manualLabel": "Manual mode",
+      "manualDescription": "Confirm each generation step before it runs",
+      "autoLabel": "Auto-run episode",
+      "autoDescription": "After a second confirmation, advance this episode automatically until a failure or the final video is complete",
+      "running": "Auto-run episode · Running",
+      "awaitingIntervention": "Auto-run episode · Awaiting change confirmation",
+      "awaitingConfirmation": "Auto-run episode · Awaiting confirmation"
+    }
   },
   "freezone": {
     "chat": {
@@ -990,12 +1011,46 @@
         "noAnswersSkipped": "These questions were skipped.",
         "noAnswersSubmitted": "No specific options were submitted.",
         "cancelledRequest": "The user cancelled this request."
-      }
+      },
+      "currentSelection": "Current selection",
+      "usedThisTurn": "Used this turn",
+      "removeReference": "Remove canvas reference",
+      "removeAllReferences": "Remove all canvas references",
+      "clearReferences": "Clear all",
+      "selectSkill": "Choose a Skill",
+      "skillMenu": {
+        "title": "Skills",
+        "create": "Create",
+        "search": "Search Skills",
+        "noMatches": "No matching Skills",
+        "empty": "No Skills here yet",
+        "unavailable": "No Skills available yet",
+        "emptyHelp": "Ask the agent to turn the current canvas into a Skill, or describe your workflow to create a custom Skill.",
+        "actions": {
+          "summarize-canvas": "Turn canvas into a Skill",
+          "create-with-agent": "Create a Skill with the agent"
+        }
+      },
+      "executionMode": {
+        "manualLabel": "Manual confirmation",
+        "manualDescription": "The agent asks for confirmation before executing canvas commands",
+        "autoLabel": "Auto-generate",
+        "autoDescription": "The agent automatically executes safe commands and reports the results"
+      },
+      "canvasCommandsCancelled": "Canvas operation timed out and was cancelled automatically.",
+      "resizeWidth": "Resize chat width"
     },
     "workflowRecovery": {
       "safetyReviewFailed": "Some nodes did not pass safety review",
       "editPrompt": "Edit prompt",
-      "skipNode": "Skip node"
+      "skipNode": "Skip node",
+      "discovered": "Unfinished workflow found",
+      "progress": "Completed {{completed}}/{{total}}, {{remaining}} nodes remaining",
+      "retryFailedOnly": "Retry failed only",
+      "resumeDownstream": "Resume downstream",
+      "dismiss": "Dismiss",
+      "resumeFailed": "Failed to resume workflow execution",
+      "retryFailed": "Failed to retry the node"
     },
     "canvases": {
       "defaultSection": "Default canvas",
@@ -1481,6 +1536,23 @@
       "metaFetchFailed": "Failed to read the director metadata: {{status}}",
       "metaInvalid": "The director metadata is malformed",
       "missingTargetPath": "The director composite was written but has no target path"
+    },
+    "canvasCommand": {
+      "commandValidation": "Command validation",
+      "canvasContext": "Canvas context"
+    },
+    "viewMode": {
+      "workflow": "Workflow",
+      "board": "Storyboard",
+      "toggle": "Toggle canvas view"
+    },
+    "agent": {
+      "create": "New Agent",
+      "collapseHistory": "Collapse agent history",
+      "expandHistory": "Expand agent history",
+      "resizeHistoryWidth": "Resize agent history width",
+      "searchSessions": "Search sessions...",
+      "noMatches": "No matching agents"
     }
   },
   "theme": {
@@ -1512,7 +1584,6 @@
       "orgDepartureSweep": "Credits reclaimed on departure",
       "orgRefundSweep": "Refunded credits reclaimed after departure",
       "orgTransfer": "Organization credit adjustment",
-
       "orgRecharge": "Organization credit recharge",
       "personalRecharge": "Credit recharge",
       "paymentReceived": "Payment received, credits added",
@@ -1520,7 +1591,11 @@
       "adminDecrease": "Credits deducted by administrator",
       "adminRecharge": "Administrator recharge",
       "adminAdjustment": "Manual adjustment by administrator",
-      "adminRechargeReceived": "Manual recharge credited by administrator"
+      "adminRechargeReceived": "Manual recharge credited by administrator",
+      "initialGrant": "Initial credit grant",
+      "accountInitialized": "Account initialization credits",
+      "subscriptionGrant": "Subscription credit grant",
+      "subscriptionReceived": "Credits granted for your paid subscription"
     },
     "balance": "Current credit balance",
     "short": "Credits",
@@ -1604,10 +1679,10 @@
     },
     "recharge": {
       "title": "Add credits",
-      "subtitle": "Choose a package and payment method. The order status is the source of truth.",
-      "loading": "Loading recharge packages…",
+      "subtitle": "Choose a credit pack and payment method. The order status is the source of truth.",
+      "loading": "Loading credit packs…",
       "unavailable": "Recharge is temporarily unavailable",
-      "empty": "No recharge packages are currently available",
+      "empty": "No credit packs are currently available",
       "credits": "{{count}} credits",
       "gift": "includes {{count}} bonus",
       "paymentMethod": "Payment method",
@@ -1621,8 +1696,8 @@
       "createFailed": "Could not create the payment order. Try again later.",
       "errors": {
         "tooManyPending": "You already have several unpaid orders. Complete or wait for them to close before trying again.",
-        "packageUnavailable": "This recharge package is no longer available. Refresh and choose another package.",
-        "purchaseLimit": "This recharge package has already reached its purchase limit.",
+        "packageUnavailable": "This credit pack is no longer available. Refresh and choose another pack.",
+        "purchaseLimit": "This credit pack has already reached its purchase limit.",
         "methodUnavailable": "The selected payment method is currently unavailable.",
         "orgCreditsInsufficient": "The organization does not have enough credits for this purchase.",
         "accountUnavailable": "This account is not eligible for the selected recharge.",
@@ -1642,7 +1717,7 @@
         "transactionTime": "Transaction time",
         "content": "Description",
         "time": "Created",
-        "package": "Package",
+        "package": "Credit pack",
         "amount": "Amount",
         "credits": "Credits",
         "status": "Status"
@@ -1667,7 +1742,7 @@
         "support": "Help and support"
       },
       "tabs": {
-        "packages": "Credit packages",
+        "packages": "Credit packs",
         "custom": "Custom recharge",
         "benefits": "My benefits",
         "orders": "Billing history",
@@ -1675,12 +1750,13 @@
         "help": "Recharge help"
       },
       "descriptions": {
-        "packages": "Purchase credit packages with no expiration date.",
+        "packages": "Make a one-time purchase of a credit pack. Credits never expire.",
         "custom": "Choose the number of credits you need.",
         "benefits": "Review promotions and benefits available to this account.",
         "orders": "Review recharge, fulfillment, refund, and exception records.",
         "usage": "Review earned credits, spending, and recent usage.",
-        "help": "Learn about fulfillment, validity, and refund rules."
+        "help": "Learn about fulfillment, validity, and refund rules.",
+        "subscriptions": "Renew automatically through your payment account and receive credits according to the plan."
       },
       "firstPurchase": "New customer",
       "mostPopular": "Most popular",
@@ -1689,10 +1765,10 @@
       "giftCredits": "Bonus credits",
       "totalCredits": "Credits received",
       "buyNow": "Buy now",
-      "packagesUnavailable": "No recharge packages are currently available",
+      "packagesUnavailable": "No credit packs are currently available",
       "pendingConfiguration": "Pending setup",
       "packageViews": {
-        "packages": "Credit packages",
+        "packages": "Credit packs",
         "enterprise": "Enterprise"
       },
       "packageTiers": {
@@ -1843,16 +1919,16 @@
   },
   "rechargeLink": {
     "title": "Recharge credits",
-    "subtitle": "Choose a recharge package and payment method.",
+    "subtitle": "Choose a credit pack and payment method.",
     "checking": "Checking your account…",
-    "loading": "Loading recharge packages…",
+    "loading": "Loading credit packs…",
     "loginTitle": "Sign in to continue",
     "loginRequired": "This recharge link is bound to an account or organization. Sign in with the intended account before paying.",
     "login": "Sign in",
     "invalidTitle": "Invalid recharge link",
     "invalid": "The recharge token is missing or malformed. Ask the issuer for a new link.",
     "unavailableTitle": "Recharge link unavailable",
-    "unavailable": "This link has expired, was disabled, does not belong to this account, or has no active package.",
+    "unavailable": "This link has expired, was disabled, does not belong to this account, or has no active credit pack.",
     "credits": "{{count}} credits",
     "methods": {
       "alipay": "Alipay",
@@ -2830,7 +2906,8 @@
     "pause": "Pause",
     "retry": "Retry",
     "requestId": "Request ID",
-    "listSeparator": ", "
+    "listSeparator": ", ",
+    "processing": "Processing…"
   },
   "ingest": {
     "title": "Story Source",
@@ -2956,7 +3033,9 @@
       "characterSeparator": ", ",
       "unknownLocation": "Scene location not detected",
       "empty": "No scene text is available in this chapter",
-      "unparsedBody": "Text outside recognized scenes"
+      "unparsedBody": "Text outside recognized scenes",
+      "rowCount": "{{count}} scenes",
+      "count": "{{count}} scenes"
     },
     "chapterDetails": {
       "open": "View the text of {{chapter}}",
@@ -3491,7 +3570,11 @@
       "sketchBackgroundIdentityProps": "Sketch + background + identities/props",
       "sketchCandidate": "Sketch candidate",
       "storyboardCandidate": "Storyboard candidate"
-    }
+    },
+    "batchProgress": "Batch progress {{settled}}/{{expected}}",
+    "runningCount": "Running {{count}}",
+    "waitingCount": "Waiting {{count}}",
+    "batchFailed": "{{failed}}/{{expected}} tasks failed"
   },
   "pikoMiniGame": {
     "statusEntry": "Piko Break",
@@ -4128,7 +4211,15 @@
         "seedance2GuidanceLightingTemplate": "Lighting: Describe the key light, tonal layers, color temperature, and atmosphere while avoiding unintended flicker.",
         "seedance2GuidanceCameraTemplate": "Camera: Specify shot size, viewpoint, movement speed, and direction so the camera move is clear and executable.",
         "seedance2GuidanceStyleTemplate": "Style: Define visual texture, period, color direction, and realism to prevent style drift.",
-        "seedance2GuidanceNoSubtitleTemplate": "No subtitles: Do not generate any text or subtitles; keep the frame visually clean."
+        "seedance2GuidanceNoSubtitleTemplate": "No subtitles: Do not generate any text or subtitles; keep the frame visually clean.",
+        "configureVoice": "Configure voice",
+        "audioDisabled": "No audio for this video",
+        "audioModeDefault": "This mode uses model default audio. Use multimodal mode for character voices.",
+        "audioModelDefault": "Use model default audio",
+        "audioCharacterVoice": "Use character voices",
+        "audioMissingVoiceTitle": "Voice not configured",
+        "audioMissingVoice": "Some character or narrator voices are not configured. Continue with model default audio? Voice consistency is not guaranteed.",
+        "audioContinue": "Enable audio"
       },
       "sketch": {
         "switched": "Sketch switched",
@@ -4600,14 +4691,28 @@
         "invalidBeats": "Selected beats are not in this episode",
         "noBeats": "This episode has no beats yet"
       },
-      "paddingCount": "+{{count}} empty"
+      "paddingCount": "+{{count}} empty",
+      "partial": {
+        "reason": {
+          "unknown": "Some tasks have not been dispatched yet."
+        },
+        "summary": "Dispatched {{ok}} / rejected {{fail}}",
+        "continue": "Continue"
+      }
     },
     "renderSettings": {
       "model": "Render model",
       "modelPlaceholder": "Select model",
       "quality": "Image quality",
       "imageSize": "Image size",
-      "qualityOptions": { "auto": "Auto", "low": "Low", "medium": "Medium", "high": "High", "xhigh": "Extra high", "max": "Maximum" }
+      "qualityOptions": {
+        "auto": "Auto",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "xhigh": "Extra high",
+        "max": "Maximum"
+      }
     },
     "sketchSettings": {
       "model": "Sketch model",
@@ -5052,7 +5157,9 @@
         "createHint": "Ready to use for filing and uploading assets as soon as it exists",
         "renameHint": "The new name shows up across the asset library"
       },
-      "commitDragHint": "Hold and drag to the asset library on the left to replace assets of the same type"
+      "commitDragHint": "Hold and drag to the asset library on the left to replace assets of the same type",
+      "itemCount": "{{count}} assets",
+      "bulkSelected": "{{count}} selected (only locally uploaded assets can be deleted)"
     },
     "referencePick": {
       "kind": {
@@ -5417,7 +5524,17 @@
       "batchDelete": "Delete all",
       "arrangeGrid": "Grid layout",
       "arrangeHorizontal": "Horizontal layout",
-      "arrangeVertical": "Vertical layout"
+      "arrangeVertical": "Vertical layout",
+      "workflowRunning": "Workflow is running",
+      "workflowRunningShort": "Running",
+      "workflowStoppedNext": "Next nodes stopped",
+      "workflowStopNextTitle": "Stop launching subsequent workflow nodes",
+      "workflowWaitingCurrent": "Waiting for current node",
+      "workflowStopNext": "Stop subsequent nodes",
+      "workflowCompleted": "Workflow completed",
+      "workflowRun": "Run workflow",
+      "workflowRerunAllTitle": "Rerun every workflow node",
+      "workflowRerunAll": "Rerun all"
     },
     "nodeToolbar": {
       "mainlineLocked": "Mainline projection · locked",
@@ -5435,7 +5552,9 @@
       "arrangeGrid": "Grid",
       "arrangeHorizontal": "Horizontal",
       "arrangeVertical": "Vertical",
-      "commitHint": "Write this node's content back to the mainline asset"
+      "commitHint": "Write this node's content back to the mainline asset",
+      "recipeFallbackTitle": "Recipe model compilation timed out; generation continued with the stable fallback prompt",
+      "recipeFallbackLabel": "Recipe compiled with fallback"
     },
     "style": {
       "chip": "Style",
@@ -5825,7 +5944,9 @@
       "m4aSourceOnlyHint": "m4a source only",
       "m4aSourceOnly": "Source isn't m4a, so it can't be converted to m4a",
       "downloadFailed": "Audio download failed"
-    }
+    },
+    "nodeId": "Node ID",
+    "copyNodeId": "Copy node ID"
   },
   "multiAngleEditor": {
     "title": "Multi-Dimension Editor",
@@ -6535,7 +6656,8 @@
           "noProject": "No current project found, so the result cannot be saved",
           "alreadyRunning": "Depth capture for this video is still in progress. Wait for it to finish"
         }
-      }
+      },
+      "billingRuleMissingSubmit": "Video generation did not start: billing rule is not configured. Please ask an administrator to set up the credit rule and try again."
     },
     "pano360": {
       "captureGroup2x2": "Panorama capture set (4)",
@@ -6917,7 +7039,8 @@
       },
       "extendLockReason": "Smart extend always uses Seedance 2.5; the model and mode cannot be changed",
       "extendPlaceholder": "Enter what you want to extend with",
-      "modeRestrictedDefault": "This node doesn't support switching generation mode"
+      "modeRestrictedDefault": "This node doesn't support switching generation mode",
+      "externalMedia": "External media"
     },
     "threeDWorld": {
       "upstreamNodeFallback": "Upstream node",
@@ -6949,6 +7072,26 @@
       "directorCaptureSizeFailed": "Could not read the director world capture dimensions",
       "directorElement": "Director element",
       "directorExportLabel": "Director world export"
+    },
+    "imageGeneration": {
+      "quality": "Quality",
+      "resolution": "Resolution",
+      "aspectRatio": "Aspect ratio",
+      "assetLibrary": "Asset library",
+      "assetLibraryHint": "Select a reference image from the asset library (character / scene / prop)",
+      "upstreamReference": "From upstream · {{name}}",
+      "detachReference": "Detach this reference"
+    },
+    "stylePicker": {
+      "title": "Style",
+      "other": "Other",
+      "clear": "Clear",
+      "close": "Close",
+      "loading": "Loading…",
+      "empty": "No style templates available"
+    },
+    "imageGenNode": {
+      "billingRuleMissingSubmit": "Image generation did not start: billing rule is not configured. Please ask an administrator to set up the credit rule and try again."
     }
   },
   "viewer": {
@@ -7650,7 +7793,8 @@
         "copyRawJson": "Copy JSON",
         "rawJsonCopied": "Recipe JSON copied",
         "rawJsonCopyFailed": "Copy failed; copy manually"
-      }
+      },
+      "customizedShort": "Custom"
     },
     "modelConfig": {
       "title": "Model Config",
@@ -7717,16 +7861,55 @@
       "thirdParty": {
         "title": "Third-party gateway",
         "description": "Configure one or more OpenAI, Gemini, or Claude/Anthropic gateway groups. Each group has its own endpoint, key, capabilities, and models.",
-        "newGroup": "New gateway group", "addGroup": "Add gateway group", "removeGroup": "Remove group",
-        "groupName": "Group name", "protocol": "Protocol", "baseUrl": "Base URL", "apiKey": "API Key",
-        "capabilitiesLabel": "Capabilities", "models": "Model mappings", "requestModel": "DramaClaw model pattern", "upstreamModel": "Upstream model", "unifiedRoute": "Unified text route", "unifiedRouteNone": "No unified route", "unifiedRouteHint": "Saves * → upstream model; exact rules take precedence.",
-        "videoEndpoint": "Video task endpoint", "videoEndpoints": { "videos": "Modern /videos", "legacy": "Legacy /video/generations" },
-        "modelsHint": "Map request model patterns to upstream models; exact matches take precedence.", "modelSearch": "Filter models", "fetchModels": "Fetch models", "availableModels": "Available models", "noModels": "No matching models",
-        "fetchFailed": "Could not fetch models. Check the URL, protocol, and API key, or enter model names manually.", "keyPlaceholder": "Enter API Key", "keyHint": "Keys are masked; enter a new key only when changing the endpoint.",
-        "save": "Save third-party gateway settings", "saved": "Third-party gateway groups saved.", "missingFields": "Complete each group name, Base URL, key, capability, and model mapping.",
+        "newGroup": "New gateway group",
+        "addGroup": "Add gateway group",
+        "removeGroup": "Remove group",
+        "groupName": "Group name",
+        "protocol": "Protocol",
+        "baseUrl": "Base URL",
+        "apiKey": "API Key",
+        "capabilitiesLabel": "Capabilities",
+        "models": "Model mappings",
+        "requestModel": "DramaClaw model pattern",
+        "upstreamModel": "Upstream model",
+        "unifiedRoute": "Unified text route",
+        "unifiedRouteNone": "No unified route",
+        "unifiedRouteHint": "Saves * → upstream model; exact rules take precedence.",
+        "videoEndpoint": "Video task endpoint",
+        "videoEndpoints": {
+          "videos": "Modern /videos",
+          "legacy": "Legacy /video/generations"
+        },
+        "modelsHint": "Map request model patterns to upstream models; exact matches take precedence.",
+        "modelSearch": "Filter models",
+        "fetchModels": "Fetch models",
+        "availableModels": "Available models",
+        "noModels": "No matching models",
+        "fetchFailed": "Could not fetch models. Check the URL, protocol, and API key, or enter model names manually.",
+        "keyPlaceholder": "Enter API Key",
+        "keyHint": "Keys are masked; enter a new key only when changing the endpoint.",
+        "save": "Save third-party gateway settings",
+        "saved": "Third-party gateway groups saved.",
+        "missingFields": "Complete each group name, Base URL, key, capability, and model mapping.",
         "warning": "Some legacy settings could not be migrated. Recreate them manually in your selected third-party gateway.",
-        "capabilities": { "text": "Text / Vision", "embedding": "Embedding", "image": "Image", "video": "Video", "audio": "Audio" },
-        "capabilityDefaults": { "title": "Capability defaults", "description": "Text and visual understanding share the text gateway; image, video, and audio use configured independent media groups.", "text": "Text / vision model", "reasoning": "Text reasoning effort", "reasoningHint": "Applies only to third-party text / visual understanding requests.", "embedding": "Embedding model", "notConfigured": "Not configured", "notConfiguredOptional": "Not configured (optional)", "discoveredUpstream": "{{n}} upstream models found" }
+        "capabilities": {
+          "text": "Text / Vision",
+          "embedding": "Embedding",
+          "image": "Image",
+          "video": "Video",
+          "audio": "Audio"
+        },
+        "capabilityDefaults": {
+          "title": "Capability defaults",
+          "description": "Text and visual understanding share the text gateway; image, video, and audio use configured independent media groups.",
+          "text": "Text / vision model",
+          "reasoning": "Text reasoning effort",
+          "reasoningHint": "Applies only to third-party text / visual understanding requests.",
+          "embedding": "Embedding model",
+          "notConfigured": "Not configured",
+          "notConfiguredOptional": "Not configured (optional)",
+          "discoveredUpstream": "{{n}} upstream models found"
+        }
       },
       "agent": {
         "title": "Agent model",
@@ -7933,7 +8116,8 @@
           "NARRATED_SCENE_ASSET": "Plan narrated-drama scene assets",
           "STAGING_PROP": "Plan temporary Director World props",
           "COGNEE": "① Content Understanding & Knowledge Extraction (LLM)"
-        }
+        },
+        "addChannel": "Add channel"
       },
       "embeddingModel": {
         "title": "② Vectorization & Semantic Search (Embedding)",
@@ -8021,12 +8205,12 @@
     },
     "mediaStorage": {
       "title": "Image Host / Media Storage",
-       "description": "Configure the temporary reference media relay used by NewAPI/upstream models, with Aliyun OSS, Cloudinary, or self-hosted MinIO.",
+      "description": "Configure the temporary reference media relay used by NewAPI/upstream models, with Aliyun OSS, Cloudinary, or self-hosted MinIO.",
       "fullyManagedUpload": "Fully-managed asset upload",
       "provider": "Provider",
       "providerAliyunOss": "Aliyun OSS",
-       "providerCloudinary": "Cloudinary (Free)",
-       "providerMinio": "Self-hosted MinIO",
+      "providerCloudinary": "Cloudinary (Free)",
+      "providerMinio": "Self-hosted MinIO",
       "providerHint": "With this provider we suggest leaving 「Fully-managed asset upload」 off; the free tier has a bandwidth quota, so use it only for point-to-point editing / uploads.",
       "currentPlan": "Current upload plan",
       "status": "Current config",
@@ -8034,24 +8218,25 @@
       "configured": "Configured",
       "notConfigured": "Not configured",
       "warningIconLabel": "Reference media storage is not configured",
-       "notConfiguredImpact": "Reference media storage is not configured. Text-only flows and text-to-image usually still work; features that need to upload local reference images will fail, including XiaHua reference images, character references, identity images, image-to-image, video first frames, and image-to-video. Configure Aliyun OSS, Cloudinary, or MinIO.",
+      "notConfiguredImpact": "Reference media storage is not configured. Text-only flows and text-to-image usually still work; features that need to upload local reference images will fail, including XiaHua reference images, character references, identity images, image-to-image, video first frames, and image-to-video. Configure Aliyun OSS, Cloudinary, or MinIO.",
       "showSecret": "Show",
       "hideSecret": "Hide",
       "fieldsHint": "Saved values are stored in the local CE settings database; full AccessKeys are not returned. Leave saved credentials blank and enter only the fields you want to replace.",
       "save": "Save OSS config",
-       "saveCloudinary": "Save Cloudinary config",
-        "saveMinio": "Save MinIO config",
-        "minioSaveSuccess": "MinIO config saved",
-        "minioSaveFailed": "Failed to save MinIO config",
+      "saveCloudinary": "Save Cloudinary config",
+      "saveMinio": "Save MinIO config",
+      "minioSaveSuccess": "MinIO config saved",
+      "minioSaveFailed": "Failed to save MinIO config",
       "saveSuccess": "OSS config saved",
       "cloudinarySaveSuccess": "Cloudinary config saved",
-      "saveFailed": "Failed to save OSS config",
+      "saveFailed": "Failed to save media storage config",
       "cloudinaryFieldsHint": "Saved values are stored in the local CE settings database; full API Key / Secret values are not returned. Leave saved credentials blank and enter only the fields you want to replace. API Folder is optional; leave it empty to upload to the Cloudinary root.",
       "cloudinaryRegisterLink": "Register at Cloudinary",
       "testUpload": "Test upload",
       "testUploadPlaceholder": "Test upload is coming soon",
       "validation": {
-        "ttlSeconds": "Signed URL TTL must be greater than 0"
+        "ttlSeconds": "Signed URL TTL must be greater than 0",
+        "s3TtlSeconds": "S3 signed URL TTL must be between 1 and 604800 seconds"
       },
       "fields": {
         "cloudName": "Cloud Name",
@@ -8062,14 +8247,29 @@
         "accessKeyId": "AccessKey ID",
         "accessKeySecret": "AccessKey Secret",
         "bucket": "Bucket",
-         "endpoint": "Endpoint / Region",
-         "minioEndpoint": "Internal MinIO Endpoint",
-         "minioPublicEndpoint": "Public HTTPS MinIO Endpoint",
-         "minioPort": "MinIO Port",
-         "minioUseSSL": "Use HTTPS internally",
-        "ttlSeconds": "Signed URL TTL (seconds)"
-       },
-        "minioHint": "The API container uses the internal endpoint. The public HTTPS endpoint must be reachable by the upstream model and must not include a path. MinIO credentials stay server-side."
+        "endpoint": "Endpoint / Region",
+        "minioEndpoint": "Internal MinIO Endpoint",
+        "minioPublicEndpoint": "Public HTTPS MinIO Endpoint",
+        "minioPort": "MinIO Port",
+        "minioUseSSL": "Use HTTPS internally",
+        "ttlSeconds": "Signed URL TTL (seconds)",
+        "region": "Region",
+        "pathStyle": "Use path-style addressing"
+      },
+      "minioHint": "The API container uses the internal endpoint. The public HTTPS endpoint must be reachable by the upstream model and must not include a path. MinIO credentials stay server-side.",
+      "providerS3": "S3 compatible",
+      "saveS3": "Save S3 config",
+      "s3SaveSuccess": "S3 config saved",
+      "s3FieldsHint": "Use a full http(s) endpoint URL and long-lived credentials. The signed URL must be reachable by upstream models. Enable path-style if your S3 service requires it. Leave saved credentials blank to keep them.",
+      "errors": {
+        "MEDIA_STORAGE_TIMEOUT": "Media storage connection timed out. Check your network and try again.",
+        "MEDIA_STORAGE_AUTH_INVALID": "Media storage credentials are invalid. Check your AccessKey / API Key.",
+        "MEDIA_STORAGE_ACCESS_DENIED": "Media storage access denied. Check your credentials and upload/read permissions.",
+        "MEDIA_STORAGE_TARGET_INVALID": "Media storage destination is unavailable. Check the bucket, endpoint, or folder.",
+        "MEDIA_STORAGE_CONFIG_INVALID": "Media storage configuration is incomplete or the upload failed. Check the selected storage settings.",
+        "MEDIA_STORAGE_UNAVAILABLE": "Media storage read/write verification failed. Check your connection and settings, then try again.",
+        "MEDIA_STORAGE_READ_MISMATCH": "Media storage read verification failed. Check the storage access settings."
+      }
     },
     "codexBridge": {
       "title": "Codex Local Bridge",
@@ -8175,13 +8375,52 @@
     "checkingUpdate": "Checking for updates...",
     "checkUpdateHasUpdate": "New version detected.",
     "checkUpdateUpToDate": "You are on the latest version.",
-    "checkUpdateFailed": "Update check failed. Please try again later."
+    "checkUpdateFailed": "Update check failed. Please try again later.",
+    "freezoneSkillRecipe": {
+      "editTag": "Edit {{tag}}",
+      "deleteTag": "Delete {{tag}}",
+      "collapseAssociatedRecipes": "Collapse associated Recipes",
+      "expandAssociatedRecipes": "Expand associated Recipes",
+      "associatedRecipesCount": "{{count}} associated Recipe{{missing}}",
+      "noAssociatedRecipes": "This skill has no associated recipes yet",
+      "addRecipe": "Add Recipe",
+      "localRecipeNotFound": "Local Recipe config not found; this association ID will still be kept when saving.",
+      "view": "View",
+      "removeRecipe": "Remove {{recipeId}}",
+      "addIdManually": "Add ID manually",
+      "enterRecipeId": "Enter Recipe ID",
+      "add": "Add",
+      "noRecipesToAdd": "No recipes to add",
+      "createSkillHint": "You can ask XiaDao to summarize the current canvas, or describe a workflow to create your own Skill.",
+      "associatedRecipesMissing": ", {{count}} config not found",
+      "searchRecipe": "Search Recipe",
+      "noDescription": "No description",
+      "close": "Close",
+      "noSkills": "No Skills here yet",
+      "generationType": {
+        "textGeneration": "Text generation",
+        "imageGeneration": "Image generation",
+        "videoGeneration": "Video generation",
+        "audioGeneration": "Audio generation"
+      },
+      "closeRecipeDetailBackground": "Close Recipe detail backdrop",
+      "closeRecipeDetail": "Close Recipe detail",
+      "detail": {
+        "description": "Description",
+        "resultSummary": "Result summary",
+        "planningPrompt": "Planning prompt",
+        "mustHaveItems": "Must-have items"
+      },
+      "mineTab": "Mine",
+      "use": "Use"
+    }
   },
   "pricing": {
     "nativePrice": "Native: {{value}}",
     "originalPrice": "Original: {{value}}",
     "pointsCost": "Credits: {{count}}",
-    "grsaiTier": "Pack: CNY {{price}} / {{credits}} credits"
+    "grsaiTier": "Pack: CNY {{price}} / {{credits}} credits",
+    "perRunSuffix": "/run"
   },
   "update": {
     "dialogTitle": "Update Available",
@@ -8486,6 +8725,10 @@
       "characterFallback": "Character {{index}}",
       "roleLabel": "Role",
       "descriptionLabel": "Description"
+    },
+    "nodeSuggestions": {
+      "title": "Nodes",
+      "noMatches": "No matching nodes"
     }
   },
   "productSurface": {
@@ -8590,7 +8833,6 @@
     "invalidFile": "Choose a complete HTML document",
     "fileTooLarge": "HTML file must not exceed 2 MiB",
     "uploadRecoveryConflict": "A previous upload completed for this node with different content. Re-select the original file to recover it, or create a new HTML node for this file.",
-
     "references": "Connected inputs",
     "activeCanvasRequired": "Open a project canvas first",
     "readyToGenerate": "Enter webpage requirements and generate, or run the workflow",
@@ -8656,5 +8898,379 @@
     "loadFailed": "Unable to load the original image. Please retry.",
     "saveFailed": "Unable to create the result. Check the image and current project.",
     "invalidSize": "Enter positive integers. Maximum edge: 16384 pixels; maximum total: 40 million pixels."
+  },
+  "subscriptions": {
+    "bill": {
+      "empty": "No billing records",
+      "content": "Subscribe to {{name}}",
+      "pending": "Awaiting payment",
+      "unconfirmed": "Unconfirmed",
+      "paid": "Paid",
+      "failed": "Payment failed",
+      "closed": "Closed",
+      "refunded": "Refunded",
+      "compensating": "Duplicate payment being resolved"
+    },
+    "periodPayment": "Payment for this period: {{price}}",
+    "periodPaymentLabel": "Payment for this period",
+    "currentPlan": "Current plan",
+    "previousPaymentUnconfirmed": "Your previous payment result is unconfirmed. Please try again later to avoid paying twice.",
+    "planPrice": "Plan price: {{price}} every {{months}} month(s)",
+    "automaticRenewalEnabled": "Automatic renewal is on",
+    "automaticRenewalDisabled": "Automatic renewal is off; paid benefits remain until expiry",
+    "automaticRenewalCancelling": "Confirming cancellation of automatic renewal",
+    "membershipActive": "{{name}} membership is valid until {{date}}.",
+    "membershipInactive": "No paid membership period is currently active.",
+    "renewAfterIntro": "After the first {{cycles}} cycles, renews every {{months}} month(s) at {{price}}.",
+    "monthlyEquivalent": "Equivalent to approximately {{price}} per month; the full period is charged at once.",
+    "introCycles": "First {{cycles}} billing cycles at {{price}} each.",
+    "title": "Subscription plans",
+    "intro": "Automatic renewal uses your payment account. Credits are granted under the plan rules and remain permanently valid.",
+    "refresh": "Refresh",
+    "loadError": "Unable to load subscriptions.",
+    "createUnconfirmed": "The request result is not confirmed. You can choose another payment method while we check the original attempt automatically.",
+    "noPlans": "No subscription plans are currently available.",
+    "mine": "My subscriptions",
+    "current": "Current subscriptions / applications",
+    "currentEmpty": "No active subscriptions or pending applications.",
+    "history": "History ({{count}})",
+    "historyDescription": "Ended subscriptions and failed applications retained for reference.",
+    "details": "Details",
+    "paidUntil": "Paid period ends",
+    "resubscribeAfterExpiry": "Your paid membership is still active. You can subscribe again after it expires; duplicate subscriptions are unavailable during the current period.",
+    "cancel": "Cancel automatic renewal",
+    "cancelApplication": "Cancel application",
+    "cancelApplicationExplain": "We will check with the payment provider and attempt to cancel authorization and future renewals. If payment is processing, its result still needs to be confirmed. This does not request a refund.",
+    "confirmCancelApplication": "Confirm cancellation request",
+    "pendingApplicationHint": "If you have authorized or paid, check the latest status first to avoid paying twice. Otherwise, you can try continuing authorization and payment.",
+    "retryPayment": "Retry this renewal",
+    "retryUnconfirmed": "Retry is not confirmed. Check the invoice status before trying again.",
+    "cancelExplain": "Stop future renewal charges. Your paid service period and already purchased monthly credit grants will continue. This does not request a refund.",
+    "confirmCancel": "Confirm cancellation",
+    "keep": "Keep subscription",
+    "cancelUnconfirmed": "Cancellation could not be confirmed. Refresh to check its status.",
+    "continueCheckout": "Continue authorization and payment",
+    "invoices": "Billing records",
+    "period": "Service period",
+    "amount": "Plan price / payment",
+    "dodoQuote": "At the configured exchange rate {{rate}}, Dodo payment is {{price}} before applicable tax. Confirm the amount at checkout.",
+    "dodoQuoted": "Dodo quoted amount {{price}}",
+    "dodoPaid": "Dodo payment {{price}}",
+    "quoteChanged": "The exchange-rate quote changed. No subscription was created. Review the updated payment amount and confirm the terms again.",
+    "creationRejected": "The payment channel cannot authorize this quote. No agreement or charge was requested. Ask an administrator to check the channel configuration.",
+    "state": "Status",
+    "grants": "Credit grants",
+    "method": "Payment method",
+    "renewPrice": "Renews every {{months}} month(s) at {{price}}.",
+    "monthlyCredits": "{{credits}} credits each month, permanently valid.",
+    "upfrontCredits": "{{credits}} credits granted after payment, permanently valid.",
+    "taxNote": "Applicable taxes, if any, are displayed at checkout.",
+    "consent": "I authorize automatic renewal and have read and accepted the",
+    "terms": "subscription terms",
+    "subscribe": "Subscribe",
+    "methods": {
+      "alipay": "Alipay",
+      "wxpay": "WeChat Pay",
+      "dodo": "Dodo"
+    },
+    "cycle": {
+      "1": "per month",
+      "3": "per quarter",
+      "12": "per year"
+    },
+    "status": {
+      "review": "Payment needs review; future renewal is stopped",
+      "cancellingSetup": "Setup is incomplete and cancellation was requested; authorization is still unconfirmed",
+      "cancelling": "Automatic renewal cancellation requested; checking the cancellation result with {{method}}",
+      "cancelled": "Future renewal cancelled; paid benefits remain",
+      "confirming": "Authorization or payment result is being confirmed",
+      "awaitingPayment": "Setup incomplete; authorization or first payment is not yet confirmed",
+      "setupFailed": "Setup failed; you can select a plan again",
+      "active": "Automatic renewal enabled",
+      "paymentFailed": "Renewal payment failed; check your payment account"
+    },
+    "invoiceStatus": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "paid": "Paid",
+      "failed": "Failed",
+      "refunded": "Refunded",
+      "closed": "Closed"
+    },
+    "grantStatus": {
+      "pending": "Scheduled",
+      "credited": "Granted",
+      "blocked": "Awaiting fulfillment",
+      "held": "Held for review"
+    },
+    "catalog": "Subscription plans",
+    "billingPeriod": "Billing period",
+    "perMonth": "/month",
+    "billingTotal": {
+      "1": "Billed {{price}} monthly",
+      "3": "Billed {{price}} quarterly",
+      "12": "Billed {{price}} annually"
+    },
+    "chooseTier": "Choose monthly credits for {{name}}",
+    "creditsLabel": "Monthly credits",
+    "grantLabel": "Credit delivery",
+    "periodUnavailable": "Unavailable for this option",
+    "billingPeriodLabels": {
+      "1": "Monthly",
+      "3": "Quarterly",
+      "12": "Yearly"
+    },
+    "allPeriods": "All periods",
+    "periodCredits": "Credits per period",
+    "grantModeShort": {
+      "monthly": "Monthly",
+      "upfront": "Upfront"
+    },
+    "renewalNote": "Auto renewal · Credits never expire",
+    "purchaseBlocked": "Your account has a subscription or an unresolved application. View it below and use Check latest status to reconcile it.",
+    "paymentUnavailable": "Some payment channels are unavailable. An administrator needs to check the payment service configuration. Please check again later.",
+    "recheckPayment": "Recheck payment channels",
+    "refreshStatus": "Check latest status",
+    "refreshingStatus": "Checking…",
+    "recoveryPending": "Your cancellation request is saved and awaiting provider confirmation. Check the latest status before subscribing again.",
+    "recoveryConfigUnavailable": "Unable to query this application because its payment configuration is unavailable. Ask an administrator to restore it, then retry. Cancellation is not confirmed.",
+    "recoveryUnavailable": "The payment provider result could not be confirmed. Please check again later. The application is retained to prevent duplicate charges.",
+    "statusUpdated": "The payment provider was queried and the current status updated."
+  },
+  "subscriptionCheckout": {
+    "orgCreditsInsufficient": "Your organization has insufficient available credits for this plan. Please contact your organization administrator.",
+    "recover": "Recover payment link",
+    "selectPlan": "Select plan",
+    "renewal": "Automatic renewal: {{price}} every {{months}} month(s)",
+    "amountDue": "Due for this billing period",
+    "renewalTiming": "The service period starts when the first payment is confirmed. The next renewal date appears after activation.",
+    "membership": "Paid membership period",
+    "months": "{{months}} month(s)",
+    "periodCredits": "Credits for this period",
+    "monthlyGrants": "{{credits}} credits per month, {{count}} grants this period. Granted credits remain permanently valid.",
+    "upfrontGrants": "{{credits}} credits granted after payment confirmation, permanently valid.",
+    "fullPeriod": "The full period is charged at once.",
+    "account": "Account receiving subscription benefits",
+    "cancelPolicy": "Cancel future automatic renewal in subscription management. Paid membership and scheduled grants for the paid period remain. Cancellation does not request a refund.",
+    "existing": "You have an active plan or a confirmed payment whose benefits are being activated. Check My benefits.",
+    "planChanged": "The plan version changed. Return and select it again to confirm the price and benefits.",
+    "confirm": "Confirm subscription and continue to payment",
+    "channelUnavailable": "This channel is currently unavailable. Choose another payment method or try again later.",
+    "linkUnavailable": "The payment channel has not returned a signup link. You can choose another payment method while we check the original attempt automatically.",
+    "linkFailed": "Unable to create the authorization page. Choose another payment method or try again later.",
+    "viewStatus": "View request status",
+    "redirecting": "Opening payment page…",
+    "phoneRequiredTitle": "Bind a phone number first",
+    "phoneRequired": "To use the current Alipay subscription method, bind a phone number from the account menu at the top right of the workspace. Then return here and select Check again. You can also choose another payment method.",
+    "recheck": "Check again",
+    "checking": "Checking…",
+    "dodoDetails": "If email or billing details are needed, enter or confirm them at Dodo checkout.",
+    "agreementChanged": "Agreement terms changed or are unavailable. Review the current terms and confirm again.",
+    "agreementUnavailable": "This plan does not have published service terms and cannot be subscribed to yet."
+  },
+  "subscriptionReturn": {
+    "states": {
+      "compensating": {
+        "title": "Duplicate payment being resolved",
+        "description": "We are resolving this duplicate payment automatically. Your active subscription remains available to use and manage. The result will appear in your invoices."
+      },
+      "awaitingPayment": {
+        "title": "Authorization and first payment unconfirmed",
+        "description": "The first payment is not yet confirmed. You can return to choose a payment method. Completed payments are checked and reflected in your invoices automatically."
+      },
+      "unconfirmed": {
+        "title": "Status still unconfirmed",
+        "description": "We will keep checking and update your invoices automatically. You can return and continue."
+      },
+      "checkoutUnavailable": {
+        "title": "Signup page unavailable",
+        "description": "This payment method cannot open its signup page right now. You can return to choose another method while we check the original attempt automatically."
+      },
+      "confirming": {
+        "title": "Confirming authorization and payment",
+        "description": "Checking the payment record. This page and your invoices will update automatically once confirmed."
+      },
+      "authorized": {
+        "title": "Authorized; awaiting first payment",
+        "description": "Renewal authorization is confirmed. The first payment and benefits are not yet confirmed."
+      },
+      "expired": {
+        "title": "Paid membership period ended",
+        "description": "The previous paid period has ended. Check renewal status in View subscription and invoices. Credits already granted remain available."
+      },
+      "paid": {
+        "title": "Period paid; credit grant processing",
+        "description": "Payment and membership are confirmed. Credits currently due are being processed. Do not pay again."
+      },
+      "active": {
+        "title": "Subscription active",
+        "description": "Payment, membership, and credits currently due are confirmed. Future grants follow the schedule below."
+      },
+      "failed": {
+        "title": "Authorization or payment incomplete",
+        "description": "This authorization or payment was not completed. You can return to choose a plan or another payment method."
+      },
+      "cancelled": {
+        "title": "Authorization cancelled",
+        "description": "The channel confirmed cancellation. Check paid benefits in My Benefits."
+      },
+      "review": {
+        "title": "Subscription needs review",
+        "description": "A payment or benefit requires review. Do not pay again; check your invoices."
+      },
+      "refunded": {
+        "title": "Subscription invoice refunded",
+        "description": "Check subscription invoices for the final refund and benefit outcome."
+      },
+      "unavailable": {
+        "title": "Subscription result unavailable",
+        "description": "Retry or check your invoices. A query failure does not mean payment failed."
+      }
+    },
+    "number": "Subscription ID",
+    "manage": "View invoices",
+    "renewal": "Next renewal period starts {{date}}. Charge timing follows channel rules.",
+    "notRenewing": "Automatic renewal is off. Paid benefits remain."
+  },
+  "subscriptionAgreementDialog": {
+    "description": "Read the agreement, select the consent checkbox, and confirm to continue your current order.",
+    "body": "Agreement text",
+    "closeLabel": "Close agreement",
+    "close": "Close",
+    "consent": "I have read and agree to this agreement and authorize automatic renewal of my selected plan.",
+    "confirm": "Confirm and return to checkout",
+    "changed": "This agreement does not match the current plan or is not effective yet. Close this window and review the plan information."
+  },
+  "subscriptionAgreementPage": {
+    "back": "Back",
+    "backToSubscriptions": "Back to subscription plans",
+    "loading": "Loading agreement…",
+    "unavailable": "Agreement unavailable",
+    "unavailableHint": "This version may not be published or could not be loaded. Please retry later.",
+    "version": "Version v{{version}}",
+    "effectiveAt": "Effective: {{date}}",
+    "upcoming": "This version is not effective yet."
+  },
+  "assetBoard": {
+    "referenceMaterials": "Reference materials",
+    "zoomImage": "View larger image",
+    "prompt": "Prompt",
+    "nodeMissing": "This node no longer exists",
+    "clickToEdit": "Click to edit",
+    "noText": "No text content",
+    "noScript": "No script content",
+    "noShots": "No shot rows",
+    "noDisplayContent": "No content available to display",
+    "shotNumber": "Shot",
+    "duration": "Duration",
+    "visualDescription": "Visual description",
+    "dialogue": "Dialogue",
+    "contentSummary": "Content summary",
+    "resolution": "Resolution",
+    "referenceActions": "{{name}} actions",
+    "edit": "Edit",
+    "locate": "Locate",
+    "m4aOnly": "M4A source only",
+    "noKeyElements": "No key elements in this category",
+    "referenceDropHint": "Drag assets, images, or videos here to add them as references",
+    "imageOpChipHint": "Click to switch function; press Backspace to remove",
+    "upscaleResult": "Upscaled image",
+    "cropResult": "Crop result",
+    "rotateResult": "Rotation result",
+    "crop": "Crop",
+    "rotate": "Rotate",
+    "panoramaConfirm": "Generate a 360° panorama from this image?",
+    "panoramaResult": "360° panorama",
+    "durationSeconds": "{{count}}s",
+    "generatingProgress": "Generating {{percent}}%...",
+    "generating": "Generating",
+    "assetDetail": "Asset details",
+    "back": "Back",
+    "nodeActions": "Node actions",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "closeDetail": "Close details",
+    "text": "Text",
+    "image": "Image",
+    "video": "Video",
+    "relightEditor": "Relighting editor",
+    "multiAngleEditor": "Multi-angle editor",
+    "ownReferenceImage": "Node reference image",
+    "removeReferenceImage": "Remove reference image",
+    "panorama": "Panorama",
+    "panoramaTitle": "Generate a 360° panorama from this image and add a panorama viewer node",
+    "multiAngle": "Multi-angle",
+    "multiAngleTitle": "Open the multi-angle editor (camera sphere, quality, and prompt)",
+    "relight": "Relight",
+    "relightTitle": "Open the relighting editor (direction, brightness/color temperature, and smart mode)",
+    "moreActions": "More actions",
+    "download": "Download",
+    "regenerate": "Regenerate",
+    "retryGeneration": "Resubmit this generation (retry after failure)",
+    "gridTemplate": "Generate from this image using a grid or multi-view template",
+    "editVideo": "Edit",
+    "composedVideo": "Composed video",
+    "upscaledVideoName": "Upscaled ({{resolution}})",
+    "composeNeedsTwoVideos": "At least two ready upstream video assets are required",
+    "openComposeTimeline": "Open the video composition timeline",
+    "upscale": "Upscale",
+    "upscaleTitle": "Increase the resolution by creating a new upscale result node on the canvas",
+    "fullscreen": "Fullscreen",
+    "fullscreenTitle": "Play in fullscreen",
+    "submitUpscale": "Submit upscale",
+    "submitUpscaleTitle": "Create an upscale result node on the canvas and submit the task",
+    "locateOnCanvas": "Locate on canvas",
+    "generationFailed": "Generation failed",
+    "downloadConvert": "Download / convert format",
+    "resizeColumn": "Resize column",
+    "all": "All",
+    "finalVideos": "Final videos",
+    "clips": "Clips",
+    "noTextNodes": "There are no text nodes on the canvas",
+    "noImageNodes": "There are no image nodes on the canvas",
+    "noVideoNodes": "There are no video nodes on the canvas",
+    "noMatchingVideos": "No videos match the current filter",
+    "filterVideos": "Filter videos",
+    "switchColumn": "Switch column",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "pendingGeneration": "Generate after confirmation",
+    "sourceNotM4a": "The source file is not M4A and cannot be converted to M4A",
+    "audioDownloadFailed": "Audio download failed",
+    "downloadAs": "Download as {{format}}",
+    "keyElements": "Key elements",
+    "setKeyElement": "Set key element",
+    "clearKeyElement": "Clear key element",
+    "current": "Current",
+    "audioLabel": "Audio",
+    "categoryCharacter": "Character",
+    "categoryScene": "Scene",
+    "categoryObject": "Object",
+    "categoryOther": "Other",
+    "audio": {
+      "musicDescription": "Music description",
+      "speechText": "Text to synthesize",
+      "musicPlaceholder": "Describe the music: style, instruments, rhythm, atmosphere…",
+      "speechPlaceholder": "Enter the text to synthesize",
+      "fillerWords": "Delivery guidance (optional)",
+      "fillerWordsPlaceholder": "For example: tense, lower voice, slightly frightened",
+      "chooseVoice": "Choose a custom voice",
+      "changeVoice": "Change custom voice",
+      "voice": "Voice",
+      "voiceNotSelected": "Not selected (generation will be skipped)",
+      "customVoice": "Custom voice",
+      "musicDuration": "Music duration",
+      "forceInstrumental": "Force instrumental only",
+      "respectSectionDurations": "Respect section durations",
+      "textToMusic": "Text-to-music",
+      "customVoiceNarration": "Custom-voice narration",
+      "voiceSettings": "Voice settings (current: {{voice}})",
+      "notSelected": "Not selected",
+      "advancedSettings": "Advanced settings",
+      "enterMusicFirst": "Enter a music description first",
+      "enterSpeechFirst": "Enter text to synthesize first",
+      "regenerate": "Regenerate",
+      "generate": "Generate"
+    }
   }
 }

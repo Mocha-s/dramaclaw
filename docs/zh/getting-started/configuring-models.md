@@ -108,6 +108,10 @@ ComfyUI 仍可作为独立外部供应商使用：在所选第三方网关中配
 
 图生图、视频首帧、首尾帧、参考图片和身份图等功能需要让上游模型读取本地文件。进入 **设置 → 媒体存储**，配置公网可访问的临时媒体 relay。
 
+保存前会实际上传一张微小测试图片并读取校验；失败不会覆盖原有配置。CE 发起付费图片、视频或音频调用前，也会检查已配置的媒体存储，成功结果最多复用 60 秒，配置变化后重新检查。未配置媒体存储且不需要素材中转的本地流程不受影响。
+
+测试对象使用正常中转目录下的随机路径。OSS 对象会尽力删除，没有删除权限不影响验证成功；无法删除的对象及 Cloudinary 测试对象需由存储生命周期规则清理。预检不能保证后续网络持续正常，也不会增加自动退款或结果恢复功能。
+
 ### 阿里云 OSS
 
 需要 Bucket 和拥有该 Bucket 读写权限的 AccessKey。推荐使用只授权该 Bucket 的 RAM 子账号。
@@ -125,6 +129,25 @@ ComfyUI 仍可作为独立外部供应商使用：在所选第三方网关中配
 在「设置 → 媒体存储」选择 MinIO，填写 API 容器可访问的 S3 `Endpoint`、bucket 和凭据，以及上游模型可访问的公网 HTTPS `Public Endpoint`。两种 endpoint 可经由同一个反向代理，也可分别使用内网地址和公网地址。凭据仅保存在服务端，不返回给浏览器。
 
 Bucket 无需公开读；DramaClaw 使用临时签名 URL 授权上游读取。
+
+### S3 兼容存储
+
+在媒体存储中选择 **S3 兼容存储**。这仅配置参考媒体中转，不迁移项目文件、备份或 OSS 下载加速。
+
+| 网页字段 | 环境变量 | 示例或说明 |
+|---|---|---|
+| Endpoint | `S3_RELAY_ENDPOINT` | 完整源站 URL，例如 `https://s3.us-east-1.amazonaws.com`，不带桶名或路径 |
+| Bucket | `S3_RELAY_BUCKET` | 已创建的私有桶 |
+| AccessKey ID / Secret | `S3_RELAY_AK` / `S3_RELAY_SK` | 显式长期凭据，不使用宿主机 AWS 凭据 |
+| Region / 地域 | `S3_RELAY_REGION` | 默认 `us-east-1`，按存储服务要求填写 |
+| Path-style | `S3_RELAY_PATH_STYLE` | 默认 `0`（virtual-hosted）；服务要求时设为 `1`，例如本地 MinIO |
+| 有效期 | `MEDIA_RELAY_TTL_SECONDS` | 1–604800 秒；部分媒体调用会提升到至少 7200 秒 |
+
+仅使用环境变量时设置 `MEDIA_RELAY_PROVIDER=s3`。保存的 CE 数据库配置整体优先，不会从环境变量补混凭据。S3 凭据与 OSS、Cloudinary 分别保存；已保存密钥留空即可保留，完整密钥不会回传或持久化到浏览器存储。
+
+凭据需要 `relay/*` 下的 `PutObject` 和 `GetObject` 权限。`DeleteObject` 仅用于尽力清理测试对象，不要求公开读 ACL 或 `ListBucket` 权限。请配置桶生命周期清理：签名 URL 过期不等于对象删除。不支持临时 session token、自动发现/刷新凭据或内外网双 endpoint。
+
+推荐 HTTPS；本地 MinIO 测试允许 HTTP。返回的签名 URL 必须能被上游模型访问，本地预检成功不代表外部可访问。不同 S3 兼容服务存在差异，请实际验证目标服务，不承诺支持所有 S3 扩展。
 
 ### Cloudinary
 

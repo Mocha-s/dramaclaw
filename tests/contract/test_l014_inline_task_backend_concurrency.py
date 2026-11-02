@@ -1,5 +1,6 @@
 import asyncio
 import os
+import runpy
 import signal
 import sys
 import textwrap
@@ -157,13 +158,45 @@ def _spawn_tree_script(tmp_path: Path) -> tuple[Path, Path]:
             import time
 
             child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
-            pathlib.Path({str(pidfile)!r}).write_text(str(child.pid), encoding="utf-8")
+            pidfile = pathlib.Path({str(pidfile)!r})
+            pending_pidfile = pidfile.with_suffix(".tmp")
+            pending_pidfile.write_text(str(child.pid), encoding="utf-8")
+            pending_pidfile.replace(pidfile)
             child.wait()
             time.sleep(30)
             """),
         encoding="utf-8",
     )
     return script, pidfile
+
+
+def test_process_tree_pid_is_published_only_after_write(tmp_path, monkeypatch):
+    script, pidfile = _spawn_tree_script(tmp_path)
+    original_write_text = Path.write_text
+    writes = []
+
+    def write_with_observable_empty_file(path, data, *args, **kwargs):
+        # Model the window between opening a file with truncation and writing
+        # its contents. Readers must not see the final PID path in this window.
+        path.touch()
+        assert not pidfile.exists()
+        result = original_write_text(path, data, *args, **kwargs)
+        assert not pidfile.exists()
+        writes.append(path)
+        return result
+
+    monkeypatch.setattr(Path, "write_text", write_with_observable_empty_file)
+    monkeypatch.setattr(
+        "subprocess.Popen",
+        lambda *_args, **_kwargs: SimpleNamespace(pid=12345, wait=lambda: None),
+    )
+    monkeypatch.setattr(time, "sleep", lambda _seconds: None)
+
+    runpy.run_path(str(script), run_name="__main__")
+
+    assert len(writes) == 1
+    assert pidfile.read_text(encoding="utf-8") == "12345"
+    assert not writes[0].exists()
 
 
 @pytest.mark.asyncio
@@ -430,10 +463,14 @@ async def test_gate3_world_lane_saturation_does_not_starve_default_lane(
     ctx = _ctx(tmp_path)
     backend = signed_inline_backend()
     world_release = threading.Event()
+    world_started = threading.Event()
     default_done = threading.Event()
 
     def world_runner(envelope, run_ctx):
-        world_release.wait(timeout=3)
+        world_started.set()
+        # Hold the lane until the assertion finishes, not a short CI timing window.
+        if not world_release.wait(timeout=30):
+            raise TimeoutError("test did not release the world lane")
         return {"ok": True}
 
     def default_runner(envelope, run_ctx):
@@ -443,26 +480,34 @@ async def test_gate3_world_lane_saturation_does_not_starve_default_lane(
     register_project_task_runner("l014_gate3_world_blocker", world_runner)
     register_project_task_runner("l014_gate3_default_fast", default_runner)
 
-    await backend.enqueue_project_task(
-        ctx,
-        task_type="l014_gate3_world_blocker",
-        product_surface="mainline",
-        episode=1,
-        queue_kind="world",
-    )
-    await _wait_for_status(_task_ports, ctx, "l014_gate3_world_blocker", "running")
-    await backend.enqueue_project_task(
-        ctx,
-        task_type="l014_gate3_default_fast",
-        product_surface="mainline",
-        episode=1,
-        queue_kind="default",
-    )
+    try:
+        await backend.enqueue_project_task(
+            ctx,
+            task_type="l014_gate3_world_blocker",
+            product_surface="mainline",
+            episode=1,
+            queue_kind="world",
+        )
+        assert await asyncio.to_thread(world_started.wait, 10) is True
+        await backend.enqueue_project_task(
+            ctx,
+            task_type="l014_gate3_default_fast",
+            product_surface="mainline",
+            episode=1,
+            queue_kind="default",
+        )
 
-    assert await asyncio.to_thread(default_done.wait, 1) is True
-    await _wait_for_status(_task_ports, ctx, "l014_gate3_default_fast", "completed")
-    assert backend.lane_snapshot()["world"]["active"] == 1
-    world_release.set()
+        assert await asyncio.to_thread(default_done.wait, 10) is True
+        await _wait_for_status(
+            _task_ports, ctx, "l014_gate3_default_fast", "completed", timeout=5
+        )
+        assert backend.lane_snapshot()["world"]["active"] == 1
+        assert not world_release.is_set()
+    finally:
+        world_release.set()
+        await _wait_for_status(
+            _task_ports, ctx, "l014_gate3_world_blocker", "completed", timeout=5
+        )
 
 
 @pytest.mark.asyncio

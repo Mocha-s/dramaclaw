@@ -18,18 +18,29 @@
     "confirm": "确认创建"
   },
   "referenceValidation": {
-    "firstFrame": "首帧", "lastFrame": "尾帧",
-    "title": "参考素材不符合模型要求", "hint": "请修正以下素材后重新生成。可定位到对应画布节点。", "locate": "定位素材",
-    "image": "参考图", "audio": "参考音频", "video": "参考视频",
+    "firstFrame": "首帧",
+    "lastFrame": "尾帧",
+    "title": "参考素材不符合模型要求",
+    "hint": "请修正以下素材后重新生成。可定位到对应画布节点。",
+    "locate": "定位素材",
+    "image": "参考图",
+    "audio": "参考音频",
+    "video": "参考视频",
     "format": "实际格式：{{actual}}；支持格式：{{expected}}。",
     "unreadable": "无法读取或识别该素材，请重新上传有效文件。",
     "maxMB": "实际体积 {{actual}} MB；最多 {{expected}} MB。",
-    "minWidth": "实际宽度 {{actual}} px；至少 {{expected}} px。", "maxWidth": "实际宽度 {{actual}} px；最多 {{expected}} px。",
-    "minHeight": "实际高度 {{actual}} px；至少 {{expected}} px。", "maxHeight": "实际高度 {{actual}} px；最多 {{expected}} px。",
-    "minAspectRatio": "实际宽高比 {{actual}}；至少 {{expected}}。", "maxAspectRatio": "实际宽高比 {{actual}}；最多 {{expected}}。",
-    "minFPS": "实际帧率 {{actual}} fps；至少 {{expected}} fps。", "maxFPS": "实际帧率 {{actual}} fps；最多 {{expected}} fps。",
-    "minDuration": "实际时长 {{actual}} 秒；单条至少 {{expected}} 秒。", "maxDuration": "实际时长 {{actual}} 秒；单条最多 {{expected}} 秒。",
-    "totalMinDuration": "参考素材总时长 {{actual}} 秒；至少 {{expected}} 秒。", "totalMaxDuration": "参考素材总时长 {{actual}} 秒；最多 {{expected}} 秒。"
+    "minWidth": "实际宽度 {{actual}} px；至少 {{expected}} px。",
+    "maxWidth": "实际宽度 {{actual}} px；最多 {{expected}} px。",
+    "minHeight": "实际高度 {{actual}} px；至少 {{expected}} px。",
+    "maxHeight": "实际高度 {{actual}} px；最多 {{expected}} px。",
+    "minAspectRatio": "实际宽高比 {{actual}}；至少 {{expected}}。",
+    "maxAspectRatio": "实际宽高比 {{actual}}；最多 {{expected}}。",
+    "minFPS": "实际帧率 {{actual}} fps；至少 {{expected}} fps。",
+    "maxFPS": "实际帧率 {{actual}} fps；最多 {{expected}} fps。",
+    "minDuration": "实际时长 {{actual}} 秒；单条至少 {{expected}} 秒。",
+    "maxDuration": "实际时长 {{actual}} 秒；单条最多 {{expected}} 秒。",
+    "totalMinDuration": "参考素材总时长 {{actual}} 秒；至少 {{expected}} 秒。",
+    "totalMaxDuration": "参考素材总时长 {{actual}} 秒；最多 {{expected}} 秒。"
   },
   "app": {
     "title": "SuperTale",
@@ -464,32 +475,32 @@
     "account": {
       "open": "打开个人信息",
       "changeAvatar": "更换头像",
-        "changePassword": "修改密码",
-        "setPassword": "设置密码",
-        "selectLanguage": "选择语言",
-        "languageChinese": "中文",
-        "languageEnglish": "English",
-        "languageVietnamese": "Tiếng Việt",
-        "phoneBinding": {
-          "title": "绑定手机号",
-          "description": "验证当前密码和手机号，绑定到现有账号。绑定后支持验证码登录，不支持换绑或解绑。",
-          "submit": "确认绑定",
-          "success": "手机号已绑定，原有账号和密码仍可使用。",
-          "inUse": "该手机号已属于其他账号，无法绑定。账号不会自动合并。",
-          "alreadyBound": "当前账号已绑定手机号，请刷新页面。",
-          "error": "绑定失败，请重试。"
-        },
-        "avatarDialog": {
-          "title": "更换头像",
-          "description": "选择一张图片作为你的头像，建议使用清晰的正方形图片。",
-          "previewHint": "当前使用账号首字母头像",
-          "choose": "选择图片",
-          "replace": "更换图片",
-          "fileHint": "支持 PNG、JPG、WebP、GIF",
-          "save": "保存头像",
-          "saving": "保存中…",
-          "error": "头像上传失败，请重试"
-        },
+      "changePassword": "修改密码",
+      "setPassword": "设置密码",
+      "selectLanguage": "选择语言",
+      "languageChinese": "中文",
+      "languageEnglish": "English",
+      "languageVietnamese": "Tiếng Việt",
+      "phoneBinding": {
+        "title": "绑定手机号",
+        "description": "验证当前密码和手机号，绑定到现有账号。绑定后支持验证码登录，不支持换绑或解绑。",
+        "submit": "确认绑定",
+        "success": "手机号已绑定，原有账号和密码仍可使用。",
+        "inUse": "该手机号已属于其他账号，无法绑定。账号不会自动合并。",
+        "alreadyBound": "当前账号已绑定手机号，请刷新页面。",
+        "error": "绑定失败，请重试。"
+      },
+      "avatarDialog": {
+        "title": "更换头像",
+        "description": "选择一张图片作为你的头像，建议使用清晰的正方形图片。",
+        "previewHint": "当前使用账号首字母头像",
+        "choose": "选择图片",
+        "replace": "更换图片",
+        "fileHint": "支持 PNG、JPG、WebP、GIF",
+        "save": "保存头像",
+        "saving": "保存中…",
+        "error": "头像上传失败，请重试"
+      },
       "passwordDialog": {
         "title": "修改密码",
         "description": "修改成功后会退出所有设备，需要使用新密码重新登录。",
@@ -512,7 +523,8 @@
         "initializePartialSuccess": "密码已设置，请重新登录；部分会话正在同步退出。",
         "initializeExpired": "本次验证码登录已超过可设置密码的时限，请重新用验证码登录后再试。",
         "error": "密码修改失败，请重试。"
-      }
+      },
+      "languagePortuguese": "Português"
     }
   },
   "organization": {
@@ -911,7 +923,16 @@
     "scrollToBottom": "回到底部",
     "taskCompleteNotice": "✅ {{label}}已完成。你可以让我查看结果，或继续下一步。",
     "taskFailedNotice": "{{label}}失败：{{reason}}\n请根据错误处理前置条件后再继续。",
-    "taskFailedUnknownReason": "未提供具体错误原因"
+    "taskFailedUnknownReason": "未提供具体错误原因",
+    "directorRunMode": {
+      "manualLabel": "手动模式",
+      "manualDescription": "每个生成步骤执行前由你确认",
+      "autoLabel": "本集自动",
+      "autoDescription": "二次确认后自动推进本集，失败或成片完成时停止",
+      "running": "本集自动 · 运行中",
+      "awaitingIntervention": "本集自动 · 待修改确认",
+      "awaitingConfirmation": "本集自动 · 待确认"
+    }
   },
   "freezone": {
     "chat": {
@@ -990,12 +1011,46 @@
         "noAnswersSkipped": "本次问题已跳过。",
         "noAnswersSubmitted": "本次未提交具体选项。",
         "cancelledRequest": "用户已取消本轮请求。"
-      }
+      },
+      "currentSelection": "当前选中",
+      "usedThisTurn": "本轮会使用",
+      "removeReference": "移除画布引用",
+      "removeAllReferences": "取消全部画布引用",
+      "clearReferences": "全部取消",
+      "selectSkill": "选择 Skill",
+      "skillMenu": {
+        "title": "技能",
+        "create": "创建",
+        "search": "搜索 Skill",
+        "noMatches": "没有匹配的 Skill",
+        "empty": "这里暂时没有 Skill",
+        "unavailable": "还没有可用技能",
+        "emptyHelp": "可以让 Agent 把当前画布总结成 Skill，也可以描述你的工作流来创建专属技能。",
+        "actions": {
+          "summarize-canvas": "总结画布为 Skill",
+          "create-with-agent": "和 Agent 创建 Skill"
+        }
+      },
+      "executionMode": {
+        "manualLabel": "手动确认",
+        "manualDescription": "Agent 在执行画布命令前都会请求确认",
+        "autoLabel": "自动生成",
+        "autoDescription": "Agent 会自动执行安全命令并反馈结果"
+      },
+      "canvasCommandsCancelled": "画布操作等待超时，已自动取消。",
+      "resizeWidth": "调整聊天宽度"
     },
     "workflowRecovery": {
       "safetyReviewFailed": "有节点未通过安全审核",
       "editPrompt": "修改提示词",
-      "skipNode": "跳过节点"
+      "skipNode": "跳过节点",
+      "discovered": "发现未完成的工作流",
+      "progress": "已完成 {{completed}}/{{total}}，剩余 {{remaining}} 个节点",
+      "retryFailedOnly": "仅重试失败",
+      "resumeDownstream": "继续下游",
+      "dismiss": "暂时忽略",
+      "resumeFailed": "恢复执行失败",
+      "retryFailed": "节点重试失败"
     },
     "canvases": {
       "defaultSection": "默认画布",
@@ -1481,6 +1536,23 @@
       "metaFetchFailed": "读取导演元数据失败：{{status}}",
       "metaInvalid": "导演元数据格式无效",
       "missingTargetPath": "导演合成图写入后缺少目标路径"
+    },
+    "canvasCommand": {
+      "commandValidation": "命令校验",
+      "canvasContext": "画布上下文"
+    },
+    "viewMode": {
+      "workflow": "工作流",
+      "board": "故事板",
+      "toggle": "画布视图切换"
+    },
+    "agent": {
+      "create": "新建 Agent",
+      "collapseHistory": "收起历史 Agent",
+      "expandHistory": "打开历史 Agent",
+      "resizeHistoryWidth": "调整历史 Agent 宽度",
+      "searchSessions": "搜索会话...",
+      "noMatches": "没有匹配的 Agent"
     }
   },
   "theme": {
@@ -1512,7 +1584,6 @@
       "orgDepartureSweep": "离职积分回收",
       "orgRefundSweep": "离职后退款积分回收",
       "orgTransfer": "组织积分调整",
-
       "orgRecharge": "组织积分充值",
       "personalRecharge": "积分充值",
       "paymentReceived": "支付成功，积分到账",
@@ -1520,7 +1591,11 @@
       "adminDecrease": "管理员扣减积分",
       "adminRecharge": "管理员充值",
       "adminAdjustment": "管理员手动调整",
-      "adminRechargeReceived": "管理员手动充值到账"
+      "adminRechargeReceived": "管理员手动充值到账",
+      "initialGrant": "初始赠送",
+      "accountInitialized": "账户初始化积分",
+      "subscriptionGrant": "订阅积分发放",
+      "subscriptionReceived": "订阅已付款周期积分到账"
     },
     "balance": "当前积分余额",
     "short": "积分",
@@ -1621,8 +1696,8 @@
       "createFailed": "支付订单创建失败，请稍后重试",
       "errors": {
         "tooManyPending": "当前已有多笔待支付订单，请先完成支付或等待订单关闭后再试",
-        "packageUnavailable": "该充值套餐已不可用，请刷新后选择其他套餐",
-        "purchaseLimit": "该充值套餐已达到购买次数限制",
+        "packageUnavailable": "该积分礼包已不可用，请刷新后选择其他礼包",
+        "purchaseLimit": "该积分礼包已达到购买次数限制",
         "methodUnavailable": "当前无法使用所选支付方式",
         "orgCreditsInsufficient": "组织积分不足，无法完成本次购买",
         "accountUnavailable": "当前账号不符合该充值方式的使用条件",
@@ -1667,7 +1742,7 @@
         "support": "帮助与支持"
       },
       "tabs": {
-        "packages": "充值套餐",
+        "packages": "积分礼包",
         "custom": "充值积分",
         "benefits": "我的权益",
         "orders": "账单记录",
@@ -1675,12 +1750,13 @@
         "help": "充值问题"
       },
       "descriptions": {
-        "packages": "购买固定积分套餐，积分永久有效。",
+        "packages": "一次性购买积分礼包，积分永久有效。",
         "custom": "按需要选择积分数量并完成充值。",
         "benefits": "查看当前账户可享受的促销和专属权益。",
         "orders": "查看充值、到账、退款和异常订单。",
         "usage": "查看积分获得、消费和最近使用明细。",
-        "help": "了解充值到账、有效期和退款规则。"
+        "help": "了解充值到账、有效期和退款规则。",
+        "subscriptions": "通过支付账户自动续费，按套餐规则发放积分。"
       },
       "firstPurchase": "新客专享",
       "mostPopular": "最受欢迎",
@@ -1689,10 +1765,10 @@
       "giftCredits": "赠送积分",
       "totalCredits": "到账积分",
       "buyNow": "立即购买",
-      "packagesUnavailable": "当前暂无可购买的充值套餐",
+      "packagesUnavailable": "当前暂无可购买的积分礼包",
       "pendingConfiguration": "待配置",
       "packageViews": {
-        "packages": "积分套餐",
+        "packages": "积分礼包",
         "enterprise": "企业版"
       },
       "packageTiers": {
@@ -2830,7 +2906,8 @@
     "pause": "暂停",
     "retry": "重试",
     "requestId": "请求ID",
-    "listSeparator": "、"
+    "listSeparator": "、",
+    "processing": "处理中…"
   },
   "ingest": {
     "title": "虾料",
@@ -2956,7 +3033,9 @@
       "characterSeparator": "、",
       "unknownLocation": "未识别场景地点",
       "empty": "该章节暂无可显示的分场正文",
-      "unparsedBody": "未归入场景的原文"
+      "unparsedBody": "未归入场景的原文",
+      "rowCount": "{{count}} 场",
+      "count": "共 {{count}} 场"
     },
     "chapterDetails": {
       "open": "查看 {{chapter}} 的正文",
@@ -3491,7 +3570,11 @@
       "sketchBackgroundIdentityProps": "草图 + 背景 + 身份/道具",
       "sketchCandidate": "草图候选",
       "storyboardCandidate": "分镜候选"
-    }
+    },
+    "batchProgress": "批次进度 {{settled}}/{{expected}}",
+    "runningCount": "运行 {{count}}",
+    "waitingCount": "等待 {{count}}",
+    "batchFailed": "{{failed}}/{{expected}} 个任务失败"
   },
   "pikoMiniGame": {
     "statusEntry": "Piko一下",
@@ -4128,7 +4211,15 @@
         "seedance2GuidanceLightingTemplate": "光影：描述主光源、明暗层次、色温和氛围，避免忽明忽暗。",
         "seedance2GuidanceCameraTemplate": "镜头：说明景别、视角、运镜速度和运动方向，保持镜头运动清晰可执行。",
         "seedance2GuidanceStyleTemplate": "风格：限定画面质感、时代感、色彩倾向和真实度，避免风格漂移。",
-        "seedance2GuidanceNoSubtitleTemplate": "无字幕：避免生成任何文字或字幕，保持画面纯净。"
+        "seedance2GuidanceNoSubtitleTemplate": "无字幕：避免生成任何文字或字幕，保持画面纯净。",
+        "configureVoice": "前往配置声线",
+        "audioDisabled": "本次视频不生成音频",
+        "audioModeDefault": "此模式使用模型默认音频；角色声线请使用多参模式",
+        "audioModelDefault": "使用模型默认音频",
+        "audioCharacterVoice": "使用角色声线",
+        "audioMissingVoiceTitle": "尚未配置角色声线",
+        "audioMissingVoice": "部分角色或旁白尚未配置声线，继续后将使用模型默认音频，无法保证音色一致。是否继续？",
+        "audioContinue": "继续开启"
       },
       "sketch": {
         "switched": "已切换草图",
@@ -4600,14 +4691,28 @@
         "invalidBeats": "选中的 beats 不在当前集范围内",
         "noBeats": "当前集暂无 beats"
       },
-      "paddingCount": "+{{count}}空"
+      "paddingCount": "+{{count}}空",
+      "partial": {
+        "reason": {
+          "unknown": "部分任务暂未投递。"
+        },
+        "summary": "已投 {{ok}} / 被拒 {{fail}}",
+        "continue": "继续"
+      }
     },
     "renderSettings": {
       "model": "渲染模型",
       "modelPlaceholder": "选择模型",
       "quality": "图片画质",
       "imageSize": "图片尺寸",
-      "qualityOptions": { "auto": "自动", "low": "低", "medium": "中", "high": "高", "xhigh": "超高", "max": "最高" }
+      "qualityOptions": {
+        "auto": "自动",
+        "low": "低",
+        "medium": "中",
+        "high": "高",
+        "xhigh": "超高",
+        "max": "最高"
+      }
     },
     "sketchSettings": {
       "model": "草图模型",
@@ -5052,7 +5157,9 @@
         "createHint": "创建后可立即用于归档和上传资产",
         "renameHint": "修改后会同步更新资产库中的显示名称"
       },
-      "commitDragHint": "按住拖到左侧素材库,替换同类型素材"
+      "commitDragHint": "按住拖到左侧素材库,替换同类型素材",
+      "itemCount": "{{count}} 项资产",
+      "bulkSelected": "已选 {{count}} 项（只能删除本地上传的素材）"
     },
     "referencePick": {
       "kind": {
@@ -5417,7 +5524,17 @@
       "batchDelete": "批量删除",
       "arrangeGrid": "宫格排列",
       "arrangeHorizontal": "水平排列",
-      "arrangeVertical": "垂直排列"
+      "arrangeVertical": "垂直排列",
+      "workflowRunning": "工作流正在运行",
+      "workflowRunningShort": "运行中",
+      "workflowStoppedNext": "已停止后续",
+      "workflowStopNextTitle": "停止启动后续工作流节点",
+      "workflowWaitingCurrent": "等待当前节点",
+      "workflowStopNext": "停止后续",
+      "workflowCompleted": "工作流已完成",
+      "workflowRun": "运行工作流",
+      "workflowRerunAllTitle": "重新运行全部工作流节点",
+      "workflowRerunAll": "重新运行全部"
     },
     "nodeToolbar": {
       "mainlineLocked": "主线投影 · 锁定",
@@ -5435,7 +5552,9 @@
       "arrangeGrid": "网格",
       "arrangeHorizontal": "横向排列",
       "arrangeVertical": "纵向排列",
-      "commitHint": "把当前节点的内容写回主流程资产"
+      "commitHint": "把当前节点的内容写回主流程资产",
+      "recipeFallbackTitle": "Recipe 模型编译超时，本次已使用稳定降级提示词继续生成",
+      "recipeFallbackLabel": "Recipe 已降级编译"
     },
     "style": {
       "chip": "风格",
@@ -5825,7 +5944,9 @@
       "m4aSourceOnlyHint": "仅 m4a 源",
       "m4aSourceOnly": "源文件不是 m4a，无法转换为 m4a 格式",
       "downloadFailed": "音频下载失败"
-    }
+    },
+    "nodeId": "节点 ID",
+    "copyNodeId": "复制节点 ID"
   },
   "multiAngleEditor": {
     "title": "多维度编辑器",
@@ -6535,7 +6656,8 @@
           "noProject": "未找到当前项目，无法保存结果",
           "alreadyRunning": "这条视频的深度动作捕捉还在处理中，请等它完成"
         }
-      }
+      },
+      "billingRuleMissingSubmit": "视频生成未启动：计费规则未配置，请联系管理员设置积分规则后重试。"
     },
     "pano360": {
       "captureGroup2x2": "全景截图组 (4 张)",
@@ -6917,7 +7039,8 @@
       },
       "extendLockReason": "智能续写固定使用 Seedance 2.5，不能切换模型或模式",
       "extendPlaceholder": "请输入需要续写的内容",
-      "modeRestrictedDefault": "该节点不支持切换生成模式"
+      "modeRestrictedDefault": "该节点不支持切换生成模式",
+      "externalMedia": "外部素材"
     },
     "threeDWorld": {
       "upstreamNodeFallback": "上游节点",
@@ -6949,6 +7072,26 @@
       "directorCaptureSizeFailed": "无法解析导演世界截图尺寸",
       "directorElement": "导演元素",
       "directorExportLabel": "导演世界导出"
+    },
+    "imageGeneration": {
+      "quality": "画质",
+      "resolution": "分辨率",
+      "aspectRatio": "比例",
+      "assetLibrary": "资产库",
+      "assetLibraryHint": "从资产库选择参考图（人物 / 场景 / 道具）",
+      "upstreamReference": "来自上游 · {{name}}",
+      "detachReference": "取消引用此素材"
+    },
+    "stylePicker": {
+      "title": "风格",
+      "other": "其他",
+      "clear": "清除",
+      "close": "关闭",
+      "loading": "加载中…",
+      "empty": "暂无风格模板"
+    },
+    "imageGenNode": {
+      "billingRuleMissingSubmit": "图片生成未启动：计费规则未配置，请联系管理员设置积分规则后重试。"
     }
   },
   "viewer": {
@@ -7650,7 +7793,8 @@
         "copyRawJson": "复制 JSON",
         "rawJsonCopied": "Recipe JSON 已复制",
         "rawJsonCopyFailed": "复制失败，请手动复制"
-      }
+      },
+      "customizedShort": "定制"
     },
     "modelConfig": {
       "title": "模型配置",
@@ -7717,16 +7861,55 @@
       "thirdParty": {
         "title": "第三方网关",
         "description": "配置一个或多个 OpenAI、Gemini 或 Claude/Anthropic 网关组。每组独立设置端点、密钥、能力和模型。",
-        "newGroup": "新网关组", "addGroup": "添加网关组", "removeGroup": "删除组",
-        "groupName": "组名称", "protocol": "协议", "baseUrl": "Base URL", "apiKey": "API Key",
-        "capabilitiesLabel": "支持能力", "models": "模型映射", "requestModel": "DramaClaw 模型规则", "upstreamModel": "上游模型", "unifiedRoute": "统一文本路由", "unifiedRouteNone": "不使用统一路由", "unifiedRouteHint": "保存为 * → 上游模型；精确规则优先。",
-        "videoEndpoint": "视频任务接口", "videoEndpoints": { "videos": "现代 /videos", "legacy": "旧版 /video/generations" },
-        "modelsHint": "将请求模型规则映射到上游模型；精确匹配优先。", "modelSearch": "筛选模型", "fetchModels": "拉取模型列表", "availableModels": "可用模型列表", "noModels": "没有匹配的模型",
-        "fetchFailed": "拉取模型失败，请检查地址、协议和 API Key，或手动填写模型名。", "keyPlaceholder": "输入 API Key", "keyHint": "密钥保持隐藏；仅在更换端点时需要重新输入密钥。",
-        "save": "保存第三方网关配置", "saved": "第三方网关组已保存。", "missingFields": "请填写每组的名称、Base URL、密钥、能力和模型映射。",
+        "newGroup": "新网关组",
+        "addGroup": "添加网关组",
+        "removeGroup": "删除组",
+        "groupName": "组名称",
+        "protocol": "协议",
+        "baseUrl": "Base URL",
+        "apiKey": "API Key",
+        "capabilitiesLabel": "支持能力",
+        "models": "模型映射",
+        "requestModel": "DramaClaw 模型规则",
+        "upstreamModel": "上游模型",
+        "unifiedRoute": "统一文本路由",
+        "unifiedRouteNone": "不使用统一路由",
+        "unifiedRouteHint": "保存为 * → 上游模型；精确规则优先。",
+        "videoEndpoint": "视频任务接口",
+        "videoEndpoints": {
+          "videos": "现代 /videos",
+          "legacy": "旧版 /video/generations"
+        },
+        "modelsHint": "将请求模型规则映射到上游模型；精确匹配优先。",
+        "modelSearch": "筛选模型",
+        "fetchModels": "拉取模型列表",
+        "availableModels": "可用模型列表",
+        "noModels": "没有匹配的模型",
+        "fetchFailed": "拉取模型失败，请检查地址、协议和 API Key，或手动填写模型名。",
+        "keyPlaceholder": "输入 API Key",
+        "keyHint": "密钥保持隐藏；仅在更换端点时需要重新输入密钥。",
+        "save": "保存第三方网关配置",
+        "saved": "第三方网关组已保存。",
+        "missingFields": "请填写每组的名称、Base URL、密钥、能力和模型映射。",
         "warning": "部分旧配置无法迁移，请在所选第三方网关中手动重建。",
-        "capabilities": { "text": "文本 / 视觉", "embedding": "Embedding", "image": "图片", "video": "视频", "audio": "音频" },
-        "capabilityDefaults": { "title": "能力默认模型", "description": "文本和视觉理解共用文本网关模型；图像、视频、音频使用已配置的独立媒体组。", "text": "文本 / 视觉模型", "reasoning": "文本思考级别", "reasoningHint": "仅作用于第三方文本 / 视觉理解请求。", "embedding": "Embedding 模型", "notConfigured": "未配置", "notConfiguredOptional": "未配置（可选）", "discoveredUpstream": "已发现 {{n}} 个上游模型" }
+        "capabilities": {
+          "text": "文本 / 视觉",
+          "embedding": "Embedding",
+          "image": "图片",
+          "video": "视频",
+          "audio": "音频"
+        },
+        "capabilityDefaults": {
+          "title": "能力默认模型",
+          "description": "文本和视觉理解共用文本网关模型；图像、视频、音频使用已配置的独立媒体组。",
+          "text": "文本 / 视觉模型",
+          "reasoning": "文本思考级别",
+          "reasoningHint": "仅作用于第三方文本 / 视觉理解请求。",
+          "embedding": "Embedding 模型",
+          "notConfigured": "未配置",
+          "notConfiguredOptional": "未配置（可选）",
+          "discoveredUpstream": "已发现 {{n}} 个上游模型"
+        }
       },
       "agent": {
         "title": "Agent 模型",
@@ -7933,7 +8116,8 @@
           "NARRATED_SCENE_ASSET": "规划解说剧场景资产",
           "STAGING_PROP": "规划导演世界临时道具",
           "COGNEE": "① 内容理解与知识抽取（LLM）"
-        }
+        },
+        "addChannel": "添加频道"
       },
       "embeddingModel": {
         "title": "② 向量化与语义检索（Embedding）",
@@ -8021,12 +8205,12 @@
     },
     "mediaStorage": {
       "title": "图床 / 媒体存储",
-       "description": "配置 NewAPI/上游模型可访问的参考媒体临时 relay，支持阿里云 OSS、Cloudinary 和自部署 MinIO。",
+      "description": "配置 NewAPI/上游模型可访问的参考媒体临时 relay，支持阿里云 OSS、Cloudinary 和自部署 MinIO。",
       "fullyManagedUpload": "全托管素材上传",
       "provider": "提供商",
       "providerAliyunOss": "阿里云 OSS",
-       "providerCloudinary": "Cloudinary（免费）",
-       "providerMinio": "自部署 MinIO",
+      "providerCloudinary": "Cloudinary（免费）",
+      "providerMinio": "自部署 MinIO",
       "providerHint": "使用此方案建议不要开「全托管素材上传」；免费版有流量额度，建议仅在点对点编辑/上传时使用。",
       "currentPlan": "当前上传方案",
       "status": "当前配置",
@@ -8034,24 +8218,25 @@
       "configured": "已配置",
       "notConfigured": "未配置",
       "warningIconLabel": "参考媒体存储未配置",
-       "notConfiguredImpact": "未配置参考媒体存储。纯文本和纯文生图通常不受影响；但需要上传本地参考图的功能会失败，例如虾画参考图、角色参考图、身份图、图生图、视频首帧和图生视频。请配置阿里云 OSS、Cloudinary 或 MinIO。",
+      "notConfiguredImpact": "未配置参考媒体存储。纯文本和纯文生图通常不受影响；但需要上传本地参考图的功能会失败，例如虾画参考图、角色参考图、身份图、图生图、视频首帧和图生视频。请配置阿里云 OSS、Cloudinary 或 MinIO。",
       "showSecret": "显示",
       "hideSecret": "隐藏",
       "fieldsHint": "保存后写入 CE 本地配置库；后端不会回传完整 AccessKey。留空保持已保存值，只填写需要替换的字段即可。",
       "save": "保存 OSS 配置",
-       "saveCloudinary": "保存 Cloudinary 配置",
-       "saveMinio": "保存 MinIO 配置",
-       "minioSaveSuccess": "MinIO 配置已保存",
-       "minioSaveFailed": "MinIO 配置保存失败",
+      "saveCloudinary": "保存 Cloudinary 配置",
+      "saveMinio": "保存 MinIO 配置",
+      "minioSaveSuccess": "MinIO 配置已保存",
+      "minioSaveFailed": "MinIO 配置保存失败",
       "saveSuccess": "OSS 配置已保存",
       "cloudinarySaveSuccess": "Cloudinary 配置已保存",
-      "saveFailed": "OSS 配置保存失败",
+      "saveFailed": "媒体存储配置保存失败",
       "cloudinaryFieldsHint": "保存后写入 CE 本地配置库；后端不会回传完整 API Key / Secret。留空保持已保存值，只填写需要替换的字段即可。API 文件夹可留空，留空时上传到 Cloudinary 根目录。",
       "cloudinaryRegisterLink": "前往 Cloudinary 注册",
       "testUpload": "测试上传",
       "testUploadPlaceholder": "测试上传功能即将上线",
       "validation": {
-        "ttlSeconds": "签名 URL 有效期必须大于 0"
+        "ttlSeconds": "签名 URL 有效期必须大于 0",
+        "s3TtlSeconds": "S3 签名 URL 有效期须为 1 至 604800 秒"
       },
       "fields": {
         "cloudName": "Cloud Name",
@@ -8062,14 +8247,29 @@
         "accessKeyId": "AccessKey ID",
         "accessKeySecret": "AccessKey Secret",
         "bucket": "Bucket",
-         "endpoint": "Endpoint / 地域",
-         "minioEndpoint": "MinIO 内部 Endpoint",
-         "minioPublicEndpoint": "MinIO 公网 HTTPS Endpoint",
-         "minioPort": "MinIO 端口",
-         "minioUseSSL": "内部连接启用 HTTPS",
-        "ttlSeconds": "签名有效期（秒）"
-       },
-       "minioHint": "内部 Endpoint 给 API 容器访问；公网 HTTPS Endpoint 用于生成上游可访问的短期预签名 URL，必须可从模型服务访问且不要填写路径。MinIO 密钥只保存在服务端。"
+        "endpoint": "Endpoint / 地域",
+        "minioEndpoint": "MinIO 内部 Endpoint",
+        "minioPublicEndpoint": "MinIO 公网 HTTPS Endpoint",
+        "minioPort": "MinIO 端口",
+        "minioUseSSL": "内部连接启用 HTTPS",
+        "ttlSeconds": "签名有效期（秒）",
+        "region": "Region / 地域",
+        "pathStyle": "使用 path-style 寻址"
+      },
+      "minioHint": "内部 Endpoint 给 API 容器访问；公网 HTTPS Endpoint 用于生成上游可访问的短期预签名 URL，必须可从模型服务访问且不要填写路径。MinIO 密钥只保存在服务端。",
+      "providerS3": "S3 兼容存储",
+      "saveS3": "保存 S3 配置",
+      "s3SaveSuccess": "S3 配置已保存",
+      "s3FieldsHint": "填写完整 http(s) endpoint URL 和长期凭据。签名 URL 必须能被上游模型访问；存储服务要求时开启 path-style。已保存的密钥留空即可保留。",
+      "errors": {
+        "MEDIA_STORAGE_TIMEOUT": "媒体存储连接超时，请检查网络后重试。",
+        "MEDIA_STORAGE_AUTH_INVALID": "媒体存储凭据无效，请检查 AccessKey / API Key。",
+        "MEDIA_STORAGE_ACCESS_DENIED": "媒体存储拒绝访问，请检查凭据及上传、读取权限。",
+        "MEDIA_STORAGE_TARGET_INVALID": "媒体存储目标不可用，请检查 bucket、endpoint 或文件夹。",
+        "MEDIA_STORAGE_CONFIG_INVALID": "媒体存储配置不完整或上传失败，请检查所选存储配置。",
+        "MEDIA_STORAGE_UNAVAILABLE": "媒体存储读写验证失败，请检查连接和配置后重试。",
+        "MEDIA_STORAGE_READ_MISMATCH": "媒体存储读取校验失败，请检查存储访问配置。"
+      }
     },
     "codexBridge": {
       "title": "Codex 本地桥接",
@@ -8175,13 +8375,52 @@
     "checkingUpdate": "正在检查更新...",
     "checkUpdateHasUpdate": "检测到新版本。",
     "checkUpdateUpToDate": "当前已是最新版本。",
-    "checkUpdateFailed": "检查更新失败，请稍后重试。"
+    "checkUpdateFailed": "检查更新失败，请稍后重试。",
+    "freezoneSkillRecipe": {
+      "editTag": "编辑 {{tag}}",
+      "deleteTag": "删除 {{tag}}",
+      "collapseAssociatedRecipes": "收起关联 Recipes",
+      "expandAssociatedRecipes": "展开关联 Recipes",
+      "associatedRecipesCount": "已关联 {{count}} 个 Recipe{{missing}}",
+      "noAssociatedRecipes": "这个 Skill 暂时没有关联 Recipe",
+      "addRecipe": "添加 Recipe",
+      "localRecipeNotFound": "未找到本地 Recipe 配置，保存时仍会保留这个关联 ID。",
+      "view": "查看",
+      "removeRecipe": "移除 {{recipeId}}",
+      "addIdManually": "手动添加 ID",
+      "enterRecipeId": "输入 Recipe ID",
+      "add": "添加",
+      "noRecipesToAdd": "没有可添加的 Recipe",
+      "createSkillHint": "可以先让虾导总结当前画布，或描述工作流来创建自己的 Skill。",
+      "associatedRecipesMissing": "，{{count}} 个未找到配置",
+      "searchRecipe": "搜索 Recipe",
+      "noDescription": "暂无描述",
+      "close": "关闭",
+      "noSkills": "这里暂时没有 Skill",
+      "generationType": {
+        "textGeneration": "文本生成",
+        "imageGeneration": "图片生成",
+        "videoGeneration": "视频生成",
+        "audioGeneration": "音频生成"
+      },
+      "closeRecipeDetailBackground": "关闭 Recipe 详情背景",
+      "closeRecipeDetail": "关闭 Recipe 详情",
+      "detail": {
+        "description": "描述",
+        "resultSummary": "结果摘要",
+        "planningPrompt": "规划提示",
+        "mustHaveItems": "必含项"
+      },
+      "mineTab": "我的",
+      "use": "使用"
+    }
   },
   "pricing": {
     "nativePrice": "原币种：{{value}}",
     "originalPrice": "原价：{{value}}",
     "pointsCost": "积分消耗：{{count}}",
-    "grsaiTier": "积分档位：¥{{price}} / {{credits}} 积分"
+    "grsaiTier": "积分档位：¥{{price}} / {{credits}} 积分",
+    "perRunSuffix": "/次"
   },
   "update": {
     "dialogTitle": "发现新版本",
@@ -8486,6 +8725,10 @@
       "characterFallback": "角色 {{index}}",
       "roleLabel": "角色",
       "descriptionLabel": "描述"
+    },
+    "nodeSuggestions": {
+      "title": "节点",
+      "noMatches": "没有匹配的节点"
     }
   },
   "productSurface": {
@@ -8590,7 +8833,6 @@
     "invalidFile": "请选择完整的 HTML 网页文件",
     "fileTooLarge": "HTML 文件不能超过 2 MiB",
     "uploadRecoveryConflict": "该节点已有一次内容不同的上传完成。请重新选择原文件进行恢复，或新建 HTML 节点上传当前文件。",
-
     "references": "引用的上游节点",
     "activeCanvasRequired": "请先打开项目画布",
     "readyToGenerate": "填写网页要求并点击生成，或运行工作流",
@@ -8656,5 +8898,379 @@
     "loadFailed": "无法读取原图，请重试。",
     "saveFailed": "无法创建结果，请确认图片和当前项目可用。",
     "invalidSize": "请输入正整数，单边不超过 16384 像素，总像素不超过 4000 万。"
+  },
+  "subscriptions": {
+    "bill": {
+      "empty": "暂无账单记录",
+      "content": "订阅 {{name}}",
+      "pending": "待支付",
+      "unconfirmed": "待确认",
+      "paid": "已支付",
+      "failed": "支付失败",
+      "closed": "已关闭",
+      "refunded": "已退款",
+      "compensating": "重复付款处理中"
+    },
+    "periodPayment": "本期支付金额：{{price}}",
+    "periodPaymentLabel": "本期支付金额",
+    "currentPlan": "当前套餐",
+    "previousPaymentUnconfirmed": "上一笔支付结果尚未确认，请稍后再试，避免重复付款。",
+    "planPrice": "套餐价格：每 {{months}} 个月 {{price}}",
+    "automaticRenewalEnabled": "自动续费已开启",
+    "automaticRenewalDisabled": "自动续费已关闭，已付权益保留至到期",
+    "automaticRenewalCancelling": "正在确认取消自动续费",
+    "membershipActive": "{{name}} 会员有效，截止 {{date}}。",
+    "membershipInactive": "当前没有已生效的付费会员期限。",
+    "renewAfterIntro": "前 {{cycles}} 个优惠周期结束后，每 {{months}} 个月按 {{price}} 自动续费。",
+    "monthlyEquivalent": "续费价格约合每月 {{price}}，实际按整个周期一次收款。",
+    "introCycles": "前 {{cycles}} 个扣款周期，每期按 {{price}} 付款。",
+    "title": "订阅套餐",
+    "intro": "通过支付账户自动续费，按套餐规则发放积分，已发放积分永久有效。",
+    "refresh": "刷新",
+    "loadError": "暂时无法读取订阅信息。",
+    "createUnconfirmed": "请求结果尚未确认，你可以更换支付方式。系统会自动核对原申请。",
+    "noPlans": "暂时没有开放购买的订阅套餐。",
+    "mine": "我的订阅",
+    "current": "当前订阅／申请",
+    "currentEmpty": "当前没有生效的订阅或待处理申请。",
+    "history": "历史记录（{{count}}）",
+    "historyDescription": "已结束或开通失败的记录，保留供查询。",
+    "details": "查看详情",
+    "paidUntil": "已付款周期结束时间",
+    "resubscribeAfterExpiry": "当前会员权益仍有效，暂不支持重复订阅；会员到期后可重新订阅。",
+    "cancel": "取消自动续费",
+    "cancelApplication": "取消开通申请",
+    "cancelApplicationExplain": "取消后，系统将向支付渠道确认并尝试终止签约及后续续费。若付款正在处理，仍需核实付款结果；此操作不申请退款。",
+    "confirmCancelApplication": "确认取消申请",
+    "pendingApplicationHint": "若已签约或付款，请先查询最新状态，避免重复支付；尚未完成时可尝试继续签约并支付。",
+    "retryPayment": "重试本期续费",
+    "retryUnconfirmed": "暂未确认重试结果，请查看账单状态后再操作。",
+    "cancelExplain": "取消后停止未来续费扣款，已付款周期及该周期已购买的每月积分发放继续有效。此操作不申请退款。",
+    "confirmCancel": "确认取消续费",
+    "keep": "保留订阅",
+    "cancelUnconfirmed": "暂时无法确认取消结果，请刷新查看状态。",
+    "continueCheckout": "继续签约并支付",
+    "invoices": "订阅账单",
+    "period": "服务周期",
+    "amount": "套餐金额／实际付款",
+    "dodoQuote": "按当前汇率 {{rate}} 换算，Dodo 支付 {{price}}（未计适用税费）。以签约页确认金额为准。",
+    "dodoQuoted": "Dodo 报价 {{price}}",
+    "dodoPaid": "Dodo 实际付款 {{price}}",
+    "quoteChanged": "汇率报价已更新，尚未创建订阅。请核对新的付款金额并重新确认协议。",
+    "creationRejected": "支付渠道暂时无法按当前报价签约，尚未发起签约或扣款。请联系管理员核对渠道配置。",
+    "state": "状态",
+    "grants": "积分发放记录",
+    "method": "支付方式",
+    "renewPrice": "此后每 {{months}} 个月按 {{price}} 自动续费。",
+    "monthlyCredits": "每月发放 {{credits}} 积分，永久有效。",
+    "upfrontCredits": "付款后一次性发放 {{credits}} 积分，永久有效。",
+    "taxNote": "如有适用税费，将在收银台展示。",
+    "consent": "我授权自动续费，并已阅读及同意",
+    "terms": "订阅服务协议",
+    "subscribe": "订阅",
+    "methods": {
+      "alipay": "支付宝",
+      "wxpay": "微信支付",
+      "dodo": "Dodo"
+    },
+    "cycle": {
+      "1": "/月",
+      "3": "/季",
+      "12": "/年"
+    },
+    "status": {
+      "review": "付款待核查，已停止未来续费",
+      "cancellingSetup": "开通未完成，已请求取消；签约结果尚未确认",
+      "cancelling": "已申请停止自动续费，正在确认{{method}}的解约结果",
+      "cancelled": "已取消未来续费，已购买权益保留",
+      "confirming": "签约或付款结果确认中",
+      "awaitingPayment": "开通尚未完成，签约或首期付款尚未确认",
+      "setupFailed": "开通失败，可重新选择套餐",
+      "active": "自动续费已开启",
+      "paymentFailed": "续费扣款失败，请检查支付账户"
+    },
+    "invoiceStatus": {
+      "pending": "待处理",
+      "processing": "扣款处理中",
+      "paid": "已付款",
+      "failed": "扣款失败",
+      "refunded": "已退款",
+      "closed": "已关闭"
+    },
+    "grantStatus": {
+      "pending": "待发放",
+      "credited": "已发放",
+      "blocked": "等待补发",
+      "held": "待核查"
+    },
+    "catalog": "订阅套餐",
+    "billingPeriod": "扣款周期",
+    "perMonth": "/月",
+    "billingTotal": {
+      "1": "每月扣款 {{price}}",
+      "3": "每季扣款 {{price}}",
+      "12": "每年扣款 {{price}}"
+    },
+    "chooseTier": "选择 {{name}} 的每月积分档位",
+    "creditsLabel": "每月积分",
+    "grantLabel": "积分发放",
+    "periodUnavailable": "此选项暂不可订阅",
+    "billingPeriodLabels": {
+      "1": "月付",
+      "3": "季付",
+      "12": "年付"
+    },
+    "allPeriods": "全部周期",
+    "periodCredits": "每周期积分",
+    "grantModeShort": {
+      "monthly": "逐月发放",
+      "upfront": "一次发放"
+    },
+    "renewalNote": "自动续费 · 积分永久有效",
+    "purchaseBlocked": "当前账号已有订阅或未结束的申请，请在下方查看；状态未确认时可点击「查询最新状态」。",
+    "paymentUnavailable": "部分支付渠道暂不可用，需要管理员检查支付服务配置。请稍后重新检查。",
+    "recheckPayment": "重新检查支付渠道",
+    "refreshStatus": "查询最新状态",
+    "refreshingStatus": "正在查询…",
+    "recoveryPending": "取消请求已记录，等待支付渠道确认。确认前暂不能重新订阅，可查询最新状态。",
+    "recoveryConfigUnavailable": "暂时无法查询：该申请的支付配置不可用，请联系管理员恢复配置后重试。取消尚未确认。",
+    "recoveryUnavailable": "暂时无法确认支付渠道结果，请稍后重新查询。为避免重复扣款，申请仍保留。",
+    "statusUpdated": "已查询支付渠道，当前状态已更新。"
+  },
+  "subscriptionCheckout": {
+    "orgCreditsInsufficient": "组织可用积分不足，暂时无法购买此套餐，请联系组织管理员补充积分。",
+    "recover": "重新获取支付入口",
+    "selectPlan": "选择套餐",
+    "renewal": "自动续费：每 {{months}} 个月 {{price}}",
+    "amountDue": "本期应付金额",
+    "renewalTiming": "首期付款确认后开始计算服务周期；具体下次续费日期将在订阅生效后显示。",
+    "membership": "本期会员期限",
+    "months": "{{months}} 个月",
+    "periodCredits": "本期积分总额",
+    "monthlyGrants": "每月发放 {{credits}} 积分，本期共 {{count}} 次；已发积分永久有效。",
+    "upfrontGrants": "付款确认后一次性发放 {{credits}} 积分，永久有效。",
+    "fullPeriod": "实际按整期金额付款。",
+    "account": "订阅权益所属账号",
+    "cancelPolicy": "可在订阅管理中取消后续自动续费。取消后，已付款周期的会员期限和计划内积分发放继续保留；取消不等于退款。",
+    "existing": "当前已有有效套餐或已确认的付款正在开通权益，请在我的权益中查看。",
+    "planChanged": "套餐版本已更新，请返回重新选择并确认价格和权益。",
+    "confirm": "确认订阅并前往支付",
+    "channelUnavailable": "当前暂时无法使用此渠道签约，请选择其他支付方式或稍后重试。",
+    "linkUnavailable": "暂未取得支付渠道的签约链接，你可以更换支付方式。原申请将由系统自动核对。",
+    "linkFailed": "暂时无法创建签约页面，请选择其他支付方式或稍后重试。",
+    "viewStatus": "查看申请状态",
+    "redirecting": "正在前往支付…",
+    "phoneRequiredTitle": "请先绑定手机号",
+    "phoneRequired": "使用当前支付宝订阅方式前，请先在工作台右上角账号菜单中绑定手机号，再回到本页点击「重新检查」。你也可以选择其他支付方式。",
+    "recheck": "重新检查",
+    "checking": "正在检查…",
+    "dodoDetails": "如需邮箱或账单资料，请在 Dodo 收银台填写或确认。",
+    "agreementChanged": "协议版本已变化或暂不可用，请重新核对后确认。",
+    "agreementUnavailable": "该套餐尚未关联已发布的服务协议，暂时无法订阅。"
+  },
+  "subscriptionReturn": {
+    "states": {
+      "compensating": {
+        "title": "重复付款处理中",
+        "description": "这笔重复付款正在自动处理。已生效的订阅仍可正常使用和管理，处理结果会更新到账单。"
+      },
+      "awaitingPayment": {
+        "title": "签约和首期付款尚未确认",
+        "description": "首期付款尚未确认。你可以返回选择支付方式；已付款的订单会自动核对并更新到账单。"
+      },
+      "unconfirmed": {
+        "title": "状态尚未确认",
+        "description": "系统会继续自动核对并更新账单，你可以返回继续操作。"
+      },
+      "checkoutUnavailable": {
+        "title": "签约页面暂不可用",
+        "description": "该支付方式暂时无法打开签约页面，可以返回选择其他支付方式。原申请会自动核对。"
+      },
+      "confirming": {
+        "title": "正在确认签约和付款",
+        "description": "正在查询付款记录，确认后会自动更新本页和账单。"
+      },
+      "authorized": {
+        "title": "签约已确认，等待首期付款",
+        "description": "自动续费授权已确认，首期付款尚未确认，会员和积分尚未生效。"
+      },
+      "expired": {
+        "title": "已付会员期限已结束",
+        "description": "上个已付款周期已结束，请在「查看订阅与账单」中查看续费状态。已发放的积分继续保留。"
+      },
+      "paid": {
+        "title": "本期已付款，积分发放处理中",
+        "description": "已确认本期付款及会员期限，当前应发积分正在处理。请勿重复付款。"
+      },
+      "active": {
+        "title": "订阅已生效",
+        "description": "本期付款、会员期限和当前应发积分均已确认。后续积分按下方计划继续发放。"
+      },
+      "failed": {
+        "title": "签约或付款未完成",
+        "description": "本次签约或付款未完成，可以返回重新选择套餐或支付方式。"
+      },
+      "cancelled": {
+        "title": "签约已取消",
+        "description": "已确认渠道取消授权。已付款权益请在我的权益中查看。"
+      },
+      "review": {
+        "title": "订阅需要核查",
+        "description": "付款或权益存在异常，请勿重复付款，请查看账单中的处理情况。"
+      },
+      "refunded": {
+        "title": "订阅账单已退款",
+        "description": "退款与权益的最终处理情况请在订阅账单中查看。"
+      },
+      "unavailable": {
+        "title": "暂时无法查询订阅结果",
+        "description": "请重新查询或查看账单，查询失败不代表付款失败。"
+      }
+    },
+    "number": "订阅编号",
+    "manage": "查看账单",
+    "renewal": "下次续费周期起始日：{{date}}。具体扣费时间以渠道规则为准。",
+    "notRenewing": "自动续费已关闭，已付款权益继续保留。"
+  },
+  "subscriptionAgreementDialog": {
+    "description": "阅读协议后，勾选同意并确认，即可继续当前订单。",
+    "body": "协议正文",
+    "closeLabel": "关闭协议",
+    "close": "关闭",
+    "consent": "我已阅读并同意本协议，并授权按所选套餐自动续费。",
+    "confirm": "确认并返回结算",
+    "changed": "协议内容与当前套餐不一致或尚未生效，请关闭窗口并重新确认套餐信息。"
+  },
+  "subscriptionAgreementPage": {
+    "back": "返回",
+    "backToSubscriptions": "返回订阅套餐",
+    "loading": "正在读取协议…",
+    "unavailable": "暂时无法查看此协议",
+    "unavailableHint": "该版本可能尚未发布，或暂时无法读取。请稍后重试。",
+    "version": "版本 v{{version}}",
+    "effectiveAt": "生效时间：{{date}}",
+    "upcoming": "该版本尚未到生效时间。"
+  },
+  "assetBoard": {
+    "referenceMaterials": "参考素材",
+    "zoomImage": "放大查看",
+    "prompt": "提示词",
+    "nodeMissing": "节点已不存在",
+    "clickToEdit": "点击编辑",
+    "noText": "暂无文本内容",
+    "noScript": "暂无脚本内容",
+    "noShots": "暂无镜头行",
+    "noDisplayContent": "暂无可展示的内容",
+    "shotNumber": "镜号",
+    "duration": "时长",
+    "visualDescription": "画面描述",
+    "dialogue": "对白",
+    "contentSummary": "内容摘要",
+    "resolution": "分辨率",
+    "referenceActions": "{{name}} 操作",
+    "edit": "编辑",
+    "locate": "定位",
+    "m4aOnly": "仅 m4a 源",
+    "noKeyElements": "该分类下暂无关键元素",
+    "referenceDropHint": "可将资产、图片、视频拖拽到此，添加为参考",
+    "imageOpChipHint": "点击切换功能，退格删除",
+    "upscaleResult": "高清放大",
+    "cropResult": "裁剪结果",
+    "rotateResult": "旋转结果",
+    "crop": "裁剪",
+    "rotate": "旋转",
+    "panoramaConfirm": "确认基于本图生成 360° 全景图？",
+    "panoramaResult": "360°全景图",
+    "durationSeconds": "{{count}}秒",
+    "generatingProgress": "生成中 {{percent}}%...",
+    "generating": "生成中",
+    "assetDetail": "资产详情",
+    "back": "返回",
+    "nodeActions": "节点操作",
+    "duplicate": "创建副本",
+    "delete": "删除",
+    "closeDetail": "关闭详情",
+    "text": "文本",
+    "image": "图片",
+    "video": "视频",
+    "relightEditor": "打光效果编辑器",
+    "multiAngleEditor": "多维度编辑器",
+    "ownReferenceImage": "节点自带参考图",
+    "removeReferenceImage": "移除参考图",
+    "panorama": "全景",
+    "panoramaTitle": "基于本图生成 360° 全景图（并挂一个全景查看器节点）",
+    "multiAngle": "多角度",
+    "multiAngleTitle": "打开多维度编辑器（球体选角 + 画质 + 提示词）",
+    "relight": "重打光",
+    "relightTitle": "打开打光效果编辑器（方向 + 亮度/色温 + 智能模式）",
+    "moreActions": "更多操作",
+    "download": "下载",
+    "regenerate": "重新生成",
+    "retryGeneration": "重新提交这次生成（失败重试）",
+    "gridTemplate": "基于本图套用宫格 / 多视图模板生成",
+    "editVideo": "剪辑",
+    "composedVideo": "合成视频",
+    "upscaledVideoName": "高清（{{resolution}}）",
+    "composeNeedsTwoVideos": "需要至少 2 个已就绪的上游视频素材",
+    "openComposeTimeline": "打开视频合成时间线",
+    "upscale": "高清",
+    "upscaleTitle": "放大分辨率（在画布上新建高清结果节点）",
+    "fullscreen": "全屏",
+    "fullscreenTitle": "全屏播放",
+    "submitUpscale": "提交高清",
+    "submitUpscaleTitle": "在画布上新建高清结果节点并提交任务",
+    "locateOnCanvas": "在画布中定位",
+    "generationFailed": "生成失败",
+    "downloadConvert": "下载 / 格式转换",
+    "resizeColumn": "调整栏宽",
+    "all": "全部",
+    "finalVideos": "成片",
+    "clips": "片段",
+    "noTextNodes": "画布中还没有文本类节点",
+    "noImageNodes": "画布中还没有图片节点",
+    "noVideoNodes": "画布中还没有视频节点",
+    "noMatchingVideos": "没有匹配当前筛选的视频",
+    "filterVideos": "筛选视频",
+    "switchColumn": "切换栏目",
+    "expand": "放大",
+    "collapse": "收起",
+    "pendingGeneration": "待确认后生成",
+    "sourceNotM4a": "源文件不是 m4a，无法转换为 m4a 格式",
+    "audioDownloadFailed": "音频下载失败",
+    "downloadAs": "下载为 {{format}}",
+    "keyElements": "关键元素",
+    "setKeyElement": "设置关键元素",
+    "clearKeyElement": "取消关键元素",
+    "current": "当前",
+    "audioLabel": "音频",
+    "categoryCharacter": "人物",
+    "categoryScene": "场景",
+    "categoryObject": "物品",
+    "categoryOther": "其他",
+    "audio": {
+      "musicDescription": "音乐描述",
+      "speechText": "要合成的文本",
+      "musicPlaceholder": "描述想要的音乐：风格、乐器、节奏、氛围…",
+      "speechPlaceholder": "输入要合成的文本",
+      "fillerWords": "语气词（可选）",
+      "fillerWordsPlaceholder": "如：紧张、压低声音、带一点恐惧感",
+      "chooseVoice": "选择自定义声线",
+      "changeVoice": "更换自定义声线",
+      "voice": "声线",
+      "voiceNotSelected": "未选择（生成时跳过）",
+      "customVoice": "自定义声线",
+      "musicDuration": "音乐时长",
+      "forceInstrumental": "强制纯音乐",
+      "respectSectionDurations": "遵守段落时长",
+      "textToMusic": "文字生成音乐",
+      "customVoiceNarration": "自定义声线旁白",
+      "voiceSettings": "音色设置（当前：{{voice}}）",
+      "notSelected": "未选择",
+      "advancedSettings": "高级设置",
+      "enterMusicFirst": "先填写音乐描述",
+      "enterSpeechFirst": "先填写要合成的文本",
+      "regenerate": "重新生成",
+      "generate": "生成"
+    }
   }
 }
