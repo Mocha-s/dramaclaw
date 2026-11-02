@@ -106,13 +106,18 @@ ARG INSTALL_WORLD=0
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends git; \
+    git config --system http.version HTTP/1.1; \
     if [ "$INSTALL_WORLD" = "1" ]; then \
         apt-get install -y --no-install-recommends nodejs npm; \
         npm install -g @playcanvas/splat-transform; \
         uv sync --frozen --no-dev --extra world \
+          --no-install-package openai-codex-cli-bin \
+        || uv sync --frozen --no-dev --extra world \
           --no-install-package openai-codex-cli-bin; \
     else \
         uv sync --frozen --no-dev \
+          --no-install-package openai-codex-cli-bin \
+        || uv sync --frozen --no-dev \
           --no-install-package openai-codex-cli-bin; \
     fi; \
     /app/.venv/bin/python -m novelvideo.ladybug_json_extension; \
@@ -142,6 +147,7 @@ ARG HERMES_REF="brainclaw/evidence-plane"
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends git; \
+    git config --system http.version HTTP/1.1; \
     rm -rf /var/lib/apt/lists/*; \
     git clone --depth 1 --branch "$HERMES_REF" "$HERMES_REPO" /opt/hermes-agent \
       || { git clone "$HERMES_REPO" /opt/hermes-agent; git -C /opt/hermes-agent checkout "$HERMES_REF"; }; \
