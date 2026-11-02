@@ -12,10 +12,16 @@ import { useCanvasStore } from '@/stores/canvasStore';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => ({
-      'assetBoard.multiAngleEditor': '多维度编辑器',
-      'assetBoard.relightEditor': '打光效果编辑器',
-    } as Record<string, string>)[key] ?? fallback ?? key,
+    // 兼容 i18next 两种调用形态：t(key, 'fallback') 与 t(key, { defaultValue })。
+    t: (key: string, arg?: string | { defaultValue?: string }) => {
+      const fallback = typeof arg === 'string' ? arg : arg?.defaultValue;
+      return (
+        {
+          'assetBoard.multiAngleEditor': '多维度编辑器',
+          'assetBoard.relightEditor': '打光效果编辑器',
+        } as Record<string, string>
+      )[key] ?? fallback ?? key;
+    },
   }),
 }));
 vi.mock('@/lib/queries/generation-credit-cost', () => ({

@@ -785,6 +785,8 @@ function QualityPicker({ value, options, onChange }: QualityPickerProps) {
   }, [isOpen]);
 
   const title = t("lightEditor.qualityPicker.title");
+  const qualityLabel = (v: string) =>
+    t(`node.imageGen.quality.${v}`, { defaultValue: v });
 
   return (
     <div className="relative">
@@ -797,7 +799,7 @@ function QualityPicker({ value, options, onChange }: QualityPickerProps) {
         <Sparkles className="h-3 w-3 text-text-dark/55" />
         <span className="whitespace-nowrap font-medium">{title}</span>
         <span className="text-text-dark/35">·</span>
-        <span className="text-text-dark/50">{value}</span>
+        <span className="text-text-dark/50">{qualityLabel(value)}</span>
         <ChevronDown className="h-2.5 w-2.5 text-text-dark/55" />
       </button>
       {isOpen && (
@@ -827,7 +829,7 @@ function QualityPicker({ value, options, onChange }: QualityPickerProps) {
                   }`}
                 >
                   {isActive && <Check className="h-3 w-3" />}
-                  {size}
+                  {qualityLabel(size)}
                 </button>
               );
             })}
