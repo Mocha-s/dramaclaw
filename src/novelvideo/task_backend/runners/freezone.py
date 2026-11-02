@@ -1548,6 +1548,12 @@ async def _run_freezone_video_compose_async(
         title=str(payload.get("title") or ""),
         canvas_id=str(payload.get("canvas_id") or ""),
         resolution=str(payload.get("resolution") or "1080p"),
+        output_width=(
+            int(payload["output_width"]) if payload.get("output_width") else None
+        ),
+        output_height=(
+            int(payload["output_height"]) if payload.get("output_height") else None
+        ),
         fps=int(payload.get("fps") or 30),
         background_color=str(payload.get("background_color") or "#000000"),
         keep_original_audio=bool(payload.get("keep_original_audio", True)),

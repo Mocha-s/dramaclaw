@@ -39,6 +39,9 @@ export async function submitVideoClip(
     endMs: number;
     /** 源节点的画质档（VideoNode 的 data.quality）——compose 只支持 720p/1080p。 */
     quality?: string | null;
+    /** 源视频原始尺寸（偶数像素，成对出现）；给了就按源比例导出。 */
+    outputWidth?: number;
+    outputHeight?: number;
     /** 结果节点标题，默认「剪辑」（与 VideoNode 原文一致）。 */
     displayName?: string;
   },
@@ -61,6 +64,8 @@ export async function submitVideoClip(
   try {
     const ref = await submitFreezoneVideoCompose(projectId, {
       resolution: composeResolution,
+      outputWidth: opts.outputWidth,
+      outputHeight: opts.outputHeight,
       tracks: [
         {
           trackId: `track_${sourceNodeId}_video`,

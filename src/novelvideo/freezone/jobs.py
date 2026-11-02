@@ -1270,6 +1270,8 @@ async def run_freezone_video_compose(
     title: str = "",
     canvas_id: str = "",
     resolution: str = "1080p",
+    output_width: int | None = None,
+    output_height: int | None = None,
     fps: int = 30,
     background_color: str = "#000000",
     keep_original_audio: bool = True,
@@ -1283,9 +1285,13 @@ async def run_freezone_video_compose(
     if not shutil.which("ffprobe"):
         raise RuntimeError("ffprobe not found on PATH; install via brew/apt")
 
-    width, height = FREEZONE_VIDEO_RESOLUTION_MAP.get(
-        resolution, FREEZONE_VIDEO_RESOLUTION_MAP["1080p"]
-    )
+    if output_width and output_height:
+        # 显式画布：按源比例导出（片段截取的单素材场景），不再套 720p/1080p 横屏预设。
+        width, height = int(output_width), int(output_height)
+    else:
+        width, height = FREEZONE_VIDEO_RESOLUTION_MAP.get(
+            resolution, FREEZONE_VIDEO_RESOLUTION_MAP["1080p"]
+        )
     output_dir = outputs_dir(project_dir, "freezone_video_compose")
     output_dir.mkdir(parents=True, exist_ok=True)
     final_output_path = output_dir / f"{job_id}.mp4"

@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 from novelvideo.api.schemas import FreezoneVideoComposeRequest
+from pydantic import ValidationError
 from novelvideo.freezone import canvas_store
 from novelvideo.freezone.history import read_generation_history
 from novelvideo.freezone.jobs import run_freezone_video_compose
@@ -321,3 +322,136 @@ async def test_video_compose_overlap_uses_speed_adjusted_duration(
     assert [kind for kind, _kwargs in calls] == ["video", "video"]
     assert calls[0][1]["duration"] == 4
     assert calls[0][1]["speed"] == 2
+
+
+def test_video_compose_request_output_size_must_be_paired_and_even() -> None:
+    """显式输出尺寸成对出现且为偶数像素；单边或奇数一律拒绝。"""
+
+    body = FreezoneVideoComposeRequest.model_validate(
+        {"resolution": "720p", "output_width": 720, "output_height": 1280}
+    )
+    assert (body.output_width, body.output_height) == (720, 1280)
+
+    with pytest.raises(ValidationError):
+        FreezoneVideoComposeRequest.model_validate({"output_width": 720})
+    with pytest.raises(ValidationError):
+        FreezoneVideoComposeRequest.model_validate(
+            {"output_width": 721, "output_height": 1280}
+        )
+
+
+@pytest.mark.asyncio
+async def test_video_compose_explicit_output_size_overrides_canvas_preset(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """显式尺寸直接成为画布；不传时仍走 720p/1080p 横屏预设。"""
+
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"video")
+    calls: list[dict[str, Any]] = []
+
+    async def fake_render_video_clip(**kwargs: Any) -> None:
+        calls.append(kwargs)
+        Path(kwargs["output_path"]).write_bytes(b"clip")
+
+    async def fake_render_gap_clip(**kwargs: Any) -> None:
+        Path(kwargs["output_path"]).write_bytes(b"gap")
+
+    async def fake_concat_media_segments(
+        _segment_paths: list[Path], output_path: Path
+    ) -> None:
+        output_path.write_bytes(b"concat")
+
+    async def fake_mix_audio_tracks(**kwargs: Any) -> None:
+        Path(kwargs["final_output_path"]).write_bytes(b"final")
+
+    monkeypatch.setattr("shutil.which", lambda _name: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(
+        "novelvideo.freezone.jobs._render_video_clip", fake_render_video_clip
+    )
+    monkeypatch.setattr(
+        "novelvideo.freezone.jobs._render_gap_clip", fake_render_gap_clip
+    )
+    monkeypatch.setattr(
+        "novelvideo.freezone.jobs._concat_media_segments", fake_concat_media_segments
+    )
+    monkeypatch.setattr(
+        "novelvideo.freezone.jobs._mix_audio_tracks", fake_mix_audio_tracks
+    )
+
+    tracks = [
+        {
+            "kind": "video",
+            "items": [
+                {
+                    "item_id": "clip-a",
+                    "source_path": str(source),
+                    "timeline_start": 0,
+                    "source_start": 0,
+                    "source_end": 2,
+                }
+            ],
+        }
+    ]
+
+    await run_freezone_video_compose(
+        project_dir=tmp_path,
+        job_id="job-portrait",
+        resolution="720p",
+        output_width=720,
+        output_height=1280,
+        tracks=tracks,
+    )
+    assert (calls[0]["width"], calls[0]["height"]) == (720, 1280)
+
+    await run_freezone_video_compose(
+        project_dir=tmp_path,
+        job_id="job-preset",
+        resolution="720p",
+        tracks=tracks,
+    )
+    assert (calls[1]["width"], calls[1]["height"]) == (1280, 720)
+
+
+@pytest.mark.asyncio
+async def test_video_compose_runner_passes_output_size_through(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """队列 payload 里的显式尺寸要原样透传到 leaf，不能在 runner 里丢掉。"""
+
+    output = tmp_path / "freezone" / "_outputs" / "freezone_video_compose" / "job-size.mp4"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_bytes(b"video")
+    captured: dict[str, Any] = {}
+
+    async def fake_compose(**kwargs: Any) -> Path:
+        captured.update(kwargs)
+        return output
+
+    monkeypatch.setattr(
+        "novelvideo.freezone.jobs.run_freezone_video_compose", fake_compose
+    )
+    monkeypatch.setattr(freezone_runner, "_update", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "novelvideo.api.deps.make_static_url_for_context",
+        lambda _ctx, relative: f"/static/project/{relative}",
+    )
+    ctx = SimpleNamespace(project_id="project-a", output_dir=str(tmp_path))
+    envelope = {
+        "payload": {
+            "job_id": "job-size",
+            "project_dir": str(tmp_path),
+            "resolution": "720p",
+            "output_width": 720,
+            "output_height": 1280,
+            "tracks": [],
+        }
+    }
+
+    result = await freezone_runner._run_freezone_video_compose_async(envelope, ctx)
+
+    assert result["output_url"].endswith("job-size.mp4")
+    assert captured["output_width"] == 720
+    assert captured["output_height"] == 1280

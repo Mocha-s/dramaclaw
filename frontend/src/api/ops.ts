@@ -997,6 +997,12 @@ export interface FreezoneVideoComposePayload {
   canvasId?: string;
   nodeId?: string;
   resolution?: FreezoneVideoComposeResolution;
+  /**
+   * 显式输出尺寸（偶数、须成对出现）。给了就覆盖 resolution 预设画布——
+   * 片段截取用它按源视频原比例导出，否则竖屏源会被塞进横屏预设加黑边。
+   */
+  outputWidth?: number;
+  outputHeight?: number;
   fps?: number;
   backgroundColor?: string;
   keepOriginalAudio?: boolean;
@@ -1017,6 +1023,9 @@ export async function submitFreezoneVideoCompose(
     canvas_id: payload.canvasId ?? "",
     node_id: payload.nodeId ?? "",
     resolution: payload.resolution ?? "1080p",
+    ...(payload.outputWidth && payload.outputHeight
+      ? { output_width: payload.outputWidth, output_height: payload.outputHeight }
+      : {}),
     fps: payload.fps ?? 30,
     background_color: payload.backgroundColor ?? "#000000",
     keep_original_audio: payload.keepOriginalAudio ?? true,

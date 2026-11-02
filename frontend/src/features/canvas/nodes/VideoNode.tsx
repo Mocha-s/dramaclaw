@@ -2262,6 +2262,15 @@ export const VideoNode = memo(
         }
         // Compose only supports 720p / 1080p — fall back to 720p for 480P sources.
         const composeResolution = quality.toLowerCase() === "1080p" ? "1080p" : "720p";
+        // 片段按源视频原始尺寸导出：合成预设只有 720p/1080p 横屏画布，竖屏源会被
+        // 加黑边压成另一个比例。显式给输出尺寸后 ffmpeg 把原帧 fit 进同尺寸画布。
+        // 与裁切同口径取源尺寸（<video> 元数据优先，退回上传时探到的宽高）。
+        const clipOutputWidth = Math.floor(cropSourceWidth / 2) * 2;
+        const clipOutputHeight = Math.floor(cropSourceHeight / 2) * 2;
+        const clipOutputSize =
+          clipOutputWidth >= 64 && clipOutputHeight >= 64
+            ? { outputWidth: clipOutputWidth, outputHeight: clipOutputHeight }
+            : {};
         setIsComposingClip(true);
         setClipError(null);
         try {
@@ -2269,6 +2278,7 @@ export const VideoNode = memo(
           const sourceEnd = endMs / 1000;
           const ref = await submitFreezoneVideoCompose(projectId, {
             resolution: composeResolution,
+            ...clipOutputSize,
             tracks: [
               {
                 trackId: `track_${id}_video`,
@@ -2325,6 +2335,8 @@ export const VideoNode = memo(
       [
         addEdge,
         addNode,
+        cropSourceHeight,
+        cropSourceWidth,
         data.videoUrl,
         id,
         isComposingClip,

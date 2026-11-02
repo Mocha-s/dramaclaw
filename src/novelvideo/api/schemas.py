@@ -1822,6 +1822,23 @@ class FreezoneVideoComposeRequest(BaseModel):
     canvas_id: str = Field(default="", description="来源画布 id，可为空")
     node_id: str = Field(default="", description="来源合成节点 id，用于生成历史")
     resolution: Literal["720p", "1080p"] = Field(default="1080p", description="目标输出分辨率")
+    output_width: Optional[int] = Field(
+        default=None,
+        ge=64,
+        le=8192,
+        multiple_of=2,
+        description=(
+            "显式输出宽度（偶数像素）。与 output_height 成对出现；同时提供时覆盖 resolution "
+            "预设画布，用于按源比例导出（片段截取这类单素材场景默认给源尺寸）"
+        ),
+    )
+    output_height: Optional[int] = Field(
+        default=None,
+        ge=64,
+        le=8192,
+        multiple_of=2,
+        description="显式输出高度（偶数像素）。与 output_width 成对出现",
+    )
     fps: int = Field(default=30, ge=1, le=60, description="输出帧率")
     background_color: str = Field(default="#000000", description="补边或空隙使用的背景色")
     keep_original_audio: bool = Field(default=True, description="是否保留视频片段自带音频")
@@ -1833,6 +1850,12 @@ class FreezoneVideoComposeRequest(BaseModel):
     tracks: list[FreezoneVideoComposeTrack] = Field(
         default_factory=list, description="时间线轨道列表"
     )
+
+    @model_validator(mode="after")
+    def _output_size_pair(self) -> "FreezoneVideoComposeRequest":
+        if (self.output_width is None) != (self.output_height is None):
+            raise ValueError("output_width and output_height must be provided together")
+        return self
 
 
 FreezoneVideoGenRequest.model_rebuild()

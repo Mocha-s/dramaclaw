@@ -8208,6 +8208,8 @@ def _start_freezone_video_compose_task(
                 fps=body.fps,
                 background_color=body.background_color,
                 keep_original_audio=body.keep_original_audio,
+                output_width=body.output_width,
+                output_height=body.output_height,
                 tracks=resolved_tracks,
             )
             task_manager.complete_task(
@@ -12112,6 +12114,8 @@ async def freezone_video_compose(
                     "background_color": body.background_color,
                     "keep_original_audio": body.keep_original_audio,
                     "cover_url": body.cover_url,
+                    "output_width": body.output_width,
+                    "output_height": body.output_height,
                     "tracks": resolved_tracks,
                 },
             )
