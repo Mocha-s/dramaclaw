@@ -8,6 +8,11 @@ services:
   api:
     image: ${DRAMACLAW_IMAGE_PREFIX:-claymorelab}/dramaclaw:${DRAMACLAW_VERSION:-2.1.1}
     restart: unless-stopped
+    # Docker 默认 seccomp 档禁止容器内创建 user namespace，codex-linux-sandbox 的
+    # bubblewrap 因此无法运行（codex 聊天沙箱每次启动报错、shell 工具不可用）。
+    # 宿主内核已允许 userns；放开 seccomp 后沙箱按设计生效（2026-11-02 用户批准）。
+    security_opt:
+      - seccomp:unconfined
     # 运行时从宿主 .env 注入 model/LLM key；镜像版允许没有 .env（首启后再补也行）。
     # environment: 块仍覆盖此处同名变量，保持 CE inline 模式强制不变。
     env_file:
