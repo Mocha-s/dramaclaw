@@ -3542,6 +3542,36 @@ def test_split_provider_and_model_preserves_catalog_model_with_explicit_provider
     assert model == "gpt-image-2"
 
 
+def test_split_provider_and_model_preserves_catalog_model_without_provider() -> None:
+    import json
+
+    model_gateway_settings._write_many(
+        {
+            "model_gateway_mode": "custom",
+            "third_party_gateway_groups": json.dumps(
+                [
+                    {
+                        "id": "image",
+                        "name": "Image",
+                        "protocol": "openai",
+                        "baseUrl": "https://images.example/v1",
+                        "apiKey": "sk-image",
+                        "capabilities": ["image"],
+                        "modelMappings": [
+                            {"requestPattern": "gpt-image-2", "upstreamModel": "gpt-image-2"}
+                        ],
+                    }
+                ]
+            ),
+        }
+    )
+
+    provider, model = _split_provider_and_model(None, "gpt-image-2")
+
+    assert provider is None
+    assert model == "gpt-image-2"
+
+
 def test_freezone_defaults_to_newapi_gpt_image2() -> None:
     assert FREEZONE_DEFAULT_IMAGE_MODEL == "gpt-image-2"
     assert _resolve_freezone_image_provider(None) == "newapi"

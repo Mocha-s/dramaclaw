@@ -249,8 +249,17 @@ def split_provider_and_model(
         return provider, model_text or fallback_model
     if model_text:
         if model_text in IMAGE_GENERATION_SELECTIONS:
-            entry = IMAGE_GENERATION_SELECTIONS[model_text]
-            return entry["provider"], entry["model"]
+            # Catalog-backed ids must survive the legacy static map: when the
+            # effective gateway serves the id itself (e.g. gpt-image-2 in a
+            # third-party group), keep the caller's id instead of the alias.
+            from novelvideo.config import get_effective_newapi_gateway_config
+
+            gateway = get_effective_newapi_gateway_config(
+                capability="image", model=model_text
+            )
+            if gateway.source not in {"third_party", "sub2api"}:
+                entry = IMAGE_GENERATION_SELECTIONS[model_text]
+                return entry["provider"], entry["model"]
 
     if model_text and "/" in model_text:
         provider_token, model_token = model_text.split("/", 1)
