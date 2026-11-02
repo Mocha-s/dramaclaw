@@ -791,7 +791,24 @@ async def test_run_timeout_preserves_candidate_and_cannot_install(monkeypatch):
     from novelvideo.freezone import skill_import_quality as module
     from novelvideo.freezone.skill_import_budget import ImportBudget
     from test_freezone_agent_bundle import _bundle_payload
-    monkeypatch.setattr(module, 'ImportBudget', lambda: ImportBudget(timeout_seconds=.04))
+
+    # Pre-warm the pipeline's first-call costs (lazy imports and the first
+    # pydantic schema build run inside the 40ms budget window). Without this a
+    # cold worker (e.g. under xdist distribution) spends the whole budget on
+    # interpreter warmup and the assertion below fails for the wrong reason.
+    import novelvideo.freezone.agent_config_store  # noqa: F401
+    import novelvideo.freezone.skill_import  # noqa: F401
+
+    bundle_schemas = getattr(module, 'bundle_schemas', None)
+    if bundle_schemas is not None:
+        bundle_schemas()
+    draft_source_analysis = getattr(module, 'DraftSourceAnalysis', None)
+    if draft_source_analysis is not None:
+        draft_source_analysis.model_json_schema()
+    # Calibrate the budget to expire during the slow third call (1s sleep),
+    # not during cold-start pipeline prep: on a loaded worker the prep
+    # (lazy imports, first schema build) can eat hundreds of milliseconds.
+    monkeypatch.setattr(module, 'ImportBudget', lambda: ImportBudget(timeout_seconds=.5))
     record = record_fixture()
     responses = [design_fixture(), _bundle_payload()]
     async def generate(prompt):
