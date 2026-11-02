@@ -772,6 +772,66 @@ def test_newapi_image_auto_ratio_keeps_resolution_without_dimensions(monkeypatch
     assert posted["json"]["metadata"] == {"ratio": "auto", "resolution": "2k"}
 
 
+def test_newapi_image_auto_ratio_follows_reference_geometry(monkeypatch):
+    import base64
+    import io as _io
+
+    import httpx
+    from PIL import Image
+
+    from novelvideo.generators import nanobanana_grid
+
+    posted = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"data": [{"b64_json": base64.b64encode(b"image-bytes").decode()}]}
+
+    class FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def post(self, url, *, headers, json, **kwargs):
+            posted["json"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
+
+    async def fake_relay(reference_images):
+        return ["https://relay.test/reference-1.png"]
+
+    monkeypatch.setattr(nanobanana_grid, "_relay_reference_images_for_newapi", fake_relay)
+
+    buffer = _io.BytesIO()
+    Image.new("RGB", (64, 36)).save(buffer, format="PNG")
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="newapi-token",
+            model="gpt-image-2.5-flare-2k",
+            prompt="follow the reference geometry",
+            reference_images=[buffer.getvalue()],
+            image_config={"aspect_ratio": "auto", "image_size": "2K"},
+            base_url="http://newapi.test/v1",
+        )
+    )
+
+    assert image_bytes == b"image-bytes"
+    assert error == ""
+    assert posted["json"]["size"] == "2048x1152"
+    assert posted["json"]["metadata"]["ratio"] == "16:9"
+    assert posted["json"]["metadata"]["resolution"] == "2k"
+
+
 def test_newapi_image_call_omits_invalid_quality_and_tier(monkeypatch):
     import httpx
     from novelvideo.generators import nanobanana_grid

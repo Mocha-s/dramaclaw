@@ -3907,6 +3907,27 @@ async def _call_openai_image_api(
         return None, "", f"请求异常: {detail}"
 
 
+def _newapi_reference_followed_ratio(
+    reference_images: list[bytes | tuple[bytes, str] | tuple[str, bytes, str]] | None,
+) -> str | None:
+    """Reduced aspect ratio ("w:h") of the first reference image, if readable."""
+    if not reference_images:
+        return None
+    try:
+        from math import gcd
+
+        from PIL import Image
+
+        with Image.open(io.BytesIO(_reference_image_bytes(reference_images[0]))) as image:
+            width, height = image.size
+    except Exception:
+        return None
+    if width <= 0 or height <= 0:
+        return None
+    divisor = gcd(width, height)
+    return f"{width // divisor}:{height // divisor}"
+
+
 async def _call_newapi_image_api(
     *,
     api_key: str,
@@ -3962,6 +3983,14 @@ async def _call_newapi_image_api(
         "watermark": False,
         "metadata": metadata,
     }
+    if aspect_ratio in {"auto", "adaptive"}:
+        followed_ratio = _newapi_reference_followed_ratio(reference_images)
+        if followed_ratio:
+            # ``auto`` means "follow the input": endpoints that do not
+            # implement that convention answer with their default square
+            # frame, so resolve the geometry from the first reference image
+            # and send an explicit size instead of no geometry at all.
+            aspect_ratio = followed_ratio
     if aspect_ratio in {"auto", "adaptive"}:
         # Images use ``auto`` as the public follow-input ratio value. Keep
         # resolution independent and let NewAPI infer the geometry.
