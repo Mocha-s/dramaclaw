@@ -6134,6 +6134,11 @@
     }
   },
   "modelPicker": {
+    "searchPlaceholder": "搜索模型",
+    "noMatch": "没有匹配的模型",
+    "info": {
+      "audio": "有声"
+    },
     "provider": "供应商",
     "model": "模型",
     "empty": "暂无可用模型"

@@ -6134,6 +6134,11 @@
     }
   },
   "modelPicker": {
+    "searchPlaceholder": "Pesquisar modelos",
+    "noMatch": "Nenhum modelo correspondente",
+    "info": {
+      "audio": "Com áudio"
+    },
     "provider": "Fornecedor",
     "model": "Modelo",
     "empty": "Nenhum modelo disponível"

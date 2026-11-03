@@ -6011,6 +6011,11 @@
     }
   },
   "modelPicker": {
+    "searchPlaceholder": "Tìm model",
+    "noMatch": "Không có model phù hợp",
+    "info": {
+      "audio": "Có âm thanh"
+    },
     "provider": "Nhà cung cấp",
     "model": "Model",
     "empty": "Không có model khả dụng"

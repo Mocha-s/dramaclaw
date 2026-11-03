@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Box, Check, ChevronDown } from 'lucide-react';
+import { Box, Check, ChevronDown, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MediaModelRequestSchema } from '@/api/ops';
 
@@ -24,9 +24,9 @@ import {
 
 const MODEL_PICKER_POPOVER_WIDTH = 260;
 const MODEL_PICKER_POPOVER_CLASS =
-  `nodrag nowheel fixed z-[10000] max-h-[280px] w-[260px] overflow-y-auto p-1 ${NODE_FLOATING_PANEL_SURFACE_CLASS}`;
+  `nodrag nowheel fixed z-[10000] flex max-h-[280px] w-[260px] flex-col overflow-hidden p-1 ${NODE_FLOATING_PANEL_SURFACE_CLASS}`;
 const MODEL_PICKER_OPTION_BASE_CLASS =
-  'inline-flex h-8 w-full items-center gap-2 rounded-[6px] px-3 text-left text-xs font-medium transition-colors';
+  'inline-flex min-h-8 w-full items-center gap-2 rounded-[6px] px-3 py-1 text-left text-xs font-medium transition-colors';
 
 export type ProviderId =
   | 'newapi'
@@ -278,6 +278,27 @@ export function ProviderModelPicker({
     top: number;
   } | null>(null);
   const selectedModel = effectiveModels.find((m) => m.id === selectedModelId) ?? effectiveModels[0];
+  // 快速搜索：模型多起来之后在下拉里翻找很慢，按显示名 / 选择 id / 上游模型名做子串匹配。
+  const [query, setQuery] = useState('');
+  const visibleModels = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return effectiveModels;
+    return effectiveModels.filter((model) =>
+      [model.label, model.id, model.apiModel].some((value) =>
+        value.toLowerCase().includes(needle),
+      ),
+    );
+  }, [effectiveModels, query]);
+  // 选项第二行的使用信息：只挑下拉数据里已有的能力字段拼，不额外请求。
+  const modelInfoLine = (model: ModelOption): string | null => {
+    const parts: string[] = [];
+    if (model.resolutionOptions?.length) parts.push(model.resolutionOptions.join(' / '));
+    if (model.minDuration != null && model.maxDuration != null) {
+      parts.push(`${model.minDuration}-${model.maxDuration}s`);
+    }
+    if (model.supportsGenerateAudio) parts.push(t('modelPicker.info.audio'));
+    return parts.length ? parts.join(' · ') : null;
+  };
 
   const syncPopoverPosition = () => {
     const trigger = triggerRef.current;
@@ -324,6 +345,8 @@ export function ProviderModelPicker({
         type="button"
         onClick={(event) => {
           event.stopPropagation();
+          // 每次打开都从空查询开始，否则上一次的过滤词会把列表藏在用户看不见的地方。
+          if (!isOpen) setQuery('');
           setIsOpen((prev) => !prev);
         }}
         className={NODE_TEXT_CONTROL_TRIGGER_CLASS}
@@ -347,9 +370,32 @@ export function ProviderModelPicker({
           onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex flex-col gap-0.5">
-            {effectiveModels.map((model) => {
+          <div className="relative mb-1 shrink-0">
+            <Search
+              className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted/80"
+              aria-hidden
+            />
+            <input
+              type="search"
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                // 组字中的 Escape 是取消输入法候选词，不该顺手清掉整个查询词。
+                if (event.key === 'Escape' && !event.nativeEvent.isComposing) {
+                  event.stopPropagation();
+                  setQuery('');
+                }
+              }}
+              placeholder={t('modelPicker.searchPlaceholder')}
+              aria-label={t('modelPicker.searchPlaceholder')}
+              className="h-7 w-full rounded-[6px] border border-white/[0.12] bg-white/[0.06] pl-7 pr-2 text-xs text-text-dark outline-none transition-colors placeholder:text-text-muted/70 focus:border-white/30 [&::-webkit-search-cancel-button]:appearance-none"
+            />
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+            {visibleModels.map((model) => {
               const isActive = selectedModel?.id === model.id;
+              const modelInfo = modelInfoLine(model);
               const disabledReason = getOptionDisabledReason?.(model) ?? null;
               const isDisabled = disabledReason != null && (!isActive || domain === "video");
               const optionInner = (
@@ -359,7 +405,14 @@ export function ProviderModelPicker({
                   ) : (
                     <span className="inline-block h-3.5 w-3.5 shrink-0" />
                   )}
-                  <span className="truncate">{model.label}</span>
+                  <span className="flex min-w-0 flex-1 flex-col items-start">
+                    <span className="w-full truncate">{model.label}</span>
+                    {modelInfo && (
+                      <span className="w-full truncate text-[10px] font-normal opacity-75">
+                        {modelInfo}
+                      </span>
+                    )}
+                  </span>
                 </>
               );
               const optionClass = `${MODEL_PICKER_OPTION_BASE_CLASS} ${
@@ -409,6 +462,11 @@ export function ProviderModelPicker({
             {effectiveModels.length === 0 && (
               <span className="px-3 py-2 text-xs text-text-muted">
                 {t('modelPicker.empty')}
+              </span>
+            )}
+            {effectiveModels.length > 0 && visibleModels.length === 0 && (
+              <span className="px-3 py-2 text-xs text-text-muted">
+                {t('modelPicker.noMatch')}
               </span>
             )}
           </div>
