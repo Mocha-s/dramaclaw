@@ -2973,3 +2973,133 @@ def run_async(coro):
     import asyncio
 
     return asyncio.run(coro)
+
+
+def _solid_png(size, mode="RGB"):
+    import io
+
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new(mode, size, (200, 30, 30, 255)[: len(mode)]).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def test_newapi_multipart_reference_is_downscaled_to_jpeg_before_upload(monkeypatch):
+    import io
+
+    import httpx
+    from PIL import Image
+
+    from novelvideo.generators import nanobanana_grid
+
+    original = _solid_png((4096, 3072))
+    posted = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        posted.append(request.content)
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2",
+            prompt="edit prompt",
+            reference_images=[("frame.png", original, "image/png")],
+            image_config={
+                "reference_image_format": "multipart",
+                "aspect_ratio": "4:3",
+                "image_size": "2K",
+            },
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert error == ""
+    assert image_bytes == b"edited"
+    assert b'name="image"; filename="frame.jpg"' in posted[0]
+    shrunk, kind = nanobanana_grid._shrink_reference_for_upload(original, "image/png")
+    assert kind == "image/jpeg"
+    assert Image.open(io.BytesIO(shrunk)).size == (2048, 1536)
+
+
+def test_shrink_reference_keeps_alpha_png_and_passes_through_undecodable_bytes():
+    import io
+
+    from PIL import Image
+
+    from novelvideo.generators import nanobanana_grid
+
+    shrunk, kind = nanobanana_grid._shrink_reference_for_upload(
+        _solid_png((3000, 3000), "RGBA"), "image/png"
+    )
+    assert kind == "image/png"
+    assert Image.open(io.BytesIO(shrunk)).mode == "RGBA"
+    assert nanobanana_grid._shrink_reference_for_upload(b"not-an-image", "image/png") == (
+        b"not-an-image",
+        "image/png",
+    )
+
+
+@pytest.mark.parametrize("first_failure", ["reset", "408"])
+def test_newapi_image_post_retries_once_when_dropped_before_a_response(
+    monkeypatch, first_failure
+):
+    import httpx
+
+    from novelvideo.generators import nanobanana_grid
+
+    attempts = []
+    real_client = httpx.AsyncClient
+
+    def handle_request(request):
+        attempts.append(1)
+        if len(attempts) == 1:
+            if first_failure == "408":
+                return httpx.Response(408, text="408 Request Time-out")
+            raise httpx.RemoteProtocolError(
+                "Server disconnected without sending a response."
+            )
+        return httpx.Response(
+            200,
+            json={"data": [{"b64_json": base64.b64encode(b"edited").decode()}]},
+        )
+
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(
+            transport=httpx.MockTransport(handle_request), **kwargs
+        ),
+    )
+
+    image_bytes, _text, error = run_async(
+        nanobanana_grid._call_newapi_image_api(
+            api_key="test-token",
+            model="gpt-image-2",
+            prompt="edit prompt",
+            reference_images=[("frame.jpg", b"jpeg-bytes", "image/jpeg")],
+            image_config={
+                "reference_image_format": "multipart",
+                "aspect_ratio": "4:3",
+                "image_size": "2K",
+            },
+            base_url="https://gateway.test/v1",
+        )
+    )
+
+    assert error == ""
+    assert image_bytes == b"edited"
+    assert len(attempts) == 2

@@ -4062,6 +4062,13 @@ async def _call_newapi_image_api(
                     )
                     extension = "jpg" if image_content_type == "image/jpeg" else "png"
                     filename = f"reference_{index + 1}.{extension}"
+            shrunk_data, shrunk_type = _shrink_reference_for_upload(
+                image_data, image_content_type
+            )
+            if shrunk_type != image_content_type:
+                suffix = "jpg" if shrunk_type == "image/jpeg" else "png"
+                filename = f"{filename.rsplit('.', 1)[0]}.{suffix}"
+            image_data, image_content_type = shrunk_data, shrunk_type
             multipart_field = "image[]" if len(reference_images) > 1 else "image"
             multipart_files.append(
                 (multipart_field, (filename, image_data, image_content_type))
@@ -4291,9 +4298,8 @@ async def _call_newapi_image_api(
                 request_kwargs["files"] = multipart_files
             else:
                 request_kwargs["json"] = payload
-            response = await client.post(
-                f"{endpoint}{request_path}",
-                **request_kwargs,
+            response = await _post_image_request(
+                client, f"{endpoint}{request_path}", request_kwargs
             )
             logger.info(
                 "DramaClawAPI image POST response: status=%s bytes=%s",
@@ -4504,6 +4510,75 @@ def _reference_image_bytes(
             return bytes(image_ref[0])
         return bytes(image_ref[0])
     return bytes(image_ref)
+
+
+NEWAPI_REFERENCE_MAX_EDGE = 2048
+NEWAPI_REFERENCE_JPEG_QUALITY = 90
+
+
+def _shrink_reference_for_upload(data: bytes, content_type: str) -> tuple[bytes, str]:
+    """Downscale a multipart reference before upload.
+
+    The third-party relay reads request bodies at ~0.1 MB/s and its nginx
+    drops a sender that stalls past client_body_timeout (60 s): an 8 MB PNG
+    is a 408, a 2048-edge JPEG (~0.4 MB) lands in seconds. Alpha images stay
+    PNG; bytes PIL cannot decode pass through untouched.
+    """
+    from PIL import Image
+
+    try:
+        image = Image.open(io.BytesIO(data))
+        image.load()
+    except Exception:
+        return data, content_type
+    if content_type == "image/jpeg" and max(image.size) <= NEWAPI_REFERENCE_MAX_EDGE:
+        return data, content_type
+    if max(image.size) > NEWAPI_REFERENCE_MAX_EDGE:
+        image.thumbnail(
+            (NEWAPI_REFERENCE_MAX_EDGE, NEWAPI_REFERENCE_MAX_EDGE),
+            Image.Resampling.LANCZOS,
+        )
+    buffer = io.BytesIO()
+    if image.mode in {"RGBA", "LA"} or "transparency" in image.info:
+        image.save(buffer, format="PNG", optimize=True)
+        return buffer.getvalue(), "image/png"
+    image.convert("RGB").save(
+        buffer, format="JPEG", quality=NEWAPI_REFERENCE_JPEG_QUALITY, optimize=True
+    )
+    return buffer.getvalue(), "image/jpeg"
+
+
+async def _post_image_request(client, url: str, request_kwargs: dict):
+    """POST once more when the gateway dropped the upload before answering.
+
+    A reset or 408 mid-upload means the body never reached the model, so a
+    second attempt cannot double-bill. Anything after a real response keeps
+    the existing no-retry rule.
+    """
+    import httpx
+
+    dropped = (
+        httpx.ConnectError,
+        httpx.ConnectTimeout,
+        httpx.WriteError,
+        httpx.WriteTimeout,
+        httpx.RemoteProtocolError,
+    )
+    for attempt in (1, 2):
+        try:
+            response = await client.post(url, **request_kwargs)
+        except dropped as exc:
+            if attempt == 2:
+                raise
+            logger.warning(
+                "DramaClawAPI image POST dropped before a response (%s); retrying once",
+                type(exc).__name__,
+            )
+            continue
+        if getattr(response, "status_code", None) == 408 and attempt == 1:
+            logger.warning("DramaClawAPI image POST got 408 mid-upload; retrying once")
+            continue
+        return response
 
 
 async def _call_newapi_image_api_with_egress(
