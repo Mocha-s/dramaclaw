@@ -542,6 +542,10 @@ _IGNORED_VIDEO_DURATION_KEYS = (
 )
 
 
+# Mirrors the frontend video-node fallback cap (DEFAULT_DURATION_MAX).
+MAX_VIDEO_NODE_DURATION_SECONDS = 120
+
+
 def _build_plan_preflight(nodes: list[Any]) -> dict[str, Any]:
     counts = {
         "text": 0,
@@ -586,11 +590,12 @@ def _build_plan_preflight(nodes: list[Any]) -> dict[str, Any]:
             duration = data.get("durationSec")
             if isinstance(duration, (int, float)) and duration > 0:
                 planned_video_duration += int(duration)
-                if duration > 15:
+                if duration > MAX_VIDEO_NODE_DURATION_SECONDS:
                     warnings.append(
                         _issue(
                             f"nodes[{index}].data.durationSec",
-                            "video duration exceeds 15 seconds and will be split or clamped by the runtime",
+                            f"video duration exceeds {MAX_VIDEO_NODE_DURATION_SECONDS} seconds "
+                            "and will be split or clamped by the runtime",
                         )
                     )
             else:

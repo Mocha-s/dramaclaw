@@ -121,7 +121,7 @@ import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGen
 // Generated-video resolution is global; other capabilities remain model-scoped.
 const SCENE_OPTIMIZE_OPTIONS: ReadonlyArray<Seedance2SceneOptimize> = ["anime", "realistic"];
 const DEFAULT_DURATION_MIN = 5;
-const DEFAULT_DURATION_MAX = 15;
+const DEFAULT_DURATION_MAX = 120;
 // 统一计费（#210）：视频生成走 feature 键询价，模型身份塞进 params。
 const VIDEO_GENERATE_FEATURE_KEY = "freezone.video_generate";
 

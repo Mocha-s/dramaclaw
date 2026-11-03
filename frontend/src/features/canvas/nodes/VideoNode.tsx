@@ -355,7 +355,7 @@ export const ASPECT_RATIOS: ReadonlyArray<FreezoneVideoAspectRatio> =
   FALLBACK_VIDEO_ASPECT_OPTIONS;
 const SCENE_OPTIMIZE_OPTIONS: ReadonlyArray<Seedance2SceneOptimize> = ["anime", "realistic"];
 const DEFAULT_DURATION_MIN = 5;
-const DEFAULT_DURATION_MAX = 15;
+const DEFAULT_DURATION_MAX = 120;
 
 export function qualityToResolution(q: VideoGenQuality): FreezoneVideoResolution {
   return q;
