@@ -103,9 +103,12 @@ class BridgeWatchHub:
             if not self.directories:
                 tasks = [task for task in (self.task, self.watcher) if task]
                 self.task = self.watcher = None
-                for task in tasks:
-                    task.cancel()
-                await asyncio.gather(*tasks, return_exceptions=True)
+                # 订阅者任务（SSE 断连）本身可能在取消中，shield 保证拆除跑完，
+                # 否则 watcher 会卡在取消投递里，事件循环此后持续空转。
+                with anyio.CancelScope(shield=True):
+                    for task in tasks:
+                        task.cancel()
+                    await asyncio.gather(*tasks, return_exceptions=True)
 
     def pending(self, directory, project_id, canvas_id, kinds=None):
         path = Path(directory).absolute()
@@ -246,6 +249,10 @@ class BridgeWatchHub:
 
             verified = asyncio.Event()
             unverified = set(directories)
+            # 每轮迭代 watchfiles 都会取消并重建内部 task group；取消前先置位，
+            # 让 Rust 侧立即返回，否则每次重建都会把上一个 watcher 的线程和
+            # inotify fd 留在进程里。
+            stop_event = anyio.Event()
 
             async def consume():
                 async for changes in awatch(
@@ -253,8 +260,7 @@ class BridgeWatchHub:
                     recursive=False,
                     debounce=150,
                     step=50,
-                    rust_timeout=250,
-                    yield_on_timeout=True,
+                    stop_event=stop_event,
                     force_polling=False,
                     watch_filter=lambda change, path: (
                         Path(path).name == "canvas_command.signal" or path.endswith(".pending.json")
@@ -304,10 +310,14 @@ class BridgeWatchHub:
                 except asyncio.TimeoutError:
                     pass
             finally:
-                watcher.cancel()
-                rebuild.cancel()
-                ready.cancel()
-                await asyncio.gather(watcher, rebuild, ready, return_exceptions=True)
+                # 订阅者任务本身可能正被取消（SSE 断连），用 shield 保证拆除不
+                # 被打断。否则 awatch 的取消永远投递不完，事件循环会一直空转。
+                stop_event.set()
+                with anyio.CancelScope(shield=True):
+                    watcher.cancel()
+                    rebuild.cancel()
+                    ready.cancel()
+                    await asyncio.gather(watcher, rebuild, ready, return_exceptions=True)
 
 
 _hubs = weakref.WeakKeyDictionary()
