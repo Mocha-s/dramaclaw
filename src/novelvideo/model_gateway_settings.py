@@ -18,6 +18,7 @@ import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -253,6 +254,8 @@ def _normalize_sub2api_groups(groups: list[dict[str, Any]]) -> list[dict[str, An
                     "requestPattern": str(item.get("requestPattern") or "").strip(),
                     "upstreamModel": str(item.get("upstreamModel") or "").strip(),
                 }
+                if item.get("auto"):
+                    mapping["auto"] = True
                 image_edit_format = str(item.get("imageEditFormat") or "").strip().lower()
                 if image_edit_format:
                     if image_edit_format not in SUB2API_IMAGE_EDIT_FORMATS:
@@ -853,31 +856,45 @@ def sync_model_mappings(
     mappings: list[dict[str, Any]],
     discovered: list[str],
     capabilities: list[str] | None = None,
-) -> list[dict[str, Any]]:
-    """Mirror one gateway's model list: drop what it lost, add what it gained.
+    claimed: Callable[[str], bool] | None = None,
+) -> list[dict[str, Any]] | None:
+    """Mirror a gateway's list, dropping only what this function added before.
 
-    A ``*`` default route is always kept, and a surviving mapping keeps its
-    request pattern and per-model options. An empty discovery result means the
-    list could not be read, never that the gateway serves nothing, so callers
-    must not sync on it.
+    Returns ``None`` when the group must not be touched: an empty result means
+    discovery failed rather than that the gateway serves nothing, and a list that
+    shares no name with the group's own mappings is a different namespace, which
+    is normal on relays whose aliases never appear in ``/v1/models``. A group with
+    no mappings yet is left alone too, so the switch never bootstraps a namespace.
+
+    Only mappings marked ``auto`` are ever removed; a mapping the user added by
+    hand survives even when the list stops mentioning it. ``claimed`` reports
+    names another group already routes, because the same name in two groups makes
+    ``_resolve_sub2api_group`` refuse to guess a credential.
     """
     known = {str(value).strip() for value in discovered if str(value).strip()}
-    if not known:
-        return list(mappings)
+    existing = {str(mapping.get("upstreamModel") or "").strip() for mapping in mappings}
+    if not known or not (existing & known):
+        return None
+    is_claimed = claimed or (lambda _name: False)
     kept = [
         mapping
         for mapping in mappings
-        if str(mapping.get("requestPattern") or "").strip() == "*"
-        or str(mapping.get("upstreamModel") or "").strip() in known
+        if not mapping.get("auto")
+        or (
+            str(mapping.get("upstreamModel") or "").strip() in known
+            and not is_claimed(str(mapping.get("upstreamModel") or "").strip())
+        )
     ]
     covered = {str(mapping.get("upstreamModel") or "").strip() for mapping in kept}
     added = [
         {
             "requestPattern": model,
             "upstreamModel": model,
+            "auto": True,
             **({"videoEndpoint": "videos"} if "video" in (capabilities or []) else {}),
         }
         for model in sorted(known - covered)
+        if not is_claimed(model)
     ]
     return kept + added
 

@@ -4414,7 +4414,7 @@ def test_ee_media_relay_ignores_ce_database_config(monkeypatch, tmp_path):
 
 
 @respx.mock
-def test_third_party_auto_sync_adds_and_removes_models(monkeypatch, tmp_path):
+def test_third_party_auto_sync_adds_new_models_and_only_drops_its_own(monkeypatch, tmp_path):
     _isolate_settings_db(monkeypatch, tmp_path)
     group = {
         "id": "text",
@@ -4425,15 +4425,15 @@ def test_third_party_auto_sync_adds_and_removes_models(monkeypatch, tmp_path):
         "capabilities": ["text"],
         "autoFetch": True,
         "modelMappings": [
-            {"requestPattern": "*", "upstreamModel": "qwen-max"},
-            {"requestPattern": "gone", "upstreamModel": "gone-model"},
             {"requestPattern": "kept", "upstreamModel": "kept-model"},
+            {"requestPattern": "legacy", "upstreamModel": "legacy-model"},
+            {"requestPattern": "stale", "upstreamModel": "stale-model", "auto": True},
         ],
     }
     gateway_settings.save_third_party_gateway_groups([group])
     respx.get("https://gw.example/v1/models").mock(
         return_value=Response(
-            200, json={"data": [{"id": "fresh-model"}, {"id": "kept-model"}]}
+            200, json={"data": [{"id": "kept-model"}, {"id": "fresh-model"}]}
         )
     )
 
@@ -4441,13 +4441,100 @@ def test_third_party_auto_sync_adds_and_removes_models(monkeypatch, tmp_path):
 
     assert summary == {"groups": 1, "refreshed": 1, "added": 1, "removed": 1}
     saved = gateway_settings.get_third_party_gateway_groups()[0]
-    assert saved["autoFetch"] is True
     assert saved["modelMappings"] == [
-        {"requestPattern": "*", "upstreamModel": "qwen-max"},
         {"requestPattern": "kept", "upstreamModel": "kept-model"},
-        {"requestPattern": "fresh-model", "upstreamModel": "fresh-model"},
+        {"requestPattern": "legacy", "upstreamModel": "legacy-model"},
+        {"requestPattern": "fresh-model", "upstreamModel": "fresh-model", "auto": True},
     ]
     assert gateway_settings.get_third_party_models_auto_fetch_last_at() != ""
+
+
+@respx.mock
+def test_third_party_auto_sync_leaves_a_foreign_namespace_alone(monkeypatch, tmp_path):
+    """A relay whose /v1/models uses its own names must not lose the user's aliases."""
+    _isolate_settings_db(monkeypatch, tmp_path)
+    mappings = [
+        {"requestPattern": "nano-banana-pro-2k", "upstreamModel": "nano-banana-pro-2k"}
+    ]
+    group = {
+        "id": "gemini",
+        "name": "Gemini",
+        "protocol": "openai",
+        "baseUrl": "https://relay.example/v1",
+        "apiKey": "sk-relay",
+        "capabilities": ["image"],
+        "autoFetch": True,
+        "modelMappings": mappings,
+    }
+    gateway_settings.save_third_party_gateway_groups([group])
+    route = respx.get("https://relay.example/v1/models").mock(
+        return_value=Response(
+            200,
+            json={"data": [{"id": "[Mo]nano-banana2"}, {"id": "[Yz]claude-opus-5"}]},
+        )
+    )
+
+    summary = third_party_model_refresh.refresh_third_party_gateway_models()
+
+    assert route.called is True
+    assert summary == {"groups": 1, "refreshed": 0, "added": 0, "removed": 0}
+    assert gateway_settings.get_third_party_gateway_groups()[0]["modelMappings"] == mappings
+
+
+@respx.mock
+def test_third_party_auto_sync_never_makes_a_model_ambiguous(monkeypatch, tmp_path):
+    """Two groups that both list a model must not turn one name into a tie."""
+    _isolate_settings_db(monkeypatch, tmp_path)
+    groups = [
+        {
+            "id": "a",
+            "name": "A",
+            "protocol": "openai",
+            "baseUrl": "https://a.example/v1",
+            "apiKey": "sk-a",
+            "capabilities": ["image"],
+            "autoFetch": True,
+            "modelMappings": [
+                {"requestPattern": "gpt-image-2", "upstreamModel": "gpt-image-2"}
+            ],
+        },
+        {
+            "id": "b",
+            "name": "B",
+            "protocol": "openai",
+            "baseUrl": "https://b.example/v1",
+            "apiKey": "sk-b",
+            "capabilities": ["image"],
+            "autoFetch": True,
+            "modelMappings": [
+                {"requestPattern": "other-image", "upstreamModel": "other-image"}
+            ],
+        },
+    ]
+    gateway_settings.save_third_party_gateway_groups(groups, activate=True)
+    respx.get("https://a.example/v1/models").mock(
+        return_value=Response(200, json={"data": [{"id": "gpt-image-2"}]})
+    )
+    respx.get("https://b.example/v1/models").mock(
+        return_value=Response(
+            200, json={"data": [{"id": "gpt-image-2"}, {"id": "other-image"}]}
+        )
+    )
+
+    third_party_model_refresh.refresh_third_party_gateway_models()
+
+    effective = gateway_settings.get_effective_newapi_config(
+        capability=CAPABILITY_IMAGE, model="gpt-image-2"
+    )
+    assert (effective.source, effective.api_key) == ("third_party", "sk-a")
+    saved_b = next(
+        group
+        for group in gateway_settings.get_third_party_gateway_groups()
+        if group["id"] == "b"
+    )
+    assert saved_b["modelMappings"] == [
+        {"requestPattern": "other-image", "upstreamModel": "other-image"}
+    ]
 
 
 @respx.mock

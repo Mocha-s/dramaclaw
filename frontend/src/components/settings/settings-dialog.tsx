@@ -641,6 +641,7 @@ function ThirdPartyGatewayPanel({
           modelMappings: group.modelMappings.map((mapping) => ({
             requestPattern: mapping.requestPattern.trim(),
             upstreamModel: mapping.upstreamModel.trim(),
+            ...(mapping.auto ? { auto: true } : {}),
             ...(group.capabilities.includes("video")
               ? { videoEndpoint: mapping.videoEndpoint ?? "videos" }
               : {}),

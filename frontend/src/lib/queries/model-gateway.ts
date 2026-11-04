@@ -50,6 +50,8 @@ export type Sub2ApiVideoEndpoint = "videos" | "video/generations";
 export interface Sub2ApiModelMapping {
   requestPattern: string;
   upstreamModel: string;
+  /** Added by the 24h auto-sync rather than by hand; the sync owns only these. */
+  auto?: boolean;
   imageEditFormat?: Sub2ApiImageEditFormat;
   videoEndpoint?: Sub2ApiVideoEndpoint;
   supportedModes?: string[];

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -73,6 +74,27 @@ def _upstream_models(mappings: list[dict[str, Any]]) -> set[str]:
     return {str(mapping.get("upstreamModel") or "").strip() for mapping in mappings}
 
 
+def _patterns(group: dict[str, Any]) -> list[tuple[str, bool]]:
+    """A group's request patterns as (pattern, is_prefix); ``*`` claims nothing."""
+    patterns: list[tuple[str, bool]] = []
+    for mapping in group.get("modelMappings") or []:
+        pattern = str(mapping.get("requestPattern") or "").strip()
+        if not pattern or pattern == "*":
+            continue
+        patterns.append((pattern, pattern.endswith("*")))
+    return patterns
+
+
+def _claim_checker(patterns: list[tuple[str, bool]]) -> Callable[[str], bool]:
+    def is_claimed(name: str) -> bool:
+        return any(
+            name == pattern or (is_prefix and name.startswith(pattern[:-1]))
+            for pattern, is_prefix in patterns
+        )
+
+    return is_claimed
+
+
 def refresh_third_party_gateway_models() -> dict[str, Any]:
     """Sync every auto-enabled group. Groups without the flag are never touched."""
     groups = get_third_party_gateway_groups()
@@ -82,11 +104,24 @@ def refresh_third_party_gateway_models() -> dict[str, Any]:
     refreshed = 0
     added = 0
     removed = 0
+    # Names another group already routes. It grows as groups add, so a name that
+    # several gateways list stays with the first group in config order.
+    auto_claims: dict[str, list[tuple[str, bool]]] = {}
     updated: list[dict[str, Any]] = []
     for group in groups:
         if not group.get("autoFetch"):
             updated.append(group)
             continue
+        capabilities = group.get("capabilities") or []
+        claims: list[tuple[str, bool]] = []
+        for other in groups:
+            if other["id"] == group["id"]:
+                continue
+            if not set(capabilities) & set(other.get("capabilities") or []):
+                continue
+            claims.extend(_patterns(other))
+        for capability in capabilities:
+            claims.extend(auto_claims.get(capability, []))
         try:
             discovered = discover_third_party_models(
                 str(group.get("protocol") or ""),
@@ -104,11 +139,25 @@ def refresh_third_party_gateway_models() -> dict[str, Any]:
             continue
         before = group.get("modelMappings") or []
         mappings = sync_model_mappings(
-            before, discovered, group.get("capabilities") or []
+            before, discovered, capabilities, _claim_checker(claims)
         )
+        if mappings is None:
+            logger.info(
+                "third-party model refresh left group %s alone: %d models listed, none of them its own",
+                group.get("id"),
+                len(discovered),
+            )
+            updated.append(group)
+            continue
         added += len(_upstream_models(mappings) - _upstream_models(before))
         removed += len(_upstream_models(before) - _upstream_models(mappings))
         refreshed += 1
+        for mapping in mappings:
+            if mapping.get("auto"):
+                for capability in capabilities:
+                    auto_claims.setdefault(capability, []).append(
+                        (str(mapping.get("requestPattern") or ""), False)
+                    )
         updated.append({**group, "modelMappings": mappings})
     if refreshed:
         save_third_party_gateway_groups(updated)

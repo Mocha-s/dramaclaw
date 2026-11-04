@@ -101,11 +101,13 @@ OpenAI-compatible groups may use `/v1/models` for discovery when the endpoint su
 
 **Fetch models** reads the group's current model list and drops mappings whose upstream model
 no longer appears in it. **Auto-sync models** is a per-group switch, off by default: once every 24
-hours that group is refreshed in full, removing the models the gateway dropped and adding the ones
-it gained as exact mappings. The `*` default route and every surviving mapping's own options are
-kept, and the panel shows when the refresh last ran. A group whose endpoint cannot answer keeps its
-existing mappings, so an upstream outage never empties your routes; groups with the switch off are
-never touched.
+hours the group is refreshed against the gateway. Models the sync added itself are dropped when the
+gateway stops listing them, and models it gained are added as exact mappings, unless another group
+already routes that name. Mappings you added by hand are never removed, and neither is the `*`
+default route, so a gateway that hides its aliases from `/v1/models` cannot lose them. A list that
+shares no name with the group is treated as a different namespace and the group is left alone, as is
+a group whose endpoint cannot answer. The panel shows when the refresh last ran; groups with the
+switch off are never touched.
 
 NewAPI-specific admin CRUD, provider-channel catalogs, channel-type synchronization, and root-account initialization are not portable and are not performed by CE. Recreate those upstream accounts directly in the external gateway you selected. Existing legacy settings and any old `newapi-data` volume are retained for migration or rollback, not used as a bundled service.
 
