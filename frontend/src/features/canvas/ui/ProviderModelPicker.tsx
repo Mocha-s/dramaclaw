@@ -25,9 +25,11 @@ import {
 // 档位价要横着铺，比只显示单个价格时更宽一点；下面的 w-[300px] 必须同步改。
 const MODEL_PICKER_POPOVER_WIDTH = 300;
 const MODEL_PICKER_POPOVER_CLASS =
-  `nodrag nowheel fixed z-[10000] flex max-h-[280px] w-[300px] flex-col overflow-hidden p-1 ${NODE_FLOATING_PANEL_SURFACE_CLASS}`;
+  `nodrag nowheel fixed z-[10000] flex max-h-[340px] w-[300px] flex-col overflow-hidden p-1 ${NODE_FLOATING_PANEL_SURFACE_CLASS}`;
+// shrink-0 不能去掉：列表是 flex-col + overflow-y-auto，行一旦被压缩，换行后的档位行
+// 会溢出自己的盒子、压到下一行上。
 const MODEL_PICKER_OPTION_BASE_CLASS =
-  'inline-flex min-h-8 w-full items-center gap-2 rounded-[6px] px-3 py-1 text-left text-xs font-medium transition-colors';
+  'inline-flex min-h-8 w-full shrink-0 items-center gap-2 rounded-[6px] px-3 py-1.5 text-left text-xs font-medium transition-colors';
 
 export type ProviderId =
   | 'newapi'
@@ -422,7 +424,7 @@ export function ProviderModelPicker({
               className="h-7 w-full rounded-[6px] border border-white/[0.12] bg-white/[0.06] pl-7 pr-2 text-xs text-text-dark outline-none transition-colors placeholder:text-text-muted/70 focus:border-white/30 [&::-webkit-search-cancel-button]:appearance-none"
             />
           </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+          <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
             {visibleModels.map((model) => {
               const isActive = selectedModel?.id === model.id;
               const modelInfo = modelInfoLine(model);
