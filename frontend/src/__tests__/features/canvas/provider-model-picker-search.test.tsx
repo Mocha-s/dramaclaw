@@ -170,9 +170,43 @@ describe("model picker usage info", () => {
       },
     ]);
 
-    expect(screen.getByText("768sq $0.758 · 1k $0.887 · 2k $1.848/张")).toBeInTheDocument();
-    // 有档位时不再重复显示单个价格。
-    expect(screen.queryByText("$0.758/张")).not.toBeInTheDocument();
+    // 换行后整行仍挂在 title 上，可悬停查看。
+    expect(screen.getByTitle("768sq $0.758 · 1k $0.887 · 2k $1.848/张")).toBeInTheDocument();
+    // 档位名是次要样式，档位价跟单价格同款。
+    expect(screen.getByText("768sq").className).toContain("text-text-muted/80");
+    expect(screen.getByText("$0.758").className).toContain("text-[11px]");
+    expect(screen.getByText("/张")).toBeInTheDocument();
+  });
+
+  it("styles a tier price exactly like a single price", () => {
+    openWith([
+      {
+        id: "gpt-image-2-4k",
+        providerId: "newapi",
+        apiModel: "gpt-image-2-4k",
+        label: "GPT Image 2 4K",
+        priceValue: 0.106,
+        priceUnit: "image",
+      },
+      {
+        id: "flux-3-image",
+        providerId: "newapi",
+        apiModel: "flux-3-image",
+        label: "Flux 3 Image",
+        priceValue: 0.758,
+        priceUnit: "image",
+        priceTiers: [
+          { label: "768sq", value: 0.758 },
+          { label: "1k", value: 0.887 },
+        ],
+      },
+    ]);
+
+    for (const price of [screen.getByText("$0.106/张"), screen.getByText("$0.758")]) {
+      expect(price.className).toContain("text-[11px]");
+      expect(price.className).toContain("font-medium");
+      expect(price.className).toContain("text-text-dark/90");
+    }
   });
 
   it("shows nothing extra when the plaza has no price for the model", () => {

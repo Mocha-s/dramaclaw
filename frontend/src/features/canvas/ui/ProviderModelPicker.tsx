@@ -448,9 +448,26 @@ export function ProviderModelPicker({
                         </span>
                       )}
                     </span>
-                    {modelTiers ? (
-                      <span className="w-full text-[10px] font-normal tabular-nums text-text-muted/80">
-                        {modelTiers}
+                    {modelTiers && model.priceTiers ? (
+                      // 档位价用和单价格一样的样式（11px/medium/近白），档位名保持次要样式；
+                      // 整行仍挂在 title 上，换行后也能悬停看全。
+                      <span
+                        className="flex w-full flex-wrap items-baseline gap-x-2 gap-y-0.5"
+                        title={modelTiers}
+                      >
+                        {model.priceTiers.map((tier, index) => (
+                          <span key={`${tier.label}-${index}`} className="whitespace-nowrap">
+                            <span className="mr-1 text-[10px] font-normal text-text-muted/80">
+                              {tier.label}
+                            </span>
+                            <span className="text-[11px] font-medium tabular-nums text-text-dark/90">
+                              ${tier.value.toFixed(3)}
+                            </span>
+                          </span>
+                        ))}
+                        <span className="text-[11px] font-medium text-text-dark/90">
+                          {priceUnitLabel(model)}
+                        </span>
                       </span>
                     ) : (
                       modelInfo && (
