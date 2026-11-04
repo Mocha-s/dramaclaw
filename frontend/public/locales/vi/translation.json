@@ -6011,6 +6011,7 @@
     }
   },
   "modelPicker": {
+    "price": {"perRequest": "/lần", "perSecond": "/giây", "perImage": "/ảnh", "from": "từ"},
     "searchPlaceholder": "Tìm model",
     "noMatch": "Không có model phù hợp",
     "info": {

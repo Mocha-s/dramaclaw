@@ -49,6 +49,13 @@ export interface ModelOption {
   providerId: ProviderId;
   apiModel: string;
   label: string;
+  /** 上游广场的模型说明（没有就不带）。 */
+  description?: string;
+  /** 实收单价，已含上游分组倍率；随 priceUnit 解释。 */
+  priceValue?: number;
+  priceUnit?: 'request' | 'second' | 'image';
+  /** 价格只是最低档位时的起价。 */
+  priceFrom?: boolean;
   resolutionOptions?: string[];
   qualityOptions?: string[];
   humanReview?: boolean;
@@ -299,6 +306,18 @@ export function ProviderModelPicker({
     if (model.supportsGenerateAudio) parts.push(t('modelPicker.info.audio'));
     return parts.length ? parts.join(' · ') : null;
   };
+  // 上游广场的实收价，单位跟着计费口径走；没有价格就不显示。
+  const modelPriceLabel = (model: ModelOption): string | null => {
+    if (model.priceValue == null) return null;
+    const unit =
+      model.priceUnit === 'second'
+        ? t('modelPicker.price.perSecond')
+        : model.priceUnit === 'image'
+          ? t('modelPicker.price.perImage')
+          : t('modelPicker.price.perRequest');
+    const prefix = model.priceFrom ? `${t('modelPicker.price.from')} ` : '';
+    return `${prefix}$${model.priceValue.toFixed(2)}${unit}`;
+  };
 
   const syncPopoverPosition = () => {
     const trigger = triggerRef.current;
@@ -396,6 +415,7 @@ export function ProviderModelPicker({
             {visibleModels.map((model) => {
               const isActive = selectedModel?.id === model.id;
               const modelInfo = modelInfoLine(model);
+              const modelPrice = modelPriceLabel(model);
               const disabledReason = getOptionDisabledReason?.(model) ?? null;
               const isDisabled = disabledReason != null && (!isActive || domain === "video");
               const optionInner = (
@@ -412,7 +432,20 @@ export function ProviderModelPicker({
                         {modelInfo}
                       </span>
                     )}
+                    {model.description && (
+                      <span
+                        className="w-full truncate text-[10px] font-normal opacity-60"
+                        title={model.description}
+                      >
+                        {model.description}
+                      </span>
+                    )}
                   </span>
+                  {modelPrice && (
+                    <span className="shrink-0 text-[10px] font-normal tabular-nums opacity-70">
+                      {modelPrice}
+                    </span>
+                  )}
                 </>
               );
               const optionClass = `${MODEL_PICKER_OPTION_BASE_CLASS} ${

@@ -6134,6 +6134,7 @@
     }
   },
   "modelPicker": {
+    "price": {"perRequest": "/req", "perSecond": "/s", "perImage": "/img", "from": "from"},
     "searchPlaceholder": "Search models",
     "noMatch": "No matching models",
     "info": {

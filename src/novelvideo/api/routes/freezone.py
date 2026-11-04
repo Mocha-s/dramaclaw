@@ -9413,7 +9413,10 @@ def _public_media_model_catalog(
                 ]
             public_entry["request"] = public_request
         result.append(public_entry)
-    return result
+    # 上游广场的模型说明和实收价：按上游模型名贴上去，拉不到就原样返回。
+    from novelvideo.model_plaza import attach_model_usage
+
+    return attach_model_usage(result)
 
 
 def _media_model_unavailable(
@@ -9964,8 +9967,10 @@ async def freezone_video_models(
         "data": (
             get_freezone_video_model_options()
             if catalog is None
-            else _public_media_model_catalog(
-                [item for item in catalog if not _is_processing_only_video_model(item)]
+            # 目录里现在会带上游广场的说明和价格，冷缓存时要发一次请求，别堵事件循环。
+            else await run_in_threadpool(
+                _public_media_model_catalog,
+                [item for item in catalog if not _is_processing_only_video_model(item)],
             )
         ),
     }
@@ -9985,7 +9990,10 @@ async def freezone_image_models(
         requester_user_id=ctx.requester_user_id,
     )
     if catalog is not None:
-        return {"ok": True, "data": _public_media_model_catalog(catalog)}
+        return {
+            "ok": True,
+            "data": await run_in_threadpool(_public_media_model_catalog, catalog),
+        }
     options = configured_image_generation_selection_options()
     data = []
     for key, label in options.items():

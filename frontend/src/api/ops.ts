@@ -1270,7 +1270,7 @@ export interface MediaModelRequestSchema {
   omitPaths?: string[];
 }
 
-export interface FreezoneImageModelInfo extends ReferenceMediaLimits {
+export interface FreezoneImageModelInfo extends ReferenceMediaLimits, ModelUsageInfo {
   /** Opaque database identity used by new billing and task records. */
   catalogId?: string;
   /** Stable picker id, e.g. `"gpt-image-2"`. */
@@ -1369,6 +1369,33 @@ function normalizeProviderId(raw: string | null): FreezoneProvider | null {
   return null;
 }
 
+/** 上游模型广场给的说明/价格单位；两个目录（图片、视频）共用一套形状。 */
+export type ModelPriceUnit = "request" | "second" | "image";
+
+export interface ModelUsageInfo {
+  /** 上游广场的模型说明，没有就不带这个字段。 */
+  description?: string;
+  /** 实收单价，已经乘过上游分组倍率。 */
+  priceValue?: number;
+  priceUnit?: ModelPriceUnit;
+  /** 价格只是最低档位时的起价。 */
+  priceFrom?: boolean;
+}
+
+/** 广场字段的读取；后端没贴就不带这些键。 */
+function readModelUsageFields(entry: Record<string, unknown>): ModelUsageInfo {
+  const description = pickString(entry, "description");
+  const priceValue = pickNumber(entry, "priceValue", "price_value");
+  if (priceValue == null) return description ? { description } : {};
+  const rawUnit = pickString(entry, "priceUnit", "price_unit");
+  return {
+    ...(description ? { description } : {}),
+    priceValue,
+    priceUnit: rawUnit === "second" || rawUnit === "image" ? rawUnit : "request",
+    ...(pickBoolean(entry, "priceFrom", "price_from") ? { priceFrom: true } : {}),
+  };
+}
+
 function modelEntryFromObject(entry: Record<string, unknown>): FreezoneImageModelInfo | null {
   const apiModel = pickString(entry, "model", "apiModel", "api_model", "name");
   if (!apiModel) return null;
@@ -1389,6 +1416,7 @@ function modelEntryFromObject(entry: Record<string, unknown>): FreezoneImageMode
     ratioOptions: pickStringArray(entry, "ratioOptions", "ratio_options"),
     ...readReferenceMediaLimits(entry),
     referenceImageMax: pickNumber(entry, "referenceImageMax", "reference_image_max"),
+    ...readModelUsageFields(entry),
     request: pickMediaRequestSchema(entry.request),
   };
 }
@@ -1463,7 +1491,7 @@ export async function fetchFreezoneImageModels(
 /** Provider tab id for video generation models. */
 export type FreezoneVideoProvider = "newapi" | "seedance" | "huimeng";
 
-export interface FreezoneVideoModelInfo extends ReferenceMediaLimits {
+export interface FreezoneVideoModelInfo extends ReferenceMediaLimits, ModelUsageInfo {
   /** Opaque database identity used by new billing and task records. */
   catalogId?: string;
   /** Stable picker id, e.g. `"seedance_2"` (backend currently keys by api id). */
@@ -1580,6 +1608,7 @@ function videoModelEntryFromObject(
     supportedModes: pickStringArray(entry, "supportedModes", "supported_modes"),
     referenceImageMax: pickNumber(entry, "referenceImageMax", "reference_image_max"),
     ...readReferenceMediaLimits(entry),
+    ...readModelUsageFields(entry),
     referenceVideoMax: pickNumber(entry, "referenceVideoMax", "reference_video_max"),
     referenceAudioMax: pickNumber(entry, "referenceAudioMax", "reference_audio_max"),
     referenceFileMax: pickNumber(entry, "referenceFileMax", "reference_file_max"),

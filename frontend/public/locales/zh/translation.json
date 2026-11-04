@@ -6134,6 +6134,7 @@
     }
   },
   "modelPicker": {
+    "price": {"perRequest": "/次", "perSecond": "/秒", "perImage": "/张", "from": "起"},
     "searchPlaceholder": "搜索模型",
     "noMatch": "没有匹配的模型",
     "info": {

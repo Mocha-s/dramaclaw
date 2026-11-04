@@ -97,3 +97,72 @@ describe("model picker quick search", () => {
     expect(screen.getByText("4-15s · 有声")).toBeInTheDocument();
   });
 });
+
+describe("model picker usage info", () => {
+  function openWith(models: ModelOption[], domain: "image" | "video" = "image") {
+    render(
+      <ProviderModelPicker
+        selectedModelId={models[0].id}
+        models={models}
+        onChange={() => {}}
+        domain={domain}
+      />,
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: new RegExp(models[0].label) })[0]);
+  }
+
+  it("shows the upstream description and the per-image price", () => {
+    openWith([
+      {
+        id: "gpt-image-2-4k",
+        providerId: "newapi",
+        apiModel: "gpt-image-2-4k",
+        label: "GPT Image 2 4K",
+        description: "图片创作与参考编辑，固定档位一次 1 张",
+        priceValue: 0.11,
+        priceUnit: "image",
+      },
+    ]);
+
+    expect(screen.getByText("图片创作与参考编辑，固定档位一次 1 张")).toBeInTheDocument();
+    expect(screen.getByText("$0.11/张")).toBeInTheDocument();
+  });
+
+  it("marks a lowest-tier price as a starting price and uses per-second units", () => {
+    openWith([
+      {
+        id: "sd16-seedance-2.0",
+        providerId: "newapi",
+        apiModel: "sd16-seedance-2.0",
+        label: "SD16 Seedance",
+        priceValue: 24,
+        priceUnit: "request",
+        priceFrom: true,
+      },
+      {
+        id: "seedance2.0-720p",
+        providerId: "newapi",
+        apiModel: "seedance2.0-720p",
+        label: "Seedance 720p",
+        priceValue: 0.1,
+        priceUnit: "second",
+      },
+    ]);
+
+    expect(screen.getByText("起 $24.00/次")).toBeInTheDocument();
+    expect(screen.getByText("$0.10/秒")).toBeInTheDocument();
+  });
+
+  it("shows nothing extra when the plaza has no price for the model", () => {
+    openWith([
+      {
+        id: "sd8-seedance-2.5-s",
+        providerId: "newapi",
+        apiModel: "sd8-seedance-2.5-s",
+        label: "Seedance 2.5 S",
+      },
+    ]);
+
+    expect(screen.queryByText(/\$/)).not.toBeInTheDocument();
+  });
+});
