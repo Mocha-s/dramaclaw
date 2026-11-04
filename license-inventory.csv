@@ -2521,6 +2521,7 @@ src/novelvideo/task_jobs.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml a
 src/novelvideo/task_scopes.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/task_state.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/telemetry.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+src/novelvideo/third_party_model_refresh.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/time_of_day.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/ui/__init__.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/utils/__init__.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
