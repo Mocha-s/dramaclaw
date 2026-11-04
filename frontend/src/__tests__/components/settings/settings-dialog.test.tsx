@@ -619,7 +619,7 @@ describe("SettingsDialog pages", () => {
 
     fireEvent.change(geminiGroup.getByLabelText("账号组名称"), { target: { value: "Gemini embedding" } });
     await user.click(geminiGroup.getByRole("combobox", { name: "协议" }));
-    await user.click(screen.getByRole("option", { name: "Gemini" }));
+    await user.click(await screen.findByRole("option", { name: "Gemini" }));
     fireEvent.change(geminiGroup.getByLabelText("Base URL"), { target: { value: "https://sub2api.example/v1beta" } });
     fireEvent.change(geminiGroup.getByLabelText("API Key"), { target: { value: "sk-gemini" } });
     fireEvent.click(geminiGroup.getByRole("button", { name: "拉取模型列表" }));
@@ -839,7 +839,7 @@ describe("SettingsDialog pages", () => {
     expect(screen.getByText("能力默认模型")).toBeInTheDocument();
     const capabilitySelectors = screen.getAllByRole("combobox");
     await userEvent.setup().click(capabilitySelectors[0]);
-    expect(screen.getByRole("option", { name: "gpt-6.1-sol · Text gateway" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "gpt-6.1-sol · Text gateway" })).toBeInTheDocument();
     expect(screen.queryByText("业务模型映射")).not.toBeInTheDocument();
     expect(screen.queryByText("DC-freezone-text-writer-LLM")).not.toBeInTheDocument();
   });
@@ -910,7 +910,7 @@ describe("SettingsDialog pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "Text gateway" }));
     const unifiedRoute = screen.getByRole("combobox", { name: "统一文本路由" });
     await user.click(unifiedRoute);
-    await user.click(screen.getByRole("option", { name: "gpt-6.1-sol" }));
+    await user.click(await screen.findByRole("option", { name: "gpt-6.1-sol" }));
     fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
 
     await waitFor(() => {
@@ -961,7 +961,7 @@ describe("SettingsDialog pages", () => {
     }
   });
 
-  it("offers Claude Anthropic as a styled protocol option", () => {
+  it("offers Claude Anthropic as a styled protocol option", async () => {
     modelGatewayMocks.config = {
       mode: "custom",
       effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: false },
@@ -976,7 +976,7 @@ describe("SettingsDialog pages", () => {
 
     expect(screen.queryByRole("combobox", { name: /协议/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("combobox", { name: /协议/ }));
-    expect(screen.getByRole("option", { name: "Claude / Anthropic" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "Claude / Anthropic" })).toBeInTheDocument();
   });
 
   it("opens and closes each saved gateway disclosure independently with keyboard activation", () => {
@@ -1036,7 +1036,7 @@ describe("SettingsDialog pages", () => {
     fireEvent.click(group.getByLabelText("sd17-seedance-2.5-2"));
     const videoEndpoints = group.getAllByRole("combobox", { name: "视频任务接口" });
     await user.click(videoEndpoints[1]);
-    await user.click(screen.getByRole("option", { name: "旧版 /video/generations" }));
+    await user.click(await screen.findByRole("option", { name: "旧版 /video/generations" }));
     fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[0], { target: { value: "gpt-image-2.5" } });
     fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[1], { target: { value: "sd17-seedance-2.5-2" } });
     fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
