@@ -127,6 +127,56 @@ def test_attach_model_usage_keeps_catalog_when_plaza_is_unreachable():
     assert model_plaza.attach_model_usage(CATALOG) == CATALOG
 
 
+@respx.mock
+def test_price_tiers_are_discounted_sorted_and_dropped_when_there_is_only_one():
+    payload = {
+        "code": 0,
+        "data": {
+            "groups": [
+                {
+                    "name": "生图渠道专用",
+                    "rate_multiplier": 0.5,
+                    "models": [
+                        {
+                            "name": "tiered",
+                            "pricing": {
+                                "billing_mode": "image",
+                                "per_request_price": 2.0,
+                                "intervals": [
+                                    {"tier_label": "4k", "per_request_price": 4.0},
+                                    {"tier_label": "1k", "per_request_price": 1.0},
+                                    {"tier_label": "2k", "per_request_price": 2.0},
+                                ],
+                            },
+                        },
+                        {
+                            "name": "single",
+                            "pricing": {
+                                "billing_mode": "image",
+                                "per_request_price": 2.0,
+                                "intervals": [{"tier_label": "1k", "per_request_price": 2.0}],
+                            },
+                        },
+                    ],
+                }
+            ]
+        },
+    }
+    respx.get(PLAZA_URL).mock(return_value=httpx.Response(200, json=payload))
+
+    index = model_plaza.get_model_usage_index()
+
+    # 倍率已乘上，顺序按价格升序，不是广场给的顺序。
+    assert index["tiered"]["priceTiers"] == [
+        {"label": "1k", "value": 0.5},
+        {"label": "2k", "value": 1.0},
+        {"label": "4k", "value": 2.0},
+    ]
+    assert index["tiered"]["priceUnit"] == "image"
+    # 只有一档就等于没有分档。
+    assert "priceTiers" not in index["single"]
+
+
 def test_expired_cache_is_served_without_waiting_for_the_relay(monkeypatch):
     """过期也先给旧数据：这个接口要 5–14 秒，不能让选模型等它。"""
     stale = PAYLOAD["data"]

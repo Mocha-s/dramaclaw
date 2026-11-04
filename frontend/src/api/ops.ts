@@ -1372,26 +1372,54 @@ function normalizeProviderId(raw: string | null): FreezoneProvider | null {
 /** 上游模型广场给的说明/价格单位；两个目录（图片、视频）共用一套形状。 */
 export type ModelPriceUnit = "request" | "second" | "image";
 
+export interface ModelPriceTier {
+  /** 广场给的档位名，例如 `1k` / `720p`。 */
+  label: string;
+  /** 该档的实收单价，已乘过上游分组倍率。 */
+  value: number;
+}
+
 export interface ModelUsageInfo {
   /** 上游广场的模型说明，没有就不带这个字段。 */
   description?: string;
   /** 实收单价，已经乘过上游分组倍率。 */
   priceValue?: number;
   priceUnit?: ModelPriceUnit;
+  /** 分档价，已乘倍率并按价格升序；只有一档时后端不会给。 */
+  priceTiers?: ModelPriceTier[];
   /** 价格只是最低档位时的起价。 */
   priceFrom?: boolean;
+}
+
+/** 广场的档位价数组；形状不对就当没有。 */
+function readPriceTiers(entry: Record<string, unknown>): ModelPriceTier[] {
+  const raw = entry.priceTiers ?? entry.price_tiers;
+  if (!Array.isArray(raw)) return [];
+  const tiers: ModelPriceTier[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const row = item as Record<string, unknown>;
+    const label = typeof row.label === "string" ? row.label.trim() : "";
+    const value = typeof row.value === "number" ? row.value : Number(row.value);
+    if (!label || !Number.isFinite(value)) continue;
+    tiers.push({ label, value });
+  }
+  return tiers;
 }
 
 /** 广场字段的读取；后端没贴就不带这些键。 */
 function readModelUsageFields(entry: Record<string, unknown>): ModelUsageInfo {
   const description = pickString(entry, "description");
+  const priceTiers = readPriceTiers(entry);
+  const tiers = priceTiers.length > 0 ? { priceTiers } : {};
   const priceValue = pickNumber(entry, "priceValue", "price_value");
-  if (priceValue == null) return description ? { description } : {};
+  if (priceValue == null) return { ...(description ? { description } : {}), ...tiers };
   const rawUnit = pickString(entry, "priceUnit", "price_unit");
   return {
     ...(description ? { description } : {}),
     priceValue,
     priceUnit: rawUnit === "second" || rawUnit === "image" ? rawUnit : "request",
+    ...tiers,
     ...(pickBoolean(entry, "priceFrom", "price_from") ? { priceFrom: true } : {}),
   };
 }

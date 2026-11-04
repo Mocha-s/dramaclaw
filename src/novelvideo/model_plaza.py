@@ -124,9 +124,36 @@ def _load_payload() -> dict[str, Any] | None:
     return payload
 
 
+def _billing_unit(pricing: dict[str, Any]) -> str:
+    return "image" if str(pricing.get("billing_mode") or "") == "image" else "request"
+
+
+def _price_tiers(pricing: dict[str, Any], rate: float) -> list[dict[str, Any]]:
+    """广场的档位价（按分辨率/时长分档）：已乘倍率、去重、按价格升序。"""
+    default_unit = _billing_unit(pricing)
+    tiers: list[dict[str, Any]] = []
+    seen: set[tuple[str, float]] = set()
+    intervals = pricing.get("intervals")
+    for interval in intervals if isinstance(intervals, list) else []:
+        if not isinstance(interval, dict):
+            continue
+        label = str(interval.get("tier_label") or "").strip()
+        value = interval.get("per_request_price")
+        if not isinstance(value, (int, float)) or value <= 0:
+            value = interval.get("video_price_per_second")
+        if not label or not isinstance(value, (int, float)) or value <= 0:
+            continue
+        tier = (label, round(float(value) * rate, 4))
+        if tier in seen:
+            continue
+        seen.add(tier)
+        tiers.append({"label": tier[0], "value": tier[1]})
+    return sorted(tiers, key=lambda tier: tier["value"]) if default_unit else tiers
+
+
 def _tier_price(pricing: dict[str, Any]) -> tuple[float, str, bool] | None:
     """一个 pricing 块里的价位：目录价、单位、是否只是档位起价。"""
-    unit = "image" if str(pricing.get("billing_mode") or "") == "image" else "request"
+    unit = _billing_unit(pricing)
     per_request = pricing.get("per_request_price")
     if isinstance(per_request, (int, float)) and per_request > 0:
         return float(per_request), unit, False
@@ -181,6 +208,10 @@ def get_model_usage_index() -> dict[str, dict[str, Any]]:
             ).strip()
             if description:
                 usage["description"] = description
+            tiers = _price_tiers(pricing, rate)
+            # 只有一档就等于没有分档，别把单档当档位列表显示。
+            if len({tier["value"] for tier in tiers}) >= 2:
+                usage["priceTiers"] = tiers
             price = _tier_price(pricing)
             if price is not None:
                 value, unit, is_from = price

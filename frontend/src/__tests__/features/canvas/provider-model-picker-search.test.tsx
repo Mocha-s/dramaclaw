@@ -125,7 +125,7 @@ describe("model picker usage info", () => {
     ]);
 
     expect(screen.getByText("图片创作与参考编辑，固定档位一次 1 张")).toBeInTheDocument();
-    expect(screen.getByText("$0.11/张")).toBeInTheDocument();
+    expect(screen.getByText("$0.110/张")).toBeInTheDocument();
   });
 
   it("marks a lowest-tier price as a starting price and uses per-second units", () => {
@@ -149,8 +149,30 @@ describe("model picker usage info", () => {
       },
     ]);
 
-    expect(screen.getByText("起 $24.00/次")).toBeInTheDocument();
-    expect(screen.getByText("$0.10/秒")).toBeInTheDocument();
+    expect(screen.getByText("起 $24.000/次")).toBeInTheDocument();
+    expect(screen.getByText("$0.100/秒")).toBeInTheDocument();
+  });
+
+  it("lists every tier price instead of one number, and keeps the unit at the end", () => {
+    openWith([
+      {
+        id: "flux-3-image",
+        providerId: "newapi",
+        apiModel: "flux-3-image",
+        label: "Flux 3 Image",
+        priceValue: 0.7577,
+        priceUnit: "image",
+        priceTiers: [
+          { label: "768sq", value: 0.7577 },
+          { label: "1k", value: 0.887 },
+          { label: "2k", value: 1.848 },
+        ],
+      },
+    ]);
+
+    expect(screen.getByText("768sq $0.758 · 1k $0.887 · 2k $1.848/张")).toBeInTheDocument();
+    // 有档位时不再重复显示单个价格。
+    expect(screen.queryByText("$0.758/张")).not.toBeInTheDocument();
   });
 
   it("shows nothing extra when the plaza has no price for the model", () => {

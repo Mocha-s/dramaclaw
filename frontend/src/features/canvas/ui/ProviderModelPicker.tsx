@@ -22,9 +22,10 @@ import {
   NODE_TEXT_CONTROL_TRIGGER_CLASS,
 } from '@/features/canvas/ui/nodeControlStyles';
 
-const MODEL_PICKER_POPOVER_WIDTH = 260;
+// 档位价要横着铺，比只显示单个价格时更宽一点；下面的 w-[300px] 必须同步改。
+const MODEL_PICKER_POPOVER_WIDTH = 300;
 const MODEL_PICKER_POPOVER_CLASS =
-  `nodrag nowheel fixed z-[10000] flex max-h-[280px] w-[260px] flex-col overflow-hidden p-1 ${NODE_FLOATING_PANEL_SURFACE_CLASS}`;
+  `nodrag nowheel fixed z-[10000] flex max-h-[280px] w-[300px] flex-col overflow-hidden p-1 ${NODE_FLOATING_PANEL_SURFACE_CLASS}`;
 const MODEL_PICKER_OPTION_BASE_CLASS =
   'inline-flex min-h-8 w-full items-center gap-2 rounded-[6px] px-3 py-1 text-left text-xs font-medium transition-colors';
 
@@ -56,6 +57,8 @@ export interface ModelOption {
   priceUnit?: 'request' | 'second' | 'image';
   /** 价格只是最低档位时的起价。 */
   priceFrom?: boolean;
+  /** 上游广场的分档价（已含倍率、按价格升序）。 */
+  priceTiers?: Array<{ label: string; value: number }>;
   resolutionOptions?: string[];
   qualityOptions?: string[];
   humanReview?: boolean;
@@ -307,16 +310,24 @@ export function ProviderModelPicker({
     return parts.length ? parts.join(' · ') : null;
   };
   // 上游广场的实收价，单位跟着计费口径走；没有价格就不显示。
+  const priceUnitLabel = (model: ModelOption): string =>
+    model.priceUnit === 'second'
+      ? t('modelPicker.price.perSecond')
+      : model.priceUnit === 'image'
+        ? t('modelPicker.price.perImage')
+        : t('modelPicker.price.perRequest');
+  // 档位价铺成一行：`1k $0.887 · 2k $1.848 · 4k $11.220/张`，单位只在末尾说一次。
+  const modelTierLine = (model: ModelOption): string | null => {
+    const tiers = model.priceTiers;
+    if (!tiers?.length) return null;
+    const parts = tiers.map((tier) => `${tier.label} $${tier.value.toFixed(3)}`);
+    return `${parts.join(' · ')}${priceUnitLabel(model)}`;
+  };
   const modelPriceLabel = (model: ModelOption): string | null => {
-    if (model.priceValue == null) return null;
-    const unit =
-      model.priceUnit === 'second'
-        ? t('modelPicker.price.perSecond')
-        : model.priceUnit === 'image'
-          ? t('modelPicker.price.perImage')
-          : t('modelPicker.price.perRequest');
+    // 有档位时价格由档位行负责，右边的单价位让出来。
+    if (model.priceValue == null || model.priceTiers?.length) return null;
     const prefix = model.priceFrom ? `${t('modelPicker.price.from')} ` : '';
-    return `${prefix}$${model.priceValue.toFixed(2)}${unit}`;
+    return `${prefix}$${model.priceValue.toFixed(3)}${priceUnitLabel(model)}`;
   };
 
   const syncPopoverPosition = () => {
@@ -416,6 +427,7 @@ export function ProviderModelPicker({
               const isActive = selectedModel?.id === model.id;
               const modelInfo = modelInfoLine(model);
               const modelPrice = modelPriceLabel(model);
+              const modelTiers = modelTierLine(model);
               const disabledReason = getOptionDisabledReason?.(model) ?? null;
               const isDisabled = disabledReason != null && (!isActive || domain === "video");
               const optionInner = (
@@ -426,26 +438,34 @@ export function ProviderModelPicker({
                     <span className="inline-block h-3.5 w-3.5 shrink-0" />
                   )}
                   <span className="flex min-w-0 flex-1 flex-col items-start">
-                    <span className="w-full truncate">{model.label}</span>
-                    {modelInfo && (
-                      <span className="w-full truncate text-[10px] font-normal opacity-75">
-                        {modelInfo}
+                    <span className="flex w-full items-baseline gap-2">
+                      <span className="min-w-0 flex-1 truncate">{model.label}</span>
+                      {modelPrice && (
+                        <span className="shrink-0 text-[11px] font-medium tabular-nums text-text-dark/90">
+                          {modelPrice}
+                        </span>
+                      )}
+                    </span>
+                    {modelTiers ? (
+                      <span className="w-full text-[10px] font-normal tabular-nums text-text-muted/80">
+                        {modelTiers}
                       </span>
+                    ) : (
+                      modelInfo && (
+                        <span className="w-full truncate text-[10px] font-normal text-text-muted/80">
+                          {modelInfo}
+                        </span>
+                      )
                     )}
                     {model.description && (
                       <span
-                        className="w-full truncate text-[10px] font-normal opacity-60"
+                        className="w-full truncate text-[10px] font-normal text-text-muted/70"
                         title={model.description}
                       >
                         {model.description}
                       </span>
                     )}
                   </span>
-                  {modelPrice && (
-                    <span className="shrink-0 text-[10px] font-normal tabular-nums opacity-70">
-                      {modelPrice}
-                    </span>
-                  )}
                 </>
               );
               const optionClass = `${MODEL_PICKER_OPTION_BASE_CLASS} ${
