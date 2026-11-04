@@ -21,6 +21,7 @@ from novelvideo import model_gateway_settings as gateway_settings
 from novelvideo.shared import runtime_env
 from novelvideo import model_gateway_settings
 from novelvideo import official_media_catalog_remote
+from novelvideo import third_party_model_refresh
 from novelvideo.api.routes import freezone as freezone_routes
 from novelvideo.api.routes import model_gateway
 from novelvideo.official_defaults import OFFICIAL_NEWAPI_BASE_URL
@@ -4410,3 +4411,89 @@ def test_ee_media_relay_ignores_ce_database_config(monkeypatch, tmp_path):
     assert status["endpoint"] == "ee.endpoint"
     assert status["bucket"] == "ee-bucket"
     assert status["configured"] is True
+
+
+@respx.mock
+def test_third_party_auto_sync_adds_and_removes_models(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    group = {
+        "id": "text",
+        "name": "Text",
+        "protocol": "openai",
+        "baseUrl": "https://gw.example/v1",
+        "apiKey": "sk-key",
+        "capabilities": ["text"],
+        "autoFetch": True,
+        "modelMappings": [
+            {"requestPattern": "*", "upstreamModel": "qwen-max"},
+            {"requestPattern": "gone", "upstreamModel": "gone-model"},
+            {"requestPattern": "kept", "upstreamModel": "kept-model"},
+        ],
+    }
+    gateway_settings.save_third_party_gateway_groups([group])
+    respx.get("https://gw.example/v1/models").mock(
+        return_value=Response(
+            200, json={"data": [{"id": "fresh-model"}, {"id": "kept-model"}]}
+        )
+    )
+
+    summary = third_party_model_refresh.refresh_third_party_gateway_models()
+
+    assert summary == {"groups": 1, "refreshed": 1, "added": 1, "removed": 1}
+    saved = gateway_settings.get_third_party_gateway_groups()[0]
+    assert saved["autoFetch"] is True
+    assert saved["modelMappings"] == [
+        {"requestPattern": "*", "upstreamModel": "qwen-max"},
+        {"requestPattern": "kept", "upstreamModel": "kept-model"},
+        {"requestPattern": "fresh-model", "upstreamModel": "fresh-model"},
+    ]
+    assert gateway_settings.get_third_party_models_auto_fetch_last_at() != ""
+
+
+@respx.mock
+def test_third_party_auto_sync_skips_groups_without_the_flag(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    group = {
+        "id": "text",
+        "name": "Text",
+        "protocol": "openai",
+        "baseUrl": "https://gw.example/v1",
+        "apiKey": "sk-key",
+        "capabilities": ["text"],
+        "modelMappings": [{"requestPattern": "*", "upstreamModel": "qwen-max"}],
+    }
+    gateway_settings.save_third_party_gateway_groups([group])
+    route = respx.get("https://gw.example/v1/models").mock(
+        return_value=Response(200, json={"data": [{"id": "fresh-model"}]})
+    )
+
+    summary = third_party_model_refresh.refresh_third_party_gateway_models()
+
+    assert summary == {"groups": 0, "refreshed": 0, "added": 0, "removed": 0}
+    assert route.called is False
+    saved = gateway_settings.get_third_party_gateway_groups()[0]
+    assert saved["modelMappings"] == group["modelMappings"]
+    assert "autoFetch" not in saved
+
+
+@respx.mock
+def test_third_party_auto_sync_keeps_mappings_when_the_gateway_fails(monkeypatch, tmp_path):
+    _isolate_settings_db(monkeypatch, tmp_path)
+    group = {
+        "id": "text",
+        "name": "Text",
+        "protocol": "openai",
+        "baseUrl": "https://gw.example/v1",
+        "apiKey": "sk-key",
+        "capabilities": ["text"],
+        "autoFetch": True,
+        "modelMappings": [{"requestPattern": "kept", "upstreamModel": "kept-model"}],
+    }
+    gateway_settings.save_third_party_gateway_groups([group])
+    respx.get("https://gw.example/v1/models").mock(return_value=Response(500))
+
+    summary = third_party_model_refresh.refresh_third_party_gateway_models()
+
+    assert summary == {"groups": 1, "refreshed": 0, "added": 0, "removed": 0}
+    assert gateway_settings.get_third_party_gateway_groups()[0]["modelMappings"] == group["modelMappings"]
+    assert third_party_model_refresh.auto_fetch_due() is False

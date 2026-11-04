@@ -63,6 +63,8 @@ export interface Sub2ApiAccountGroup {
   baseUrl: string;
   apiKeyPreview: string;
   capabilities: Sub2ApiCapability[];
+  /** Per-group opt-in: refresh this group's models every 24h, adding and removing them. */
+  autoFetch?: boolean;
   modelMappings: Sub2ApiModelMapping[];
 }
 
@@ -82,6 +84,8 @@ export interface ThirdPartyGatewayConfig {
   configured: boolean;
   groups: ThirdPartyGatewayGroup[];
   migrationWarnings?: string[];
+  /** When the backend last ran the per-group refreshes, empty until one runs. */
+  autoFetchLastAt?: string;
 }
 
 export interface EffectiveGatewayConfig {

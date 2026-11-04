@@ -411,6 +411,9 @@ def create_app() -> FastAPI:
             from novelvideo.official_media_catalog_remote import (
                 run_official_media_catalog_updater,
             )
+            from novelvideo.third_party_model_refresh import (
+                run_third_party_model_refresh_updater,
+            )
             from novelvideo.shared.runtime_env import is_ce_effective
 
             if is_ce_effective():
@@ -418,6 +421,12 @@ def create_app() -> FastAPI:
                     asyncio.create_task(
                         run_official_media_catalog_updater(),
                         name="official-media-catalog-updater",
+                    )
+                )
+                application.state.third_party_model_refresh_updater = (
+                    asyncio.create_task(
+                        run_third_party_model_refresh_updater(),
+                        name="third-party-model-refresh-updater",
                     )
                 )
 
@@ -431,8 +440,13 @@ def create_app() -> FastAPI:
     async def shutdown() -> None:
         from novelvideo.ports.registry import PortNotRegistered, get_port
 
-        updater = getattr(application.state, "official_media_catalog_updater", None)
-        if updater is not None:
+        for state_name in (
+            "official_media_catalog_updater",
+            "third_party_model_refresh_updater",
+        ):
+            updater = getattr(application.state, state_name, None)
+            if updater is None:
+                continue
             updater.cancel()
             with suppress(asyncio.CancelledError):
                 await updater

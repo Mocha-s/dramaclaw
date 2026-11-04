@@ -604,6 +604,7 @@ function ThirdPartyGatewayPanel({
   const saveConfig = useSaveThirdPartyGatewayConfig();
   const fetchModels = useFetchThirdPartyModels();
   const saved = config?.thirdParty ?? (config?.sub2api ? { ...config.sub2api } : undefined);
+  const autoFetchLastAt = config?.thirdParty?.autoFetchLastAt ?? "";
   const [groups, setGroups] = useState<ThirdPartyGroupDraft[]>([]);
   const [openGroupIds, setOpenGroupIds] = useState<string[]>([]);
   const [modelsByGroup, setModelsByGroup] = useState<Record<string, string[]>>({});
@@ -651,6 +652,7 @@ function ThirdPartyGatewayPanel({
               : {}),
           })),
           ...(group.apiKey.trim() ? { apiKey: group.apiKey.trim() } : {}),
+          ...(group.autoFetch ? { autoFetch: true } : {}),
         })),
       });
       if (!response.ok) {
@@ -676,6 +678,13 @@ function ThirdPartyGatewayPanel({
       {(config?.migrationWarnings ?? config?.thirdParty?.migrationWarnings ?? []).map((warning, index) => (
         <p key={index} role="status" className="rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">{warning}</p>
       ))}
+      {autoFetchLastAt ? (
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          {t("settings.modelConfig.thirdParty.autoFetchLastAt", {
+            time: new Date(autoFetchLastAt).toLocaleString(),
+          })}
+        </p>
+      ) : null}
       <div className="space-y-3">
         {groups.map((group) => (
           <ThirdPartyGroupCard
@@ -700,6 +709,11 @@ function ThirdPartyGatewayPanel({
                   return;
                 }
                 setModelsByGroup((current) => ({ ...current, [group.id]: response.data.models }));
+                // A fresh list is the source of truth: drop mappings whose upstream model is gone.
+                setGroups((current) => current.map((item) => item.id === group.id ? {
+                  ...item,
+                  modelMappings: item.modelMappings.filter((mapping) => mapping.requestPattern.trim() === "*" || response.data.models.includes(mapping.upstreamModel.trim())),
+                } : item));
               } catch (error) {
                 toast.error(await getRequestErrorMessage(error, t("settings.modelConfig.thirdParty.fetchFailed")));
               }
@@ -777,6 +791,34 @@ function ThirdPartyGroupCard({
         {group.name || t("settings.modelConfig.thirdParty.newGroup")}
       </button>
       {expanded ? <div className="mt-3 space-y-3">
+      <div className="flex items-center justify-between gap-3 rounded-md border border-border/70 px-2.5 py-2">
+        <div className="min-w-0">
+          <Label className="text-[11px] font-normal text-foreground">
+            {t("settings.modelConfig.thirdParty.autoFetch")}
+          </Label>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+            {t("settings.modelConfig.thirdParty.autoFetchHint")}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={group.autoFetch === true}
+          aria-label={t("settings.modelConfig.thirdParty.autoFetch")}
+          onClick={() => onChange({ ...group, autoFetch: !group.autoFetch })}
+          className={cn(
+            "relative h-5 w-9 shrink-0 rounded-full border transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+            group.autoFetch ? "border-primary bg-primary" : "border-input bg-muted",
+          )}
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform",
+              group.autoFetch ? "translate-x-4" : "translate-x-0",
+            )}
+          />
+        </button>
+      </div>
       <div className="flex justify-end">
           <Button type="button" size="sm" variant="ghost" onClick={onRemove} aria-label={t("settings.modelConfig.thirdParty.removeGroup")}>
           <Trash2 className="size-3.5" />

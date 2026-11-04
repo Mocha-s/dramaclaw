@@ -215,6 +215,9 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.thirdParty.videoEndpoints.legacy": "旧版 /video/generations",
         "settings.modelConfig.thirdParty.modelSearch": "筛选模型",
         "settings.modelConfig.thirdParty.fetchModels": "拉取模型列表",
+        "settings.modelConfig.thirdParty.autoFetch": "自动同步模型",
+        "settings.modelConfig.thirdParty.autoFetchHint": "每 24 小时拉取一次。",
+        "settings.modelConfig.thirdParty.autoFetchLastAt": "上次自动拉取：{{time}}",
         "settings.modelConfig.thirdParty.availableModels": "可用模型列表",
         "settings.modelConfig.thirdParty.noModels": "没有匹配模型",
         "settings.modelConfig.thirdParty.fetchFailed": "拉取模型失败",
@@ -653,6 +656,75 @@ describe("SettingsDialog pages", () => {
         ],
       });
     });
+  });
+
+  it("toggles auto-sync per third-party group and saves the flag", async () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "custom", baseUrl: "", apiKeyPreview: "", configured: true, model: "", brainclaw: false },
+      agent: { mode: "inherit", baseUrl: "", apiKeyPreview: "", configured: false, model: "" },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [
+        { id: "one", name: "Primary", protocol: "openai", baseUrl: "https://gw.example/v1", apiKeyPreview: "sk-...", capabilities: ["text"], modelMappings: [{ requestPattern: "*", upstreamModel: "qwen-max" }] },
+      ] },
+    };
+    modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
+
+    renderSettingsDialog();
+    fireEvent.click(screen.getByRole("button", { name: /Primary/ }));
+    const switches = screen.getAllByRole("switch", { name: "自动同步模型" });
+    expect(switches[0]).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(switches[0]);
+    expect(screen.getAllByRole("switch", { name: "自动同步模型" })[0]).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
+
+    await waitFor(() =>
+      expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
+        groups: [expect.objectContaining({ autoFetch: true })],
+      }),
+    );
+  });
+
+  it("drops third-party mappings the gateway no longer serves after a fetch", async () => {
+    modelGatewayMocks.config = {
+      mode: "custom",
+      effective: { source: "custom", baseUrl: "", apiKeyPreview: "", configured: true },
+      llmEffective: { mode: "custom", source: "custom", baseUrl: "", apiKeyPreview: "", configured: true, model: "", brainclaw: false },
+      agent: { mode: "inherit", baseUrl: "", apiKeyPreview: "", configured: false, model: "" },
+      official: { source: "database", baseUrl: "", apiKeyPreview: "", configured: false, environment: { baseUrl: "", apiKeyPreview: "", configured: false } },
+      custom: { llmMode: "advanced", baseUrl: "", apiKeyPreview: "", configured: true },
+      thirdParty: { configured: true, groups: [
+        { id: "one", name: "Primary", protocol: "openai", baseUrl: "https://gw.example/v1", apiKeyPreview: "sk-...", capabilities: ["text"], modelMappings: [
+          { requestPattern: "*", upstreamModel: "qwen-max" },
+          { requestPattern: "gone", upstreamModel: "gone-model" },
+          { requestPattern: "kept", upstreamModel: "kept-model" },
+        ] },
+      ] },
+    };
+    modelGatewayMocks.fetchSub2ApiModels.mockResolvedValue({ ok: true, data: { models: ["kept-model"] } });
+    modelGatewayMocks.saveSub2Api.mockResolvedValue({ ok: true, data: modelGatewayMocks.config });
+
+    renderSettingsDialog();
+    fireEvent.click(screen.getByRole("button", { name: /Primary/ }));
+    fireEvent.click(screen.getByRole("button", { name: "拉取模型列表" }));
+    await waitFor(() => expect(modelGatewayMocks.fetchSub2ApiModels).toHaveBeenCalledTimes(1));
+    expect(screen.queryByLabelText("gone-model")).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
+
+    await waitFor(() =>
+      expect(modelGatewayMocks.saveSub2Api).toHaveBeenCalledWith({
+        groups: [
+          expect.objectContaining({
+            modelMappings: [
+              { requestPattern: "*", upstreamModel: "qwen-max" },
+              { requestPattern: "kept", upstreamModel: "kept-model" },
+            ],
+          }),
+        ],
+      }),
+    );
   });
 
   it("places independent, collapsed third-party group disclosures in Custom and Hybrid", () => {

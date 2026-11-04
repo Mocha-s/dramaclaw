@@ -90,6 +90,7 @@ OFFICIAL_MEDIA_CATALOG_REVISION_KEY = "official_media_catalog_revision"
 OFFICIAL_MEDIA_CATALOG_PUBLISHED_AT_KEY = "official_media_catalog_published_at"
 OFFICIAL_MEDIA_CATALOG_SHA256_KEY = "official_media_catalog_sha256"
 OFFICIAL_MEDIA_CATALOG_LAST_ERROR_KEY = "official_media_catalog_last_error"
+THIRD_PARTY_MODELS_AUTO_FETCH_LAST_AT_KEY = "third_party_models_auto_fetch_last_at"
 _OFFICIAL_MEDIA_CATALOG_WRITE_LOCK = threading.Lock()
 
 
@@ -309,17 +310,18 @@ def _normalize_sub2api_groups(groups: list[dict[str, Any]]) -> list[dict[str, An
             raise ValueError("Sub2API model patterns only support a trailing *")
         ids.add(group_id)
         names.add(name.casefold())
-        normalized.append(
-            {
-                "id": group_id,
-                "name": name,
-                "protocol": protocol,
-                "baseUrl": base_url,
-                "apiKey": api_key,
-                "capabilities": capabilities,
-                "modelMappings": mappings,
-            }
-        )
+        normalized_group = {
+            "id": group_id,
+            "name": name,
+            "protocol": protocol,
+            "baseUrl": base_url,
+            "apiKey": api_key,
+            "capabilities": capabilities,
+            "modelMappings": mappings,
+        }
+        if group.get("autoFetch"):
+            normalized_group["autoFetch"] = True
+        normalized.append(normalized_group)
     return normalized
 
 
@@ -845,6 +847,48 @@ def save_third_party_gateway_groups(groups: list[dict[str, Any]], *, activate: b
     if activate:
         values["model_gateway_mode"] = MODE_CUSTOM
     _write_many(values)
+
+
+def sync_model_mappings(
+    mappings: list[dict[str, Any]],
+    discovered: list[str],
+    capabilities: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Mirror one gateway's model list: drop what it lost, add what it gained.
+
+    A ``*`` default route is always kept, and a surviving mapping keeps its
+    request pattern and per-model options. An empty discovery result means the
+    list could not be read, never that the gateway serves nothing, so callers
+    must not sync on it.
+    """
+    known = {str(value).strip() for value in discovered if str(value).strip()}
+    if not known:
+        return list(mappings)
+    kept = [
+        mapping
+        for mapping in mappings
+        if str(mapping.get("requestPattern") or "").strip() == "*"
+        or str(mapping.get("upstreamModel") or "").strip() in known
+    ]
+    covered = {str(mapping.get("upstreamModel") or "").strip() for mapping in kept}
+    added = [
+        {
+            "requestPattern": model,
+            "upstreamModel": model,
+            **({"videoEndpoint": "videos"} if "video" in (capabilities or []) else {}),
+        }
+        for model in sorted(known - covered)
+    ]
+    return kept + added
+
+
+def get_third_party_models_auto_fetch_last_at() -> str:
+    return str(get_model_gateway_settings().get(THIRD_PARTY_MODELS_AUTO_FETCH_LAST_AT_KEY, ""))
+
+
+def record_third_party_models_fetch_attempt() -> None:
+    """Stamp the attempt, not the success: a broken gateway must not be retried in a loop."""
+    _write_many({THIRD_PARTY_MODELS_AUTO_FETCH_LAST_AT_KEY: _now_iso()})
 
 
 def get_capability_defaults() -> dict[str, str]:
@@ -2717,6 +2761,9 @@ def build_model_gateway_status(
         else ""
     )
     third_party_groups = get_third_party_gateway_groups(masked=True) if uses_ce_settings else []
+    third_party_auto_fetch_last_at = (
+        get_third_party_models_auto_fetch_last_at() if uses_ce_settings else ""
+    )
     sub2api_configured = bool(third_party_groups)
     sub2api_text_configured = any(CAPABILITY_TEXT in group.get("capabilities", []) for group in third_party_groups)
     effective = get_effective_newapi_config(
@@ -2814,6 +2861,7 @@ def build_model_gateway_status(
         "thirdParty": {
             "groups": third_party_groups,
             "configured": bool(third_party_groups),
+            "autoFetchLastAt": third_party_auto_fetch_last_at,
         },
         "capabilityDefaults": get_capability_defaults() if uses_ce_settings else {},
         "migrationWarnings": (
