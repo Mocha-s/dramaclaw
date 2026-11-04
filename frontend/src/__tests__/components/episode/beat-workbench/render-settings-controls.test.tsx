@@ -43,12 +43,12 @@ describe("RenderModelSelect image quality", () => {
     await user.click(qualityButton);
     for (const quality of ["auto", "low", "medium", "high", "xhigh", "max"]) {
       expect(
-        screen.getByRole("option", {
+        await screen.findByRole("option", {
           name: `episode.renderSettings.qualityOptions.${quality}`,
         }),
       ).toBeInTheDocument();
     }
-    await user.click(screen.getByRole("option", {
+    await user.click(await screen.findByRole("option", {
       name: "episode.renderSettings.qualityOptions.max",
     }));
 
@@ -67,7 +67,7 @@ describe("RenderModelSelect image quality", () => {
     expect(sizeButton).toHaveTextContent("1K");
 
     await user.click(sizeButton);
-    await user.click(screen.getByRole("option", { name: "2K" }));
+    await user.click(await screen.findByRole("option", { name: "2K" }));
 
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({ render_image_size: "2K" }),

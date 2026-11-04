@@ -427,7 +427,7 @@ describe("TextPane", () => {
     await user.click(speaker);
     expect(await screen.findByRole("option", { name: "陆辰_青年" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "旧值_不在本集" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("option", { name: "陆辰_青年" }));
+    await user.click(await screen.findByRole("option", { name: "陆辰_青年" }));
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
     expect(mutateAsync.mock.calls[0][0].data).toEqual({ speaker: "陆辰_青年" });

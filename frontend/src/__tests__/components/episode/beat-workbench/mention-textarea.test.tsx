@@ -19,7 +19,7 @@ function ControlledMentionTextarea() {
 }
 
 describe("MentionTextarea", () => {
-  it("opens candidates after @ and inserts the selected mention", () => {
+  it("opens candidates after @ and inserts the selected mention", async () => {
     render(<ControlledMentionTextarea />);
 
     const textarea = screen.getByRole("textbox", { name: "画面描述" });
@@ -27,13 +27,13 @@ describe("MentionTextarea", () => {
       target: { value: "@", selectionStart: 1, selectionEnd: 1 },
     });
 
-    const option = screen.getByRole("option", { name: "陆辰_青年时期" });
+    const option = await screen.findByRole("option", { name: "陆辰_青年时期" });
     fireEvent.mouseDown(option);
 
     expect(screen.getByDisplayValue("@陆辰_青年时期")).toBeInTheDocument();
   });
 
-  it("confirms the highlighted candidate when pressing space", () => {
+  it("confirms the highlighted candidate when pressing space", async () => {
     render(<ControlledMentionTextarea />);
 
     const textarea = screen.getByRole("textbox", {
@@ -43,7 +43,7 @@ describe("MentionTextarea", () => {
       target: { value: "@", selectionStart: 1, selectionEnd: 1 },
     });
     expect(
-      screen.getByRole("option", { name: "陆辰_青年时期" }),
+      await screen.findByRole("option", { name: "陆辰_青年时期" }),
     ).toBeInTheDocument();
 
     fireEvent.keyDown(textarea, { key: " " });

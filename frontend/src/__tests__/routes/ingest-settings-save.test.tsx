@@ -479,8 +479,8 @@ describe("IngestPage settings save", () => {
     const saveButton = screen.getByRole("button", { name: /save settings/i });
     expect(saveButton).toBeDisabled();
 
-    await user.click(screen.getByRole("option", { name: "Narrated" }));
-    await user.click(screen.getByRole("option", { name: "Anime" }));
+    await user.click(await screen.findByRole("option", { name: "Narrated" }));
+    await user.click(await screen.findByRole("option", { name: "Anime" }));
     expect(saveButton).toBeEnabled();
 
     await user.click(saveButton);
@@ -516,13 +516,13 @@ describe("IngestPage settings save", () => {
     ).not.toBeInTheDocument();
 
     // Switching to narrated reveals the perspective entry.
-    await user.click(screen.getByRole("option", { name: "Narrated" }));
+    await user.click(await screen.findByRole("option", { name: "Narrated" }));
 
     expect(
-      screen.getByRole("option", { name: "First person" }),
+      await screen.findByRole("option", { name: "First person" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("option", { name: "Third person" }),
+      await screen.findByRole("option", { name: "Third person" }),
     ).toBeInTheDocument();
   });
 
@@ -536,7 +536,7 @@ describe("IngestPage settings save", () => {
     );
 
     // Stay on premium drama (default), only change the visual style so save fires.
-    await user.click(screen.getByRole("option", { name: "Anime" }));
+    await user.click(await screen.findByRole("option", { name: "Anime" }));
     await user.click(screen.getByRole("button", { name: /save settings/i }));
 
     await waitFor(() => expect(mocks.updateProject).toHaveBeenCalled());
@@ -1056,7 +1056,7 @@ describe("IngestPage settings save", () => {
         fileInput!,
         new File(["Chapter 1"], "novel.txt", { type: "text/plain" }),
       );
-      await user.click(screen.getByRole("option", { name: "Narrated" }));
+      await user.click(await screen.findByRole("option", { name: "Narrated" }));
       await user.click(screen.getByRole("button", { name: /start import/i }));
 
       expect(await screen.findByText("Elapsed 00:00")).toBeInTheDocument();
@@ -1101,7 +1101,7 @@ describe("IngestPage settings save", () => {
     expect(screen.getByRole("button", { name: /start import/i })).toBeDisabled();
     expect(mocks.startIngest).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("option", { name: "Narrated" }));
+    await user.click(await screen.findByRole("option", { name: "Narrated" }));
     expect(screen.getByRole("button", { name: /start import/i })).toBeEnabled();
   });
 
@@ -1133,7 +1133,7 @@ describe("IngestPage settings save", () => {
       fileInput!,
       new File(["Chapter 1"], "novel.txt", { type: "text/plain" }),
     );
-    await user.click(screen.getByRole("option", { name: "Anime" }));
+    await user.click(await screen.findByRole("option", { name: "Anime" }));
 
     const saveButton = screen.getByRole("button", { name: /save settings/i });
     expect(saveButton).toBeEnabled();

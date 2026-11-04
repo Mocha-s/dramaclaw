@@ -1148,11 +1148,11 @@ describe("VideoPane Seedance2 inspector", () => {
 
     await user.click(screen.getByRole("combobox", { name: "分辨率" }));
     expect(screen.queryByRole("option", { name: "480p" })).not.toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "720p" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "768p" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "1080p" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "2k" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "4k" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "720p" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "768p" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "1080p" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "2k" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "4k" })).toBeInTheDocument();
   });
 
   it("keeps catalog video resolutions beyond the legacy three-value union", () => {
@@ -1215,10 +1215,10 @@ describe("VideoPane Seedance2 inspector", () => {
     await user.click(screen.getByLabelText("分辨率"));
     expect(await screen.findByRole("option", { name: "720p" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "480p" })).not.toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "768p" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "1080p" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "2k" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "4k" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "768p" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "1080p" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "2k" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "4k" })).toBeInTheDocument();
   });
 
   it("preserves a saved global Seedance2 value resolution", async () => {
@@ -1706,10 +1706,10 @@ describe("VideoPane Seedance2 inspector", () => {
     expect(modeTrigger).not.toHaveTextContent("multimodal_reference");
     await user.click(modeTrigger);
     expect(await screen.findByRole("option", { name: "首帧模式" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "首尾帧模式" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "多参模式" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "首尾帧模式" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "多参模式" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "first_last_frame" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("option", { name: "首尾帧模式" }));
+    await user.click(await screen.findByRole("option", { name: "首尾帧模式" }));
     await waitForSeedance2Autosave();
 
     const payload = updateBeatMock.mock.calls[0][0];

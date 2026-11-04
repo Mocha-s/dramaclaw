@@ -377,7 +377,7 @@ describe("ThreeDDirectorDialog", () => {
     expect(screen.getAllByText("Beat 3 导演世界").length).toBeGreaterThan(0);
     expect(screen.queryByText("暂无导演世界 manifest")).not.toBeInTheDocument();
     expect(screen.queryByText(/还没有可用的导演世界资产/)).not.toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /emptySource|无来源/ })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: /emptySource|无来源/ })).toBeInTheDocument();
   });
 
   it("blocks beat actor and prop creation when assigned colors are missing", async () => {
@@ -647,11 +647,11 @@ describe("ThreeDDirectorDialog", () => {
       />,
     );
 
-    expect(screen.getByRole("option", { name: "正面世界" })).toHaveProperty("selected", true);
+    expect(await screen.findByRole("option", { name: "正面世界" })).toHaveProperty("selected", true);
     expect(screen.queryByRole("option", { name: "active" })).not.toBeInTheDocument();
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "背面世界" }),
+      await screen.findByRole("option", { name: "背面世界" }),
     );
     expect(screen.getByTestId("stage-canvas")).toHaveAttribute(
       "data-splat-url",
@@ -718,11 +718,11 @@ describe("ThreeDDirectorDialog", () => {
     );
 
     const picker = screen.getByLabelText("世界来源");
-    expect(screen.getByRole("option", { name: "无来源" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "无来源" })).toBeInTheDocument();
 
     await user.selectOptions(
       picker,
-      screen.getByRole("option", { name: "无来源" }),
+      await screen.findByRole("option", { name: "无来源" }),
     );
 
     expect(screen.getByTestId("stage-canvas")).toHaveAttribute("data-splat-url", "");
@@ -755,7 +755,7 @@ describe("ThreeDDirectorDialog", () => {
     expect(screen.getByTestId("director-world-panel-title")).toBeInTheDocument();
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "背面世界" }),
+      await screen.findByRole("option", { name: "背面世界" }),
     );
     await user.click(screen.getByRole("button", { name: "输出到画布节点" }));
 
@@ -1038,7 +1038,7 @@ describe("ThreeDDirectorDialog", () => {
 
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "director pano · 360图" }),
+      await screen.findByRole("option", { name: "director pano · 360图" }),
     );
 
     expect(screen.queryByTestId("pano-capture-surface")).not.toBeInTheDocument();
@@ -1113,7 +1113,7 @@ describe("ThreeDDirectorDialog", () => {
 
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "director pano · 360图" }),
+      await screen.findByRole("option", { name: "director pano · 360图" }),
     );
     await user.click(screen.getByRole("button", { name: /高级校准/ }));
 
@@ -1655,11 +1655,11 @@ describe("ThreeDDirectorDialog", () => {
 
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "Master SOG" }),
+      await screen.findByRole("option", { name: "Master SOG" }),
     );
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "Director Pano · 360图" }),
+      await screen.findByRole("option", { name: "Director Pano · 360图" }),
     );
 
     await waitFor(() => {
@@ -1834,7 +1834,7 @@ describe("ThreeDDirectorDialog", () => {
       />,
     );
 
-    expect(screen.getByRole("option", { name: "Director Pano · 360图" })).toHaveProperty(
+    expect(await screen.findByRole("option", { name: "Director Pano · 360图" })).toHaveProperty(
       "selected",
       true,
     );
@@ -1848,7 +1848,7 @@ describe("ThreeDDirectorDialog", () => {
 
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "Master SOG" }),
+      await screen.findByRole("option", { name: "Master SOG" }),
     );
 
     expect(screen.getByTestId("stage-canvas")).toHaveAttribute(
@@ -1862,7 +1862,7 @@ describe("ThreeDDirectorDialog", () => {
 
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "No Collision SOG" }),
+      await screen.findByRole("option", { name: "No Collision SOG" }),
     );
 
     expect(screen.getByTestId("stage-canvas")).toHaveAttribute(
@@ -2162,7 +2162,7 @@ describe("ThreeDDirectorDialog", () => {
 
     await user.selectOptions(
       screen.getByLabelText("世界来源"),
-      screen.getByRole("option", { name: "Director Pano · 360图" }),
+      await screen.findByRole("option", { name: "Director Pano · 360图" }),
     );
     await user.click(screen.getByRole("button", { name: "保存此镜头导演状态" }));
 

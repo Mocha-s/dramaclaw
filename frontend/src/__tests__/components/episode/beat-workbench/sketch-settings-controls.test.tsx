@@ -52,9 +52,9 @@ describe("SketchAspectCheckbox", () => {
 
     await user.click(screen.getByRole("combobox", { name: "画幅" }));
     expect(await screen.findByRole("option", { name: "2:3" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "16:9" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "16:9" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("option", { name: "2:3" }));
+    await user.click(await screen.findByRole("option", { name: "2:3" }));
 
     expect(onAspectRatioChange).toHaveBeenCalledWith("2:3");
   });
@@ -74,9 +74,9 @@ describe("SketchModelSelect image size", () => {
     await user.click(sizeSelect);
 
     for (const size of ["1K", "2K", "4K"]) {
-      expect(screen.getByRole("option", { name: size })).toBeInTheDocument();
+      expect(await screen.findByRole("option", { name: size })).toBeInTheDocument();
     }
-    await user.click(screen.getByRole("option", { name: "4K" }));
+    await user.click(await screen.findByRole("option", { name: "4K" }));
 
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({ sketch_image_size: "4K" }),

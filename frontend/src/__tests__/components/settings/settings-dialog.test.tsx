@@ -865,7 +865,7 @@ describe("SettingsDialog pages", () => {
     await user.click(reasoning);
     expect(await screen.findByRole("option", { name: "high" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "none" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("option", { name: "high" }));
+    await user.click(await screen.findByRole("option", { name: "high" }));
     const saveButtons = screen.getAllByRole("button", { name: "保存第三方网关配置" });
     fireEvent.click(saveButtons[saveButtons.length - 1]);
 

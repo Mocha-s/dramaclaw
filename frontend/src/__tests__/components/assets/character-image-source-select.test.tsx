@@ -91,7 +91,7 @@ describe("CharacterImageSourceSelect", () => {
       await screen.findByRole("option", { name: "Character portrait" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("option", { name: "Identity image" }),
+      await screen.findByRole("option", { name: "Identity image" }),
     ).toBeInTheDocument();
   });
 
@@ -204,16 +204,19 @@ describe("CharacterImageSourceSelect", () => {
     expect(await screen.findByRole("combobox", { name: "Image quality" })).toBeInTheDocument();
     await user.click(sizeTrigger);
     expect(await screen.findByRole("option", { name: "1K" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "2K" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "4K" })).toBeInTheDocument();
-    await user.click(screen.getByRole("option", { name: "4K" }));
+    expect(await screen.findByRole("option", { name: "2K" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "4K" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("option", { name: "4K" }));
 
     const qualityTrigger = screen.getByRole("combobox", { name: "Image quality" });
     await user.click(qualityTrigger);
-    for (const quality of ["auto", "low", "medium", "high", "xhigh", "max"]) {
-      expect(screen.getByRole("option", { name: quality })).toBeInTheDocument();
+    // Await the first option: the popup mounts a tick after the click, which is
+    // enough for a loaded runner to miss a synchronous lookup.
+    expect(await screen.findByRole("option", { name: "auto" })).toBeInTheDocument();
+    for (const quality of ["low", "medium", "high", "xhigh", "max"]) {
+      expect(await screen.findByRole("option", { name: quality })).toBeInTheDocument();
     }
-    await user.click(screen.getByRole("option", { name: "max" }));
+    await user.click(await screen.findByRole("option", { name: "max" }));
 
     await waitFor(() =>
       expect(patchBodies).toEqual([
