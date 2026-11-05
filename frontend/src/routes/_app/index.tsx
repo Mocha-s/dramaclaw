@@ -268,9 +268,9 @@ function ProjectCard({
         <div className="flex w-full items-start justify-between gap-1">
           <h3
             className="ml-[5%] min-w-0 truncate text-sm font-semibold text-foreground"
-            title={summary.name}
+            title={summary.displayName ?? summary.name}
           >
-            {summary.name}
+            {summary.displayName ?? summary.name}
           </h3>
           <div
             data-project-menu
@@ -614,9 +614,9 @@ function ProjectRow({
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <h3
           className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground"
-          title={summary.name}
+          title={summary.displayName ?? summary.name}
         >
-          {summary.name}
+          {summary.displayName ?? summary.name}
         </h3>
         <span className="hidden shrink-0 rounded-full bg-background/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">
           {sourceLabel}
@@ -1084,6 +1084,7 @@ function ProjectDashboard() {
   const [sort, setSort] = useState<SortKey>("updated-desc");
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
   const [recentlyCreatedProject, setRecentlyCreatedProject] = useState<
     string | null
   >(() => readRecentlyCreatedProject());
@@ -1138,7 +1139,11 @@ function ProjectDashboard() {
   // project list grows beyond ~500 items.
   const matchesSearch = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (p: ProjectSummary) => (q ? p.name.toLowerCase().includes(q) : true);
+    return (p: ProjectSummary) =>
+      q
+        ? p.name.toLowerCase().includes(q) ||
+          (p.displayName ?? "").toLowerCase().includes(q)
+        : true;
   }, [search]);
 
   const all = allSummaries.data ?? [];
@@ -1190,11 +1195,15 @@ function ProjectDashboard() {
     const name = trimmedNewName;
     if (!name || createNameError) return;
     try {
-      const res = await createProject.mutateAsync(name);
+      const res = await createProject.mutateAsync({
+        name,
+        display_name: newDisplayName.trim() || undefined,
+      });
       const createdName = res.data.name || name;
       setRecentlyCreatedProject(createdName);
       window.localStorage.setItem(RECENTLY_CREATED_PROJECT_KEY, createdName);
       setNewName("");
+      setNewDisplayName("");
       setCreateOpen(false);
     } catch {
       toast.error(t("project.toasts.createFailed"));
@@ -1326,7 +1335,7 @@ function ProjectDashboard() {
               />
             </div>
           )}
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) { setNewName(""); setNewDisplayName(""); } }}>
             <DialogContent className="gap-4 overflow-hidden rounded-2xl border border-white/8 bg-background/68 p-7 shadow-none backdrop-blur-3xl sm:max-w-md">
               <DialogHeader className="gap-2">
                 <DialogTitle className="flex items-center gap-2 text-lg font-medium tracking-tight">
@@ -1374,6 +1383,15 @@ function ProjectDashboard() {
                     {createNameError}
                   </p>
                 )}
+                <Input
+                  id="project-display-name"
+                  value={newDisplayName}
+                  onChange={(e) => setNewDisplayName(e.target.value)}
+                  placeholder={t("project.displayNamePlaceholder")}
+                  maxLength={128}
+                  className="h-11 rounded-[8px] border-white/12 bg-white/[0.04] px-3 text-sm placeholder:text-muted-foreground/70 focus-visible:border-white/25 focus-visible:ring-2 focus-visible:ring-white/8 dark:bg-white/[0.04]"
+                />
+                <p className="text-xs text-muted-foreground">{t("project.displayNameHint")}</p>
               </div>
               <DialogFooter className="-mx-7 -mb-7 border-t-0 bg-transparent p-7 pt-3 sm:flex-row sm:justify-end">
                 <Button

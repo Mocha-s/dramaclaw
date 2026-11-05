@@ -2355,6 +2355,8 @@
     "nameNoChinese": "Tên dự án không được chứa ký tự tiếng Trung.",
     "nameTooLong": "Tên dự án dài tối đa 64 ký tự.",
     "nameInvalid": "Tên dự án chỉ được chứa chữ cái, chữ số và dấu gạch dưới.",
+    "displayNamePlaceholder": "Tên hiển thị (tùy chọn, bất kỳ ngôn ngữ nào)",
+    "displayNameHint": "Tên hiển thị xuất hiện trong danh sách dự án. Tên dự án được dùng làm định danh.",
     "nameExistsActive": "Đã có dự án trùng tên này. Hãy chọn tên khác.",
     "nameExistsArchived": "Một dự án đã lưu trữ đang dùng tên này. Hãy bỏ lưu trữ nó hoặc chọn tên khác.",
     "nameExistsDeleted": "Một dự án trùng tên đang nằm trong Thùng rác. Hãy khôi phục hoặc xoá vĩnh viễn nó trước khi tạo mới.",

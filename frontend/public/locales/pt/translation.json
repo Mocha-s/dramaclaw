@@ -2468,6 +2468,8 @@
     "clearName": "Limpar nome do projeto",
     "nameNoChinese": "O nome do projeto não pode conter caracteres chineses.",
     "nameInvalid": "O nome do projeto só pode conter letras, números e sublinhados.",
+    "displayNamePlaceholder": "Nome de exibição (opcional, qualquer idioma)",
+    "displayNameHint": "O nome de exibição aparece na lista de projetos. O nome do projeto é usado como identificador.",
     "nameExistsActive": "Já existe um projeto com este nome. Escolha outro nome.",
     "nameExistsArchived": "Um projeto arquivado já utiliza esse nome. Desarquive-o ou escolha outro nome.",
     "nameExistsDeleted": "Um projeto com este nome está na Reciclagem. Restaure-o ou apague-o permanentemente antes de criar um novo.",

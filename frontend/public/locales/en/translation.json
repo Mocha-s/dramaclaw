@@ -2468,6 +2468,8 @@
     "clearName": "Clear project name",
     "nameNoChinese": "Project name cannot contain Chinese characters.",
     "nameInvalid": "Project name can only contain letters, numbers, and underscores.",
+    "displayNamePlaceholder": "Display name (optional, any language)",
+    "displayNameHint": "The display name is shown in the project list. The project name is used as an identifier.",
     "nameExistsActive": "A project with this name already exists. Choose another name.",
     "nameExistsArchived": "An archived project already uses this name. Unarchive it or choose another name.",
     "nameExistsDeleted": "A project with this name is in Trash. Restore or permanently delete it before creating a new one.",

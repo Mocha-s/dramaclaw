@@ -27,6 +27,7 @@ class ProjectRecord:
     owner_id: str
     owner_username: str
     name: str
+    display_name: str | None = None
     home_node_id: str
     output_dir: str
     state_dir: str
@@ -69,6 +70,7 @@ class ProjectRegistry(Protocol):
         owner_user_id: str,
         owner_username: str,
         name: str,
+        display_name: str | None = None,
         home_node_id: str | None = None,
         output_dir: str | None = None,
         state_dir: str | None = None,

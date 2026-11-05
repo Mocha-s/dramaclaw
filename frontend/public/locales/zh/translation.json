@@ -2468,6 +2468,8 @@
     "clearName": "清空项目名称",
     "nameNoChinese": "项目名称不能包含中文字符",
     "nameInvalid": "项目名称只能包含英文字母、数字和下划线",
+    "displayNamePlaceholder": "显示名称（可选，支持中文）",
+    "displayNameHint": "显示名称展示在项目列表中，项目名称用作唯一标识符。",
     "nameExistsActive": "已存在同名项目，请更换名称",
     "nameExistsArchived": "归档中已有同名项目，请先取消归档或更换名称",
     "nameExistsDeleted": "回收站中已有同名项目，请永久删除后再创建",

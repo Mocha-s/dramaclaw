@@ -150,6 +150,7 @@ def _summary_for_record_sync(
         return ProjectSummary(
             id=record.id,
             name=record.name,
+            display_name=record.display_name,
             owner_type=record.owner_type,
             owner_id=record.owner_id,
             owner_username=record.owner_username,
@@ -174,6 +175,7 @@ def _summary_for_record_sync(
     return ProjectSummary(
         id=record.id,
         name=record.name,
+        display_name=record.display_name,
         owner_type=record.owner_type,
         owner_id=record.owner_id,
         owner_username=record.owner_username,
@@ -717,6 +719,7 @@ async def create_project(
             owner_user_id=user_id,
             owner_username=user["username"],
             name=body.name,
+            display_name=body.display_name or None,
         )
     except asyncpg.exceptions.UniqueViolationError as exc:
         raise HTTPException(
@@ -780,7 +783,7 @@ async def create_project(
             logger.warning("failed to compensate uncommitted project registry row", exc_info=True)
         raise
     _delete_quarantined_project_dirs(orphaned_dirs)
-    return {"ok": True, "data": {"id": record.id, "project_id": record.id, "name": body.name}}
+    return {"ok": True, "data": {"id": record.id, "project_id": record.id, "name": body.name, "display_name": record.display_name}}
 
 
 @router.get("/projects/{project}")

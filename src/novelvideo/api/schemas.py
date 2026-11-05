@@ -45,11 +45,13 @@ class ErrorResponse(BaseModel):
 
 class ProjectCreate(BaseModel):
     name: str = Field(max_length=64)
+    display_name: str | None = Field(default=None, max_length=128)
 
 
 class ProjectSummary(BaseModel):
     id: str = ""
     name: str
+    display_name: Optional[str] = None
     owner_type: str = "user"
     owner_id: str = ""
     owner_username: str = ""

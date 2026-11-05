@@ -41,6 +41,7 @@ export type ProjectRole = "viewer" | "editor" | "admin" | "owner";
 export interface ProjectSummary {
   id: string;
   name: string;
+  displayName?: string;
   status: ProjectStatus;
   ownerUsername?: string;
   ownerId?: string;

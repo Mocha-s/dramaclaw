@@ -31,6 +31,7 @@ def _row_to_record(row: aiosqlite.Row) -> ProjectRecord:
         owner_id=str(row["owner_id"]),
         owner_username=str(row["owner_username"]),
         name=str(row["name"]),
+        display_name=str(row["display_name"]) if row["display_name"] else None,
         home_node_id=str(row["home_node_id"]),
         output_dir=str(row["output_dir"]),
         state_dir=str(row["state_dir"]),
@@ -125,6 +126,19 @@ class SQLiteProjectRegistry:
                     """,
                     (_now_iso(),),
                 )
+                # migration 2: display_name column
+                existing = await _fetchone(
+                    db,
+                    "SELECT version FROM schema_migrations WHERE version = 2",
+                )
+                if not existing:
+                    await db.execute(
+                        "ALTER TABLE projects ADD COLUMN display_name TEXT"
+                    )
+                    await db.execute(
+                        "INSERT INTO schema_migrations(version, applied_at) VALUES (2, ?)",
+                        (_now_iso(),),
+                    )
                 await db.commit()
             finally:
                 await db.close()
@@ -168,6 +182,7 @@ class SQLiteProjectRegistry:
         owner_user_id: str,
         owner_username: str,
         name: str,
+        display_name: str | None = None,
         home_node_id: str | None = None,
         output_dir: str | None = None,
         state_dir: str | None = None,
@@ -186,15 +201,16 @@ class SQLiteProjectRegistry:
                 await db.execute(
                     """
                     INSERT INTO projects (
-                        id, owner_type, owner_id, owner_username, name, home_node_id,
+                        id, owner_type, owner_id, owner_username, name, display_name, home_node_id,
                         output_dir, state_dir, runtime_dir, status, created_at, updated_at
                     )
-                    VALUES (?, 'user', 'local', ?, ?, 'local', ?, ?, ?, 'active', ?, ?)
+                    VALUES (?, 'user', 'local', ?, ?, ?, 'local', ?, ?, ?, 'active', ?, ?)
                     """,
                     (
                         project_id,
                         owner_username,
                         name,
+                        display_name or None,
                         output_dir or default_output,
                         state_dir or default_state,
                         runtime_dir or default_runtime,
