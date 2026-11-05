@@ -48,6 +48,19 @@ export function useCreateProject() {
   });
 }
 
+export function useRenameProjectDisplayName() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ project, display_name }: { project: string; display_name: string }) =>
+      api
+        .patch(p`api/v1/projects/${project}`, { json: { display_name: display_name || "" } })
+        .json<OkResponse<unknown>>(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectSummaries() });
+    },
+  });
+}
+
 export function useUpdateProject(project: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -14,6 +14,7 @@ import {
   List as ListIcon,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Plus,
   Search,
   Share2,
@@ -60,6 +61,7 @@ import {
   useCreateProject,
   useProjectCounts,
   usePurgeProject,
+  useRenameProjectDisplayName,
   useRestoreProject,
   useSoftDeleteProject,
   useUnarchiveProject,
@@ -168,6 +170,7 @@ function ProjectCard({
   onOpen,
   onPreload,
   onShare,
+  onRename,
   onAction,
 }: {
   summary: ProjectSummary;
@@ -175,6 +178,7 @@ function ProjectCard({
   onOpen: () => void;
   onPreload?: () => void;
   onShare: () => void;
+  onRename: () => void;
   onAction: (
     action: "archive" | "unarchive" | "delete" | "restore" | "purge",
   ) => void;
@@ -307,6 +311,10 @@ function ProjectCard({
                       >
                         <Brush className="size-4" />
                         {t("project.actions.openFreezone")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={onRename}>
+                        <Pencil className="size-4" />
+                        {t("project.actions.rename")}
                       </DropdownMenuItem>
                       {canLifecycle && (
                         <>
@@ -518,12 +526,14 @@ function ProjectRow({
   onOpen,
   onPreload,
   onShare,
+  onRename,
   onAction,
 }: {
   summary: ProjectSummary;
   onOpen: () => void;
   onPreload?: () => void;
   onShare: () => void;
+  onRename: () => void;
   onAction: (
     action: "archive" | "unarchive" | "delete" | "restore" | "purge",
   ) => void;
@@ -698,6 +708,10 @@ function ProjectRow({
                   >
                     <Brush className="size-4" />
                     {t("project.actions.openFreezone")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onRename}>
+                    <Pencil className="size-4" />
+                    {t("project.actions.rename")}
                   </DropdownMenuItem>
                   {canLifecycle && (
                     <>
@@ -1089,8 +1103,9 @@ function ProjectDashboard() {
     string | null
   >(() => readRecentlyCreatedProject());
   const [pending, setPending] = useState<PendingAction | null>(null);
-  // Project pending the "open in Freezone?" prompt after creation.
   const [shareProject, setShareProject] = useState<ProjectSummary | null>(null);
+  const [renameTarget, setRenameTarget] = useState<ProjectSummary | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const statusCounts = useProjectCounts();
@@ -1110,6 +1125,7 @@ function ProjectDashboard() {
   const view = useAppStore((s) => s.dashboardView);
   const setView = useAppStore((s) => s.setDashboardView);
   const createProject = useCreateProject();
+  const renameDisplayName = useRenameProjectDisplayName();
   const archive = useArchiveProject();
   const unarchive = useUnarchiveProject();
   const softDelete = useSoftDeleteProject();
@@ -1207,6 +1223,20 @@ function ProjectDashboard() {
       setCreateOpen(false);
     } catch {
       toast.error(t("project.toasts.createFailed"));
+    }
+  };
+
+  const handleRename = async () => {
+    if (!renameTarget) return;
+    try {
+      await renameDisplayName.mutateAsync({
+        project: projectRouteParam(renameTarget),
+        display_name: renameValue.trim(),
+      });
+      setRenameTarget(null);
+      setRenameValue("");
+    } catch {
+      toast.error(t("project.toasts.renameFailed"));
     }
   };
 
@@ -1554,6 +1584,7 @@ function ProjectDashboard() {
                       onOpen={() => openProject(projectRouteParam(summary))}
                       onPreload={() => preloadProject(projectRouteParam(summary))}
                       onShare={() => setShareProject(summary)}
+                      onRename={() => { setRenameTarget(summary); setRenameValue(summary.displayName ?? ""); }}
                       onAction={(action) => onAction(summary, action)}
                     />
                   ) : (
@@ -1563,6 +1594,7 @@ function ProjectDashboard() {
                       onOpen={() => openProject(projectRouteParam(summary))}
                       onPreload={() => preloadProject(projectRouteParam(summary))}
                       onShare={() => setShareProject(summary)}
+                      onRename={() => { setRenameTarget(summary); setRenameValue(summary.displayName ?? ""); }}
                       onAction={(action) => onAction(summary, action)}
                     />
                   )}
@@ -1578,6 +1610,7 @@ function ProjectDashboard() {
                       onOpen={() => openProject(projectRouteParam(summary))}
                       onPreload={() => preloadProject(projectRouteParam(summary))}
                       onShare={() => setShareProject(summary)}
+                      onRename={() => { setRenameTarget(summary); setRenameValue(summary.displayName ?? ""); }}
                       onAction={(action) => onAction(summary, action)}
                     />
                   ) : (
@@ -1588,6 +1621,7 @@ function ProjectDashboard() {
                       onOpen={() => openProject(projectRouteParam(summary))}
                       onPreload={() => preloadProject(projectRouteParam(summary))}
                       onShare={() => setShareProject(summary)}
+                      onRename={() => { setRenameTarget(summary); setRenameValue(summary.displayName ?? ""); }}
                       onAction={(action) => onAction(summary, action)}
                     />
                   ),
@@ -1623,6 +1657,37 @@ function ProjectDashboard() {
           if (!open) setShareProject(null);
         }}
       />
+      {/* Rename display name dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={(o) => { if (!o) { setRenameTarget(null); setRenameValue(""); } }}>
+        <DialogContent className="gap-4 overflow-hidden rounded-2xl border border-white/8 bg-background/68 p-7 shadow-none backdrop-blur-3xl sm:max-w-md">
+          <DialogHeader className="gap-2">
+            <DialogTitle className="text-lg font-medium tracking-tight">
+              {t("project.renameDialog.title")}
+            </DialogTitle>
+            <p className="text-xs leading-5 text-muted-foreground">
+              {t("project.renameDialog.hint", { name: renameTarget?.name ?? "" })}
+            </p>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            placeholder={t("project.displayNamePlaceholder")}
+            maxLength={128}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleRename(); } }}
+            autoFocus
+            className="h-11 rounded-[8px] border-white/12 bg-white/[0.04] px-3 text-sm placeholder:text-muted-foreground/70 focus-visible:border-white/25 focus-visible:ring-2 focus-visible:ring-white/8 dark:bg-white/[0.04]"
+          />
+          <DialogFooter className="-mx-7 -mb-7 border-t-0 bg-transparent p-7 pt-3 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setRenameTarget(null)} className="h-10 w-18 rounded-md border-white/18 bg-white/[0.06] px-0 text-sm font-normal text-foreground/80 hover:border-white/28 hover:bg-white/[0.1] hover:text-foreground">
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={handleRename} disabled={renameDisplayName.isPending} className="h-10 w-18 rounded-md bg-primary px-0 text-sm font-normal text-primary-foreground shadow-lg shadow-primary/15 hover:bg-primary/90">
+              {renameDisplayName.isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+              {t("common.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

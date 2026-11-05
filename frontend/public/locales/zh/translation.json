@@ -2541,6 +2541,7 @@
       "open": "打开",
       "openFreezone": "打开虾画",
       "share": "共享",
+      "rename": "编辑名称",
       "archive": "归档…",
       "unarchive": "取消归档",
       "delete": "移到回收站…",
@@ -2563,8 +2564,13 @@
       "typeHint": "输入项目名称以确认",
       "confirm": "永久删除"
     },
+    "renameDialog": {
+      "title": "编辑显示名称",
+      "hint": "修改「{{name}}」的显示名称，留空则使用项目名称"
+    },
     "toasts": {
       "createFailed": "创建项目失败，请检查项目名称或稍后重试",
+      "renameFailed": "修改显示名称失败，请稍后重试",
       "archived": "已归档「{{name}}」",
       "unarchived": "已取消归档「{{name}}」",
       "deleted": "已将「{{name}}」移至回收站",

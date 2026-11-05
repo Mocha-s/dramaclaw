@@ -840,6 +840,14 @@ async def update_project(
     ctx = await resolve_project_context(user=user, project_id=project, required_role="editor")
     require_project_home_node(ctx, operation="update project config")
     updates = body.model_dump(exclude_none=True)
+
+    # display_name lives in the projects table, not the config file
+    if "display_name" in updates:
+        new_display_name = updates.pop("display_name")
+        await get_project_registry().update_project_display_name(
+            ctx.project_id, new_display_name or None
+        )
+
     current_config = load_project_config_from_state_dir(
         ctx.state_dir,
         username=ctx.owner_username,

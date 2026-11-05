@@ -2541,6 +2541,7 @@
       "open": "Open",
       "openFreezone": "Open in Freezone",
       "share": "Share",
+      "rename": "Edit display name",
       "archive": "Archive…",
       "unarchive": "Unarchive",
       "delete": "Move to Trash…",
@@ -2563,8 +2564,13 @@
       "typeHint": "Type the project name to confirm",
       "confirm": "Delete forever"
     },
+    "renameDialog": {
+      "title": "Edit display name",
+      "hint": "Change the display name for \"{{name}}\". Leave blank to use the project name."
+    },
     "toasts": {
       "createFailed": "Failed to create project. Check the name or try again later.",
+      "renameFailed": "Failed to update display name. Please try again.",
       "archived": "Archived \"{{name}}\"",
       "unarchived": "Unarchived \"{{name}}\"",
       "deleted": "Moved \"{{name}}\" to Trash",

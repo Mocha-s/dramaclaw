@@ -2541,6 +2541,7 @@
       "open": "Abrir",
       "openFreezone": "Abrir no Freezone",
       "share": "Partilhar",
+      "rename": "Editar nome de exibição",
       "archive": "Arquivar…",
       "unarchive": "Desarquivar",
       "delete": "Mover para a Reciclagem…",
@@ -2563,8 +2564,13 @@
       "typeHint": "Introduza o nome do projeto para confirmar",
       "confirm": "Eliminar definitivamente"
     },
+    "renameDialog": {
+      "title": "Editar nome de exibição",
+      "hint": "Altere o nome de exibição de \"{{name}}\". Deixe em branco para usar o nome do projeto."
+    },
     "toasts": {
       "createFailed": "Não foi possível criar o projeto. Verifique o nome ou tente novamente mais tarde.",
+      "renameFailed": "Não foi possível atualizar o nome de exibição. Tente novamente.",
       "archived": "Arquivado \"{{name}}\"",
       "unarchived": "\"{{name}}\" desarquivado",
       "deleted": "\"{{name}}\" movido para a Reciclagem",

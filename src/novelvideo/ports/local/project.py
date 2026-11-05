@@ -277,6 +277,25 @@ class SQLiteProjectRegistry:
             await db.close()
         return _row_to_record(row) if row else None
 
+    async def update_project_display_name(
+        self,
+        project_id: str,
+        display_name: str | None,
+    ) -> ProjectRecord | None:
+        if not project_id:
+            return None
+        db = await self._connect()
+        try:
+            await db.execute(
+                "UPDATE projects SET display_name = ?, updated_at = ? WHERE id = ? AND purged_at IS NULL",
+                (display_name or None, _now_iso(), project_id),
+            )
+            await db.commit()
+            row = await _fetchone(db, "SELECT * FROM projects WHERE id = ?", (project_id,))
+        finally:
+            await db.close()
+        return _row_to_record(row) if row else None
+
     async def mark_project_purged(self, project_id: str) -> ProjectRecord | None:
         if not project_id:
             return None

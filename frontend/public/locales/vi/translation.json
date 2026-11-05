@@ -2428,6 +2428,7 @@
       "open": "Mở",
       "openFreezone": "Mở trong Freezone",
       "share": "Chia sẻ",
+      "rename": "Sửa tên hiển thị",
       "archive": "Lưu trữ…",
       "unarchive": "Bỏ lưu trữ",
       "delete": "Chuyển vào Thùng rác…",
@@ -2450,8 +2451,13 @@
       "typeHint": "Gõ tên dự án để xác nhận",
       "confirm": "Xoá vĩnh viễn"
     },
+    "renameDialog": {
+      "title": "Sửa tên hiển thị",
+      "hint": "Thay đổi tên hiển thị của \"{{name}}\". Để trống để dùng tên dự án."
+    },
     "toasts": {
       "createFailed": "Tạo dự án thất bại. Kiểm tra lại tên hoặc thử lại sau.",
+      "renameFailed": "Không thể cập nhật tên hiển thị. Vui lòng thử lại.",
       "archived": "Đã lưu trữ \"{{name}}\"",
       "unarchived": "Đã bỏ lưu trữ \"{{name}}\"",
       "deleted": "Đã chuyển \"{{name}}\" vào Thùng rác",

@@ -90,6 +90,7 @@ class ProjectGrantSummary(BaseModel):
 
 
 class ProjectUpdate(BaseModel):
+    display_name: Optional[str] = Field(default=None, max_length=128)
     spine_template: Optional[Literal["drama", "narrated"]] = None
     aspect_ratio: Optional[Literal["2:3", "9:16", "16:9"]] = None
     visual_style: Optional[str] = None
