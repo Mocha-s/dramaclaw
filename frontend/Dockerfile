@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.7
-
 # Stage 1: build the SPA.
 FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 WORKDIR /app
