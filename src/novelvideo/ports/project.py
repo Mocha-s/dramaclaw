@@ -27,12 +27,12 @@ class ProjectRecord:
     owner_id: str
     owner_username: str
     name: str
-    display_name: str | None = None
     home_node_id: str
     output_dir: str
     state_dir: str
     runtime_dir: str
     status: str
+    display_name: str | None = None
     created_at: str = ""
     updated_at: str = ""
     purged_at: str | None = None
