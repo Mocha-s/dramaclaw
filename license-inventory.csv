@@ -2456,6 +2456,7 @@ src/novelvideo/shared/project_dirs.py,Elastic-2.0,2026 SuperTale contributors,RE
 src/novelvideo/shared/provider_costs.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/shared/provider_errors.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/shared/runtime_env.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+src/novelvideo/shared/service_errors.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/skills/__init__.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/skills/director_scene_catalog.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 src/novelvideo/skills/director_skill.py,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation

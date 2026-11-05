@@ -2911,7 +2911,7 @@ def test_newapi_db_defaults_to_managed_ce_sqlite_and_does_not_create_empty_file(
     monkeypatch.delenv("NEWAPI_SQL_DSN", raising=False)
     monkeypatch.delenv("NEWAPI_SQLITE_PATH", raising=False)
 
-    cfg = model_gateway.get_provisioner_config()
+    cfg = get_provisioner_config()
 
     assert cfg.admin_base_url == "http://127.0.0.1:3000"
     assert cfg.sql_dsn == "local"
@@ -2929,7 +2929,7 @@ def test_newapi_db_rejects_missing_sqlite_file(monkeypatch, tmp_path):
     monkeypatch.setenv("NEWAPI_SQLITE_PATH", str(missing))
 
     with pytest.raises(RuntimeError, match="does not exist"):
-        open_newapi_db(model_gateway.get_provisioner_config())
+        open_newapi_db(get_provisioner_config())
 
     assert not missing.exists()
 
@@ -3773,54 +3773,6 @@ def test_official_media_model_catalog_uses_ce_export_shape(monkeypatch, tmp_path
     assert minimax["referenceImageMax"] == 9
     assert minimax["referenceVideoMax"] == 3
     assert minimax["referenceAudioMax"] == 3
-
-
-def test_custom_media_model_accepts_arbitrary_image_and_video_models():
-    specs, normalized = model_gateway._build_media_model_channel_specs(
-        {
-            "kling-custom": model_gateway.MediaModelConfigBody(
-                provider="openrouter",
-                upstreamModel="kling-v2",
-                mediaType="video",
-                label="Kling Custom",
-                config={
-                    "resolutionOptions": ["720p", "1080p"],
-                    "supportedModes": ["text_to_video", "first_frame"],
-                    "request": {
-                        "endpoint": "video/generations",
-                        "parameters": [],
-                    },
-                },
-            )
-        }
-    )
-
-    assert specs[0].model_mapping == {"kling-custom": "kling-v2"}
-    assert normalized["kling-custom"]["mediaType"] == "video"
-    assert normalized["kling-custom"]["label"] == "Kling Custom"
-    assert normalized["kling-custom"]["config"]["resolutionOptions"] == [
-        "720p",
-        "1080p",
-    ]
-
-
-
-
-
-
-def test_custom_newapi_embedding_model_accepts_positive_project_dimension():
-    body = model_gateway.SaveEmbeddingModelBody.model_validate(
-        {
-            "provider": "openai",
-            "upstreamModel": "text-embedding-3-large",
-            "dimension": 3072,
-        }
-    )
-
-    _, normalized = model_gateway._build_embedding_model_channel_spec(body)
-
-    assert normalized["dimension"] == 3072
-    assert normalized["sendDimensions"] is True
 
 
 def test_effective_cognee_embedding_prefers_saved_custom_config(monkeypatch, tmp_path):

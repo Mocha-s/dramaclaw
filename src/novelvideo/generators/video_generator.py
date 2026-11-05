@@ -2449,7 +2449,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
     def _duration_bounds(self) -> tuple[int, int]:
         from novelvideo.video_duration import video_duration_bounds_for_backend
 
-        bounds = video_duration_bounds_for_backend(f"newapi_{self.model}")
+        bounds = video_duration_bounds_for_backend(self.model)
         if bounds[0] is None or bounds[1] is None:
             return 2, 12
         return int(bounds[0]), int(bounds[1])
@@ -3202,7 +3202,7 @@ class NewApiVideoGenerator(VideoGeneratorBase):
 
         if not is_processing_model:
             duration = normalize_video_duration_for_backend(
-                f"newapi_{self.model}",
+                self.model,
                 duration,
             )
         if duration != original_duration:
