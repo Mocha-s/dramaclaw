@@ -39,6 +39,9 @@ def _common_params(config: Seedance2VideoConfig) -> dict[str, Any]:
         prompt = re.sub(r"@?音频\d+", "声音", prompt)
     if not prompt:
         raise ValueError("seedance2 final_prompt is required")
+    # shortcut: Seedance API rejects prompts > 5000 chars; truncate at word boundary
+    if len(prompt) > 5000:
+        prompt = prompt[:5000].rsplit("\n", 1)[0] if "\n" in prompt[:5000] else prompt[:5000]
     params: dict[str, Any] = {
         "prompt": prompt,
         "duration": int(config.duration),

@@ -3783,7 +3783,12 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                         last_delivery_error = "VIDEO_DELIVERY_TIMEOUT"
                         break
                 else:
-                    polled = await poll_request
+                    try:
+                        polled = await poll_request
+                    except (aiohttp.ClientError, OSError):
+                        # shortcut: transient network drop; retry next interval, max_polls still guards total
+                        await asyncio.sleep(poll_interval)
+                        continue
                 task = self._task_response_data(polled)
                 status = str(task.get("status") or "").lower()
                 progress(0.2 + (poll_count / max(max_polls, 1)) * 0.7)
