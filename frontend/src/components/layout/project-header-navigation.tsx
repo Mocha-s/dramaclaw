@@ -82,7 +82,7 @@ export function ProjectSwitcher({ current }: { current: string }) {
     () =>
       (summaries ?? [])
         .filter((project) => project.status === "active")
-        .map((project) => ({ id: project.id || project.name, name: project.name })),
+        .map((project) => ({ id: project.id || project.name, name: project.name, displayName: project.displayName })),
     [summaries],
   );
   const currentSummary = useMemo(
@@ -91,7 +91,7 @@ export function ProjectSwitcher({ current }: { current: string }) {
       projects.find((project) => project.name === current),
     [current, projects],
   );
-  const currentName = currentSummary?.name ?? current;
+  const currentName = currentSummary ? (currentSummary.displayName || currentSummary.name) : current;
 
   const cancelClose = () => {
     if (closeTimerRef.current === null) return;
@@ -155,7 +155,7 @@ export function ProjectSwitcher({ current }: { current: string }) {
               className="min-h-8 gap-2 rounded-sm px-2 py-1.5 text-xs focus:bg-white/8 focus:text-current"
             >
               <ProjectAvatar name={project.name} />
-              <span className="flex-1 truncate">{project.name}</span>
+              <span className="flex-1 truncate">{project.displayName || project.name}</span>
               {project.id === current ? (
                 <Check className="size-3.5 text-primary" aria-hidden />
               ) : null}
