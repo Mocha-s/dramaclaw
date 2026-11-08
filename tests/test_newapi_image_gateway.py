@@ -664,7 +664,7 @@ def test_newapi_image_call_applies_admin_min_pixels(monkeypatch):
     assert "extra_fields" not in posted["json"]
 
 
-def test_newapi_image_size_form_follows_gateway_source(monkeypatch):
+def test_newapi_image_size_always_sends_pixel_pairs(monkeypatch):
     import httpx
     from novelvideo.generators import nanobanana_grid
 
@@ -695,7 +695,8 @@ def test_newapi_image_size_form_follows_gateway_source(monkeypatch):
 
     monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
 
-    # Third-party groups take the ratio string (variant models ignore WxH pairs).
+    # Both third-party and legacy paths send the computed WIDTHxHEIGHT pair;
+    # the upstream relay only honours pixel pairs, ratio strings fall to square.
     run_async(
         nanobanana_grid._call_newapi_image_api(
             api_key="newapi-token",
@@ -722,10 +723,13 @@ def test_newapi_image_size_form_follows_gateway_source(monkeypatch):
 
     from novelvideo.generators.nanobanana_grid import resolve_openai_image_size
 
+    third_party_size = resolve_openai_image_size(
+        "9:16", "4K", "gpt-image-2.5-sunburst-4k", allow_dynamic_resolution=True
+    )
     legacy_size = resolve_openai_image_size(
         "9:16", "1K", "LingShan-G2", allow_dynamic_resolution=True
     )
-    assert posted[0]["size"] == "9:16"
+    assert posted[0]["size"] == third_party_size
     assert posted[1]["size"] == legacy_size
 
 
@@ -896,7 +900,7 @@ def test_newapi_image_auto_ratio_follows_reference_geometry(monkeypatch):
 
     assert image_bytes == b"image-bytes"
     assert error == ""
-    assert posted["json"]["size"] == "16:9"
+    assert posted["json"]["size"] == "2048x1152"
     assert posted["json"]["metadata"]["ratio"] == "16:9"
     assert posted["json"]["metadata"]["resolution"] == "2k"
 
@@ -1422,8 +1426,8 @@ def test_newapi_safe_request_context_records_protocol_and_path_without_reference
     assert "signed-secret" not in str(credentialed)
 
 
-def test_newapi_image_reference_request_uses_catalog_endpoint(monkeypatch):
-    """A catalog can route reference-image requests through generations."""
+def test_newapi_image_reference_request_always_uses_edits_endpoint(monkeypatch):
+    """Reference-image requests always route to /images/edits regardless of catalog endpoint."""
     import json
     import httpx
     from novelvideo.generators import nanobanana_grid
@@ -1472,7 +1476,7 @@ def test_newapi_image_reference_request_uses_catalog_endpoint(monkeypatch):
 
     assert image_bytes == b"generated-image"
     assert error == ""
-    assert posted[0][0] == "/v1/images/generations"
+    assert posted[0][0] == "/v1/images/edits"
     assert posted[0][1]["images"] == [{"image_url": "https://relay.test/source.png"}]
     assert "image" not in posted[0][1]
 

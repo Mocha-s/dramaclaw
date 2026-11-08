@@ -3971,7 +3971,6 @@ async def _call_newapi_image_api(
         return None, "", "Unsupported reference image format"
     aspect_ratio = str(image_config.get("aspect_ratio") or "1:1").strip().lower() or "1:1"
     image_size = normalize_image_size(str(image_config.get("image_size") or "1K"), "newapi")
-    gateway_source = str(image_config.get("gateway_source") or "").strip().lower()
     from novelvideo.media_model_request_schema import normalize_media_resolution_value
 
     resolution = normalize_media_resolution_value(image_size)
@@ -4012,13 +4011,7 @@ async def _call_newapi_image_api(
             )
         except ValueError as exc:
             return None, "", str(exc)
-        if gateway_source in {"third_party", "sub2api"}:
-            # Third-party groups follow the documented "ratio or WIDTHxHEIGHT"
-            # size contract, but the variant models (flare/sunburst) only
-            # honour the ratio string and answer a square frame for WxH pairs.
-            payload["size"] = aspect_ratio
-        else:
-            payload["size"] = size
+        payload["size"] = size
     include_quality = True
     if include_quality:
         quality = _normalize_newapi_image_quality(image_config.get("quality"))
@@ -4120,16 +4113,7 @@ async def _call_newapi_image_api(
                 return None, "", f"media relay upload failed ({code})"
             return None, "", f"media relay upload failed: {exc}"
     if reference_images:
-        configured_endpoint = str(request_schema.get("endpoint") or "").strip()
-        if (
-            reference_image_format != "multipart"
-            and configured_endpoint == "images/generations"
-        ):
-            request_path = "/images/generations"
-        else:
-            # Multipart image-edit requests use /edits even when their catalog
-            # endpoint describes text-to-image generation.
-            request_path = "/images/edits"
+        request_path = "/images/edits"
     else:
         request_path = "/images/generations"
 
