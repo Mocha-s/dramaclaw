@@ -4111,6 +4111,8 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                     "canceled",
                     "cancelled",
                     "expired",
+                    "refunding",
+                    "refunded",
                 }:
                     await update_current_model_call_log(
                         response_payload=polled,
