@@ -12,7 +12,6 @@ import {
 import { Scissors } from 'lucide-react';
 
 import {
-  CANVAS_NODE_TYPES,
   type CanvasEdge,
   type CanvasNode,
 } from '@/features/canvas/domain/canvasNodes';
@@ -184,24 +183,13 @@ export const DisconnectableEdge = memo(function DisconnectableEdge(props: EdgePr
     targetY,
   ]);
 
-  // 直接在 selector 里算成布尔值:返回原始值,Object.is 比较使本边只在「是否处理中」
-  // 翻转时才重渲染,而非每次任意节点变化都重算。
+  // 直接在 selector 里算成布尔值：Object.is 比较使本边只在「是否处理中」翻转时才
+  // 重渲染，而非每次任意节点变化都重算。任一端点正在生成时高亮虚线流动动画。
   const isProcessingEdge = useCanvasStore((state) => {
-    const sourceNode = state.nodes.find((node) => node.id === source);
-    const targetNode = state.nodes.find((node) => node.id === target);
-
-    if (!sourceNode || !targetNode || targetNode.type !== CANVAS_NODE_TYPES.exportImage) {
-      return false;
-    }
-
-    const isSupportedSource =
-      sourceNode.type === CANVAS_NODE_TYPES.storyboardGen ||
-      sourceNode.type === CANVAS_NODE_TYPES.imageEdit;
-    if (!isSupportedSource) {
-      return false;
-    }
-
-    return (targetNode.data as { isGenerating?: boolean } | undefined)?.isGenerating === true;
+    const gen = (id: string) =>
+      (state.nodes.find((n) => n.id === id)?.data as { isGenerating?: boolean } | undefined)
+        ?.isGenerating === true;
+    return gen(source) || gen(target);
   });
 
   const dataRecord = recordValue(data);

@@ -402,8 +402,10 @@ from novelvideo.freezone.video_node import (
     update_video_character_folder,
     validate_omni_reference_audio_durations,
     validate_omni_reference_limits,
+    validate_omni_reference_video_durations,
     MAX_OMNI_REFERENCE_AUDIO_SECONDS,
     MAX_OMNI_REFERENCE_AUDIO_TOTAL_SECONDS,
+    MAX_OMNI_REFERENCE_VIDEO_SECONDS,
     MIN_OMNI_REFERENCE_AUDIO_SECONDS,
 )
 from novelvideo.models import CharacterIdentity, beat_scene_id, real_detected_identities
@@ -9819,6 +9821,44 @@ async def _validate_catalog_reference_audio_items(
     )
 
 
+async def _validate_catalog_reference_video_items(
+    reference_items: list[dict[str, str]],
+    *,
+    capabilities: dict[str, Any] | None,
+) -> None:
+    """参考视频单条时长校验。
+
+    目录里可配 referenceVideoMaxSeconds；没配就用默认 15s。探测不出的条目跳过，
+    与音频校验同一口径。只拦单条上限，不限总和。
+    """
+    video_items = [item for item in reference_items if item["type"] == "video"]
+    if not video_items:
+        return
+
+    max_seconds: float | None
+    catalog_value = (
+        capabilities.get("referenceVideoMaxSeconds") if capabilities else None
+    )
+    if type(catalog_value) in (int, float) and math.isfinite(catalog_value) and catalog_value > 0:
+        max_seconds = float(catalog_value)
+    else:
+        max_seconds = MAX_OMNI_REFERENCE_VIDEO_SECONDS
+
+    async def _probe(item: dict[str, str]) -> tuple[str, float | None]:
+        try:
+            return item["path"], await probe_video_duration_seconds(item["path"])
+        except Exception:  # noqa: BLE001 - 探测不出不参与判定，交给厂商判
+            return item["path"], None
+
+    probed = await asyncio.gather(*(_probe(item) for item in video_items))
+    durations = [
+        (Path(path).name or f"video{index}", seconds)
+        for index, (path, seconds) in enumerate(probed, start=1)
+    ]
+    validate_omni_reference_video_durations(durations, max_seconds=max_seconds)
+
+
+
 def _catalog_duration_bounds(
     capabilities: dict[str, Any] | None,
 ) -> tuple[int | None, int | None]:
@@ -11092,9 +11132,9 @@ async def freezone_video_omni_gen(
     raw_reference_items = [item.model_dump() for item in body.references]
     reference_limits = _catalog_reference_limits(
         capabilities,
-        image_default=9,
-        video_default=3,
-        audio_default=3,
+        image_default=30,
+        video_default=10,
+        audio_default=10,
         file_default=0,
         link_default=0,
     )
@@ -11119,7 +11159,7 @@ async def freezone_video_omni_gen(
                         "referenceLinkMax",
                     )
                 )
-                else 12
+                else 30
             ),
         )
     except ValueError as exc:
@@ -11175,6 +11215,10 @@ async def freezone_video_omni_gen(
             reference_items,
             capabilities=capabilities,
             backend=backend,
+        )
+        await _validate_catalog_reference_video_items(
+            reference_items,
+            capabilities=capabilities,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc

@@ -624,15 +624,18 @@ def summarize_omni_reference_counts(items: list[dict[str, Any]]) -> dict[str, in
     }
 
 
+MAX_OMNI_REFERENCE_VIDEO_SECONDS = 15.0
+
+
 def validate_omni_reference_limits(
     items: list[dict[str, Any]],
     *,
-    image_max: int = 9,
-    video_max: int = 3,
-    audio_max: int = 3,
+    image_max: int = 30,
+    video_max: int = 10,
+    audio_max: int = 10,
     file_max: int = 0,
     link_max: int = 0,
-    total_max: int = 12,
+    total_max: int = 30,
 ) -> None:
     counts = summarize_omni_reference_counts(items)
     if counts["total_count"] > total_max:
@@ -839,6 +842,8 @@ async def run_trusted_freezone_video_gen(
 MIN_OMNI_REFERENCE_AUDIO_SECONDS = 1.8
 MAX_OMNI_REFERENCE_AUDIO_SECONDS = 15.2
 MAX_OMNI_REFERENCE_AUDIO_TOTAL_SECONDS = 15.2
+# 参考视频单条时长上限（用户可配；默认 15s 与全能参考素材策略一致）。
+MAX_OMNI_REFERENCE_VIDEO_SECONDS = 15.0
 
 
 def _format_seconds(value: float) -> str:
@@ -930,6 +935,39 @@ def validate_omni_reference_audio_durations(
             f"{media_label} references total duration must be <= "
             f"{_format_seconds(total_max_seconds)}s, got {_format_seconds(total)}s: "
             + _clips(measured)
+        )
+
+
+def validate_omni_reference_video_durations(
+    durations: list[tuple[str, float | None]],
+    *,
+    max_seconds: float | None = MAX_OMNI_REFERENCE_VIDEO_SECONDS,
+    media_label: str = "video",
+) -> None:
+    """参考视频单条时长兜底校验，入参是 `(标签, 秒数)`，秒数 None = 探测不出。
+
+    与音频校验同一口径：探测不出的条目不参与判定，宁可放过去让厂商判，也不要凭空
+    拦死一次正常提交。只校验单条上限，不限总时长——参考视频是并行消费的素材，
+    总和没有厂商硬规则。
+    """
+    measured = [
+        (label, float(seconds))
+        for label, seconds in durations
+        if isinstance(seconds, (int, float))
+        and not isinstance(seconds, bool)
+        and seconds > 0
+    ]
+    if not measured or max_seconds is None:
+        return
+
+    too_long = [item for item in measured if _exceeds(item[1], max_seconds)]
+    if too_long:
+        clips = ", ".join(
+            f"{label} ({_format_seconds(value)}s)" for label, value in too_long
+        )
+        raise ValueError(
+            f"{media_label} reference duration must be <= "
+            f"{_format_seconds(max_seconds)}s: {clips}"
         )
 
 
