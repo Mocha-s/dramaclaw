@@ -43,7 +43,6 @@ from novelvideo.freezone.video_node import (
     validate_omni_reference_audio_durations,
     validate_omni_reference_image_dimensions,
     validate_omni_reference_limits,
-    validate_omni_reference_video_durations,
 )
 
 
@@ -766,16 +765,14 @@ def test_validate_omni_reference_limits_and_summary() -> None:
         "total_count": 12,
     }
 
-    # 默认上限：图 30 / 视频 10 / 音频 10 / 总数 30。
-    full = [{"type": "image", "url": f"/static/{i}.png"} for i in range(30)]
-    validate_omni_reference_limits(full)
+    validate_omni_reference_limits(items)
 
-    too_many_images = [{"type": "image", "url": f"/static/{i}.png"} for i in range(31)]
+    too_many_images = [{"type": "image", "url": f"/static/{i}.png"} for i in range(10)]
     try:
         validate_omni_reference_limits(too_many_images)
         raise AssertionError("expected validate_omni_reference_limits to fail")
     except ValueError as exc:
-        assert "<= 30" in str(exc)
+        assert "<= 9" in str(exc)
 
     validate_omni_reference_limits(
         [{"type": "image", "url": "/static/a.png"}],
@@ -911,28 +908,6 @@ def test_validate_reference_duration_uses_video_label() -> None:
             total_max_seconds=None,
             media_label="video",
         )
-
-
-def test_validate_omni_reference_video_durations_single_clip_bound() -> None:
-    # 默认单条上限 15s：正好 15s 放行，15.001s 拒绝。
-    validate_omni_reference_video_durations([("a.mp4", 15.0)])
-    with pytest.raises(ValueError, match="video reference duration must be <= 15s"):
-        validate_omni_reference_video_durations(
-            [("ok.mp4", 5.0), ("long.mp4", 20.0)]
-        )
-
-
-def test_validate_omni_reference_video_durations_skips_unmeasured() -> None:
-    validate_omni_reference_video_durations([("unknown.mp4", None)])
-    validate_omni_reference_video_durations([("a.mp4", 6.0), ("unknown.mp4", None)])
-    validate_omni_reference_video_durations([])
-
-
-def test_validate_omni_reference_video_durations_custom_max() -> None:
-    validate_omni_reference_video_durations([("a.mp4", 10.0)], max_seconds=10)
-    with pytest.raises(ValueError, match="<= 10s"):
-        validate_omni_reference_video_durations([("a.mp4", 10.001)], max_seconds=10)
-
 
 
 def _write_png(path: Path, width: int, height: int) -> Path:

@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
+// 这里取的是 i18next 默认实例（`@/i18n` 初始化的就是它）。不 import `@/i18n`
+// 本身，是因为那个模块会顺带拉进 react-i18next / HttpBackend，把它塞进这条被
+// 到处 import 的底层链路上，会让所有 mock 掉 react-i18next 的测试在 import 期炸掉。
+import i18n from 'i18next';
+
 import {
   isAudioNode,
   isExportImageNode,
@@ -20,21 +25,21 @@ import {
  * 2.0。按当前模式那格拦，等于把这些自动救场全部拦死 —— 用户连不上第二张图，也就
  * 永远触发不了「首帧 → 全能参考」的自动切换。
  *
- * 所以口径取**能力包络**：图 30 / 视频 10 / 音频 10 / 总数 30，与后端 omni-gen 的
- * `validate_omni_reference_limits`（src/novelvideo/freezone/video_node.py）
- * 逐项一致。超出这条线由后端报错提示。
+ * 所以口径取**能力包络**：图 9 / 视频 3 / 音频 3 / 总数 12，与后端 omni-gen 的
+ * `validate_omni_reference_limits`（src/novelvideo/freezone/video_node.py:522）
+ * 逐项一致。越过这条线不存在任何可切换的模式或模型能消费，拦掉才是帮用户。
  *
  * 表里更小的那些数字（首帧 1 / 首尾帧 2 / 视频编辑 5 张参考图）继续由「自动切模式」
  * 和提交守卫负责，不在建边这层拦。
  *
- * 30/10/10/30 只是**没有媒体目录配置时的默认值**，不是所有模型的硬上限 ——
+ * 9/3/3/12 只是**没有媒体目录配置时的默认值**，不是所有模型的硬上限 ——
  * 见 `videoReferenceEnvelopeForModel`。
  */
 export const VIDEO_REFERENCE_ENVELOPE = {
-  image: 30,
-  video: 10,
-  audio: 10,
-  total: 30,
+  image: 9,
+  video: 3,
+  audio: 3,
+  total: 12,
 } as const;
 
 export interface VideoReferenceEnvelope {
@@ -127,29 +132,102 @@ export function classifyVideoReferenceMedia(
   return null;
 }
 
+/** 每类素材超额时那句提示的词条 key——整句都在词条里，别在源码里拼半句。 */
+const KIND_LIMIT_KEYS: Record<VideoReferenceMediaKind, string> = {
+  image: 'canvas.videoReference.limitImage',
+  video: 'canvas.videoReference.limitVideo',
+  audio: 'canvas.videoReference.limitAudio',
+};
 
 /**
- * 建边校验：已放开前端限制，由网关在提交时报错。
- * 调用方保持不变，函数始终返回 null（不拦截）。
+ * 这条连线会不会把视频节点的素材撑过能力包络？返回非空理由则应拒绝建边。
+ *
+ * 所有建边路径共用（手动拖线的 `isValidConnection` 让落点变灰、store 的 `onConnect`
+ * 兜底其余路径），口径必须同源：只在一处拦会表现成「拖过去高亮成合法、一松手什么
+ * 也没有」。
+ *
+ * 目标不是视频节点、源不是素材节点、或源已经连着了（重复连线）一律放行。
  */
 export function videoReferenceConnectionRejection(
-  _nodes: readonly CanvasNode[],
-  _edges: readonly { source: string; target: string }[],
-  _connection: { source?: string | null; target?: string | null },
-  _resolveEnvelope: VideoReferenceEnvelopeResolver = DEFAULT_ENVELOPE_RESOLVER,
+  nodes: readonly CanvasNode[],
+  edges: readonly { source: string; target: string }[],
+  connection: { source?: string | null; target?: string | null },
+  resolveEnvelope: VideoReferenceEnvelopeResolver = DEFAULT_ENVELOPE_RESOLVER,
 ): string | null {
+  const { source, target } = connection;
+  if (!source || !target) return null;
+  const targetNode = nodes.find((node) => node.id === target);
+  if (!isVideoNode(targetNode)) return null;
+  const envelope = resolveEnvelope(targetNode);
+  const incoming = classifyVideoReferenceMedia(
+    nodes.find((node) => node.id === source),
+  );
+  if (!incoming) return null;
+
+  const counted = new Set<string>();
+  const counts = { image: 0, video: 0, audio: 0 };
+  for (const edge of edges) {
+    if (edge.target !== target) continue;
+    // 同一个源重复连线不叠加计数；它本来也建不出第二条边。
+    if (edge.source === source) return null;
+    if (counted.has(edge.source)) continue;
+    counted.add(edge.source);
+    const kind = classifyVideoReferenceMedia(
+      nodes.find((node) => node.id === edge.source),
+    );
+    if (kind) counts[kind] += 1;
+  }
+
+  if (counts[incoming] + 1 > envelope[incoming]) {
+    return i18n.t(KIND_LIMIT_KEYS[incoming], { limit: envelope[incoming] });
+  }
+  const total = counts.image + counts.video + counts.audio;
+  if (total + 1 > envelope.total) {
+    return i18n.t('canvas.videoReference.limitTotal', { limit: envelope.total });
+  }
   return null;
 }
 
 /**
- * 类型变更后的重算：已放开前端限制，始终返回空（不强删溢出边）。
- * 超限由网关在提交时报错。
+ * 某个视频节点当前**已经**超出包络的入边（返回要清掉的边 id）。
+ *
+ * 建边时校验挡不住类型后变的情况：外部文件导入是「先建空 Upload 并连边、再按 MIME
+ * 转成 video/audio 节点」，连边那一刻空 Upload 只能按图片计数，4 个视频文件因此全落
+ * 在图片上限(9)以内 —— 等转换完成就成了 4 条视频引用，超出视频上限(3)。所以
+ * `convertNodeType` 这类会改变素材类型的操作之后必须拿这个函数重算一遍。
+ *
+ * 保留策略是**先来后到**：按边的插入顺序装桶，装不下的才算溢出。刚转换完的那条边是
+ * 最新的，于是被清掉的就是它 —— 用户看到的是「最后拖进来的那个没接上」，而不是
+ * 随机少一条老连线。
  */
 export function overflowingVideoReferenceEdgeIds(
-  _nodes: readonly CanvasNode[],
-  _edges: readonly { id: string; source: string; target: string }[],
-  _videoTargetId: string,
-  _resolveEnvelope: VideoReferenceEnvelopeResolver = DEFAULT_ENVELOPE_RESOLVER,
+  nodes: readonly CanvasNode[],
+  edges: readonly { id: string; source: string; target: string }[],
+  videoTargetId: string,
+  resolveEnvelope: VideoReferenceEnvelopeResolver = DEFAULT_ENVELOPE_RESOLVER,
 ): string[] {
-  return [];
+  const targetNode = nodes.find((node) => node.id === videoTargetId);
+  if (!isVideoNode(targetNode)) return [];
+  const envelope = resolveEnvelope(targetNode);
+
+  const counts = { image: 0, video: 0, audio: 0 };
+  let total = 0;
+  const counted = new Set<string>();
+  const overflow: string[] = [];
+  for (const edge of edges) {
+    if (edge.target !== videoTargetId) continue;
+    if (counted.has(edge.source)) continue;
+    counted.add(edge.source);
+    const kind = classifyVideoReferenceMedia(
+      nodes.find((node) => node.id === edge.source),
+    );
+    if (!kind) continue;
+    if (counts[kind] + 1 > envelope[kind] || total + 1 > envelope.total) {
+      overflow.push(edge.id);
+      continue;
+    }
+    counts[kind] += 1;
+    total += 1;
+  }
+  return overflow;
 }
