@@ -36,10 +36,10 @@ import {
  * 见 `videoReferenceEnvelopeForModel`。
  */
 export const VIDEO_REFERENCE_ENVELOPE = {
-  image: 9,
-  video: 3,
-  audio: 3,
-  total: 12,
+  image: 30,
+  video: 10,
+  audio: 10,
+  total: 30,
 } as const;
 
 export interface VideoReferenceEnvelope {

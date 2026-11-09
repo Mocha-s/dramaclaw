@@ -183,9 +183,9 @@ describe("videoReferenceConnectionRejection — 建边时的素材上限", () =>
     }
   });
 
-  // 后端 validate_omni_reference_limits 除了逐项还有 total_max=12：图 9 + 视频 3
-  // 已经顶满总数，再连音频逐项没超、总数超了。
-  it("逐项都没超但总数超 12 → 也拒绝", () => {
+  // 后端 validate_omni_reference_limits 除了逐项还有 total：图30+视频10 已经顶满
+  // 总数 30，再连音频逐项没超、总数超了。
+  it("逐项都没超但总数超 → 也拒绝", () => {
     const { nodes, edges } = scene([
       ...fill(CANVAS_NODE_TYPES.imageGen, VIDEO_REFERENCE_ENVELOPE.image),
       ...fill(CANVAS_NODE_TYPES.video, VIDEO_REFERENCE_ENVELOPE.video),
@@ -221,7 +221,7 @@ describe("videoReferenceConnectionRejection — 建边时的素材上限", () =>
 
   // 包络由调用方解析后喂进来：目录里配了 image=10 的模型，第 10 张必须放行。
   it("按模型包络放行 —— 目录配 image=10 时第 10 张连得上", () => {
-    const { nodes, edges } = scene(fill(CANVAS_NODE_TYPES.imageGen, VIDEO_REFERENCE_ENVELOPE.image));
+    const { nodes, edges } = scene(fill(CANVAS_NODE_TYPES.imageGen, 9));
     const extra = node("extra", CANVAS_NODE_TYPES.imageGen);
     expect(
       videoReferenceConnectionRejection(
@@ -279,14 +279,16 @@ describe("overflowingVideoReferenceEdgeIds — 类型变了之后的重算", () 
     ]);
   });
 
-  it("逐项没超但总数超 12 时也算溢出", () => {
+  it("逐项没超但总数超时也算溢出", () => {
+    // 图 15 + 视频 10 + 音频 6 = 31，逐项都不超（image≤30/video≤10/audio≤10），
+    // 但总数 31 > 30，最后一条音频溢出。
     const { nodes, edges } = graph([
-      ...fill(CANVAS_NODE_TYPES.imageGen, VIDEO_REFERENCE_ENVELOPE.image),
-      ...fill(CANVAS_NODE_TYPES.video, VIDEO_REFERENCE_ENVELOPE.video),
-      CANVAS_NODE_TYPES.audio,
+      ...fill(CANVAS_NODE_TYPES.imageGen, 15),
+      ...fill(CANVAS_NODE_TYPES.video, 10),
+      ...fill(CANVAS_NODE_TYPES.audio, 6),
     ]);
     expect(overflowingVideoReferenceEdgeIds(nodes, edges, "video-target")).toEqual([
-      `e-src-${VIDEO_REFERENCE_ENVELOPE.total}`,
+      `e-src-30`,
     ]);
   });
 

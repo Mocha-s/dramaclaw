@@ -342,10 +342,10 @@ const REFERENCE_CAPS_BY_MODE: Partial<
 > = {
   firstFrame: { image: 1, video: 0, audio: 0 },
   imageToVideo: { image: 1, video: 0, audio: 0 },
-  imageReference: { image: 9, video: 0, audio: 0 },
+  imageReference: { image: 30, video: 0, audio: 0 },
   videoEdit: { image: 5, video: 1, audio: 0 },
   videoExtend: { image: 0, video: 1, audio: 0 },
-  allReference: { image: 9, video: 3, audio: 3 },
+  allReference: { image: 30, video: 10, audio: 10 },
   firstLastFrame: { image: 2, video: 0, audio: 0 },
 };
 
@@ -850,7 +850,7 @@ export const VideoNode = memo(
       const limit =
         genMode === "videoEdit" || genMode === "videoExtend"
           ? 1
-          : (selectedVideoModel?.referenceVideoMax ?? 3);
+          : (selectedVideoModel?.referenceVideoMax ?? 10);
       const videos = ordered.slice(0, Math.max(limit, 0));
       if (videos.length === 0) {
         return { present: false, ready: true, durationSeconds: 0 };
@@ -2713,10 +2713,10 @@ export const VideoNode = memo(
               nodeId: targetId,
             });
         } else if (genMode === "imageToVideo" || genMode === "imageReference") {
-          // Unified i2v endpoint: 1 image = 图生视频, 2-9 images = 图片参考视频.
+          // Unified i2v endpoint: 1 image = 图生视频, 2-30 images = 图片参考视频.
           const imageUrls = collectUpstreamImageUrls().slice(
             0,
-            referenceCaps?.image ?? 9,
+            referenceCaps?.image ?? 30,
           );
           if (imageUrls.length === 0) {
             console.warn("[video-node] i2v submit without any upstream image");
@@ -2863,10 +2863,10 @@ export const VideoNode = memo(
             return;
           }
           // Omni-gen: classify each upstream node by its media type.
-          const caps = referenceCaps ?? { image: 9, video: 3, audio: 3 };
+          const caps = referenceCaps ?? { image: 30, video: 10, audio: 10 };
           const totalReferenceLimit = hasConfiguredReferenceCaps(selectedVideoModel)
             ? caps.image + caps.video + caps.audio
-            : 12;
+            : 30;
           const upstream = collectUpstream();
           const references: FreezoneVideoReferenceItem[] = [];
           // 与 references 里 type==="audio" 的项一一对应，用于提交前逐条校验音频时长。

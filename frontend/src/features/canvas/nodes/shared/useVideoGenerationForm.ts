@@ -559,7 +559,7 @@ export function useVideoGenerationForm(
       data.referenceOrder,
     ).filter((node) => Boolean(referenceVideoUrl(node)));
     const limit =
-      genMode === "videoEdit" ? 1 : (selectedVideoModel?.referenceVideoMax ?? 3);
+      genMode === "videoEdit" ? 1 : (selectedVideoModel?.referenceVideoMax ?? 10);
     const videos = ordered.slice(0, Math.max(limit, 0));
     if (videos.length === 0) {
       return { present: false, ready: true, durationSeconds: 0 };
@@ -1372,7 +1372,7 @@ export function useVideoGenerationForm(
         // Unified i2v endpoint: 1 image = 图生视频, 2-9 images = 图片参考视频.
         const imageUrls = collectUpstreamImageUrls().slice(
           0,
-          referenceCaps?.image ?? 9,
+          referenceCaps?.image ?? 30,
         );
         if (imageUrls.length === 0) {
           console.warn("[video-node] i2v submit without any upstream image");
@@ -1484,12 +1484,12 @@ export function useVideoGenerationForm(
           return {};
         }
         // Omni-gen: classify each upstream node by its media type.
-        // 逐类型上限以媒体目录为准（没配就是 image≤9 / video≤3 / audio≤3）；总数
-        // 上限只有在模型自带配置时才按三者之和算，否则沿用后端的硬上限 12。
-        const caps = referenceCaps ?? { image: 9, video: 3, audio: 3 };
+        // 逐类型上限以媒体目录为准（没配就是 image≤30 / video≤10 / audio≤10）；总数
+        // 上限只有在模型自带配置时才按三者之和算，否则沿用后端的硬上限 30。
+        const caps = referenceCaps ?? { image: 30, video: 10, audio: 10 };
         const totalReferenceLimit = hasConfiguredReferenceCaps(selectedVideoModel)
           ? caps.image + caps.video + caps.audio
-          : 12;
+          : 30;
         const upstream = collectUpstream();
         const references: FreezoneVideoReferenceItem[] = [];
         const audioRefs: {

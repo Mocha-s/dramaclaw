@@ -41,10 +41,10 @@ export const REFERENCE_CAPS_BY_MODE: Partial<
 > = {
   firstFrame: { image: 1, video: 0, audio: 0 },
   imageToVideo: { image: 1, video: 0, audio: 0 },
-  imageReference: { image: 9, video: 0, audio: 0 },
+  imageReference: { image: 30, video: 0, audio: 0 },
   videoEdit: { image: 5, video: 1, audio: 0 },
   videoExtend: { image: 0, video: 1, audio: 0 },
-  allReference: { image: 9, video: 3, audio: 3 },
+  allReference: { image: 30, video: 10, audio: 10 },
   firstLastFrame: { image: 2, video: 0, audio: 0 },
 };
 
