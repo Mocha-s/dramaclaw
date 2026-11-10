@@ -6142,7 +6142,12 @@
     }
   },
   "modelPicker": {
-    "price": {"perRequest": "/req", "perSecond": "/s", "perImage": "/img", "from": "a partir de"},
+    "price": {
+      "perRequest": "/req",
+      "perSecond": "/s",
+      "perImage": "/img",
+      "from": "a partir de"
+    },
     "searchPlaceholder": "Pesquisar modelos",
     "noMatch": "Nenhum modelo correspondente",
     "info": {
@@ -7902,7 +7907,11 @@
           "videoFrameRate": "Conversão de taxa de quadros",
           "videoEdit": "Edição de vídeo",
           "videoExtend": "Extensão de vídeo",
-          "allReference": "Referência total"
+          "allReference": "Referência total",
+          "textToVideo": "Texto para vídeo",
+          "imageToVideo": "Imagem para vídeo",
+          "imageReference": "Referência de imagem",
+          "firstFrame": "Primeiro quadro"
         },
         "modelSearch": "Filter models",
         "fetchModels": "Fetch models",

@@ -1078,11 +1078,15 @@ function ThirdPartyGroupCard({
 }
 
 const THIRD_PARTY_VIDEO_MODE_TOGGLES: ReadonlyArray<{ value: string; labelKey: string }> = [
+  { value: "text_to_video", labelKey: "settings.modelConfig.thirdParty.modes.textToVideo" },
+  { value: "image_to_video", labelKey: "settings.modelConfig.thirdParty.modes.imageToVideo" },
+  { value: "image_reference", labelKey: "settings.modelConfig.thirdParty.modes.imageReference" },
+  { value: "first_frame", labelKey: "settings.modelConfig.thirdParty.modes.firstFrame" },
+  { value: "all_reference", labelKey: "settings.modelConfig.thirdParty.modes.allReference" },
   { value: "video_upscale", labelKey: "settings.modelConfig.thirdParty.modes.videoUpscale" },
   { value: "video_frame_rate", labelKey: "settings.modelConfig.thirdParty.modes.videoFrameRate" },
   { value: "video_edit", labelKey: "settings.modelConfig.thirdParty.modes.videoEdit" },
   { value: "video_extend", labelKey: "settings.modelConfig.thirdParty.modes.videoExtend" },
-  { value: "all_reference", labelKey: "settings.modelConfig.thirdParty.modes.allReference" },
 ];
 
 function CustomLlmSettings({

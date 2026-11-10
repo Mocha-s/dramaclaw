@@ -6142,7 +6142,12 @@
     }
   },
   "modelPicker": {
-    "price": {"perRequest": "/req", "perSecond": "/s", "perImage": "/img", "from": "from"},
+    "price": {
+      "perRequest": "/req",
+      "perSecond": "/s",
+      "perImage": "/img",
+      "from": "from"
+    },
     "searchPlaceholder": "Search models",
     "noMatch": "No matching models",
     "info": {
@@ -7902,7 +7907,11 @@
           "videoFrameRate": "Frame-rate conversion",
           "videoEdit": "Video edit",
           "videoExtend": "Video extend",
-          "allReference": "All-reference"
+          "allReference": "All-reference",
+          "textToVideo": "Text-to-video",
+          "imageToVideo": "Image-to-video",
+          "imageReference": "Image reference",
+          "firstFrame": "First frame"
         },
         "modelSearch": "Filter models",
         "fetchModels": "Fetch models",

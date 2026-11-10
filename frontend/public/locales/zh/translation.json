@@ -6142,7 +6142,12 @@
     }
   },
   "modelPicker": {
-    "price": {"perRequest": "/次", "perSecond": "/秒", "perImage": "/张", "from": "起"},
+    "price": {
+      "perRequest": "/次",
+      "perSecond": "/秒",
+      "perImage": "/张",
+      "from": "起"
+    },
     "searchPlaceholder": "搜索模型",
     "noMatch": "没有匹配的模型",
     "info": {
@@ -7902,7 +7907,11 @@
           "videoFrameRate": "视频补帧",
           "videoEdit": "视频编辑",
           "videoExtend": "视频续写",
-          "allReference": "全能参考"
+          "allReference": "全能参考",
+          "textToVideo": "文生视频",
+          "imageToVideo": "图生视频",
+          "imageReference": "图片参考",
+          "firstFrame": "首帧"
         },
         "modelSearch": "筛选模型",
         "fetchModels": "拉取模型列表",

@@ -6019,7 +6019,12 @@
     }
   },
   "modelPicker": {
-    "price": {"perRequest": "/lần", "perSecond": "/giây", "perImage": "/ảnh", "from": "từ"},
+    "price": {
+      "perRequest": "/lần",
+      "perSecond": "/giây",
+      "perImage": "/ảnh",
+      "from": "từ"
+    },
     "searchPlaceholder": "Tìm model",
     "noMatch": "Không có model phù hợp",
     "info": {
@@ -7571,7 +7576,11 @@
           "videoFrameRate": "Chuyển đổi tốc độ khung hình",
           "videoEdit": "Chỉnh sửa video",
           "videoExtend": "Kéo dài video",
-          "allReference": "Tham chiếu toàn bộ"
+          "allReference": "Tham chiếu toàn bộ",
+          "textToVideo": "Text-to-video",
+          "imageToVideo": "Image-to-video",
+          "imageReference": "Tham chiếu hình ảnh",
+          "firstFrame": "Khung đầu"
         },
         "modelSearch": "Lọc model",
         "fetchModels": "Lấy danh sách model",
