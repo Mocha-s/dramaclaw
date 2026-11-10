@@ -70,7 +70,7 @@ logger = logging.getLogger(__name__)
 # 确保加载 .env 环境变量
 load_dotenv()
 
-NEWAPI_VIDEO_HTTP_TIMEOUT_SECONDS = 1800.0
+NEWAPI_VIDEO_HTTP_TIMEOUT_SECONDS = 3600.0
 NEWAPI_MEDIA_INPUT_MIN_TTL_SECONDS = 2 * 60 * 60
 _POST_ACCEPT_AUTHZ_MAX_RETRIES = 5
 _POST_ACCEPT_AUTHZ_RETRY_BASE_SECONDS = 2.0
@@ -3107,6 +3107,94 @@ class NewApiVideoGenerator(VideoGeneratorBase):
         except Exception as exc:
             raise VideoEgressError("EGRESS_OPERATION_TRANSITION_FAILED") from None
 
+    async def recover_task(
+        self,
+        task_id: str,
+        output_path: str,
+        *,
+        project_output_dir: str | None = None,
+        duration: float = 5.0,
+        on_log: Optional[Callable[[str], None]] = None,
+        on_progress: Optional[Callable[[float], None]] = None,
+    ) -> "VideoGenResult | None":
+        """Re-check a previously timed-out provider task and download if succeeded.
+
+        Returns VideoGenResult(DONE) on success, None otherwise (still pending,
+        upstream failed, or query error). Caller decides what to do next.
+        """
+
+        def log(msg: str) -> None:
+            if on_log:
+                on_log(msg)
+
+        def progress(val: float) -> None:
+            if on_progress:
+                on_progress(val)
+
+        from novelvideo.video_request_usage import update_video_request_status
+
+        def update_status(status: str, error: str | None = None) -> None:
+            if project_output_dir:
+                update_video_request_status(
+                    project_output_dir=project_output_dir,
+                    request_id=task_id,
+                    status=status,
+                    error_message=error,
+                )
+
+        is_modern = self.video_endpoint == "videos"
+        poll_path = f"/videos/{task_id}" if is_modern else f"/video/generations/{task_id}"
+
+        try:
+            polled = await self._get_json(f"{self.base_url}{poll_path}")
+        except Exception as exc:
+            log(f"[recover] 查询 {task_id} 失败: {exc}")
+            return None
+
+        task = self._task_response_data(polled)
+        status = str(task.get("status") or "").lower()
+
+        TERMINAL_FAILURES = {"failure", "failed", "error", "canceled", "cancelled", "expired"}
+        if status not in {"completed", "succeeded", "success", "done"}:
+            if status in TERMINAL_FAILURES:
+                log(f"[recover] 上游任务已失败: {task_id} ({status})")
+                update_status("failed", f"upstream {status}")
+            else:
+                log(f"[recover] 上游任务仍在处理中: {task_id} ({status or 'queued'})")
+            return None
+
+        log(f"[recover] 上游任务已完成，正在下载: {task_id}")
+        progress(0.9)
+
+        video_url = self._resolve_result_url(self._extract_video_url(task))
+        if not video_url and is_modern:
+            video_url = f"{self.base_url}/videos/{task_id}/content"
+
+        if not video_url:
+            log(f"[recover] 未获取到视频 URL: {task}")
+            update_status("failed", "No video URL in recovered task")
+            return None
+
+        try:
+            if is_modern and not video_url.startswith(("http://", "https://")):
+                receipt = await self._download_video_content(video_url, output_path)
+            else:
+                receipt = await self._download_video(video_url, output_path)
+        except Exception as exc:
+            log(f"[recover] 下载失败: {exc}")
+            return None
+
+        log(f"[recover] 视频已恢复保存: {output_path} ({receipt.size} bytes)")
+        progress(1.0)
+        update_status("downloaded")
+        return VideoGenResult(
+            status=VideoGenStatus.DONE,
+            video_path=output_path,
+            video_url=video_url,
+            task_id=task_id,
+            duration_seconds=float(duration),
+        )
+
     async def generate(
         self,
         image_path: Optional[str],
@@ -4181,19 +4269,21 @@ class NewApiVideoGenerator(VideoGeneratorBase):
                 )
                 operation_terminal = True
             if not provider_completed:
-                await _refund_video_model_call(
-                    reservation_id,
-                    source="newapi_video_generation",
-                    error="timeout",
-                    provider_request_id=provider_request_id,
-                    provider_task_id=task_id,
+                # 上游没有明确回传失败状态，不退款——任务可能仍在上游处理中。
+                # 只有上游明确 failed/canceled/refunded 时才退款（见轮询循环内 ~L4114）。
+                return VideoGenResult(
+                    status=VideoGenStatus.DELIVERY_PENDING,
+                    error=timeout_error,
+                    task_id=task_id,
+                    provider_status="pending",
+                    delivery_status="not_started",
                 )
             return VideoGenResult(
-                status=(VideoGenStatus.DELIVERY_PENDING if provider_completed else VideoGenStatus.FAILED),
+                status=VideoGenStatus.DELIVERY_PENDING,
                 error=timeout_error,
                 task_id=task_id,
-                provider_status="completed" if provider_completed else "pending",
-                delivery_status="pending" if provider_completed else "not_started",
+                provider_status="completed",
+                delivery_status="pending",
             )
         except RunningTaskAuthorityIndeterminate as exc:
             # Provider acceptance is already durable.  This branch must not

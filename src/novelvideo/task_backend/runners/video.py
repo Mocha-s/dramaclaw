@@ -126,6 +126,7 @@ async def _run_single_video_async(
     from novelvideo.generators.video_generator import (
         ShotReference,
         create_video_generator,
+        video_provider_timeout_seconds,
     )
     from novelvideo.seedance2_i2v.pipeline import is_huimeng_seedance2_backend
     from novelvideo.utils.path_resolver import PathResolver
@@ -245,7 +246,39 @@ async def _run_single_video_async(
     if is_seedance2_backend:
         generate_kwargs["seedance2_config"] = seedance2_config
 
-    result = await video_gen.generate(**generate_kwargs)
+    # 有未完成的上游任务时，只轮询结果，禁止提交新的生成请求。
+    # 由用户手动重试决定是否重新生成。
+    # 仅 NewApiVideoGenerator 实现了 recover_task，其他 generator 跳过此逻辑。
+    result = None  # VideoGenResult | None
+    if hasattr(video_gen, "recover_task"):
+        from novelvideo.video_request_usage import get_unresolved_requests_for_beat
+        pending_ids = get_unresolved_requests_for_beat(
+            project_output_dir=output_dir,
+            episode=episode,
+            beat_num=beat_num,
+        )
+        if pending_ids:
+            # 有未完成任务：只尝试 recover，不管结果如何都不提交新任务
+            for pending_id in pending_ids:
+                recovered = await video_gen.recover_task(
+                    pending_id,
+                    video_path.as_posix(),
+                    project_output_dir=output_dir,
+                    duration=video_duration,
+                    on_log=on_log,
+                    on_progress=on_progress,
+                )
+                if recovered is not None and recovered.status.value == "done":
+                    result = recovered
+                    break
+            if result is None:
+                # 所有 pending task 均未成功（仍在处理或明确失败），不提交新任务
+                raise TaskTimedOut(timeout_seconds=int(video_provider_timeout_seconds()))
+    if result is None:
+        result = await video_gen.generate(**generate_kwargs)
+    if result.status.value == "delivery_pending":
+        # 上游超时但未明确失败——可能仍在处理。不退款；以超时码结束任务保留 task_id 供追查。
+        raise TaskTimedOut(timeout_seconds=int(video_provider_timeout_seconds()))
     if result.status.value != "done":
         raise RuntimeError(result.error or "视频生成失败")
 

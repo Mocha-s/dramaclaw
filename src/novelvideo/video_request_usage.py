@@ -148,6 +148,35 @@ def update_video_request_status(
         )
 
 
+def get_unresolved_requests_for_beat(
+    *,
+    project_output_dir: str | Path,
+    episode: int | None,
+    beat_num: int | None,
+    task_types: tuple[str, ...] = ("single_video", "batch_video"),
+) -> list[str]:
+    """Return request_ids submitted to upstream but never downloaded for this beat.
+
+    Covers both pre-fix falsely-failed (status='failed') and new delivery_pending
+    cases.  Ordered most-recent-first so the caller tries the latest job first.
+    """
+    if episode is None or beat_num is None:
+        return []
+    placeholders = ", ".join("?" for _ in task_types)
+    with _connect(project_output_dir) as conn:
+        rows = conn.execute(
+            f"""
+            SELECT request_id FROM video_request_usage
+            WHERE episode = ? AND beat_num = ?
+              AND task_type IN ({placeholders})
+              AND status IN ('accepted', 'delivery_pending', 'failed')
+            ORDER BY accepted_at DESC
+            """,
+            (episode, beat_num, *task_types),
+        ).fetchall()
+    return [str(r[0]) for r in rows]
+
+
 def count_video_beat_attempts(
     *,
     project_output_dir: str | Path,
