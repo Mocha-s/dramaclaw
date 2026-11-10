@@ -765,14 +765,16 @@ def test_validate_omni_reference_limits_and_summary() -> None:
         "total_count": 12,
     }
 
+    # 9图+3视频=12，新默认上限30/10/10/30，应放行。
     validate_omni_reference_limits(items)
 
-    too_many_images = [{"type": "image", "url": f"/static/{i}.png"} for i in range(10)]
+    # 默认上限改为 image=30，31 张才被拒。
+    too_many_images = [{"type": "image", "url": f"/static/{i}.png"} for i in range(31)]
     try:
         validate_omni_reference_limits(too_many_images)
         raise AssertionError("expected validate_omni_reference_limits to fail")
     except ValueError as exc:
-        assert "<= 9" in str(exc)
+        assert "<= 30" in str(exc)
 
     validate_omni_reference_limits(
         [{"type": "image", "url": "/static/a.png"}],

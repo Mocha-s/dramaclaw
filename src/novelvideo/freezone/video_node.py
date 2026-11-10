@@ -627,12 +627,12 @@ def summarize_omni_reference_counts(items: list[dict[str, Any]]) -> dict[str, in
 def validate_omni_reference_limits(
     items: list[dict[str, Any]],
     *,
-    image_max: int = 9,
-    video_max: int = 3,
-    audio_max: int = 3,
+    image_max: int = 30,
+    video_max: int = 10,
+    audio_max: int = 10,
     file_max: int = 0,
     link_max: int = 0,
-    total_max: int = 12,
+    total_max: int = 30,
 ) -> None:
     counts = summarize_omni_reference_counts(items)
     if counts["total_count"] > total_max:

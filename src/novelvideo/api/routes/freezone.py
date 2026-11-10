@@ -11092,9 +11092,9 @@ async def freezone_video_omni_gen(
     raw_reference_items = [item.model_dump() for item in body.references]
     reference_limits = _catalog_reference_limits(
         capabilities,
-        image_default=9,
-        video_default=3,
-        audio_default=3,
+        image_default=30,
+        video_default=10,
+        audio_default=10,
         file_default=0,
         link_default=0,
     )
@@ -11119,7 +11119,7 @@ async def freezone_video_omni_gen(
                         "referenceLinkMax",
                     )
                 )
-                else 12
+                else 30
             ),
         )
     except ValueError as exc:
