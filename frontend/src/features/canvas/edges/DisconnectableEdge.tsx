@@ -212,6 +212,7 @@ export const DisconnectableEdge = memo(function DisconnectableEdge(props: EdgePr
       : null;
 
   const processingStroke = 'rgb(var(--accent-rgb) / 0.94)';
+  const processingDashStroke = 'rgb(var(--accent-rgb) / 1)';
   const baseStrokeWidth = isProcessingEdge ? (selected ? 2.7 : 2.2) : 2;
 
   // 处理中的连线始终保持自己的 accent 高亮样式，不参与选中态调光。
@@ -229,7 +230,8 @@ export const DisconnectableEdge = memo(function DisconnectableEdge(props: EdgePr
         ? dimStroke
         : (bindingRole ? bindingStroke : baseStroke);
   const resolvedStrokeWidth = baseStrokeWidth;
-  const shouldShowDataFlow = isHovered || selected || isConnectedToSelected || isProcessingEdge;
+  const shouldShowDataFlow =
+    !isProcessingEdge && (isHovered || selected || isConnectedToSelected);
   const flowPathId = `canvas-data-flow-path-${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const flowGradientId = `canvas-data-flow-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   const flowGlowId = `canvas-data-flow-glow-${id.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
@@ -239,6 +241,18 @@ export const DisconnectableEdge = memo(function DisconnectableEdge(props: EdgePr
 
   return (
     <>
+      {isProcessingEdge && (
+        <path
+          d={edgePath}
+          fill="none"
+          stroke={processingDashStroke}
+          strokeWidth={selected ? 2.5 : 2.1}
+          strokeLinecap="round"
+          strokeDasharray="8 10"
+          className="canvas-processing-edge__flow"
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
       <BaseEdge
         id={id}
         path={edgePath}
@@ -305,30 +319,19 @@ export const DisconnectableEdge = memo(function DisconnectableEdge(props: EdgePr
               x2="48"
               y2="0"
             >
-              {/* 处理中用 accent 蓝色数据包，选中/hover 用白色 */}
-              {isProcessingEdge ? (
-                <>
-                  <stop offset="0%" stopColor="rgb(var(--accent-rgb))" stopOpacity="0" />
-                  <stop offset="42%" stopColor="rgb(var(--accent-rgb))" stopOpacity="0.55" />
-                  <stop offset="100%" stopColor="rgb(var(--accent-rgb))" stopOpacity="1" />
-                </>
-              ) : (
-                <>
-                  <stop offset="0%" stopColor="white" stopOpacity="0" />
-                  <stop offset="42%" stopColor="white" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="white" stopOpacity="0.72" />
-                </>
-              )}
+              <stop offset="0%" stopColor="white" stopOpacity="0" />
+              <stop offset="42%" stopColor="white" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="white" stopOpacity="0.72" />
             </linearGradient>
             <filter id={flowGlowId} x="-80%" y="-240%" width="260%" height="580%">
               <feGaussianBlur stdDeviation="14" />
             </filter>
           </defs>
-          {(isProcessingEdge ? [0, -1, -2] : [0, -2.33, -4.67]).map((begin) => (
+          {[0, -2.33, -4.67].map((begin) => (
             <g
               key={begin}
               className="canvas-data-edge__packet"
-              style={{ pointerEvents: 'none', opacity: isProcessingEdge ? 0.88 : 0.72 }}
+              style={{ pointerEvents: 'none', opacity: 0.72 }}
             >
               <g transform="scale(0.45, 1)">
                 <line
@@ -356,7 +359,7 @@ export const DisconnectableEdge = memo(function DisconnectableEdge(props: EdgePr
               </g>
               <animateMotion
                 className="canvas-data-edge__packet-motion"
-                dur={isProcessingEdge ? '3s' : '7s'}
+                dur="7s"
                 begin={`${begin}s`}
                 repeatCount="indefinite"
                 rotate="auto"
