@@ -4992,7 +4992,9 @@ def parse_newapi_video_backend(backend: str | None) -> str | None:
         "ltx23",
     }:
         return None
-    if value == value.lower() and lowered.startswith(("video-", "seedance", "sd17-", "t1-")):
+    # Any other non-empty string is treated as a newapi model ID (third-party
+    # catalog IDs, gateway-specific prefixes, etc.) — no prefix allowlist.
+    if value:
         return value
     return None
 
