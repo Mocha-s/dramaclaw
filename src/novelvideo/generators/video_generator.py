@@ -5061,7 +5061,13 @@ def _coerce_video_backend_value(backend: VideoBackend | str | None) -> str:
         return backend.value
     value = str(backend).strip()
     lowered = value.lower()
-    return "comfyui" if lowered == "jimeng" else lowered
+    # Normalise only the known native backend enum values so their casing never
+    # matters at call sites.  Third-party catalog model IDs are case-sensitive
+    # (e.g. "T1-seedance-2.5") and must be preserved as-is.
+    _native_backends = {v.value for v in VideoBackend}
+    if lowered in _native_backends or lowered in {"jimeng", "newapi"}:
+        return "comfyui" if lowered == "jimeng" else lowered
+    return value
 
 
 def _server_address_host(server_address: object) -> str:
