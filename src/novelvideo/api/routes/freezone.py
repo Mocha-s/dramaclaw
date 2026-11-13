@@ -11084,10 +11084,8 @@ async def freezone_video_omni_gen(
         raise HTTPException(
             400, "HappyHorse video does not support omni reference mode"
         )
-    if mode_enabled is None and not is_freezone_seedance2_backend(backend):
-        raise HTTPException(
-            400, "omni video currently only supports Seedance 2.0 models"
-        )
+    if mode_enabled is False:
+        raise HTTPException(400, "omni video currently only supports Seedance 2.0 models")
 
     raw_reference_items = [item.model_dump() for item in body.references]
     reference_limits = _catalog_reference_limits(
