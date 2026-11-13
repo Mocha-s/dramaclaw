@@ -6,6 +6,7 @@ import type { Connection, Edge, FinalConnectionState, OnConnectStartParams } fro
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CANVAS_NODE_TYPES } from "@/features/canvas/domain/canvasNodes";
+import { VIDEO_REFERENCE_ENVELOPE } from "@/features/canvas/domain/videoReferenceLimits";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { Canvas } from "@/features/canvas/Canvas";
 
@@ -479,9 +480,9 @@ describe("Canvas 拖线落点校验与建边判定对齐", () => {
 
 // 素材上限(videoReferenceLimits)是后加的一条规则,同样必须两处同源:只在 onConnect
 // 里拦,用户会看见落点高亮成合法、松手却什么也没建;只在 isValidConnection 里拦,
-// 其它建边路径(资产拖入、菜单新建)照样能把第 10 张图连上去。
+// 其它建边路径(资产拖入、菜单新建)照样能把超限图片连上去。
 describe("Canvas 素材上限在落点校验与建边判定上对齐", () => {
-  const IMAGE_CAP = 9;
+  const IMAGE_CAP = VIDEO_REFERENCE_ENVELOPE.image;
 
   function setupSaturatedVideo() {
     const images = Array.from({ length: IMAGE_CAP + 1 }, (_, index) => ({
@@ -496,7 +497,7 @@ describe("Canvas 素材上限在落点校验与建边判定上对齐", () => {
       data: { videoUrl: "/v.mp4" },
       position: { x: 0, y: 800 },
     };
-    // 前 9 张已连上,第 10 张(image-9)是这次要拖的。
+    // 已连满当前上限，最后一张是这次要拖的。
     useCanvasStore.getState().setCanvasData(
       [...images, video],
       images.slice(0, IMAGE_CAP).map((node) => ({
@@ -542,7 +543,7 @@ describe("Canvas 素材上限在落点校验与建边判定上对齐", () => {
       highlightedAsValid: false,
       edgeCreated: false,
     });
-    // 已有的 9 条不能被这次拒绝顺手带走。
+    // 已有的连线不能被这次拒绝顺手带走。
     expect(
       useCanvasStore.getState().edges.filter((edge) => edge.target === "video"),
     ).toHaveLength(IMAGE_CAP);

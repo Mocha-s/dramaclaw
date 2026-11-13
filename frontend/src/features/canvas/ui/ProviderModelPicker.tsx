@@ -294,13 +294,19 @@ export function ProviderModelPicker({
   const [query, setQuery] = useState('');
   const visibleModels = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return effectiveModels;
     return effectiveModels.filter((model) =>
-      [model.label, model.id, model.apiModel].some((value) =>
+      !needle || [model.label, model.id, model.apiModel].some((value) =>
         value.toLowerCase().includes(needle),
       ),
-    );
+    ).sort((a, b) => (a.priceValue ?? Infinity) - (b.priceValue ?? Infinity));
   }, [effectiveModels, query]);
+  useEffect(() => {
+    if (!isOpen || !query.trim()) return;
+    const firstMatch = visibleModels.find((model) => getOptionDisabledReason?.(model) == null);
+    if (firstMatch && firstMatch.id !== selectedModelId) {
+      onChange(firstMatch.id);
+    }
+  }, [isOpen, query, visibleModels, getOptionDisabledReason, selectedModelId, onChange]);
   // 选项第二行的使用信息：只挑下拉数据里已有的能力字段拼，不额外请求。
   const modelInfoLine = (model: ModelOption): string | null => {
     const parts: string[] = [];

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -95,6 +96,120 @@ describe("model picker quick search", () => {
     openPicker();
     expect(screen.getByText("1K / 2K")).toBeInTheDocument();
     expect(screen.getByText("4-15s · 有声")).toBeInTheDocument();
+  });
+});
+
+describe("model picker price order and automatic selection", () => {
+  const pricedModels: ModelOption[] = [
+    { ...models[0], priceValue: 0.8 },
+    { ...models[1], priceValue: 0.2 },
+    { ...models[2], priceValue: 0.1 },
+  ];
+
+  function openControlledPicker(
+    options = pricedModels,
+    domain: "image" | "video" = "image",
+    getOptionDisabledReason?: (model: ModelOption) => string | null,
+  ) {
+    const onChange = vi.fn();
+    function Picker() {
+      const [selectedModelId, setSelectedModelId] = useState(options[0].id);
+      return (
+        <ProviderModelPicker
+          selectedModelId={selectedModelId}
+          models={options}
+          domain={domain}
+          getOptionDisabledReason={getOptionDisabledReason}
+          onChange={(id) => {
+            onChange(id);
+            setSelectedModelId(id);
+          }}
+        />
+      );
+    }
+    render(<Picker />);
+    const trigger = screen.getByRole("button");
+    fireEvent.click(trigger);
+    return { box: screen.getByRole("searchbox"), trigger, onChange };
+  }
+
+  it("sorts by default price, keeps equal prices stable, and puts unknown prices last", () => {
+    const options: ModelOption[] = [
+      { ...models[0], id: "unknown", label: "Unknown price" },
+      { ...models[0], id: "costly", label: "Costly", priceValue: 2 },
+      { ...models[0], id: "free", label: "Free", priceValue: 0 },
+      { ...models[0], id: "cheap", label: "Cheap", priceValue: 0.1 },
+      {
+        ...models[0], id: "tied", label: "Same price", priceValue: 0.1,
+        priceTiers: [{ label: "1K", value: 0.1 }, { label: "4K", value: 4 }],
+      },
+    ];
+    const { trigger, onChange } = openControlledPicker(options);
+
+    const buttons = screen.getAllByRole("button").slice(1);
+    ["Free", "Cheap", "Same price", "Costly", "Unknown price"].forEach((label, i) => {
+      expect(buttons[i]).toHaveTextContent(label);
+    });
+    expect(options.map((model) => model.id)).toEqual(["unknown", "costly", "free", "cheap", "tied"]);
+    expect(trigger).toHaveTextContent("Unknown price");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it.each(["image", "video"] as const)("selects the cheapest matching %s model as the query changes", (domain) => {
+    const { box, trigger, onChange } = openControlledPicker(pricedModels, domain);
+
+    fireEvent.change(box, { target: { value: "  SEED  " } });
+    expect(trigger).toHaveTextContent("Seedance2.0");
+    expect(onChange).toHaveBeenLastCalledWith("seedance-2.0");
+    expect(screen.getAllByRole("button")[1]).toHaveTextContent("Seedance2.0");
+    expect(box).toHaveFocus();
+
+    fireEvent.change(box, { target: { value: "seedr" } });
+    expect(trigger).toHaveTextContent("Seedream 5.0 Pro");
+    expect(onChange).toHaveBeenLastCalledWith("seedream-5.0-pro");
+    expect(onChange).toHaveBeenCalledTimes(2);
+  });
+
+  it("skips disabled matches and preserves the selection when no enabled match exists", () => {
+    const { box, trigger, onChange } = openControlledPicker(
+      pricedModels,
+      "video",
+      (model) => model.id === "seedance-2.0" ? "需要连接视频节点" : null,
+    );
+
+    fireEvent.change(box, { target: { value: "seed" } });
+    expect(trigger).toHaveTextContent("Seedream 5.0 Pro");
+    expect(screen.getByRole("button", { name: /Seedance2.0/ })).toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.change(box, { target: { value: "seedance" } });
+    expect(trigger).toHaveTextContent("Seedream 5.0 Pro");
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves the selected model for empty and unmatched queries without reselecting it", () => {
+    const { box, trigger, onChange } = openControlledPicker();
+    fireEvent.change(box, { target: { value: "seed" } });
+    expect(trigger).toHaveTextContent("Seedance2.0");
+
+    for (const query of ["seedance", "zzz", "   ", ""]) {
+      fireEvent.change(box, { target: { value: query } });
+      expect(trigger).toHaveTextContent("Seedance2.0");
+    }
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a manual selection when the picker closes and reopens", () => {
+    const { box, trigger, onChange } = openControlledPicker();
+    fireEvent.change(box, { target: { value: "seed" } });
+    expect(trigger).toHaveTextContent("Seedance2.0");
+
+    fireEvent.click(screen.getByRole("button", { name: /Seedream 5.0 Pro/ }));
+    expect(trigger).toHaveTextContent("Seedream 5.0 Pro");
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(screen.getByRole("searchbox")).toHaveValue("");
+    expect(trigger).toHaveTextContent("Seedream 5.0 Pro");
+    expect(onChange).toHaveBeenCalledTimes(2);
   });
 });
 
