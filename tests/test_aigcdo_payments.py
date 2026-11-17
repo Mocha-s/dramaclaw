@@ -45,6 +45,7 @@ class Gateway:
         self.created_payment_type = None
         self.qr_code = ""
         self.result_type = "order_created"
+        self.omit: set[str] = set()
         self.bonus_amount = "0"
         self.checkout_started = None
         self.checkout_release = None
@@ -97,13 +98,14 @@ class Gateway:
             self.orders[oid] = order
             if self.timeout:
                 raise httpx.ReadTimeout("test-uncertain-order", request=request)
-            return ok({
+            created = {
                 "order_id": oid, **{k: order[k] for k in (
                     "amount", "pay_amount", "fee_rate", "bonus_amount", "currency",
                     "status", "payment_type", "out_trade_no", "expires_at",
                 )}, "result_type": self.result_type, "pay_url": self.pay_url,
                 "qr_code": self.qr_code, "resume_token": "test-secret-resume",
-            })
+            }
+            return ok({k: v for k, v in created.items() if k not in self.omit})
         if path.endswith("/orders/my"):
             assert request.url.params["order_type"] == "balance"
             items = list(self.orders.values()) if self.foreign else [
@@ -162,17 +164,19 @@ async def test_checkout_and_create_show_authoritative_payment_vs_credit_amount(t
         assert checkout["methods"]["alipay"]["currency"] == "CNY"
         assert "stripe_publishable_key" not in checkout
         result = await create(service, alice)
-        assert result["order"]["amount"] == "20.5"
+        # Credits and what was paid; never the USD ledger amount or the ratio.
+        assert result["order"]["credits"] == "2050.0000"
         assert result["order"]["pay_amount"] == "10.25"
         assert result["order"]["currency"] == "CNY"
-        assert result["expected_credits"] == "2050.0000"
+        assert not {"amount", "bonus_amount", "ledger_unit"} & set(result["order"])
+        assert "policy" not in result and "policy" not in checkout
         assert result["order"]["fulfilled"] is False
         assert result["checkout"]["pay_url"] == remote.pay_url
         assert "test-secret-resume" not in str(result)
         assert "recharge_code" not in str(result) and "user_email" not in str(result)
 
 
-async def test_restart_replay_reuses_order_and_original_display_policy(tmp_path):
+async def test_restart_replay_reuses_order_without_a_second_post(tmp_path):
     async with setup(tmp_path) as (service, remote, (alice, _), secret):
         first = await create(service, alice)
         other = AigcdoPayments(
@@ -181,8 +185,8 @@ async def test_restart_replay_reuses_order_and_original_display_policy(tmp_path)
         )
         replay = await create(other, alice)
         assert replay["order"]["id"] == first["order"]["id"]
-        assert replay["expected_credits"] == "2050.0000"
-        assert replay["policy"]["version"] == "test-v1"
+        # Like the balance, an order is shown at the current ratio.
+        assert replay["order"]["credits"] == "4100.0000"
         assert len(remote.posts) == 1
         content = service.store.path.read_bytes()
         assert remote.pay_url.encode() not in content
@@ -244,10 +248,8 @@ async def test_credited_amount_already_includes_nonzero_bonus(tmp_path):
     async with setup(tmp_path) as (service, remote, (alice, _), _):
         remote.bonus_amount = "2.05"
         result = await create(service, alice)
-        assert result["order"]["amount"] == "22.55"
-        assert result["order"]["bonus_amount"] == "2.05"
+        assert result["order"]["credits"] == "2255.0000"
         assert result["order"]["pay_amount"] == "10.25"
-        assert result["expected_credits"] == "2255.0000"
 
 
 @pytest.mark.parametrize("status", ["PAID", "RECHARGING", "FAILED", "CANCELLED", "REFUNDED"])
@@ -464,3 +466,12 @@ async def test_old_page_identity_cannot_submit_with_new_users_cookie(tmp_path):
             assert response.status_code == 409
             assert response.headers["cache-control"] == "no-store"
         assert remote.posts == []
+
+
+async def test_gateway_omitting_currency_and_result_type_still_yields_a_checkout(tmp_path):
+    """Go `omitempty`: production (2026-11-17) created the order but the reply failed to parse."""
+    async with setup(tmp_path) as (service, remote, (alice, _), _):
+        remote.omit = {"currency", "result_type"}
+        result = await create(service, alice)
+        assert result["order"]["currency"] == "CNY" and result["checkout"]["pay_url"]
+        assert len(remote.posts) == 1

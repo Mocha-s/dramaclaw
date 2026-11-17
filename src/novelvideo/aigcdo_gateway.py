@@ -212,8 +212,11 @@ _Model = TypeVar("_Model", bound=BaseModel)
 def _parse(model: type[_Model], data: dict[str, Any]) -> _Model:
     try:
         return model.model_validate(data)
-    except ValidationError:
-        # Pydantic errors can retain raw credential inputs; keep them internal.
+    except ValidationError as exc:
+        # Pydantic errors can retain raw credential inputs; log field names and kinds only.
+        logger.warning("AIGCDO gateway response did not match %s: %s", model.__name__, sorted({
+            ".".join(str(part) for part in error["loc"]) + ":" + error["type"] for error in exc.errors()
+        })[:12])
         raise AigcdoGatewayError("invalid_response") from None
 
 

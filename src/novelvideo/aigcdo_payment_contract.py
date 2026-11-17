@@ -50,11 +50,12 @@ class GatewayCreatedOrder(PaymentDTO):
     pay_amount: Money
     bonus_amount: Money
     fee_rate: Money
-    currency: Annotated[str, Field(pattern=r"^[A-Z]{3}$")]
+    # The gateway omits these two for some providers (Go `omitempty`); the order read is authoritative.
+    currency: Annotated[str, Field(pattern=r"^([A-Z]{3})?$")] = ""
     payment_type: PaymentType
     out_trade_no: Annotated[str, Field(min_length=1, max_length=128)]
     status: Status
-    result_type: Literal["order_created"]
+    result_type: Literal["order_created", ""] = ""
     expires_at: AwareDatetime
     pay_url: Annotated[str, Field(max_length=8192, repr=False)] = ""
     qr_code: Annotated[str, Field(max_length=8192, repr=False)] = ""

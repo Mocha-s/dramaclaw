@@ -15,10 +15,10 @@ vi.mock("@/lib/api", () => ({
 
 const policy = { credits_per_unit: "100", decimal_places: 4, rounding: "ROUND_HALF_UP", version: "v1" };
 const order = {
-  id: "1", amount: "22.55", pay_amount: "10.25", bonus_amount: "2.05", currency: "CNY",
+  id: "1", credits: "2255.0000", pay_amount: "10.25", currency: "CNY",
   payment_type: "alipay", out_trade_no: "trade-1", status: "PENDING", fulfilled: false,
   created_at: "2026-11-15T00:00:00Z", expires_at: "2099-11-15T00:30:00Z",
-  paid_at: null, completed_at: null, ledger_unit: "USD",
+  paid_at: null, completed_at: null,
 };
 const ok = (data: unknown) => HttpResponse.json({ ok: true, data });
 const pages = { page: 1, page_size: 20, pages: 1, total: 1 };

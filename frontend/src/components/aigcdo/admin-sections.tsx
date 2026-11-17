@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ANNOUNCEMENTS_CHANGED } from "@/components/login/cinematic/announcements";
 import { adminApi, type AdminAnnouncement } from "@/lib/queries/aigcdo-admin";
 
 const panel = "rounded-lg border border-white/10 bg-white/[0.03] p-4";
@@ -36,7 +37,9 @@ export function AdminAnnouncementsSection() {
   const { t } = useTranslation("account");
   const query = useQuery({ queryKey: ["aigcdo-admin", "announcements"], queryFn: ({ signal }) => adminApi.announcements(signal), ...options });
   const [draft, setDraft] = useState<AdminAnnouncement[] | null>(null);
-  const save = useMutation({ mutationFn: adminApi.saveAnnouncements, onSuccess: () => { setDraft(null); void query.refetch(); } });
+  const save = useMutation({ mutationFn: adminApi.saveAnnouncements, onSuccess: () => {
+    setDraft(null); void query.refetch(); window.dispatchEvent(new Event(ANNOUNCEMENTS_CHANGED));
+  } });
   if (!query.data) return <p className="p-5 text-sm">{t(query.isError ? "loadError" : "loading")}</p>;
   const items = draft ?? query.data.items;
   const change = (index: number, patch: Partial<AdminAnnouncement>) =>

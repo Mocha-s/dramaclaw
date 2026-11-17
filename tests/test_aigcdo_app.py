@@ -884,3 +884,21 @@ def test_invalid_administrator_ids_refuse_boot(deployment_env, monkeypatch, valu
     monkeypatch.setenv("AIGCDO_ADMIN_USER_IDS", value)
     with pytest.raises(RuntimeError, match="Invalid AIGCDO deployment configuration"):
         create_app()
+
+
+def test_model_prices_reach_users_in_credits(deployment_env, monkeypatch):
+    from novelvideo import model_plaza
+
+    create_app()
+    monkeypatch.setattr(model_plaza, "get_model_usage_index", lambda: {
+        "m": {"priceValue": 0.0288, "priceUnit": "image", "priceTiers": [{"label": "1k", "value": 0.0754}]},
+    })
+    [entry] = model_plaza.attach_model_usage([{"upstreamModel": "m"}])
+    assert entry["priceCurrency"] == "credits"
+    assert (entry["priceValue"], entry["priceTiers"][0]["value"]) == (2.88, 7.54)
+
+
+def test_malformed_agent_url_does_not_break_user_settings(deployment_env):
+    from novelvideo import aigcdo_model_runtime
+
+    assert aigcdo_model_runtime.user_rows({"agent_llm_base_url": "https://[x", "agent_llm_model": "m"})

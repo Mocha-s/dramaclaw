@@ -181,8 +181,18 @@ export function parseAnnouncementBody(body: string): AnnouncementBodyToken[] {
  * 请求在组件卸载时 abort：登录页的公告入口会随着登录成功一起卸载，让一个已经
  * 没人看的请求继续 setState 只会换来 React 的警告。
  */
+export const ANNOUNCEMENTS_CHANGED = "aigcdo-announcements-changed";
+
 export function useAnnouncements(): Announcement[] {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+
+  // Bumped when the administrator saves announcements, so open pages refetch at once.
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const bump = () => setRevision((value) => value + 1);
+    window.addEventListener(ANNOUNCEMENTS_CHANGED, bump);
+    return () => window.removeEventListener(ANNOUNCEMENTS_CHANGED, bump);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -205,7 +215,7 @@ export function useAnnouncements(): Announcement[] {
       alive = false;
       controller.abort();
     };
-  }, []);
+  }, [revision]);
 
   return announcements;
 }

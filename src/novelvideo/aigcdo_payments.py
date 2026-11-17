@@ -232,8 +232,9 @@ class AigcdoPayments:
         AigcdoPayments._order_data(order, gateway_id)
         if (
             order.id != created.order_id or order.currency != currency or order.payment_type != payment_type
+            or (created.currency and created.currency != order.currency)
             or any(getattr(created, key) != getattr(order, key) for key in (
-                "amount", "pay_amount", "fee_rate", "bonus_amount", "currency", "payment_type", "out_trade_no",
+                "amount", "pay_amount", "fee_rate", "bonus_amount", "payment_type", "out_trade_no",
             ))
             or not (created.pay_url or created.qr_code)
         ):
