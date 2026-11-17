@@ -8,7 +8,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Header } from "@/components/layout/header";
 
-const runtimeState = vi.hoisted(() => ({ authRequired: true, isCe: false, phoneVisible: false }));
+const runtimeState = vi.hoisted(() => ({
+  authRequired: true, isCe: false, phoneVisible: false, provider: "legacy" as "legacy" | "aigcdo",
+}));
 const authState = vi.hoisted(() => ({ username: "local", logout: vi.fn() }));
 const resetUserSessionStateMock = vi.hoisted(() => vi.fn());
 const securityState = vi.hoisted(() => ({
@@ -30,8 +32,10 @@ vi.mock("@/lib/reset-region-state", () => ({
 }));
 
 vi.mock("@/lib/runtime-config", () => ({
+  authProvider: () => runtimeState.provider ?? "legacy",
   authRequired: () => runtimeState.authRequired,
   isCeRuntime: () => runtimeState.isCe,
+  localModelSettingsEnabled: () => runtimeState.isCe && (runtimeState.provider ?? "legacy") === "legacy",
   phoneOtpEntryVisible: () => runtimeState.phoneVisible,
 }));
 
@@ -346,6 +350,24 @@ describe("Header runtime gating", () => {
     });
     expect(screen.queryByText("Log out")).not.toBeInTheDocument();
     expect(screen.queryByText("Change password")).not.toBeInTheDocument();
+  });
+
+  it("offers the gateway account page instead of local avatar and password under AIGCDO", async () => {
+    runtimeState.provider = "aigcdo";
+    runtimeState.isCe = true;
+    try {
+      renderHeader();
+      fireEvent.mouseEnter(screen.getByLabelText("Open account").parentElement!);
+      expect(await screen.findByText("header.account.billing")).toBeInTheDocument();
+      expect(screen.getByText("Log out")).toBeInTheDocument();
+      expect(screen.queryByText("Change password")).not.toBeInTheDocument();
+      expect(screen.queryByText("Change avatar")).not.toBeInTheDocument();
+      // Nothing in Settings is user-editable there; a visible entry only leads to a dead page.
+      expect(screen.queryByRole("button", { name: /settings/i })).not.toBeInTheDocument();
+    } finally {
+      runtimeState.provider = "legacy";
+      runtimeState.isCe = false;
+    }
   });
 
   it("purges user-scoped caches after logout so the next account can't see stale data", async () => {

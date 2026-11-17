@@ -125,10 +125,15 @@ def embedding_model_spec(
                 saved.get("dimension") or COGNEE_EMBEDDING_DIMENSIONS
             )
         active_mode = get_effective_newapi_config().mode
+        from novelvideo import aigcdo_model_runtime
+
         return EmbeddingModelSpec(
             internal_model=clean_model,
             dimensions=project_dimensions,
-            send_dimensions=True,
+            # shortcut: the AIGCDO operator declares the model's native size and the request
+            # never sends `dimensions` (fixed-size models reject it); add a switch if an
+            # operator needs to shrink a variable-size model.
+            send_dimensions=not aigcdo_model_runtime.active(),
             gateway=MODE_SUB2API if active_mode == MODE_SUB2API else MODE_CUSTOM,
         )
     raise RuntimeError(f"Unsupported embedding model: {clean_model or '<empty>'}")
@@ -137,6 +142,12 @@ def embedding_model_spec(
 def embedding_gateway_credentials(spec: EmbeddingModelSpec) -> tuple[str, str]:
     """Resolve credentials for the gateway permanently implied by a model spec."""
 
+    from novelvideo import aigcdo_model_runtime
+
+    if aigcdo_model_runtime.active():
+        # Embeddings run on the operator's endpoint, never on a user's gateway key.
+        endpoint = aigcdo_model_runtime.embedding_endpoint()
+        return (endpoint["api_key"], endpoint["base_url"]) if endpoint else ("", "")
     if is_ce_effective():
         gateway = (
             get_effective_newapi_config(
@@ -154,6 +165,11 @@ def embedding_gateway_credentials(spec: EmbeddingModelSpec) -> tuple[str, str]:
 
 
 def embedding_gateway_model(spec: EmbeddingModelSpec) -> str:
+    from novelvideo import aigcdo_model_runtime
+
+    if aigcdo_model_runtime.active():
+        endpoint = aigcdo_model_runtime.embedding_endpoint()
+        return endpoint["model"] if endpoint else spec.internal_model
     if is_ce_effective() and spec.gateway == MODE_SUB2API:
         gateway = get_effective_newapi_config(
             capability="embedding",

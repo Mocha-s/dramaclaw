@@ -19,7 +19,7 @@ export function EnterprisePlanPanel() {
             {t("credits.centerModal.enterprise.subtitle")}
           </p>
         </div>
-        <div className="text-xs text-white/28">DramaClaw Enterprise</div>
+        <div className="text-xs text-white/28">AIGCDO Enterprise</div>
       </div>
       <div className="border-t border-white/10 bg-black/10 p-7 lg:border-l lg:border-t-0 lg:p-10">
         <h3 className="text-sm font-semibold text-white/55">

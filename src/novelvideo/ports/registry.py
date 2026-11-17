@@ -58,7 +58,21 @@ def get_port(name: str):
 
 def ensure_bootstrap() -> None:
     global _BOOTSTRAPPED
+    provider = runtime_env.auth_provider()
     if _BOOTSTRAPPED:
+        if getattr(_PORTS.get("lifecycle"), "auth_provider", "legacy") != provider:
+            raise RuntimeError("Changing authentication provider requires a fresh process")
+        return
+    if provider == "aigcdo":
+        if any(name in _PORTS for name in (
+            "auth", "auth_session", "project_registry", "project_access", "task_backend",
+            "model_credentials", "authz", "egress", "lifecycle",
+        )):
+            raise RuntimeError("AIGCDO requires a clean port registry")
+        from novelvideo.aigcdo_deployment import register_aigcdo_ports
+
+        register_aigcdo_ports()
+        _BOOTSTRAPPED = True
         return
     edition = runtime_env.edition()
     dsn = os.environ.get("ST_CONTROL_PLANE_DSN", "").strip()

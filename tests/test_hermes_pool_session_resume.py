@@ -777,3 +777,30 @@ async def test_hermes_pool_rotates_and_resumes_when_gateway_changes(
     assert calls == [("start", None), ("resume", "session-1")]
     assert fake_auth.created == 2
     assert fake_auth.revoked == ["token-1", "token-2"]
+
+
+async def test_hermes_pool_replaces_worker_whose_token_belongs_to_another_login(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Multi-user auth binds a worker token to one browser session; a re-login must not reuse it."""
+    pool, calls, fake_auth, _gateway = _patch_fake_hermes_pool(tmp_path, monkeypatch)
+    stale: set[str] = set()
+
+    async def agent_session_stale(raw_token: str) -> bool:
+        return raw_token in stale
+
+    fake_auth.agent_session_stale = agent_session_stale
+    try:
+        first = await pool.get_for_user("alice", scope_kind="project", project_id="project_a")
+        same = await pool.get_for_user("alice", scope_kind="project", project_id="project_a")
+        assert fake_auth.created == 1
+        stale.add("token-1")
+        second = await pool.get_for_user("alice", scope_kind="project", project_id="project_a")
+    finally:
+        await pool.close_all()
+
+    assert first.id == same.id == second.id == "session-1"
+    assert calls == [("start", None), ("resume", "session-1")]
+    assert fake_auth.created == 2
+    assert fake_auth.revoked == ["token-1", "token-2"]

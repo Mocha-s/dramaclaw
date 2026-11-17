@@ -43,8 +43,8 @@
     "totalMaxDuration": "参考素材总时长 {{actual}} 秒；最多 {{expected}} 秒。"
   },
   "app": {
-    "title": "SuperTale",
-    "subtitle": "SuperTale 候选图生成与资产提交工作台",
+    "title": "AIGCDO",
+    "subtitle": "AIGCDO 候选图生成与资产提交工作台",
     "updateRequired": {
       "title": "应用已更新",
       "description": "当前页面引用的应用文件已经失效。请刷新页面以加载最新版本。",
@@ -141,8 +141,8 @@
       "qrAlt": "商务微信二维码",
       "items": {
         "difference": {
-          "question": "DramaClaw 和普通 AI 视频生成工具有什么区别？",
-          "answer": "普通工具通常围绕一次提示词、一个片段或一张图工作。DramaClaw 面向的是完整项目：从文本导入、资产沉淀、剧集规划、镜头制作到合成导出，形成可追踪、可协作、可复用的生产闭环。"
+          "question": "AIGCDO 和普通 AI 视频生成工具有什么区别？",
+          "answer": "普通工具通常围绕一次提示词、一个片段或一张图工作。AIGCDO 面向的是完整项目：从文本导入、资产沉淀、剧集规划、镜头制作到合成导出，形成可追踪、可协作、可复用的生产闭环。"
         },
         "gettingStarted": {
           "question": "第一次使用应该从哪里开始？",
@@ -161,7 +161,7 @@
           "answer": "AI 视频创作最容易返工的原因，往往不是最后一步视频生成，而是前面的角色不稳定、场景不清楚、道具缺参考、声线没统一。虾塘把这些内容先变成资产，可以显著减少后续镜头阶段的混乱。"
         },
         "contentTypes": {
-          "question": "DramaClaw 适合哪些内容类型？",
+          "question": "AIGCDO 适合哪些内容类型？",
           "answer": "适合 AI 短剧、漫剧、小说推文、解说剧、广告宣传、教育培训视频，以及需要长期维护 IP 角色和系列内容的团队项目。个人创作者可以用它跑通流程，团队可以用它协作生产。"
         },
         "teamRoles": {
@@ -173,8 +173,8 @@
           "answer": "先检查问题出在哪个环节：文本是否清楚，角色身份是否正确，场景和道具是否有参考，草图是否讲清楚镜头，首帧是否稳定，音频是否匹配。不要一开始就反复生成视频，先把上游资产和镜头描述修正好。"
         },
         "dcUniverse": {
-          "question": "什么是 “Make Your DC Universe.”？",
-          "answer": "DC 不只是 DramaClaw 的缩写，也代表每个创作者自己的内容宇宙。DramaClaw 希望帮助创作者从一个故事开始，逐步建立角色、世界观、场景资产和系列化内容生产能力。"
+          "question": "什么是 “Make Your AIGCDO Universe.”？",
+          "answer": "AIGCDO 希望帮助创作者从一个故事开始，逐步建立角色、世界观、场景资产和系列化内容生产能力，打造自己的内容宇宙。"
         },
         "afterLogin": {
           "question": "登录后我会进入哪里？",
@@ -217,12 +217,12 @@
     },
     "fifth": {
       "heading": "把万千灵感沉淀为资产",
-      "lead1": "DramaClaw 把它们整理成项目资产库，",
+      "lead1": "AIGCDO 把它们整理成项目资产库，",
       "lead2": "让后续镜头生成可以持续引用、统一维护、必要时回滚版本。"
     },
     "seventh": {
       "heading": "让短剧生成从抽卡走向流程",
-      "lead": "DramaClaw 把 AI 视频创作中的不确定性拆解到文本、资产、镜头和任务流程中",
+      "lead": "AIGCDO 把 AI 视频创作中的不确定性拆解到文本、资产、镜头和任务流程中",
       "steps": {
         "01": {
           "title": "设定输入",
@@ -252,7 +252,7 @@
     },
     "eighth": {
       "heading": "只为创作完整的作品企划",
-      "lead": "DramaClaw 关注的是一部剧如何持续生产：文本入项，角色一致性，场景复用，镜头推进，团队协作交付。",
+      "lead": "AIGCDO 关注的是一部剧如何持续生产：文本入项，角色一致性，场景复用，镜头推进，团队协作交付。",
       "statementTitle": "夜航协议 · 镜头序列 08",
       "statementBody": "一艘未登记运输舰拖着整座城市的秘密进入夜层。",
       "decisions": {
@@ -277,7 +277,7 @@
     "ninth": {
       "headingTop": "一句设定，直接进入",
       "headingAccent": "镜头",
-      "lead": "不必先写完整剧本。给出一个方向，DramaClaw 会把它拆成角色、冲突、场景和可推进的镜头链路。",
+      "lead": "不必先写完整剧本。给出一个方向，AIGCDO 会把它拆成角色、冲突、场景和可推进的镜头链路。",
       "featuredWork": "鲁班秘术",
       "steps": {
         "01": {
@@ -304,7 +304,7 @@
     },
     "twelfth": {
       "heading": "把一句设定推进成可看的宇宙",
-      "lead": "输入角色冲突或世界观 让 DramaClaw 拆成镜头节点并持续延展",
+      "lead": "输入角色冲突或世界观 让 AIGCDO 拆成镜头节点并持续延展",
       "primaryCta": "开启无限创作",
       "secondaryCta": "快速申请账号"
     },
@@ -317,7 +317,7 @@
     },
     "second": {
       "title": "从灵感到项目",
-      "subtitle": "在 DramaClaw 中，创作不再停留在一次提示词和一次生成结果"
+      "subtitle": "在 AIGCDO 中，创作不再停留在一次提示词和一次生成结果"
     },
     "third": {
       "title": "让故事成为起点",
@@ -359,8 +359,8 @@
       "eyebrow": "界面",
       "title": "主线走流程，画布做编排",
       "lede": "主线把一本小说拆成剧集、角色、分镜、首帧、视频和合成，一步一页推着走；虾画是一块节点画布，可以把主线的镜头投影进来自由改，改完再同步回主线。两条路共用同一批资产，不用来回搬素材。",
-      "windowTitle": "DramaClaw — 第 03 集 · 画布",
-      "alt": "DramaClaw 桌面端画布界面示意：顶部是剧集标签条，左侧分镜大纲，中间节点画布，右侧参数面板。",
+      "windowTitle": "AIGCDO — 第 03 集 · 画布",
+      "alt": "AIGCDO 桌面端画布界面示意：顶部是剧集标签条，左侧分镜大纲，中间节点画布，右侧参数面板。",
       "caption": "示意图（虾画画布视图）"
     },
     "capability": {
@@ -426,7 +426,7 @@
       },
       "v120": {
         "title": "功能积分透明化，外部智能体可接入",
-        "description": "统一展示功能价格、预计扣费与使用记录；Claude Code 等本地智能体可通过 MCP 直接调用 DramaClaw CE。"
+        "description": "统一展示功能价格、预计扣费与使用记录；Claude Code 等本地智能体可通过 MCP 直接调用 AIGCDO CE。"
       }
     },
     "faq": {
@@ -435,7 +435,7 @@
       "items": {
         "macGatekeeper": {
           "question": "Mac 提示「无法打开，因为无法验证开发者」怎么办？",
-          "answer": "在「访达 — 应用程序」里找到 DramaClaw，按住 Control 点按图标选「打开」，在弹出的确认框里再点一次「打开」即可。这一步只需要做一次，之后正常双击启动。"
+          "answer": "在「访达 — 应用程序」里找到下载的应用，按住 Control 点按图标选「打开」，在弹出的确认框里再点一次「打开」即可。这一步只需要做一次，之后正常双击启动。"
         },
         "winSmartScreen": {
           "question": "Windows 提示「Windows 已保护你的电脑」怎么办？",
@@ -474,6 +474,7 @@
     "notifications": "公告中心",
     "account": {
       "open": "打开个人信息",
+      "billing": "余额与充值",
       "changeAvatar": "更换头像",
       "changePassword": "修改密码",
       "setPassword": "设置密码",
@@ -904,7 +905,7 @@
     "attachmentOnlyPrompt": "请分析我上传的文件。",
     "canvasReferenceOnlyPrompt": "请基于当前选中的画布节点继续。",
     "attachmentAnalysisUploading": "正在上传文件供分析：{{filename}}",
-    "settingsHint": "账号和登录由 SuperTale 管理。这里的设置只控制聊天展示和附件行为。",
+    "settingsHint": "账号和登录由 AIGCDO 管理。这里的设置只控制聊天展示和附件行为。",
     "tool": "工具",
     "historyTool": "历史工具",
     "showStructuredSourceWhileStreaming": "流式显示 JSON 原文",
@@ -1878,8 +1879,8 @@
     "retryQuote": "刷新报价"
   },
   "paymentReturn": {
-    "back": "返回 DramaClaw",
-    "returnButton": "返回 DramaClaw",
+    "back": "返回 AIGCDO",
+    "returnButton": "返回 AIGCDO",
     "orderNumber": "商户订单号",
     "retry": "重新查询",
     "states": {
@@ -1889,7 +1890,7 @@
       },
       "credited": {
         "title": "充值已到账",
-        "description": "支付和积分入账均已由服务端确认，你可以返回 DramaClaw 继续创作。"
+        "description": "支付和积分入账均已由服务端确认，你可以返回 AIGCDO 继续创作。"
       },
       "closed": {
         "title": "订单已关闭",
@@ -2330,8 +2331,8 @@
       "noAccount": "还没有账号？",
       "applyAccount": "申请账号",
       "otpRegistration": "首次使用手机号验证码登录，将自动创建账号",
-      "showcaseLabel": "DramaClaw 作品展示",
-      "showcaseEyebrow": "MADE WITH DRAMACLAW",
+      "showcaseLabel": "AIGCDO 作品展示",
+      "showcaseEyebrow": "MADE WITH AIGCDO",
       "showcaseMeta": "创作现场",
       "showcaseTitle": "想象力，全速开拍",
       "showcaseDescription": "角色、分镜、声音与镜头，在同一条制作线上持续推进"
@@ -2385,10 +2386,10 @@
         "storyWorld": "构建专属故事世界"
       },
       "headlinePrefix": "创造自己的",
-      "headlineBrand": "DC",
+      "headlineBrand": "AIGCDO",
       "headlineSuffix": "宇宙",
       "subtitlePrefix": "Make Your Own",
-      "subtitleBrand": "DC",
+      "subtitleBrand": "AIGCDO",
       "subtitleSuffix": "",
       "start": "灵感发生",
       "sub": "WHERE EVERY SPARK OF INSPIRATION MEETS THE POWER OF EFFORTLESS AI CREATION",
@@ -2397,7 +2398,7 @@
     },
     "community": {
       "label": "社区作品",
-      "heading": "DramaClaw TV",
+      "heading": "AIGCDO TV",
       "likes": "{{count}} 次喜欢",
       "openWork": "打开作品「{{title}}」",
       "works": {
@@ -2847,6 +2848,7 @@
     "error": "出错了",
     "novelImportRequired": "请先导入小说",
     "insufficientCredits": "积分不足，请联系管理员充值",
+    "insufficientCredits_aigcdo": "积分不足，请在账户菜单的「余额与充值」中充值后重试",
     "billingRuleNotConfigured": "计费规则未配置，请联系管理员设置积分规则",
     "billingRuleNotConfiguredShort": "需配置",
     "projectDefaultQueueFull": "当前项目默认队列已满",
@@ -5209,7 +5211,7 @@
           "style": {
             "label": "风格",
             "options": {
-              "supertale_production": "SuperTale 生产风格",
+              "supertale_production": "AIGCDO 生产风格",
               "cinematic_realistic": "影视写实",
               "clean_sketch": "干净线稿",
               "spiderverse_mixed": "混合媒介"
@@ -7889,7 +7891,7 @@
         "apiKey": "API Key",
         "capabilitiesLabel": "支持能力",
         "models": "模型映射",
-        "requestModel": "DramaClaw 模型规则",
+        "requestModel": "AIGCDO 模型规则",
         "upstreamModel": "上游模型",
         "unifiedRoute": "统一文本路由",
         "unifiedRouteNone": "不使用统一路由",
@@ -7957,7 +7959,7 @@
         "saved": "Agent 模型配置已保存，新会话将使用最新配置。"
       },
       "custom": {
-        "description": "CE 使用本机 SQLite NewAPI。DramaClaw 会自动连接数据库、创建运行令牌并启用本地渠道。",
+        "description": "CE 使用本机 SQLite NewAPI。AIGCDO 会自动连接数据库、创建运行令牌并启用本地渠道。",
         "init": "初始化本地 NewAPI",
         "repair": "检测并修复",
         "initialized": "本地 NewAPI 已就绪。",
@@ -7976,7 +7978,7 @@
         "setupConfirmPassword": "确认密码",
         "setupPasswordPlaceholder": "至少 8 位",
         "setupConfirmPasswordPlaceholder": "再次输入密码",
-        "setupPasswordOnlyOnce": "该账号和密码只会在全新 NewAPI 首次创建管理员时提交给你的 NewAPI 实例。若 NewAPI 已经初始化，即使这里填写了密码，也不会修改已有管理员密码。DramaClaw 不会保存密码，也不会用它执行后续操作；首次初始化完成后请自行保存，用于登录 NewAPI 后台。",
+        "setupPasswordOnlyOnce": "该账号和密码只会在全新 NewAPI 首次创建管理员时提交给你的 NewAPI 实例。若 NewAPI 已经初始化，即使这里填写了密码，也不会修改已有管理员密码。AIGCDO 不会保存密码，也不会用它执行后续操作；首次初始化完成后请自行保存，用于登录 NewAPI 后台。",
         "setupRequired": "当前本地 NewAPI 尚未完成初始化，请填写初始化密码和确认密码后重试。",
         "setupAlreadyInitializedPasswordIgnored": "检测到你的 NewAPI 已经初始化，本次没有调用 NewAPI 初始化接口，也没有修改已有管理员密码；你刚刚填写的密码已被忽略并清空。",
         "setupPasswordMissingUsername": "请填写管理员用户名。",
@@ -8376,7 +8378,7 @@
     "missingAnyApiKeyMessage": "后端 provider 未配置。",
     "openProvidersSettings": "查看 provider",
     "aboutAppName": "Beat Workbench",
-    "aboutIntro": "SuperTale 的候选图生成、自由实验与资产提交工作台。",
+    "aboutIntro": "AIGCDO 的候选图生成、自由实验与资产提交工作台。",
     "aboutVersionLabel": "版本",
     "aboutVersionUnknown": "未知",
     "aboutAuthorLabel": "作者",

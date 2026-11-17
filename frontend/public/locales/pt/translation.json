@@ -43,8 +43,8 @@
     "totalMaxDuration": "Duração total das referências: {{actual}} s; máximo: {{expected}} s."
   },
   "app": {
-    "title": "SuperTale",
-    "subtitle": "Ambiente de trabalho do SuperTale para gerar candidatos e confirmar recursos",
+    "title": "AIGCDO",
+    "subtitle": "Ambiente de trabalho do AIGCDO para gerar candidatos e confirmar recursos",
     "updateRequired": {
       "title": "App atualizada",
       "description": "Esta página está a referenciar um ficheiro expirado da aplicação. Atualize a página para carregar a versão mais recente.",
@@ -141,8 +141,8 @@
       "qrAlt": "Código QR do WeChat comercial",
       "items": {
         "difference": {
-          "question": "Em que difere o DramaClaw de um gerador de vídeo com IA comum?",
-          "answer": "As ferramentas comuns centram-se num único prompt, clipe ou imagem. O DramaClaw foi criado em torno de um projeto completo: importação de texto, criação progressiva de recursos, planeamento de episódios, produção de planos e composição final — um ciclo de produção rastreável, colaborativo e reutilizável."
+          "question": "Em que difere o AIGCDO de um gerador de vídeo com IA comum?",
+          "answer": "As ferramentas comuns centram-se num único prompt, clipe ou imagem. O AIGCDO foi criado em torno de um projeto completo: importação de texto, criação progressiva de recursos, planeamento de episódios, produção de planos e composição final — um ciclo de produção rastreável, colaborativo e reutilizável."
         },
         "gettingStarted": {
           "question": "Por onde devo começar na primeira vez?",
@@ -161,7 +161,7 @@
           "answer": "A causa habitual de retrabalho em vídeo com IA não é a etapa final de geração — são personagens instáveis, cenas vagas, adereços sem referências e vozes incoerentes nas etapas anteriores. Transformá-los em recursos no Shrimp Pond elimina grande parte do caos na fase dos planos."
         },
         "contentTypes": {
-          "question": "Para que tipos de conteúdo é adequado o DramaClaw?",
+          "question": "Para que tipos de conteúdo é adequado o AIGCDO?",
           "answer": "Dramas curtos com IA, dramas de banda desenhada, promoções de romances, programas de comentário, anúncios e vídeos de formação — além de projetos de equipa que mantêm personagens de propriedade intelectual e conteúdo serializado ao longo do tempo. Os criadores individuais podem gerir todo o processo; as equipas podem produzir em colaboração."
         },
         "teamRoles": {
@@ -173,8 +173,8 @@
           "answer": "Identifique a etapa que está a falhar: o texto é claro, a identidade da personagem está correta, a cena e os adereços têm referências, o esboço descreve o plano, o primeiro fotograma é estável, o áudio corresponde? Não comece por voltar a gerar o vídeo repetidamente — corrija primeiro os recursos das etapas anteriores e a descrição do plano."
         },
         "dcUniverse": {
-          "question": "O que significa «Make Your DC Universe.»?",
-          "answer": "DC não é apenas uma abreviatura de DramaClaw — também representa o universo de conteúdo de cada criador. O DramaClaw pretende ajudá-lo a partir de uma história e a desenvolver personagens, o mundo, recursos de cenas e a capacidade de produzir uma série."
+          "question": "O que significa «Make Your AIGCDO Universe.»?",
+          "answer": "O AIGCDO ajuda cada criador a partir de uma história e a desenvolver personagens, o mundo, recursos de cenas e a capacidade de produzir uma série — o seu próprio universo de conteúdo."
         },
         "afterLogin": {
           "question": "Onde entro depois de iniciar sessão?",
@@ -217,12 +217,12 @@
     },
     "fifth": {
       "heading": "Transforme mil ideias em recursos",
-      "lead1": "O DramaClaw organiza-as numa biblioteca de recursos do projeto,",
+      "lead1": "O AIGCDO organiza-as numa biblioteca de recursos do projeto,",
       "lead2": "para que a geração de planos posterior possa usá-las como referência, mantê-las num único local e repor uma versão quando necessário."
     },
     "seventh": {
       "heading": "De sorteios gacha a um verdadeiro processo de produção",
-      "lead": "O DramaClaw distribui a incerteza do vídeo com IA pelo texto, pelos recursos, pelos planos e pelo fluxo de tarefas",
+      "lead": "O AIGCDO distribui a incerteza do vídeo com IA pelo texto, pelos recursos, pelos planos e pelo fluxo de tarefas",
       "steps": {
         "01": {
           "title": "Introduzir a premissa",
@@ -252,7 +252,7 @@
     },
     "eighth": {
       "heading": "Criado para produções completas",
-      "lead": "O DramaClaw centra-se na continuidade da produção de uma série: entrada de texto, coerência das personagens, reutilização de cenas, progresso dos planos e entrega pela equipa.",
+      "lead": "O AIGCDO centra-se na continuidade da produção de uma série: entrada de texto, coerência das personagens, reutilização de cenas, progresso dos planos e entrega pela equipa.",
       "statementTitle": "Protocolo de Passagem Noturna · Sequência de planos 08",
       "statementBody": "Um cargueiro não registado arrasta o segredo de toda a cidade para a camada noturna.",
       "decisions": {
@@ -277,7 +277,7 @@
     "ninth": {
       "headingTop": "Uma linha, diretamente para",
       "headingAccent": "planos",
-      "lead": "Não precisa de um guião concluído. Indique uma direção e o DramaClaw decompõe-na em personagens, conflito, cenários e uma cadeia de planos que pode continuar a desenvolver.",
+      "lead": "Não precisa de um guião concluído. Indique uma direção e o AIGCDO decompõe-na em personagens, conflito, cenários e uma cadeia de planos que pode continuar a desenvolver.",
       "featuredWork": "Luban's Craft",
       "steps": {
         "01": {
@@ -304,7 +304,7 @@
     },
     "twelfth": {
       "heading": "Transforme uma linha num universo que pode ver",
-      "lead": "Dê-lhe um conflito entre personagens ou um mundo e deixe o DramaClaw decompô-lo em nós de planos e continuar a expandi-lo",
+      "lead": "Dê-lhe um conflito entre personagens ou um mundo e deixe o AIGCDO decompô-lo em nós de planos e continuar a expandi-lo",
       "primaryCta": "Começar a criar",
       "secondaryCta": "Pedir uma conta"
     },
@@ -317,7 +317,7 @@
     },
     "second": {
       "title": "Da ideia ao projeto",
-      "subtitle": "No DramaClaw, a criação já não termina num único prompt e num único resultado"
+      "subtitle": "No AIGCDO, a criação já não termina num único prompt e num único resultado"
     },
     "third": {
       "title": "Faça da história o ponto de partida",
@@ -359,8 +359,8 @@
       "eyebrow": "Interface",
       "title": "Um pipeline guiado e um canvas de formato livre",
       "lede": "O fluxo principal divide um romance em episódios, personagens, storyboards, primeiros fotogramas, vídeo e corte final, com uma página por etapa. O canvas projeta qualquer um desses planos num grafo de nós, onde pode reformulá-los livremente e voltar a sincronizar o resultado. Ambos utilizam os mesmos recursos.",
-      "windowTitle": "DramaClaw — Episódio 03 · Canvas",
-      "alt": "Esboço do canvas do DramaClaw para computador: separadores de episódios no topo, lista de planos à esquerda, canvas de nós ao centro e painel de parâmetros à direita.",
+      "windowTitle": "AIGCDO — Episódio 03 · Canvas",
+      "alt": "Esboço do canvas do AIGCDO para computador: separadores de episódios no topo, lista de planos à esquerda, canvas de nós ao centro e painel de parâmetros à direita.",
       "caption": "Ilustração (vista de canvas)"
     },
     "capability": {
@@ -426,7 +426,7 @@
       },
       "v120": {
         "title": "Créditos transparentes de funcionalidades, agentes externos bem-vindos",
-        "description": "Os preços das funcionalidades, os custos estimados e o histórico de utilização estão reunidos num único local, e agentes locais como o Claude Code podem controlar o DramaClaw CE através de MCP."
+        "description": "Os preços das funcionalidades, os custos estimados e o histórico de utilização estão reunidos num único local, e agentes locais como o Claude Code podem controlar o AIGCDO CE através de MCP."
       }
     },
     "faq": {
@@ -435,7 +435,7 @@
       "items": {
         "macGatekeeper": {
           "question": "O macOS diz que o programador não pode ser verificado. E agora?",
-          "answer": "Encontre o DramaClaw no Finder → Aplicações, clique com a tecla Control premida no ícone, escolha Abrir e confirme com Abrir na caixa de diálogo. Só o faz uma vez; depois disso arranca normalmente."
+          "answer": "Encontre a aplicação transferida no Finder → Aplicações, clique com a tecla Control premida no ícone, escolha Abrir e confirme com Abrir na caixa de diálogo. Só o faz uma vez; depois disso arranca normalmente."
         },
         "winSmartScreen": {
           "question": "O Windows diz que protegeu o meu PC. E agora?",
@@ -474,6 +474,7 @@
     "notifications": "Centro de anúncios",
     "account": {
       "open": "Abrir menu da conta",
+      "billing": "Saldo e recarga",
       "changeAvatar": "Alterar avatar",
       "changePassword": "Alterar palavra-passe",
       "setPassword": "Definir palavra-passe",
@@ -907,7 +908,7 @@
     "attachmentOnlyPrompt": "Por favor, analise o ficheiro que carreguei.",
     "canvasReferenceOnlyPrompt": "Continue a partir do nó selecionado na área de trabalho.",
     "attachmentAnalysisUploading": "A carregar ficheiro para análise: {{filename}}",
-    "settingsHint": "A conta e o login são geridos pela SuperTale. Estas definições controlam apenas a apresentação do chat e o comportamento dos anexos.",
+    "settingsHint": "A conta e o login são geridos pela AIGCDO. Estas definições controlam apenas a apresentação do chat e o comportamento dos anexos.",
     "actions": {
       "label": "Ações da mensagem",
       "copy": "Copiar",
@@ -1878,8 +1879,8 @@
     "retryQuote": "Atualizar cotação"
   },
   "paymentReturn": {
-    "back": "Voltar ao DramaClaw",
-    "returnButton": "Voltar ao DramaClaw",
+    "back": "Voltar ao AIGCDO",
+    "returnButton": "Voltar ao AIGCDO",
     "orderNumber": "Número de encomenda do comerciante",
     "retry": "Verificar novamente",
     "states": {
@@ -1889,7 +1890,7 @@
       },
       "credited": {
         "title": "Créditos adicionados",
-        "description": "O pagamento e a atribuição dos créditos foram confirmados pelo servidor. Pode regressar ao DramaClaw."
+        "description": "O pagamento e a atribuição dos créditos foram confirmados pelo servidor. Pode regressar ao AIGCDO."
       },
       "closed": {
         "title": "Encomenda encerrada",
@@ -2330,8 +2331,8 @@
       "noAccount": "Precisa de uma conta?",
       "applyAccount": "Pedir acesso",
       "otpRegistration": "O primeiro início de sessão com um telefone verificado cria automaticamente uma conta",
-      "showcaseLabel": "Mostruário do DramaClaw",
-      "showcaseEyebrow": "CRIADO COM O DRAMACLAW",
+      "showcaseLabel": "Mostruário do AIGCDO",
+      "showcaseEyebrow": "CRIADO COM O AIGCDO",
       "showcaseMeta": "Produção em movimento",
       "showcaseTitle": "Imaginação a avançar a toda a velocidade",
       "showcaseDescription": "Personagens, storyboards, som e planos avançam numa única linha de produção"
@@ -2378,17 +2379,17 @@
     },
     "stage": {
       "eyebrow": "Plataforma de criação de dramas",
-      "headline": "Faça o seu próprio universo DC",
+      "headline": "Faça o seu próprio universo AIGCDO",
       "headlines": {
         "createUniverse": "Abra o seu universo criativo",
         "dramaUniverse": "Abra o seu universo dramático",
         "storyWorld": "Crie o mundo da sua história"
       },
       "headlinePrefix": "Faça o seu próprio",
-      "headlineBrand": "DC",
+      "headlineBrand": "AIGCDO",
       "headlineSuffix": "Universo",
       "subtitlePrefix": "Faça o seu próprio",
-      "subtitleBrand": "DC",
+      "subtitleBrand": "AIGCDO",
       "subtitleSuffix": "",
       "start": "A inspiração acontece",
       "sub": "ONDE CADA CENTELHA DE INSPIRAÇÃO ENCONTRA O PODER DA CRIAÇÃO COM IA SEM ESFORÇO",
@@ -2397,7 +2398,7 @@
     },
     "community": {
       "label": "Obras da comunidade",
-      "heading": "DramaClaw TV",
+      "heading": "AIGCDO TV",
       "likes": "{{count}} gostos",
       "openWork": "Abrir obra \"{{title}}\"",
       "works": {
@@ -2847,6 +2848,7 @@
     "error": "Algo correu mal",
     "novelImportRequired": "Importe primeiro um romance",
     "insufficientCredits": "Créditos insuficientes. Contacte o administrador para recarregar o saldo.",
+    "insufficientCredits_aigcdo": "Créditos insuficientes. Recarregue em Saldo e recarga, no menu da conta, e tente novamente.",
     "billingRuleNotConfigured": "A regra de faturação não está configurada. Contacte um administrador para definir o preço dos créditos.",
     "billingRuleNotConfiguredShort": "Configurar",
     "projectDefaultQueueFull": "A fila predefinida do projeto atual está cheia",
@@ -3005,7 +3007,7 @@
     "novelFormat": {
       "button": "Guia de formato de drama premium",
       "title": "Formato de drama premium",
-      "intro": "Os guiões de drama premium precisam de limites explícitos de episódios e cenas. O DramaClaw divide o guião por cabeçalhos de cena antes de gerar recursos visuais, diálogos e áudio linha a linha; não inventa quebras de cena para prosa sem cabeçalho.",
+      "intro": "Os guiões de drama premium precisam de limites explícitos de episódios e cenas. O AIGCDO divide o guião por cabeçalhos de cena antes de gerar recursos visuais, diálogos e áudio linha a linha; não inventa quebras de cena para prosa sem cabeçalho.",
       "standardStatus": "Padrão · pronto para importar",
       "standardStatusHint": "São suportados vários formatos da indústria. Os metadados completos de localização, hora e INT/EXT podem ser analisados de forma fiável.",
       "warningStatus": "Reparável · importação permitida",
@@ -5209,7 +5211,7 @@
           "style": {
             "label": "Estilo",
             "options": {
-              "supertale_production": "Produção SuperTale",
+              "supertale_production": "Produção AIGCDO",
               "cinematic_realistic": "Realismo cinematográfico",
               "clean_sketch": "Esboço limpo",
               "spiderverse_mixed": "Técnica mista"
@@ -7889,7 +7891,7 @@
         "apiKey": "API Key",
         "capabilitiesLabel": "Capabilities",
         "models": "Model mappings",
-        "requestModel": "DramaClaw model pattern",
+        "requestModel": "AIGCDO model pattern",
         "upstreamModel": "Upstream model",
         "unifiedRoute": "Unified text route",
         "unifiedRouteNone": "No unified route",
@@ -7957,7 +7959,7 @@
         "saved": "Definições do modelo do Agente guardadas. As novas sessões utilizam a configuração mais recente."
       },
       "custom": {
-        "description": "A CE utiliza uma NewAPI local baseada em SQLite. O DramaClaw liga-se à base de dados, cria um token de runtime e ativa automaticamente o canal local.",
+        "description": "A CE utiliza uma NewAPI local baseada em SQLite. O AIGCDO liga-se à base de dados, cria um token de runtime e ativa automaticamente o canal local.",
         "init": "Inicializar a NewAPI local",
         "repair": "Verificar e reparar",
         "initialized": "A NewAPI local está pronta.",
@@ -7976,7 +7978,7 @@
         "setupConfirmPassword": "Confirmar palavra-passe",
         "setupPasswordPlaceholder": "Pelo menos 8 caracteres",
         "setupConfirmPasswordPlaceholder": "Introduza-a novamente",
-        "setupPasswordOnlyOnce": "Este nome de utilizador e esta palavra-passe são enviados para a sua instância NewAPI apenas ao criar o primeiro administrador numa nova instalação da NewAPI. Se a NewAPI já estiver inicializada, introduzir aqui uma palavra-passe não altera a palavra-passe existente do administrador. O DramaClaw não guarda a palavra-passe nem a utiliza em operações posteriores; conserve-a para iniciar sessão na consola de administração da NewAPI após a configuração inicial.",
+        "setupPasswordOnlyOnce": "Este nome de utilizador e esta palavra-passe são enviados para a sua instância NewAPI apenas ao criar o primeiro administrador numa nova instalação da NewAPI. Se a NewAPI já estiver inicializada, introduzir aqui uma palavra-passe não altera a palavra-passe existente do administrador. O AIGCDO não guarda a palavra-passe nem a utiliza em operações posteriores; conserve-a para iniciar sessão na consola de administração da NewAPI após a configuração inicial.",
         "setupRequired": "A NewAPI local ainda não foi inicializada. Introduza a palavra-passe de configuração e a confirmação e, em seguida, tente novamente.",
         "setupAlreadyInitializedPasswordIgnored": "A sua instância NewAPI já está inicializada. Esta execução não chamou o endpoint de configuração da NewAPI nem alterou a palavra-passe existente do administrador; a palavra-passe introduzida foi ignorada e limpa.",
         "setupPasswordMissingUsername": "Introduza o nome de utilizador do administrador.",
@@ -8376,7 +8378,7 @@
     "missingAnyApiKeyMessage": "O fornecedor de backend não está configurado.",
     "openProvidersSettings": "Ver fornecedores",
     "aboutAppName": "Beat Workbench",
-    "aboutIntro": "Ambiente de trabalho para gerar candidatos do SuperTale, experimentar livremente com imagens e consolidar recursos.",
+    "aboutIntro": "Ambiente de trabalho para gerar candidatos do AIGCDO, experimentar livremente com imagens e consolidar recursos.",
     "aboutVersionLabel": "Versão",
     "aboutVersionUnknown": "Desconhecida",
     "aboutAuthorLabel": "Autor",

@@ -328,6 +328,12 @@ def _get_endpoint_env(provider: str, primary_key: str, fallback_key: str) -> str
 
 
 def _effective_newapi_gateway(*, capability: str = "text") -> tuple[str, str]:
+    from novelvideo import aigcdo_model_runtime
+
+    if aigcdo_model_runtime.active():
+        # Cognee keeps this in process-wide config and env, so it must never be a user's key;
+        # the transport hook below supplies the in-scope user's key per call.
+        return aigcdo_model_runtime.PLACEHOLDER_KEY, aigcdo_model_runtime.GATEWAY_ORIGIN + "/v1"
     try:
         from novelvideo.config import get_newapi_runtime_credentials
 
@@ -788,6 +794,13 @@ async def _route_cognee_llm_transport(
     )
     from novelvideo.ports.egress_operations import canonical_request_digest
 
+    from novelvideo import aigcdo_model_runtime
+
+    if aigcdo_model_runtime.active():
+        return await transport(*args, **{
+            **kwargs, "api_key": aigcdo_model_runtime.scoped_user_key(),
+            "api_base": aigcdo_model_runtime.GATEWAY_ORIGIN + "/v1", "max_retries": 0,
+        })
     context = current_model_gateway_context()
     if context is None or not context.is_organization:
         return await transport(*args, **kwargs)

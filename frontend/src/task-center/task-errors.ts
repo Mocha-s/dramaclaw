@@ -4,6 +4,7 @@ import type { TFunction } from "i18next";
 import {
   backendErrorCodeToastMessage,
   humanizeTaskError,
+  insufficientCreditsMessage,
   providerErrorMessage,
 } from "@/lib/api-errors";
 import type { TaskState } from "./types";
@@ -16,9 +17,7 @@ export function taskErrorMessage(task: TaskState, t: TFunction): string {
   );
   if (localized) return localized;
   if (task.error_code === "INSUFFICIENT_CREDITS") {
-    return t("common.insufficientCredits", {
-      defaultValue: task.error || t("common.error"),
-    });
+    return insufficientCreditsMessage(t, task.error || t("common.error"));
   }
   if (task.error_code === "BILLING_RULE_NOT_CONFIGURED") {
     return t("common.billingRuleNotConfigured", {

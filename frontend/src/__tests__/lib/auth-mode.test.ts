@@ -4,16 +4,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ensureAuthenticatedForAppRoute, isLocalAuthMode } from "@/lib/auth-mode";
 import { useAuthStore } from "@/stores/auth-store";
 
-const runtimeState = vi.hoisted(() => ({ authRequired: true }));
+const runtimeState = vi.hoisted(() => ({ authRequired: true, provider: "legacy" }));
 
 vi.mock("@/lib/runtime-config", () => ({
   authRequired: () => runtimeState.authRequired,
+  authProvider: () => runtimeState.provider,
 }));
 
 beforeEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   runtimeState.authRequired = true;
+  runtimeState.provider = "legacy";
   useAuthStore.getState().reset();
   localStorage.clear();
 });
@@ -49,5 +51,28 @@ describe("auth mode", () => {
     await expect(ensureAuthenticatedForAppRoute()).resolves.toBe(true);
     expect(useAuthStore.getState().username).toBe("local");
     expect(useAuthStore.getState().role).toBe("owner");
+  });
+
+  it("restores an AIGCDO Cookie session after a full navigation with no persisted username", async () => {
+    runtimeState.provider = "aigcdo";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ ok: true, data: { id: "alice", username: "aigcdo_alice", role: "user" } }),
+    }));
+    expect(await ensureAuthenticatedForAppRoute()).toBe(true);
+    expect(useAuthStore.getState().username).toBe("aigcdo_alice");
+  });
+
+  it("does not trust a persisted AIGCDO username when the Cookie is rejected", async () => {
+    runtimeState.provider = "aigcdo";
+    useAuthStore.setState({ username: "old-user", role: "admin" });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 401 }));
+    expect(await ensureAuthenticatedForAppRoute()).toBe(false);
+    expect(useAuthStore.getState().username).toBeNull();
+  });
+
+  it.each(["aigcdo", "unavailable"])("cannot override %s with local build-time authentication", (provider) => {
+    runtimeState.provider = provider;
+    vi.stubEnv("VITE_AUTH_MODE", "local");
+    expect(isLocalAuthMode()).toBe(false);
   });
 });

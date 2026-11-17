@@ -28,6 +28,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 vi.mock("@/lib/runtime-config", () => ({
   authRequired: () => true,
+  authProvider: () => "legacy",
 }));
 
 const useAuthStoreMock = Object.assign(

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 ClaymoreLab
 import type { TFunction } from "i18next";
 import { HTTPError } from "ky";
+import { authProvider } from "@/lib/runtime-config";
 import type { ErrorResponse } from "@/types/api";
 
 export const NOVEL_IMPORT_REQUIRED_CODE = "NOVEL_IMPORT_REQUIRED";
@@ -521,11 +522,17 @@ export function humanizeTaskError(
   }
 }
 
+export function insufficientCreditsMessage(t: TFunction, fallback: string): string {
+  // AIGCDO users top up themselves; the default copy sends them to an administrator.
+  return t("common.insufficientCredits", {
+    defaultValue: fallback,
+    ...(authProvider() === "aigcdo" ? { context: "aigcdo" } : {}),
+  });
+}
+
 export function backendErrorToastMessage(error: unknown, t: TFunction): string {
   if (error instanceof InsufficientCreditsError) {
-    return t("common.insufficientCredits", {
-      defaultValue: error.message || t("common.error"),
-    });
+    return insufficientCreditsMessage(t, error.message || t("common.error"));
   }
   if (error instanceof BillingRuleNotConfiguredError) {
     return t("common.billingRuleNotConfigured", {

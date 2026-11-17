@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import logging
+import contextvars
 import threading
 import time
 from typing import Any
@@ -106,7 +107,10 @@ def _refresh_in_background() -> None:
             with _REFRESH_LOCK:
                 _REFRESHING = False
 
-    threading.Thread(target=run, name="model-plaza-refresh", daemon=True).start()
+    # A plain thread starts with an empty context; the gateway key may be request-scoped.
+    threading.Thread(
+        target=contextvars.copy_context().run, args=(run,), name="model-plaza-refresh", daemon=True,
+    ).start()
 
 
 def _load_payload() -> dict[str, Any] | None:

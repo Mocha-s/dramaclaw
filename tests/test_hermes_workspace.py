@@ -1580,3 +1580,18 @@ def test_chmod_700(isolated_workspace, repo_skills, repo_plugins):
     else:
         # On filesystems that support chmod, should be 0o700
         assert mode in (0o700, 0o755, 0o775), f"unexpected mode {oct(mode)}"
+
+
+def test_torn_config_yaml_is_rebuilt_instead_of_running_without_the_tool_policy(
+    isolated_workspace, repo_skills, repo_plugins,
+):
+    """A worker killed mid-write left half a file on 2026-11-17; every later spawn kept it."""
+    import yaml
+
+    home = hw.ensure_user_hermes_workspace("admin", profile="freezone")
+    config = home / "config.yaml"
+    config.write_text("abled: auto\n  skill_manage:\n    enabled: 'off'\n", encoding="utf-8")
+    hw.ensure_user_hermes_workspace("admin", profile="freezone")
+    rebuilt = yaml.safe_load(config.read_text(encoding="utf-8"))
+    assert "terminal" in rebuilt["disabled_toolsets"]
+    assert rebuilt["plugins"]["enabled"] == ["freezone"]

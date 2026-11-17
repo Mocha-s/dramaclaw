@@ -1,8 +1,8 @@
 ---
 version: alpha
-name: DramaClaw
+name: AIGCDO
 description: >-
-  DramaClaw AIGC 视频引擎的视觉规范：暗色优先、信息密集的工作台。
+  AIGCDO AIGC 视频引擎的视觉规范：暗色优先、信息密集的工作台。
   token 逐值对齐 frontend/src/index.css；以暗色为准，亮色值以 light-* 前缀并行。
 colors:
   # ── 画布 / freezone 表面（来源：index.css 的 --*-rgb，.dark 块）──
@@ -257,7 +257,7 @@ components:
     rounded: "{rounded.full}"
 ---
 
-# DramaClaw DESIGN.md
+# AIGCDO DESIGN.md
 
 本文件是 `frontend/src/index.css` 的机读镜像。CSS 变量一改，本文件必须同 commit 更新——
 靠 `npx @google/design.md diff` 跟上一版比对，才能抓出视觉回归。
@@ -267,7 +267,7 @@ components:
 
 ## Overview
 
-DramaClaw（虾导）是一个专业 AIGC 视频工作台：节点画布、故事板、生成队列、长任务面板。
+AIGCDO 是一个专业 AIGC 视频工作台：节点画布、故事板、生成队列、长任务面板。
 用户是会把工具开一整天的创作者，所以 UI 定性为**暗色优先、信息密集、克制**——
 `theme: 'dark'` 是持久化的默认值，亮色是受支持的备选，不是主战场。
 
@@ -455,10 +455,10 @@ hover 行用 shadcn 的 `accent`（#0e333c）——刻意不用画布的蓝强�
 
 ### 例外区内允许的偏离
 
-- **自带色板，不引 `index.css` 的 token。** 下载页取自品牌 DC 标的材质——镀锌钢
+- **自带色板，不引 `index.css` 的 token。** 下载页沿用原有的镀锌钢材质色板
   （`--zinc` #a8b4be）加锈蚀氧化（`--rust` #d9603a / `--rust-hot` #ee7549）。
   这确实是第三个强调色，只在例外区内成立：**`rust` 一族不得出现在任何产品界面里**，
-  且在页内继续守「一屏一个主导高饱和元素」——静止态的锈橙只给 hero 的 `DC` 字样、
+  且在页内继续守「一屏一个主导高饱和元素」——静止态的锈橙只给 hero 的 `AIGCDO` 字样、
   「你的系统」标记、主下载按钮、hero 底部校准条，以及预览 SVG 里正在渲染的那个节点；
   其余出现的地方只能是焦点环和 hover 反馈。
 - **拉丁字形用 Geist Variable**（`@fontsource-variable/geist`），CJK 回退链不变。

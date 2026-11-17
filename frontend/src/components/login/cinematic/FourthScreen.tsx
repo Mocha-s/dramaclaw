@@ -68,7 +68,7 @@ export function FourthScreen({
           })}
         </div>
 
-        <div className={styles.grid} aria-label="DramaClaw creator workflow">
+        <div className={styles.grid} aria-label="AIGCDO creator workflow">
           {GRID_CARDS.map((cardId, index) => (
             <article
               className={`${styles.item} ${activeIndex === index ? styles.itemActive : ""}`}

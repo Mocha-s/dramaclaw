@@ -1,0 +1,26 @@
+# AIGCDO 多用户部署覆盖文件（配置说明见 docs/aigcdo-deployment.md）。
+# 必须与源码构建文件叠加使用——已发布镜像不含 AIGCDO 接入代码：
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.aigcdo.yml up -d --build
+# AIGCDO_* 变量写在 .env（经 env_file 注入）；前面放一层 TLS 反向代理，
+# AIGCDO_APP_ORIGIN 填它的 HTTPS 源。只暴露 web：.env 里设
+# ST_API_PORT=127.0.0.1:8780，API 就不会监听公网网卡。
+services:
+  api:
+    security_opt:
+      # 每个用户的 Agent 工作进程都跑在 bubblewrap 的独立挂载/PID 命名空间里。三项缺一不可
+      # （2026-11-17 在 Docker + AppArmor 宿主上逐项实测）：seccomp 放开才能建 user
+      # namespace，apparmor 放开才能在其中挂载，systempaths 放开才能挂新的 /proc。
+      # 缺任何一项时 API 照常启动，只是对话助手自动停用（启动日志会写原因）。
+      # 代价：API 容器自身失去这三层默认加固，所以不要再给它额外的宿主机挂载或特权。
+      # seccomp:unconfined 已在 docker-compose.release.yml 里，compose 会合并数组，这里不重复。
+      - apparmor:unconfined
+      - systempaths=unconfined
+    environment:
+      SUPERTALE_AUTH_PROVIDER: aigcdo
+      AIGCDO_STATE_DIR: /data/aigcdo
+      AIGCDO_MODEL_CATALOG: /config/model-catalog.json
+      # 多用户下只有 Hermes 工作进程受按用户沙箱保护；不允许无沙箱降级。
+      DRAMACLAW_CHAT_BACKEND: hermes
+      SUPERTALE_ALLOW_UNSANDBOXED: ""
+    volumes:
+      - ./aigcdo-model-catalog.json:/config/model-catalog.json:ro

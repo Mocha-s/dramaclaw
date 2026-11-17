@@ -23,14 +23,14 @@ export function IntroRitualScreen({
   return (
     <section
       className={styles.layer}
-      aria-label="DramaClaw intro"
+      aria-label="AIGCDO intro"
       onClick={onComplete}
       onWheel={onComplete}
     >
       <div className={styles.aperture} aria-hidden="true" />
       <div className={styles.scanline} aria-hidden="true" />
       <div className={styles.focusFrame} aria-hidden="true">
-        <div className={styles.hudTopLeft}>A001_C012 · DRAMACLAW</div>
+        <div className={styles.hudTopLeft}>A001_C012 · AIGCDO</div>
         <div className={styles.hudTopRight}>TC 00:00:00:10</div>
         <div className={styles.hudBottomLeft}>
           <span className={styles.recDot} />
@@ -39,7 +39,7 @@ export function IntroRitualScreen({
         <div className={styles.hudBottomRight}>4K · 24FPS</div>
         <img
           className={styles.brandMark}
-          src="/login-cinematic/final-mark.png"
+          src="/brand/aigcdo-icon.svg"
           alt=""
           aria-hidden="true"
           draggable={false}

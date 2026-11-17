@@ -59,6 +59,15 @@ describe("auth-store", () => {
     expect(state.role).toBe("admin");
   });
 
+  it("never treats an incomplete two-factor response as a logged-in user", async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true, status: 202, json: async () => ({ ok: true, data: { requires_2fa: true } }),
+    });
+    await expect(useAuthStore.getState().login("alice@example.test", "password")).rejects.toThrow();
+    expect(useAuthStore.getState().username).toBeNull();
+    expect(useAuthStore.getState().role).toBeNull();
+  });
+
   it("login calls fetch with credentials: include so the Set-Cookie is honored", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,

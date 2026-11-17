@@ -11,7 +11,9 @@ import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { RegionSelector } from "@/components/login/region-selector";
 import { clusterConfig } from "@/lib/cluster-config";
-import { phoneOtpEntryVisible } from "@/lib/runtime-config";
+import { authProvider, phoneOtpEntryVisible } from "@/lib/runtime-config";
+import { AigcdoLoginForm } from "@/components/aigcdo/login-form";
+import { Button } from "@/components/ui/button";
 import { useRegionStore } from "@/stores/region-store";
 import {
   AuthApiError,
@@ -31,12 +33,25 @@ type LoginMode = "otp" | "password";
 
 export function LoginCard() {
   const { t } = useTranslation();
+  const { t: accountT } = useTranslation("account");
   const regionId = useRegionStore((s) => s.selectedRegionId);
   const needsRegion = clusterConfig.mode === "multi-region" && !regionId;
   const otpEntryVisible = phoneOtpEntryVisible();
   const [mode, setMode] = useState<LoginMode>(() =>
     otpEntryVisible ? "otp" : "password",
   );
+
+  if (authProvider() === "unavailable") {
+    return <div className={styles.card}>
+      <p role="alert">{accountT("auth.configError")}</p>
+      <Button onClick={() => window.location.reload()}>{accountT("retry")}</Button>
+    </div>;
+  }
+  if (authProvider() === "aigcdo") {
+    return <div className={styles.card}>
+      <AigcdoLoginForm onReady={() => window.location.replace("/")} />
+    </div>;
+  }
 
   if (!otpEntryVisible) {
     return (

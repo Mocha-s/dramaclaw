@@ -43,8 +43,8 @@
     "totalMaxDuration": "Total reference duration: {{actual}} s; maximum: {{expected}} s."
   },
   "app": {
-    "title": "SuperTale",
-    "subtitle": "SuperTale candidate generation and asset commit workbench",
+    "title": "AIGCDO",
+    "subtitle": "AIGCDO candidate generation and asset commit workbench",
     "updateRequired": {
       "title": "App updated",
       "description": "This page is referencing an expired app file. Refresh to load the latest version.",
@@ -141,8 +141,8 @@
       "qrAlt": "Business WeChat QR code",
       "items": {
         "difference": {
-          "question": "How is DramaClaw different from an ordinary AI video generator?",
-          "answer": "Ordinary tools work around a single prompt, a single clip, or a single image. DramaClaw is built around a complete project: text import, asset build-up, episode planning, shot production and final compositing — a traceable, collaborative, reusable production loop."
+          "question": "How is AIGCDO different from an ordinary AI video generator?",
+          "answer": "Ordinary tools work around a single prompt, a single clip, or a single image. AIGCDO is built around a complete project: text import, asset build-up, episode planning, shot production and final compositing — a traceable, collaborative, reusable production loop."
         },
         "gettingStarted": {
           "question": "Where should I start the first time?",
@@ -161,7 +161,7 @@
           "answer": "The usual cause of rework in AI video isn't the final generation step — it's unstable characters, vague scenes, props without references and inconsistent voices upstream. Turning those into assets in Shrimp Pond removes a lot of chaos from the shot stage."
         },
         "contentTypes": {
-          "question": "What kinds of content is DramaClaw suited to?",
+          "question": "What kinds of content is AIGCDO suited to?",
           "answer": "AI short dramas, comic dramas, novel promos, commentary shows, ads, and training videos — plus team projects that maintain IP characters and serialised content over time. Solo creators can run the whole pipeline; teams can produce collaboratively."
         },
         "teamRoles": {
@@ -173,8 +173,8 @@
           "answer": "Find the stage that's failing: is the text clear, is the character identity right, do the scene and props have references, does the sketch describe the shot, is the first frame stable, does the audio match? Don't start by regenerating video over and over — fix the upstream assets and the shot description first."
         },
         "dcUniverse": {
-          "question": "What does “Make Your DC Universe.” mean?",
-          "answer": "DC isn't only short for DramaClaw — it also stands for each creator's own content universe. DramaClaw is meant to help you start from one story and build up characters, world, scene assets and the ability to produce a series."
+          "question": "What does “Make Your AIGCDO Universe.” mean?",
+          "answer": "AIGCDO helps creators start from one story and build up characters, worlds, scene assets and the ability to produce a series — their own content universe."
         },
         "afterLogin": {
           "question": "Where do I land after logging in?",
@@ -217,12 +217,12 @@
     },
     "fifth": {
       "heading": "Turn a thousand ideas into assets",
-      "lead1": "DramaClaw organises them into a project asset library,",
+      "lead1": "AIGCDO organises them into a project asset library,",
       "lead2": "so later shot generation can reference them, maintain them in one place, and roll back a version when needed."
     },
     "seventh": {
       "heading": "From gacha pulls to a real pipeline",
-      "lead": "DramaClaw breaks the uncertainty of AI video down across text, assets, shots and task flow",
+      "lead": "AIGCDO breaks the uncertainty of AI video down across text, assets, shots and task flow",
       "steps": {
         "01": {
           "title": "Premise in",
@@ -252,7 +252,7 @@
     },
     "eighth": {
       "heading": "Built for complete productions",
-      "lead": "DramaClaw is about how a series keeps getting made: text in, character consistency, scene reuse, shot progress, team delivery.",
+      "lead": "AIGCDO is about how a series keeps getting made: text in, character consistency, scene reuse, shot progress, team delivery.",
       "statementTitle": "Night Passage Protocol · Shot sequence 08",
       "statementBody": "An unregistered freighter drags the whole city's secret down into the night layer.",
       "decisions": {
@@ -277,7 +277,7 @@
     "ninth": {
       "headingTop": "One line, straight into",
       "headingAccent": "shots",
-      "lead": "You don't need a finished script. Give a direction and DramaClaw breaks it into characters, conflict, settings and a shot chain you can keep pushing.",
+      "lead": "You don't need a finished script. Give a direction and AIGCDO breaks it into characters, conflict, settings and a shot chain you can keep pushing.",
       "featuredWork": "Luban's Craft",
       "steps": {
         "01": {
@@ -304,7 +304,7 @@
     },
     "twelfth": {
       "heading": "Push one line into a universe you can watch",
-      "lead": "Give it a character conflict or a world, and let DramaClaw break it into shot nodes and keep extending",
+      "lead": "Give it a character conflict or a world, and let AIGCDO break it into shot nodes and keep extending",
       "primaryCta": "Start creating",
       "secondaryCta": "Request an account"
     },
@@ -317,7 +317,7 @@
     },
     "second": {
       "title": "From idea to project",
-      "subtitle": "In DramaClaw, creating no longer stops at one prompt and one result"
+      "subtitle": "In AIGCDO, creating no longer stops at one prompt and one result"
     },
     "third": {
       "title": "Let the story be the starting point",
@@ -359,8 +359,8 @@
       "eyebrow": "Interface",
       "title": "A guided pipeline and a free-form canvas",
       "lede": "The mainline breaks a novel into episodes, characters, storyboards, first frames, video, and the final cut, one page per step. The canvas projects any of those shots onto a node graph where you can rework them freely and sync the result back. Both sides read from the same assets.",
-      "windowTitle": "DramaClaw — Episode 03 · Canvas",
-      "alt": "Sketch of the DramaClaw desktop canvas: episode tabs across the top, shot outline on the left, node canvas in the middle, parameter panel on the right.",
+      "windowTitle": "AIGCDO — Episode 03 · Canvas",
+      "alt": "Sketch of the AIGCDO desktop canvas: episode tabs across the top, shot outline on the left, node canvas in the middle, parameter panel on the right.",
       "caption": "Illustration (canvas view)"
     },
     "capability": {
@@ -426,7 +426,7 @@
       },
       "v120": {
         "title": "Transparent feature credits, external agents welcome",
-        "description": "Feature prices, estimated charges, and usage history live in one place, and local agents such as Claude Code can drive DramaClaw CE over MCP."
+        "description": "Feature prices, estimated charges, and usage history live in one place, and local agents such as Claude Code can drive AIGCDO CE over MCP."
       }
     },
     "faq": {
@@ -435,7 +435,7 @@
       "items": {
         "macGatekeeper": {
           "question": "macOS says the developer cannot be verified. Now what?",
-          "answer": "Find DramaClaw in Finder → Applications, Control-click the icon, choose Open, then confirm with Open in the dialog. You only do this once; after that it launches normally."
+          "answer": "Find the downloaded app in Finder → Applications, Control-click the icon, choose Open, then confirm with Open in the dialog. You only do this once; after that it launches normally."
         },
         "winSmartScreen": {
           "question": "Windows says it protected my PC. Now what?",
@@ -474,6 +474,7 @@
     "notifications": "Announcement Center",
     "account": {
       "open": "Open account menu",
+      "billing": "Balance & top-up",
       "changeAvatar": "Change avatar",
       "changePassword": "Change password",
       "setPassword": "Set password",
@@ -907,7 +908,7 @@
     "attachmentOnlyPrompt": "Please analyze the file I uploaded.",
     "canvasReferenceOnlyPrompt": "Please continue from the selected canvas node.",
     "attachmentAnalysisUploading": "Uploading file for analysis: {{filename}}",
-    "settingsHint": "Account and login are managed by SuperTale. These settings only control chat display and attachment behavior.",
+    "settingsHint": "Account and login are managed by AIGCDO. These settings only control chat display and attachment behavior.",
     "actions": {
       "label": "Message actions",
       "copy": "Copy",
@@ -1878,8 +1879,8 @@
     "retryQuote": "Refresh quote"
   },
   "paymentReturn": {
-    "back": "Back to DramaClaw",
-    "returnButton": "Back to DramaClaw",
+    "back": "Back to AIGCDO",
+    "returnButton": "Back to AIGCDO",
     "orderNumber": "Merchant order number",
     "retry": "Check again",
     "states": {
@@ -1889,7 +1890,7 @@
       },
       "credited": {
         "title": "Credits added",
-        "description": "Both payment and credit fulfillment have been confirmed by the server. You can return to DramaClaw."
+        "description": "Both payment and credit fulfillment have been confirmed by the server. You can return to AIGCDO."
       },
       "closed": {
         "title": "Order closed",
@@ -2330,8 +2331,8 @@
       "noAccount": "Need an account?",
       "applyAccount": "Request access",
       "otpRegistration": "Your first verified phone sign-in creates an account automatically",
-      "showcaseLabel": "DramaClaw showcase",
-      "showcaseEyebrow": "MADE WITH DRAMACLAW",
+      "showcaseLabel": "AIGCDO showcase",
+      "showcaseEyebrow": "MADE WITH AIGCDO",
       "showcaseMeta": "Production in motion",
       "showcaseTitle": "Imagination, rolling at full speed",
       "showcaseDescription": "Characters, storyboards, sound, and shots move forward in one production line"
@@ -2378,17 +2379,17 @@
     },
     "stage": {
       "eyebrow": "Drama creation platform",
-      "headline": "Make Your Own DC Universe",
+      "headline": "Make Your Own AIGCDO Universe",
       "headlines": {
         "createUniverse": "Open Your Creative Universe",
         "dramaUniverse": "Open Your Drama Universe",
         "storyWorld": "Build Your Story World"
       },
       "headlinePrefix": "Make Your Own",
-      "headlineBrand": "DC",
+      "headlineBrand": "AIGCDO",
       "headlineSuffix": "Universe",
       "subtitlePrefix": "Make Your Own",
-      "subtitleBrand": "DC",
+      "subtitleBrand": "AIGCDO",
       "subtitleSuffix": "",
       "start": "Inspiration happens",
       "sub": "WHERE EVERY SPARK OF INSPIRATION MEETS THE POWER OF EFFORTLESS AI CREATION",
@@ -2397,7 +2398,7 @@
     },
     "community": {
       "label": "Community works",
-      "heading": "DramaClaw TV",
+      "heading": "AIGCDO TV",
       "likes": "{{count}} likes",
       "openWork": "Open work \"{{title}}\"",
       "works": {
@@ -2847,6 +2848,7 @@
     "error": "Something went wrong",
     "novelImportRequired": "Please import a novel first",
     "insufficientCredits": "Insufficient credits. Please contact your administrator to recharge.",
+    "insufficientCredits_aigcdo": "Insufficient credits. Top up under Balance & top-up in the account menu, then try again.",
     "billingRuleNotConfigured": "Billing rule is not configured. Please contact an administrator to set credit pricing.",
     "billingRuleNotConfiguredShort": "Configure",
     "projectDefaultQueueFull": "The current project's default queue is full",
@@ -3005,7 +3007,7 @@
     "novelFormat": {
       "button": "Premium drama format guide",
       "title": "Premium drama format",
-      "intro": "Premium drama scripts need explicit episode and scene boundaries. DramaClaw splits the script by scene headers before generating visuals, dialogue, and audio line by line; it does not invent scene breaks for headerless prose.",
+      "intro": "Premium drama scripts need explicit episode and scene boundaries. AIGCDO splits the script by scene headers before generating visuals, dialogue, and audio line by line; it does not invent scene breaks for headerless prose.",
       "standardStatus": "Standard · ready to import",
       "standardStatusHint": "Several industry formats are supported. Complete location, time, and INT/EXT metadata can be parsed reliably.",
       "warningStatus": "Repairable · import allowed",
@@ -5209,7 +5211,7 @@
           "style": {
             "label": "Style",
             "options": {
-              "supertale_production": "SuperTale production",
+              "supertale_production": "AIGCDO production",
               "cinematic_realistic": "Cinematic realistic",
               "clean_sketch": "Clean sketch",
               "spiderverse_mixed": "Mixed media"
@@ -7889,7 +7891,7 @@
         "apiKey": "API Key",
         "capabilitiesLabel": "Capabilities",
         "models": "Model mappings",
-        "requestModel": "DramaClaw model pattern",
+        "requestModel": "AIGCDO model pattern",
         "upstreamModel": "Upstream model",
         "unifiedRoute": "Unified text route",
         "unifiedRouteNone": "No unified route",
@@ -7957,7 +7959,7 @@
         "saved": "Agent model settings saved. New sessions use the latest configuration."
       },
       "custom": {
-        "description": "CE uses a local SQLite-backed NewAPI. DramaClaw connects the database, creates a runtime token, and enables the local channel automatically.",
+        "description": "CE uses a local SQLite-backed NewAPI. AIGCDO connects the database, creates a runtime token, and enables the local channel automatically.",
         "init": "Initialize Local NewAPI",
         "repair": "Check & Repair",
         "initialized": "Local NewAPI is ready.",
@@ -7976,7 +7978,7 @@
         "setupConfirmPassword": "Confirm Password",
         "setupPasswordPlaceholder": "At least 8 characters",
         "setupConfirmPasswordPlaceholder": "Enter it again",
-        "setupPasswordOnlyOnce": "This username and password are sent to your NewAPI instance only when creating the first admin on a fresh NewAPI install. If NewAPI is already initialized, entering a password here will not change the existing admin password. DramaClaw does not save the password or use it for later operations; keep it for logging into the NewAPI admin console after first-time setup.",
+        "setupPasswordOnlyOnce": "This username and password are sent to your NewAPI instance only when creating the first admin on a fresh NewAPI install. If NewAPI is already initialized, entering a password here will not change the existing admin password. AIGCDO does not save the password or use it for later operations; keep it for logging into the NewAPI admin console after first-time setup.",
         "setupRequired": "Local NewAPI has not been initialized yet. Enter the setup password and confirmation, then try again.",
         "setupAlreadyInitializedPasswordIgnored": "Your NewAPI instance is already initialized. This run did not call the NewAPI setup endpoint and did not change the existing admin password; the password you entered was ignored and cleared.",
         "setupPasswordMissingUsername": "Enter the admin username.",
@@ -8376,7 +8378,7 @@
     "missingAnyApiKeyMessage": "Backend provider is not configured.",
     "openProvidersSettings": "View providers",
     "aboutAppName": "Beat Workbench",
-    "aboutIntro": "SuperTale candidate generation, free image experimentation, and asset commit workbench.",
+    "aboutIntro": "AIGCDO candidate generation, free image experimentation, and asset commit workbench.",
     "aboutVersionLabel": "Version",
     "aboutVersionUnknown": "Unknown",
     "aboutAuthorLabel": "Author",

@@ -46,7 +46,7 @@ export function EighthControlScreen({
         <span />
       </div>
 
-      <div className={styles.console} aria-label="DramaClaw direction control">
+      <div className={styles.console} aria-label="AIGCDO direction control">
         <div className={styles.consoleHeader}>
           <span>ACTIVE NODE</span>
           <strong>SCENE DIRECTION</strong>

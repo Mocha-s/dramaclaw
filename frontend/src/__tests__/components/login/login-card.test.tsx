@@ -11,6 +11,7 @@ const loginWithOtp = vi.hoisted(() => vi.fn());
 const requestOtp = vi.hoisted(() => vi.fn());
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const otpEntryVisible = vi.hoisted(() => vi.fn(() => true));
+const provider = vi.hoisted(() => vi.fn(() => "legacy"));
 
 vi.mock("@tanstack/react-router", () => ({ useNavigate: () => navigate }));
 vi.mock("sonner", () => ({ toast }));
@@ -18,7 +19,7 @@ vi.mock("@/components/login/region-selector", () => ({ RegionSelector: () => nul
 vi.mock("@/lib/cluster-config", () => ({
   clusterConfig: { mode: "none", regions: [] },
 }));
-vi.mock("@/lib/runtime-config", () => ({ phoneOtpEntryVisible: otpEntryVisible }));
+vi.mock("@/lib/runtime-config", () => ({ phoneOtpEntryVisible: otpEntryVisible, authProvider: provider }));
 vi.mock("@/stores/region-store", () => ({
   useRegionStore: (selector: (state: { selectedRegionId: null }) => unknown) =>
     selector({ selectedRegionId: null }),
@@ -53,6 +54,15 @@ describe("LoginCard", () => {
     toast.success.mockReset();
     toast.error.mockReset();
     otpEntryVisible.mockReturnValue(true);
+    provider.mockReturnValue("legacy");
+  });
+
+  it("shows a configuration retry screen instead of legacy credentials when provider is unknown", () => {
+    provider.mockReturnValue("unavailable");
+    render(<LoginCard />);
+    expect(screen.getByRole("alert")).toHaveTextContent("auth.configError");
+    expect(screen.queryByLabelText("auth.accountOrPhone")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
   });
 
   it.each(["password", "otp"])("returns to the recharge link after %s login", async (mode) => {

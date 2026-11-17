@@ -14,7 +14,8 @@ import time
 from typing import Any
 
 from novelvideo.authz_retry import retry_authz_read
-from novelvideo.ports import get_cancellation_store
+from novelvideo.ports import get_cancellation_store, get_project_access
+from novelvideo.ports.registry import PortNotRegistered
 from novelvideo.ports.authz import AuthzError, detach_authz_error
 from novelvideo.ports.tasks import QueuedTask, cancel_key, display_metadata_for_task
 from novelvideo.project_context import require_project_home_node
@@ -70,9 +71,11 @@ class _InlineLane:
 
 
 class InlineTaskBackend:
-    def __init__(self, *, producer=None, consumer=None) -> None:
+    def __init__(self, *, producer=None, consumer=None, run_scope=None) -> None:
         self._producer = producer
         self._consumer = consumer
+        # Multi-user deployments bind the task owner's credential around the runner.
+        self._run_scope = run_scope
         self._background_tasks: set[asyncio.Task] = set()
         self._lanes: dict[str, _InlineLane] = {
             lane: _InlineLane(
@@ -100,6 +103,14 @@ class InlineTaskBackend:
         payload: dict[str, Any] | None = None,
     ) -> QueuedTask:
         require_project_home_node(ctx, operation="enqueue project task")
+        try:
+            access = get_project_access()
+        except PortNotRegistered:
+            access = None
+        # Multi-user ports recheck current ownership/status before reserving any work.
+        admission_check = getattr(access, "require_task_submission", None)
+        if admission_check is not None:
+            await admission_check(ctx)
         self.reload_limits()
         manager = get_task_manager()
         payload = payload or {}
@@ -359,18 +370,37 @@ class InlineTaskBackend:
             )
             return
 
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(
-            executor,
-            partial(
-                run_project_task_core_sync,
-                verified,
-                job.ctx,
-                job.manager,
-                run_task_id=job.run_task_id,
-                metadata=job.metadata,
-            ),
+        run = partial(
+            run_project_task_core_sync,
+            verified,
+            job.ctx,
+            job.manager,
+            run_task_id=job.run_task_id,
+            metadata=job.metadata,
         )
+        if self._run_scope is not None:
+            try:
+                scope = await self._run_scope(verified)
+            except AuthzError as exc:
+                job.manager.fail_task_for_project(
+                    job.ctx,
+                    str(job.envelope.get("task_type") or ""),
+                    int(job.envelope.get("episode") or 0),
+                    beat_num=job.envelope.get("beat_num"),
+                    scope=job.envelope.get("scope"),
+                    error=str(exc),
+                    metadata={"error_code": exc.code},
+                    expected_task_id=job.run_task_id,
+                )
+                return
+            core = run
+
+            def run():
+                with scope():
+                    return core()
+
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(executor, run)
 
     def _on_background_task_done(self, task: asyncio.Task, lane_name: str) -> None:
         self._background_tasks.discard(task)

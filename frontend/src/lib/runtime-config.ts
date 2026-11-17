@@ -8,6 +8,7 @@ export const RuntimeConfigResponse = z.object({
   data: z.object({
     edition: z.enum(["ce", "ee"]),
     auth_required: z.boolean(),
+    auth_provider: z.enum(["legacy", "aigcdo"]).optional(),
     instance_id: z.string().optional(),
     mcp_direct_canvas_apply: z.boolean().optional(),
     browser_model_asset_base: z.string().nullable().optional(),
@@ -20,12 +21,14 @@ const AuthUiConfigResponse = z.object({
   ok: z.literal(true),
   data: z.object({
     phone_otp_entry_visible: z.boolean(),
+    auth_provider: z.enum(["legacy", "aigcdo"]).optional(),
   }),
 });
 
 export interface RuntimeConfig {
   edition: "ce" | "ee";
   authRequired: boolean;
+  authProvider?: "legacy" | "aigcdo" | "unavailable";
   phoneOtpEntryVisible: boolean;
   instanceId?: string;
   mcpDirectCanvasApply: boolean;
@@ -48,24 +51,17 @@ let runtimeConfig: RuntimeConfig = {
 };
 
 function fallbackRuntimeConfig(): RuntimeConfig {
-  return import.meta.env.VITE_EDITION === "ce"
-    ? {
-        edition: "ce",
-        authRequired: false,
-        phoneOtpEntryVisible: false,
-        mcpDirectCanvasApply: false,
-        browserModelSource: DEFAULT_BROWSER_MODEL_SOURCE,
-      }
-    : {
-        edition: "ee",
-        authRequired: true,
-        phoneOtpEntryVisible: false,
-        mcpDirectCanvasApply: false,
-        browserModelSource: DEFAULT_BROWSER_MODEL_SOURCE,
-      };
+  return {
+    edition: import.meta.env.VITE_EDITION === "ce" ? "ce" : "ee",
+    authRequired: true,
+    authProvider: "unavailable",
+    phoneOtpEntryVisible: false,
+    mcpDirectCanvasApply: false,
+    browserModelSource: DEFAULT_BROWSER_MODEL_SOURCE,
+  };
 }
 
-async function loadPhoneOtpEntryVisibility(): Promise<boolean> {
+async function loadAuthUiConfig(): Promise<z.infer<typeof AuthUiConfigResponse>["data"] | null> {
   try {
     const response = await fetch("/api/v1/auth/ui-config", {
       credentials: "include",
@@ -73,12 +69,12 @@ async function loadPhoneOtpEntryVisibility(): Promise<boolean> {
     });
     if (!response.ok) throw new Error(`GET /api/v1/auth/ui-config -> ${response.status}`);
     const body = await response.json();
-    return AuthUiConfigResponse.parse(body).data.phone_otp_entry_visible;
+    return AuthUiConfigResponse.parse(body).data;
   } catch (error) {
     // Older or temporarily unavailable EE backends must keep the entry dark.
     // eslint-disable-next-line no-console
     console.warn("[runtime-config] auth UI config load failed:", error);
-    return false;
+    return null;
   }
 }
 
@@ -88,12 +84,13 @@ export async function loadRuntimeConfig(): Promise<void> {
     if (!response.ok) throw new Error(`GET /api/v1/config -> ${response.status}`);
     const body = await response.json();
     const parsed = RuntimeConfigResponse.parse(body);
-    const phoneOtpEntryVisible =
-      parsed.data.edition === "ee" ? await loadPhoneOtpEntryVisibility() : false;
+    const authUi = parsed.data.auth_required
+      ? await loadAuthUiConfig() : { phone_otp_entry_visible: false };
     runtimeConfig = {
       edition: parsed.data.edition,
       authRequired: parsed.data.auth_required,
-      phoneOtpEntryVisible,
+      phoneOtpEntryVisible: authUi?.phone_otp_entry_visible ?? false,
+      authProvider: parsed.data.auth_provider ?? authUi?.auth_provider ?? (authUi ? "legacy" : "unavailable"),
       instanceId: parsed.data.instance_id,
       mcpDirectCanvasApply: parsed.data.mcp_direct_canvas_apply ?? false,
       browserModelSource: {
@@ -123,6 +120,15 @@ export function mcpDirectCanvasApplyEnabled(): boolean {
 
 export function phoneOtpEntryVisible(): boolean {
   return runtimeConfig.phoneOtpEntryVisible;
+}
+
+export function authProvider(): "legacy" | "aigcdo" | "unavailable" {
+  return runtimeConfig.authProvider ?? "legacy";
+}
+
+/** Model keys, channels and task limits are operator-owned unless this is a single-user install. */
+export function localModelSettingsEnabled(): boolean {
+  return isCeRuntime() && authProvider() === "legacy";
 }
 
 export function browserModelSource(): BrowserModelSourceConfig {

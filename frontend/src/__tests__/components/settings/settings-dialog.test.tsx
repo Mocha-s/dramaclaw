@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 
-const runtimeState = vi.hoisted(() => ({ isCeRuntime: true }));
+const runtimeState = vi.hoisted(() => ({ isCeRuntime: true, aigcdo: false }));
 const modelGatewayMocks = vi.hoisted(() => ({
   config: undefined as Record<string, unknown> | undefined,
   saveAgent: vi.fn(),
@@ -32,6 +32,7 @@ const freezoneAgentConfigMocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/runtime-config", () => ({
   isCeRuntime: () => runtimeState.isCeRuntime,
+  localModelSettingsEnabled: () => runtimeState.isCeRuntime && !runtimeState.aigcdo,
 }));
 
 vi.mock("@/lib/queries/freezone-agent-config", () => ({
@@ -205,7 +206,7 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.thirdParty.apiKey": "API Key",
         "settings.modelConfig.thirdParty.capabilitiesLabel": "支持能力",
         "settings.modelConfig.thirdParty.models": "模型匹配规则",
-        "settings.modelConfig.thirdParty.requestModel": "DramaClaw 模型规则",
+        "settings.modelConfig.thirdParty.requestModel": "AIGCDO 模型规则",
         "settings.modelConfig.thirdParty.upstreamModel": "上游模型",
         "settings.modelConfig.thirdParty.unifiedRoute": "统一文本路由",
         "settings.modelConfig.thirdParty.unifiedRouteNone": "不使用统一路由",
@@ -239,7 +240,7 @@ vi.mock("react-i18next", () => ({
         "settings.modelConfig.sub2api.apiKey": "API Key",
         "settings.modelConfig.sub2api.capabilitiesLabel": "支持能力",
         "settings.modelConfig.sub2api.models": "模型匹配规则",
-        "settings.modelConfig.sub2api.requestModel": "DramaClaw 模型规则",
+        "settings.modelConfig.sub2api.requestModel": "AIGCDO 模型规则",
         "settings.modelConfig.sub2api.upstreamModel": "上游模型",
         "settings.modelConfig.sub2api.imageEditFormat": "图片编辑协议",
         "settings.modelConfig.sub2api.imageEditFormats.dc-media": "项目协议",
@@ -1037,8 +1038,8 @@ describe("SettingsDialog pages", () => {
     const videoEndpoints = group.getAllByRole("combobox", { name: "视频任务接口" });
     await user.click(videoEndpoints[1]);
     await user.click(await screen.findByRole("option", { name: "旧版 /video/generations" }));
-    fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[0], { target: { value: "gpt-image-2.5" } });
-    fireEvent.change(group.getAllByLabelText("DramaClaw 模型规则")[1], { target: { value: "sd17-seedance-2.5-2" } });
+    fireEvent.change(group.getAllByLabelText("AIGCDO 模型规则")[0], { target: { value: "gpt-image-2.5" } });
+    fireEvent.change(group.getAllByLabelText("AIGCDO 模型规则")[1], { target: { value: "sd17-seedance-2.5-2" } });
     fireEvent.click(screen.getAllByRole("button", { name: "保存第三方网关配置" })[0]);
 
     await waitFor(() =>
@@ -1101,6 +1102,17 @@ describe("SettingsDialog pages", () => {
         model: "vendor-agent-model",
       });
     });
+  });
+
+  it("hides model, task-limit and storage settings when the gateway owns model access", () => {
+    runtimeState.aigcdo = true;
+    try {
+      renderSettingsDialog();
+      expect(screen.queryByRole("button", { name: /模型配置/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /媒体存储/ })).not.toBeInTheDocument();
+    } finally {
+      runtimeState.aigcdo = false;
+    }
   });
 
   it("limits EE settings to Freezone Skills with Recipes under advanced management", () => {

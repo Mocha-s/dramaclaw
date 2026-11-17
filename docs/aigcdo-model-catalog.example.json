@@ -1,0 +1,982 @@
+{
+ "groups": [
+  {
+   "id": "sub2api-1792507035817-l789oko9svj",
+   "name": "gpt",
+   "protocol": "openai",
+   "capabilities": [
+    "text"
+   ],
+   "modelMappings": [
+    {
+     "requestPattern": "*",
+     "upstreamModel": "gpt-6.1-sol"
+    }
+   ]
+  },
+  {
+   "id": "sub2api-1792507176690-w9sicrjeegk",
+   "name": "image",
+   "protocol": "openai",
+   "capabilities": [
+    "image"
+   ],
+   "modelMappings": [
+    {
+     "requestPattern": "gpt-image-2",
+     "upstreamModel": "gpt-image-2"
+    },
+    {
+     "requestPattern": "gpt-image-2.5",
+     "upstreamModel": "gpt-image-2.5"
+    },
+    {
+     "requestPattern": "gpt-image-2-1k",
+     "upstreamModel": "gpt-image-2-1k"
+    },
+    {
+     "requestPattern": "gpt-image-2-2k",
+     "upstreamModel": "gpt-image-2-2k"
+    },
+    {
+     "requestPattern": "gpt-image-2-4k",
+     "upstreamModel": "gpt-image-2-4k"
+    },
+    {
+     "requestPattern": "gpt-image-2-x",
+     "upstreamModel": "gpt-image-2-x"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-flare",
+     "upstreamModel": "gpt-image-2.5-flare"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-flare-1k",
+     "upstreamModel": "gpt-image-2.5-flare-1k"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-flare-2k",
+     "upstreamModel": "gpt-image-2.5-flare-2k"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-flare-4k",
+     "upstreamModel": "gpt-image-2.5-flare-4k"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-flare-max",
+     "upstreamModel": "gpt-image-2.5-flare-max"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-sunburst",
+     "upstreamModel": "gpt-image-2.5-sunburst"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-sunburst-1k",
+     "upstreamModel": "gpt-image-2.5-sunburst-1k"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-sunburst-2k",
+     "upstreamModel": "gpt-image-2.5-sunburst-2k"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-sunburst-4k",
+     "upstreamModel": "gpt-image-2.5-sunburst-4k"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-sunburst-max",
+     "upstreamModel": "gpt-image-2.5-sunburst-max"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-x",
+     "upstreamModel": "gpt-image-2.5-x"
+    },
+    {
+     "requestPattern": "midjourney",
+     "upstreamModel": "midjourney"
+    },
+    {
+     "requestPattern": "midjourney-1k",
+     "upstreamModel": "midjourney-1k"
+    },
+    {
+     "requestPattern": "midjourney-2k",
+     "upstreamModel": "midjourney-2k"
+    },
+    {
+     "requestPattern": "seedream-5.0-lite",
+     "upstreamModel": "seedream-5.0-lite"
+    },
+    {
+     "requestPattern": "seedream-5.0-pro",
+     "upstreamModel": "seedream-5.0-pro"
+    },
+    {
+     "requestPattern": "doubao-seedream-5-0-flash",
+     "upstreamModel": "doubao-seedream-5-0-flash"
+    },
+    {
+     "requestPattern": "doubao-seedream-5-0-pro",
+     "upstreamModel": "doubao-seedream-5-0-pro"
+    },
+    {
+     "requestPattern": "flux-3-image",
+     "upstreamModel": "flux-3-image"
+    },
+    {
+     "requestPattern": "flux-3-klein",
+     "upstreamModel": "flux-3-klein"
+    },
+    {
+     "requestPattern": "doubao-seedream-5-0-lite",
+     "upstreamModel": "doubao-seedream-5-0-lite"
+    },
+    {
+     "requestPattern": "Z-Image-Turbo",
+     "upstreamModel": "Z-Image-Turbo"
+    },
+    {
+     "requestPattern": "mj2-midjourney",
+     "upstreamModel": "mj2-midjourney"
+    },
+    {
+     "requestPattern": "mj2-midjourney-blend",
+     "upstreamModel": "mj2-midjourney-blend"
+    },
+    {
+     "requestPattern": "mj2-midjourney-describe",
+     "upstreamModel": "mj2-midjourney-describe"
+    },
+    {
+     "requestPattern": "mu1-muse-image",
+     "upstreamModel": "mu1-muse-image"
+    },
+    {
+     "requestPattern": "gpt-image-2.6",
+     "upstreamModel": "gpt-image-2.6"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-flare-o",
+     "upstreamModel": "gpt-image-2.5-flare-o"
+    },
+    {
+     "requestPattern": "gpt-image-2.5-sunburst-o",
+     "upstreamModel": "gpt-image-2.5-sunburst-o"
+    },
+    {
+     "requestPattern": "gpt-image-2.6-flare",
+     "upstreamModel": "gpt-image-2.6-flare"
+    },
+    {
+     "requestPattern": "gpt-image-2.6-flare-max",
+     "upstreamModel": "gpt-image-2.6-flare-max"
+    },
+    {
+     "requestPattern": "gpt-image-2.6-flare-o",
+     "upstreamModel": "gpt-image-2.6-flare-o"
+    },
+    {
+     "requestPattern": "gpt-image-2.6-sunburst-max",
+     "upstreamModel": "gpt-image-2.6-sunburst-max"
+    },
+    {
+     "requestPattern": "gpt-image-2.6-sunburst-o",
+     "upstreamModel": "gpt-image-2.6-sunburst-o"
+    },
+    {
+     "requestPattern": "gpt-image-2-o",
+     "upstreamModel": "gpt-image-2-o"
+    },
+    {
+     "auto": true,
+     "requestPattern": "grok-imagine-image",
+     "upstreamModel": "grok-imagine-image"
+    },
+    {
+     "auto": true,
+     "requestPattern": "grok-imagine-image-2.0",
+     "upstreamModel": "grok-imagine-image-2.0"
+    },
+    {
+     "auto": true,
+     "requestPattern": "Midjourney-v8.1",
+     "upstreamModel": "Midjourney-v8.1"
+    },
+    {
+     "auto": true,
+     "requestPattern": "Midjourney-v8.2",
+     "upstreamModel": "Midjourney-v8.2"
+    },
+    {
+     "auto": true,
+     "requestPattern": "doubao-seedream-5-0-lite-x",
+     "upstreamModel": "doubao-seedream-5-0-lite-x"
+    },
+    {
+     "auto": true,
+     "requestPattern": "doubao-seedream-5-0-pro-x",
+     "upstreamModel": "doubao-seedream-5-0-pro-x"
+    },
+    {
+     "auto": true,
+     "requestPattern": "doubao-seedream-5-5-261028",
+     "upstreamModel": "doubao-seedream-5-5-261028"
+    },
+    {
+     "auto": true,
+     "requestPattern": "doubao-seedream-5-5-x",
+     "upstreamModel": "doubao-seedream-5-5-x"
+    }
+   ]
+  },
+  {
+   "id": "sub2api-1792509132834-fuxctiwm9k",
+   "name": "次",
+   "protocol": "openai",
+   "capabilities": [
+    "video"
+   ],
+   "modelMappings": [
+    {
+     "requestPattern": "seedance2.0-900-fast",
+     "upstreamModel": "seedance2.0-900-fast",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-900-3",
+     "upstreamModel": "seedance2.0-900-3",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "omni-fast",
+     "upstreamModel": "omni-fast",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "omni-v2v",
+     "upstreamModel": "omni-v2v",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "minimax-h3-768p-930-8-22",
+     "supportedModes": [
+      "all_reference",
+      "image_reference",
+      "image_to_video",
+      "text_to_video"
+     ],
+     "upstreamModel": "minimax-h3-768p-930-8-22",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "omni-fast-no-water",
+     "upstreamModel": "omni-fast-no-water",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "omni-v2v-no-water",
+     "upstreamModel": "omni-v2v-no-water",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.0",
+     "upstreamModel": "sd17-seedance-2.0",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.0-2",
+     "upstreamModel": "sd17-seedance-2.0-2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.0-3",
+     "upstreamModel": "sd17-seedance-2.0-3",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance-2.0-ad-720p",
+     "upstreamModel": "seedance-2.0-ad-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-480p",
+     "upstreamModel": "seedance2.0-480p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-720p",
+     "upstreamModel": "seedance2.0-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-fast-2",
+     "upstreamModel": "seedance2.0-fast-2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-me",
+     "upstreamModel": "seedance2.0-me",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mm2-minimax-h3",
+     "supportedModes": [
+      "image_to_video",
+      "text_to_video",
+      "image_reference",
+      "all_reference",
+      "first_frame"
+     ],
+     "upstreamModel": "mm2-minimax-h3",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mm2-minimax-h3-max",
+     "supportedModes": [
+      "all_reference",
+      "first_frame",
+      "image_reference",
+      "image_to_video",
+      "text_to_video"
+     ],
+     "upstreamModel": "mm2-minimax-h3-max",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mm4-minimax-h3",
+     "supportedModes": [
+      "text_to_video",
+      "image_to_video",
+      "image_reference",
+      "first_frame",
+      "all_reference"
+     ],
+     "upstreamModel": "mm4-minimax-h3",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mm5-minimax-h3",
+     "supportedModes": [
+      "text_to_video",
+      "image_to_video",
+      "image_reference",
+      "first_frame",
+      "all_reference"
+     ],
+     "upstreamModel": "mm5-minimax-h3",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mu1-muse-podcast",
+     "upstreamModel": "mu1-muse-podcast",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mu1-muse-video",
+     "upstreamModel": "mu1-muse-video",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mu1-muse-video-20s",
+     "upstreamModel": "mu1-muse-video-20s",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mu1-muse-video-30s",
+     "upstreamModel": "mu1-muse-video-30s",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mu1-muse-video-40s",
+     "upstreamModel": "mu1-muse-video-40s",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mu1-muse-video-50s",
+     "upstreamModel": "mu1-muse-video-50s",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "mu1-muse-video-60s",
+     "upstreamModel": "mu1-muse-video-60s",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd14-seedance-2.0",
+     "upstreamModel": "sd14-seedance-2.0",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd16-seedance-2.0-x1",
+     "upstreamModel": "sd16-seedance-2.0-x1",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance-2.5-lec-720p",
+     "upstreamModel": "seedance-2.5-lec-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-fast-720p",
+     "upstreamModel": "seedance2.0-fast-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-903-480p",
+     "upstreamModel": "seedance2.0-903-480p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance-2.0-lec-720p",
+     "upstreamModel": "seedance-2.0-lec-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "wan4-wan3.0",
+     "upstreamModel": "wan4-wan3.0",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "wan3.0-1080p-4",
+     "upstreamModel": "wan3.0-1080p-4",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-lob-720p",
+     "upstreamModel": "seedance2.5-lob-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-ld-720p",
+     "upstreamModel": "seedance2.5-ld-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-kk-720p",
+     "upstreamModel": "seedance2.5-kk-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-900",
+     "upstreamModel": "seedance2.5-900",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-720p-ac",
+     "upstreamModel": "seedance2.5-720p-ac",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-v3-fast-933-720p",
+     "upstreamModel": "seedance2.0-v3-fast-933-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "gf1-gemini-omni-flash",
+     "upstreamModel": "gf1-gemini-omni-flash",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "gf1-gemini-omni-1.2-flash",
+     "upstreamModel": "gf1-gemini-omni-1.2-flash",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.5-8",
+     "upstreamModel": "sd17-seedance-2.5-8",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.5-7",
+     "upstreamModel": "sd17-seedance-2.5-7",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.5-6",
+     "upstreamModel": "sd17-seedance-2.5-6",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.5-5",
+     "upstreamModel": "sd17-seedance-2.5-5",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-pp-720p",
+     "upstreamModel": "seedance2.5-pp-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-tejia-720p",
+     "upstreamModel": "seedance2.5-tejia-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "T3-seedance-2.0",
+     "upstreamModel": "T3-seedance-2.0",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "T1-seedance-2.5",
+     "upstreamModel": "T1-seedance-2.5",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "video-sd20-10s",
+     "upstreamModel": "video-sd20-10s",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "T1-seedance-2.0",
+     "upstreamModel": "T1-seedance-2.0",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "T1-seedance-2.0-fast",
+     "upstreamModel": "T1-seedance-2.0-fast",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "T1-seedance-2.0-mini",
+     "upstreamModel": "T1-seedance-2.0-mini",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "T2-seedance-2.0",
+     "upstreamModel": "T2-seedance-2.0",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "sd2-full-480p-15s",
+     "upstreamModel": "sd2-full-480p-15s",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "sd2.5max900",
+     "upstreamModel": "sd2.5max900",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance2.5-flash-720p",
+     "upstreamModel": "seedance2.5-flash-720p",
+     "videoEndpoint": "videos"
+    }
+   ]
+  },
+  {
+   "id": "sub2api-1792509279765-vllx14ybby",
+   "name": "gemini",
+   "protocol": "gemini",
+   "capabilities": [
+    "image"
+   ],
+   "modelMappings": [
+    {
+     "requestPattern": "nano-banana2-4k",
+     "upstreamModel": "nano-banana2-4k"
+    },
+    {
+     "requestPattern": "nano-banana2-2k",
+     "upstreamModel": "nano-banana2-2k"
+    },
+    {
+     "requestPattern": "nano-banana2-1k",
+     "upstreamModel": "nano-banana2-1k"
+    },
+    {
+     "requestPattern": "nano-banana-pro-4k",
+     "upstreamModel": "nano-banana-pro-4k"
+    },
+    {
+     "requestPattern": "nano-banana-pro-2k",
+     "upstreamModel": "nano-banana-pro-2k"
+    },
+    {
+     "requestPattern": "nano-banana-pro-1k",
+     "upstreamModel": "nano-banana-pro-1k"
+    },
+    {
+     "requestPattern": "gemini-3.1-flash-image-previe",
+     "upstreamModel": "gemini-3.1-flash-image-preview"
+    },
+    {
+     "requestPattern": "gemini-3.1-flash-image",
+     "upstreamModel": "gemini-3.1-flash-image"
+    },
+    {
+     "requestPattern": "gemini-3-pro-image-preview",
+     "upstreamModel": "gemini-3-pro-image-preview"
+    },
+    {
+     "requestPattern": "gemini-3-pro-image",
+     "upstreamModel": "gemini-3-pro-image"
+    },
+    {
+     "requestPattern": "gemini-nano-banana-2.1",
+     "upstreamModel": "gemini-nano-banana-2.1"
+    }
+   ]
+  },
+  {
+   "id": "sub2api-1792509381145-prb7vdiuabo",
+   "name": "sound",
+   "protocol": "openai",
+   "capabilities": [
+    "audio"
+   ],
+   "modelMappings": [
+    {
+     "requestPattern": "gemini-tts",
+     "upstreamModel": "gemini-tts"
+    }
+   ]
+  },
+  {
+   "id": "third-party-1792802976275-ibcpx0l0od",
+   "name": "claude",
+   "protocol": "anthropic",
+   "capabilities": [
+    "text"
+   ],
+   "modelMappings": [
+    {
+     "requestPattern": "claude-sonnet-5-5",
+     "upstreamModel": "claude-sonnet-5-5"
+    },
+    {
+     "requestPattern": "claude-opus-5",
+     "upstreamModel": "claude-opus-5"
+    },
+    {
+     "requestPattern": "claude-opus-4-8",
+     "upstreamModel": "claude-opus-4-8"
+    },
+    {
+     "requestPattern": "claude-fable-5",
+     "upstreamModel": "claude-fable-5"
+    },
+    {
+     "requestPattern": "claude-fable-5.1",
+     "upstreamModel": "claude-fable-5.1"
+    },
+    {
+     "requestPattern": "claude-opus-4-7",
+     "upstreamModel": "claude-opus-4-7"
+    },
+    {
+     "requestPattern": "claude-opus-5-5",
+     "upstreamModel": "claude-opus-5-5"
+    }
+   ]
+  },
+  {
+   "id": "third-party-1793551829530-l9sgswsl42h",
+   "name": "秒",
+   "protocol": "openai",
+   "capabilities": [
+    "video"
+   ],
+   "modelMappings": [
+    {
+     "requestPattern": "grok-imagine-video",
+     "upstreamModel": "grok-imagine-video",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "grok-imagine-video-1.5",
+     "upstreamModel": "grok-imagine-video-1.5",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.0-4",
+     "upstreamModel": "sd17-seedance-2.0-4",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd17-seedance-2.5-4",
+     "upstreamModel": "sd17-seedance-2.5-4",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-1080p-100%",
+     "upstreamModel": "seedance2.0-1080p-100%",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-480p-100%",
+     "upstreamModel": "seedance2.0-480p-100%",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.0-720p-100%",
+     "upstreamModel": "seedance2.0-720p-100%",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-720p",
+     "upstreamModel": "seedance2.5-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-dj-480p",
+     "upstreamModel": "seedance2.5-dj-480p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-wd-480p",
+     "upstreamModel": "seedance2.5-wd-480p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-wd-720p",
+     "upstreamModel": "seedance2.5-wd-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-xu-480p-2",
+     "upstreamModel": "seedance2.5-xu-480p-2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance2.5-xu-720p-2",
+     "upstreamModel": "seedance2.5-xu-720p-2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "火山-超分-1080p",
+     "resolutionOptions": [
+      "1080p"
+     ],
+     "supportedModes": [
+      "video_upscale"
+     ],
+     "upstreamModel": "火山-超分-1080p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance2.5-bl-480p",
+     "upstreamModel": "seedance2.5-bl-480p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance2.5-bl-720p",
+     "upstreamModel": "seedance2.5-bl-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "minimax-h3-video",
+     "upstreamModel": "minimax-h3-video",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "doubao-seedance-2-0-fast-260128",
+     "upstreamModel": "doubao-seedance-2-0-fast-260128",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "doubao-seedance-2-0-mini-260615",
+     "upstreamModel": "doubao-seedance-2-0-mini-260615",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance-2.0-mini-m5",
+     "upstreamModel": "seedance-2.0-mini-m5",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance-2.0-m5",
+     "upstreamModel": "seedance-2.0-m5",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance-2.0-fast-m5",
+     "upstreamModel": "seedance-2.0-fast-m5",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "火山-超分-720p",
+     "upstreamModel": "火山-超分-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance-2.5-m2",
+     "upstreamModel": "seedance-2.5-m2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance-2.0-fast-m2",
+     "upstreamModel": "seedance-2.0-fast-m2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance-2.0-m1",
+     "upstreamModel": "seedance-2.0-m1",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance-2.0-m2",
+     "upstreamModel": "seedance-2.0-m2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance-2.0-mini-m2",
+     "upstreamModel": "seedance-2.0-mini-m2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance-2.5-480p-m2",
+     "upstreamModel": "seedance-2.5-480p-m2",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance-2.5-m1",
+     "upstreamModel": "seedance-2.5-m1",
+     "videoEndpoint": "videos"
+    },
+    {
+     "auto": true,
+     "requestPattern": "seedance-2.5-m4",
+     "upstreamModel": "seedance-2.5-m4",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd-2.0",
+     "upstreamModel": "sd-2.0",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd-2.5-720p",
+     "upstreamModel": "sd-2.5-720p",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd-fast",
+     "upstreamModel": "sd-fast",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd-mini",
+     "upstreamModel": "sd-mini",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "sd2.5-pro",
+     "upstreamModel": "sd2.5-pro",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "seedance-2.0-fast-m1",
+     "upstreamModel": "seedance-2.0-fast-m1",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "minimax-h3",
+     "supportedModes": [
+      "all_reference",
+      "image_to_video",
+      "text_to_video",
+      "image_reference",
+      "first_frame"
+     ],
+     "upstreamModel": "minimax-h3",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "minimax-h3-f",
+     "supportedModes": [
+      "all_reference",
+      "image_to_video",
+      "text_to_video",
+      "image_reference",
+      "first_frame"
+     ],
+     "upstreamModel": "minimax-h3-f",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "minimax-h3-f-fast",
+     "supportedModes": [
+      "all_reference",
+      "first_frame",
+      "image_reference",
+      "image_to_video",
+      "text_to_video"
+     ],
+     "upstreamModel": "minimax-h3-f-fast",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "minimax-h3-f-high",
+     "supportedModes": [
+      "text_to_video",
+      "image_to_video",
+      "image_reference",
+      "first_frame",
+      "all_reference"
+     ],
+     "upstreamModel": "minimax-h3-f-high",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "minimax-h3-f-quick",
+     "supportedModes": [
+      "text_to_video",
+      "image_to_video",
+      "image_reference",
+      "first_frame",
+      "all_reference"
+     ],
+     "upstreamModel": "minimax-h3-f-quick",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "minimax-h3-high",
+     "supportedModes": [
+      "text_to_video",
+      "image_to_video",
+      "image_reference",
+      "first_frame",
+      "all_reference"
+     ],
+     "upstreamModel": "minimax-h3-high",
+     "videoEndpoint": "videos"
+    },
+    {
+     "requestPattern": "minimax-h3-quick",
+     "supportedModes": [
+      "text_to_video",
+      "image_to_video",
+      "image_reference",
+      "first_frame",
+      "all_reference"
+     ],
+     "upstreamModel": "minimax-h3-quick",
+     "videoEndpoint": "videos"
+    }
+   ]
+  }
+ ],
+ "capabilityDefaults": {
+  "textGroupId": "sub2api-1792507035817-l789oko9svj",
+  "textModel": "gpt-6.1-sol",
+  "textReasoningEffort": "xhigh"
+ },
+ "agentModel": ""
+}

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
 import { apiCall, apiCallEnvelope, apiClient } from "./client";
+import { generateClientId } from "@/lib/client-id";
 import { workflowProductOperation } from "@/features/canvas/application/workflowExecutionActivity";
 import { readReferenceMediaLimits, type ReferenceMediaLimits } from "./referenceMediaLimits";
 
@@ -2734,11 +2735,13 @@ export interface FreezoneTextGeneratePayload extends FreezoneNodeContext {
 export async function submitFreezoneTextGenerate(
   project: string,
   payload: FreezoneTextGeneratePayload,
+  idempotencyKey: string = `text-${generateClientId()}`,
 ): Promise<FreezoneJobRef> {
   return await apiCall<FreezoneJobRef>(
     `projects/${encodeURIComponent(project)}/freezone/text/generate`,
     {
       method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
       json: {
         prompt: payload.prompt,
         ...nodeContextBody(payload),

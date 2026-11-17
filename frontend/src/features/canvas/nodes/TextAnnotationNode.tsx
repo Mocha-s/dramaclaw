@@ -59,6 +59,7 @@ import {
   submitFreezoneTextGenerate,
   submitFreezoneTextTranslate,
 } from '@/api/ops';
+import { textGenerationAttempt } from '@/lib/aigcdo-text-attempt';
 import { awaitTaskCompletion } from '@/api/tasks';
 import { generationTaskDescriptor } from '@/features/canvas/application/resumeGeneration';
 import { useNodeGenerationTaskState } from '@/features/canvas/application/useNodeGenerationTaskState';
@@ -451,11 +452,13 @@ export const TextAnnotationNode = memo(({
 
     updateNodeData(id, { isGenerating: true, generationStartedAt: Date.now() });
     try {
+      const attempt = textGenerationAttempt(prompt, data.textGenerationAttempt);
+      updateNodeData(id, { textGenerationAttempt: attempt });
       const ref = await submitFreezoneTextGenerate(projectId, {
         prompt,
         canvasId: readUrl().canvas ?? 'default',
         nodeId: id,
-      });
+      }, attempt.key);
       updateNodeData(id, generationTaskDescriptor(ref));
       await awaitTaskCompletion(ref.task_key, projectId, { taskType: ref.task_type });
       const result = await fetchFreezoneTextGenerateResult(projectId, ref.job_id);
@@ -465,6 +468,7 @@ export const TextAnnotationNode = memo(({
       updateNodeData(id, {
         content: result.generated_text,
         model: result.model || TEXT_WRITER_MODEL_ID,
+        textGenerationAttempt: null,
         isGenerating: false,
         generationStartedAt: null,
       });
@@ -473,7 +477,7 @@ export const TextAnnotationNode = memo(({
       toast.error(backendErrorToastMessage(error, t));
       updateNodeData(id, { isGenerating: false, generationStartedAt: null });
     }
-  }, [id, instruction, modelTaskAccess.blocked, t, textGenerateBillingRuleMissing, updateNodeData]);
+  }, [id, instruction, modelTaskAccess.blocked, t, textGenerateBillingRuleMissing, data.textGenerationAttempt, updateNodeData]);
 
   const runInstructionTranslate = useCallback(async () => {
     if (modelTaskAccess.blocked || isGenerating || isTranslating) return;

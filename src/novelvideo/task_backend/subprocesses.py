@@ -436,6 +436,12 @@ def run_project_subprocess(
         context=egress_context,
         policy=restricted_policy,
     )
+    from novelvideo import aigcdo_model_runtime
+
+    user_key = aigcdo_model_runtime.scoped_user_key()
+    if user_key:
+        # The child is this user's process; a ContextVar does not survive exec.
+        env = {**(os.environ if env is None else env), aigcdo_model_runtime.CHILD_KEY_ENV: user_key}
     scope = _scope_from_envelope(envelope)
     task_id = str(scope.get("task_id") or "")
     deadline = _deadline_for(scope, timeout)

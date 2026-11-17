@@ -92,7 +92,7 @@ export interface ModelOption {
 // 服务商品牌名，不跟界面语言走。
 // i18n-exempt-start
 export const SHARED_PROVIDERS: ProviderOption[] = [
-  { id: 'newapi', label: 'DramaClawAPI' },
+  { id: 'newapi', label: 'AIGCDO API' },
   { id: 'huimeng', label: '绘梦 / HuiMeng' },
 // i18n-exempt-end
   { id: 'openrouter', label: 'OpenRouter' },

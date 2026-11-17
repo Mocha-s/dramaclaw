@@ -891,7 +891,17 @@ class HermesSdkThread:
             return
         base_cmd = [str(self._cli_path), "acp"]
         # Wrap with OS sandbox (codex-linux-sandbox on Linux; sandbox-exec on macOS).
-        sandboxed = wrap_command(base_cmd, SandboxSpec(user=self._username, hermes_home=self._cwd))
+        sandboxed = wrap_command(base_cmd, SandboxSpec(
+            user=self._username, hermes_home=self._cwd,
+            # The one project this worker was authorised for; a migrated project keeps its
+            # directories outside the owner's own tree.
+            extra_read_paths=[
+                Path(self._env[name]) for name in (
+                    "DRAMACLAW_PROJECT_STATE_DIR", "DRAMACLAW_PROJECT_OUTPUT_DIR",
+                    "DRAMACLAW_PROJECT_RUNTIME_DIR",
+                ) if (self._env or {}).get(name)
+            ],
+        ))
         _log.info("spawning hermes acp for user=%s (sandboxed=%s)", self._username,
                   sandboxed[0] != base_cmd[0])
         self._proc = await asyncio.create_subprocess_exec(

@@ -7,7 +7,7 @@ import os
 from typing import Literal
 from urllib.parse import urlsplit
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from ulid import ULID
 
@@ -57,14 +57,16 @@ def _browser_model_url(env_name: str) -> str | None:
 
 
 @router.get("/config")
-async def get_runtime_config():
+async def get_runtime_config(request: Request):
     edition = _runtime_edition()
+    provider = getattr(getattr(request.app.state, "aigcdo_deployment", None), "auth_provider", "legacy")
     return JSONResponse(
         {
             "ok": True,
             "data": {
                 "edition": edition,
-                "auth_required": edition == "ee",
+                "auth_required": edition == "ee" or provider == "aigcdo",
+                "auth_provider": provider,
                 "instance_id": _INSTANCE_ID,
                 "mcp_direct_canvas_apply": _mcp_direct_canvas_apply_enabled(),
                 "browser_model_asset_base": _browser_model_url("BROWSER_MODEL_ASSET_BASE"),

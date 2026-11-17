@@ -16,9 +16,9 @@ function branding(updatedAt: string) {
 }
 
 describe("BrandLockup", () => {
-  it("always shows DramaClaw and renders organization branding only at xl", () => {
-    const { container } = render(<BrandLockup value={branding("2026-08-21T10:00:00Z")} />);
-    expect(container.querySelector('img[src="/brand/dramaclaw-wordmark.png"]')).not.toBeNull();
+  it("always shows AIGCDO and renders organization branding only at xl", () => {
+    render(<BrandLockup value={branding("2026-08-21T10:00:00Z")} />);
+    expect(screen.getByRole("img", { name: "AIGCDO" })).toHaveAttribute("src", "/brand/aigcdo-wordmark.svg");
     const organization = screen.getByTestId("organization-brand");
     const logo = organization.querySelector("img");
     expect(logo).toHaveAttribute("src", logoUrl);

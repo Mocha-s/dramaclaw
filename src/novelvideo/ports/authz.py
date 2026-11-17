@@ -14,6 +14,7 @@ from novelvideo.ports.model_credentials import CredentialReference
 # identically. Credential wording is kept identical to
 # model_credentials.py::_CREDENTIAL_ERROR_MESSAGES on purpose.
 _AUTHZ_ERROR_MESSAGES = {
+    "AIGCDO_EXECUTION_DENIED": "AIGCDO execution authorization is no longer valid",
     "ORG_CONTEXT_REQUIRED": "organization authorization context is required",
     "ORG_MEMBERSHIP_INACTIVE": "organization membership is inactive",
     "ORG_AUTHZ_STALE": "organization authorization snapshot is stale",
@@ -49,6 +50,7 @@ _AUTHZ_ERROR_FALLBACK_STATUS = 403
 
 # User-facing copy, mirroring the 默认提示 column of the same §12 table.
 _AUTHZ_USER_MESSAGES = {
+    "AIGCDO_EXECUTION_DENIED": "任务或 Agent 授权已失效，请重新登录并检查项目与模型权限",
     "ORG_CONTEXT_REQUIRED": "当前请求缺少有效组织身份",
     "ORG_MEMBERSHIP_INACTIVE": "组织成员身份已暂停或失效",
     "MODEL_ACCESS_DENIED": "当前组织未开通该模型能力，请联系组织管理员",

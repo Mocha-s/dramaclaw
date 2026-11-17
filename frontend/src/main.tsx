@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { routeTree } from "./routeTree.gen";
 import { ThemeProvider } from "./components/theme-provider";
 import { loadClusterConfig } from "@/lib/cluster-config";
-import { isCeRuntime, loadRuntimeConfig } from "@/lib/runtime-config";
+import { loadRuntimeConfig, localModelSettingsEnabled } from "@/lib/runtime-config";
 import { initDevBackendWatch } from "@/lib/dev-backend-watch";
 import { setApiQueryClient } from "@/lib/api";
 import { setAppRouter } from "@/lib/app-router";
@@ -82,7 +82,7 @@ installDomReconciliationGuard();
 
 function AppRouterShell() {
   const updateRequired = useChunkLoadRecoveryRequired();
-  useOfficialMediaCatalogWatcher(isCeRuntime());
+  useOfficialMediaCatalogWatcher(localModelSettingsEnabled());
   return (
     <>
       <RouterProvider router={router} />

@@ -54,16 +54,17 @@ describe("runtime-config", () => {
     expect(phoneOtpEntryVisible()).toBe(false);
   });
 
-  it("falls back to CE when VITE_EDITION=ce and the fetch fails", async () => {
+  it("retains CE edition but requires authentication when runtime configuration fails", async () => {
     (import.meta.env as Record<string, unknown>).VITE_EDITION = "ce";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
-    const { authRequired, isCeRuntime, loadRuntimeConfig, phoneOtpEntryVisible } =
+    const { authRequired, authProvider, isCeRuntime, loadRuntimeConfig, phoneOtpEntryVisible } =
       await import("@/lib/runtime-config");
     await loadRuntimeConfig();
 
     expect(isCeRuntime()).toBe(true);
-    expect(authRequired()).toBe(false);
+    expect(authRequired()).toBe(true);
+    expect(authProvider()).toBe("unavailable");
     expect(phoneOtpEntryVisible()).toBe(false);
   });
 
@@ -160,5 +161,28 @@ describe("runtime-config", () => {
     const legacy = await import("@/lib/runtime-config");
     await legacy.loadRuntimeConfig();
     expect(legacy.browserModelSource()).toEqual(none);
+  });
+
+  it("loads AIGCDO auth UI configuration for an authenticated CE deployment", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, data: { edition: "ce", auth_required: true } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, data: {
+        auth_provider: "aigcdo", phone_otp_entry_visible: false,
+      } }))));
+    const runtime = await import("@/lib/runtime-config");
+    await runtime.loadRuntimeConfig();
+    expect(runtime.authRequired()).toBe(true);
+    expect(runtime.authProvider()).toBe("aigcdo");
+    expect(runtime.phoneOtpEntryVisible()).toBe(false);
+  });
+
+  it("never falls back to a legacy login when provider discovery fails", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, data: { edition: "ce", auth_required: true } })))
+      .mockResolvedValueOnce(new Response("unavailable", { status: 503 })));
+    const runtime = await import("@/lib/runtime-config");
+    await runtime.loadRuntimeConfig();
+    expect(runtime.authProvider()).toBe("unavailable");
+    expect(runtime.authRequired()).toBe(true);
   });
 });

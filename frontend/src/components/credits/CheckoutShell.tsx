@@ -35,7 +35,7 @@ export function CheckoutShell({
           </button>
           <div className="mx-auto my-auto w-full max-w-lg py-10">{summary}</div>
           <div className="text-xs text-white/28">
-            DramaClaw · Secure checkout
+            AIGCDO · Secure checkout
           </div>
         </section>
         <section className="flex items-center px-6 py-10 lg:px-12 xl:px-20">

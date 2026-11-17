@@ -163,10 +163,12 @@ def is_insufficient_credits_error(
     if message:
         combined = f"{combined} {message}"
     normalized = combined.lower()
-    return (
-        "insufficient credits" in normalized
-        or INSUFFICIENT_CREDITS_CODE.lower() in normalized
-    )
+    if "insufficient credits" in normalized or INSUFFICIENT_CREDITS_CODE.lower() in normalized:
+        return True
+    # The AIGCDO gateway is the only ledger: its own balance refusal is this error.
+    from novelvideo import aigcdo_model_runtime
+
+    return "insufficient_balance" in normalized and aigcdo_model_runtime.active()
 
 
 def is_fatal_billing_error(exc: BaseException | None = None, message: str = "") -> bool:

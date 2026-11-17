@@ -419,6 +419,35 @@ def get_newapi_text_pydantic_model(
         )
     )
     profile = _get_newapi_text_model_profile(model_name)
+    from novelvideo import aigcdo_model_runtime
+
+    if aigcdo_model_runtime.active():
+        # Agents built on this model are cached process-wide, so the model must not hold a
+        # key: each request resolves the key of whichever user is in scope at that moment.
+        from novelvideo.model_gateway_runtime import create_request_scoped_gateway_model
+
+        def delegate(name, *, api_key, base_url, timeout_seconds, profile):
+            if llm_config.protocol == "anthropic":
+                from novelvideo.model_gateway_protocols import create_anthropic_text_model
+
+                return create_anthropic_text_model(
+                    name, api_key=api_key, base_url=base_url, profile=profile,
+                )
+            return _newapi_text_openai_model(
+                name, api_key=api_key, base_url=base_url,
+                timeout_seconds=timeout_seconds, profile=profile,
+            )
+
+        return create_request_scoped_gateway_model(
+            model_name=model_name,
+            capability=capability,
+            timeout_seconds=timeout_seconds,
+            profile=profile,
+            delegate_factory=delegate,
+            platform_credential_factory=lambda: (
+                aigcdo_model_runtime.scoped_user_key(), llm_config.base_url,
+            ),
+        )
     if llm_config.protocol == "anthropic" and llm_config.source == "third_party":
         from novelvideo.model_gateway_protocols import create_anthropic_text_model
 

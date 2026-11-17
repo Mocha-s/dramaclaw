@@ -14,9 +14,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RechargeRouteImport } from './routes/recharge'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as WatchWorkRouteImport } from './routes/watch.$work'
+import { Route as PaymentResultRouteImport } from './routes/payment.result'
 import { Route as AppPaymentReturnRouteImport } from './routes/_app/payment-return'
 import { Route as AppCreditsRouteImport } from './routes/_app/credits'
 import { Route as AppAccessUnavailableRouteImport } from './routes/_app/access-unavailable'
@@ -77,6 +79,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/account.lazy').then((d) => d.Route))
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -91,6 +98,13 @@ const WatchWorkRoute = WatchWorkRouteImport.update({
   path: '/watch/$work',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaymentResultRoute = PaymentResultRouteImport.update({
+  id: '/payment/result',
+  path: '/payment/result',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/payment.result.lazy').then((d) => d.Route),
+)
 const AppPaymentReturnRoute = AppPaymentReturnRouteImport.update({
   id: '/payment-return',
   path: '/payment-return',
@@ -244,6 +258,7 @@ const AppProjectsProjectEpisodesEpisodeAudioLazyRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/account': typeof AccountRoute
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/recharge': typeof RechargeRoute
@@ -251,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/access-unavailable': typeof AppAccessUnavailableRoute
   '/credits': typeof AppCreditsRoute
   '/payment-return': typeof AppPaymentReturnRoute
+  '/payment/result': typeof PaymentResultRoute
   '/watch/$work': typeof WatchWorkRoute
   '/projects/$project/assistant': typeof AppProjectsProjectAssistantRoute
   '/projects/$project/episodes': typeof AppProjectsProjectEpisodesRouteWithChildren
@@ -270,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/projects/$project/episodes/$episode/': typeof AppProjectsProjectEpisodesEpisodeIndexLazyRoute
 }
 export interface FileRoutesByTo {
+  '/account': typeof AccountRoute
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/recharge': typeof RechargeRoute
@@ -277,6 +294,7 @@ export interface FileRoutesByTo {
   '/access-unavailable': typeof AppAccessUnavailableRoute
   '/credits': typeof AppCreditsRoute
   '/payment-return': typeof AppPaymentReturnRoute
+  '/payment/result': typeof PaymentResultRoute
   '/watch/$work': typeof WatchWorkRoute
   '/': typeof AppIndexRoute
   '/projects/$project/assistant': typeof AppProjectsProjectAssistantRoute
@@ -299,6 +317,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/account': typeof AccountRoute
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/recharge': typeof RechargeRoute
@@ -306,6 +325,7 @@ export interface FileRoutesById {
   '/_app/access-unavailable': typeof AppAccessUnavailableRoute
   '/_app/credits': typeof AppCreditsRoute
   '/_app/payment-return': typeof AppPaymentReturnRoute
+  '/payment/result': typeof PaymentResultRoute
   '/watch/$work': typeof WatchWorkRoute
   '/_app/': typeof AppIndexRoute
   '/_app/projects/$project/assistant': typeof AppProjectsProjectAssistantRoute
@@ -329,6 +349,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/checkout'
     | '/login'
     | '/recharge'
@@ -336,6 +357,7 @@ export interface FileRouteTypes {
     | '/access-unavailable'
     | '/credits'
     | '/payment-return'
+    | '/payment/result'
     | '/watch/$work'
     | '/projects/$project/assistant'
     | '/projects/$project/episodes'
@@ -355,6 +377,7 @@ export interface FileRouteTypes {
     | '/projects/$project/episodes/$episode/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/account'
     | '/checkout'
     | '/login'
     | '/recharge'
@@ -362,6 +385,7 @@ export interface FileRouteTypes {
     | '/access-unavailable'
     | '/credits'
     | '/payment-return'
+    | '/payment/result'
     | '/watch/$work'
     | '/'
     | '/projects/$project/assistant'
@@ -383,6 +407,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/account'
     | '/checkout'
     | '/login'
     | '/recharge'
@@ -390,6 +415,7 @@ export interface FileRouteTypes {
     | '/_app/access-unavailable'
     | '/_app/credits'
     | '/_app/payment-return'
+    | '/payment/result'
     | '/watch/$work'
     | '/_app/'
     | '/_app/projects/$project/assistant'
@@ -412,10 +438,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  AccountRoute: typeof AccountRoute
   CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
   RechargeRoute: typeof RechargeRoute
   DownloadLazyRoute: typeof DownloadLazyRoute
+  PaymentResultRoute: typeof PaymentResultRoute
   WatchWorkRoute: typeof WatchWorkRoute
   TermsSubscriptionAgreementIdVersionRoute: typeof TermsSubscriptionAgreementIdVersionRoute
 }
@@ -450,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -469,6 +504,13 @@ declare module '@tanstack/react-router' {
       path: '/watch/$work'
       fullPath: '/watch/$work'
       preLoaderRoute: typeof WatchWorkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment/result': {
+      id: '/payment/result'
+      path: '/payment/result'
+      fullPath: '/payment/result'
+      preLoaderRoute: typeof PaymentResultRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/payment-return': {
@@ -675,10 +717,12 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  AccountRoute: AccountRoute,
   CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
   RechargeRoute: RechargeRoute,
   DownloadLazyRoute: DownloadLazyRoute,
+  PaymentResultRoute: PaymentResultRoute,
   WatchWorkRoute: WatchWorkRoute,
   TermsSubscriptionAgreementIdVersionRoute:
     TermsSubscriptionAgreementIdVersionRoute,

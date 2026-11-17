@@ -33,9 +33,8 @@ export function BrandLockup({ value }: {
   return (
     <span className="flex min-w-0 shrink-0 items-center">
       <img
-        src="/brand/dramaclaw-wordmark.png"
-        alt=""
-        aria-hidden="true"
+        src="/brand/aigcdo-wordmark.svg"
+        alt="AIGCDO"
         className="h-[22.7px] w-auto max-w-[113px] object-contain"
       />
       {organizationBrand ? (

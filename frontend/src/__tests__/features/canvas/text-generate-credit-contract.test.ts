@@ -23,6 +23,8 @@ describe("canvas AI text generation contract", () => {
     );
     expect(nodeSource).toContain("trusted generated_text length");
     expect(nodeSource).toContain("submitFreezoneTextGenerate(projectId");
+    expect(nodeSource).toContain("textGenerationAttempt(prompt, data.textGenerationAttempt)");
+    expect(nodeSource).toContain("textGenerateBillingRuleMissing, data.textGenerationAttempt, updateNodeData");
     expect(nodeSource).toContain("prompt,");
   });
 

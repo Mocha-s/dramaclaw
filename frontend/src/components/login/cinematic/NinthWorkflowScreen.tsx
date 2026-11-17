@@ -65,7 +65,7 @@ export function NinthWorkflowScreen({
         <span />
       </div>
 
-      <div className={styles.workflow} aria-label="DramaClaw workflow from prompt to clip">
+      <div className={styles.workflow} aria-label="AIGCDO workflow from prompt to clip">
         {workflow.map((item, index) => {
           const itemProgress = clamp((sequenceProgress - index * 0.18) / 0.34);
           const isOutput = index === workflow.length - 1;

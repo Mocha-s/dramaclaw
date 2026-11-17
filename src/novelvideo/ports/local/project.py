@@ -159,7 +159,7 @@ class SQLiteProjectRegistry:
         owner_user_id: str,
         name: str,
     ) -> ProjectRecord | None:
-        if owner_user_id != "local" or not name:
+        if not owner_user_id or not name:
             return None
         db = await self._connect()
         try:
@@ -167,10 +167,10 @@ class SQLiteProjectRegistry:
                 db,
                 """
                 SELECT * FROM projects
-                WHERE owner_type = 'user' AND owner_id = 'local' AND name = ?
+                WHERE owner_type = 'user' AND owner_id = ? AND name = ?
                   AND purged_at IS NULL
                 """,
-                (name,),
+                (owner_user_id, name),
             )
         finally:
             await db.close()
@@ -204,10 +204,11 @@ class SQLiteProjectRegistry:
                         id, owner_type, owner_id, owner_username, name, display_name, home_node_id,
                         output_dir, state_dir, runtime_dir, status, created_at, updated_at
                     )
-                    VALUES (?, 'user', 'local', ?, ?, ?, 'local', ?, ?, ?, 'active', ?, ?)
+                    VALUES (?, 'user', ?, ?, ?, ?, 'local', ?, ?, ?, 'active', ?, ?)
                     """,
                     (
                         project_id,
+                        owner_user_id,
                         owner_username,
                         name,
                         display_name or None,
@@ -238,17 +239,19 @@ class SQLiteProjectRegistry:
         self,
         principals: list[tuple[str, str]],
     ) -> list[ProjectRecord]:
-        if ("user", "local") not in principals:
+        user_ids = list({value for kind, value in principals if kind == "user" and value})
+        if not user_ids:
             return []
         db = await self._connect()
         try:
             rows = await _fetchall(
                 db,
-                """
+                f"""
                 SELECT * FROM projects
-                WHERE owner_type = 'user' AND owner_id = 'local'
+                WHERE owner_type = 'user' AND owner_id IN ({','.join('?' for _ in user_ids)})
                 ORDER BY updated_at DESC
-                """
+                """,
+                tuple(user_ids),
             )
         finally:
             await db.close()

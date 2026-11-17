@@ -85,8 +85,8 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                 <header className={styles.loginPanelHeader}>
                   <img
                     className={styles.loginPanelBrand}
-                    src="/brand/dramaclaw-wordmark.png"
-                    alt="DramaClaw"
+                    src="/brand/aigcdo-wordmark.svg"
+                    alt="AIGCDO"
                   />
                   <h2 className={styles.loginPanelTitle}>{t("auth.modal.title")}</h2>
                   <p className={styles.loginPanelSubtitle}>{t("auth.modal.subtitle")}</p>

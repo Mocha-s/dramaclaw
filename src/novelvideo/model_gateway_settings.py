@@ -100,7 +100,7 @@ class EffectiveNewApiConfig:
     mode: str
     source: str
     base_url: str
-    api_key: str
+    api_key: str = field(repr=False)
     protocol: str = "openai"
     model: str = ""
     native_base_url: str = ""
@@ -668,7 +668,16 @@ def _settings_db_path() -> Path:
     return Path(config.STATE_DIR) / "local" / "settings.db"
 
 
+def _aigcdo_rows() -> dict[str, str] | None:
+    """AIGCDO never reads the single-user store: its rows carry the scoped user's key."""
+    from novelvideo import aigcdo_model_runtime
+
+    return aigcdo_model_runtime.settings_rows() if aigcdo_model_runtime.active() else None
+
+
 def _connect() -> sqlite3.Connection:
+    if _aigcdo_rows() is not None:
+        raise RuntimeError("legacy model gateway settings are disabled under AIGCDO")
     path = _settings_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     for attempt in range(3):
@@ -708,6 +717,9 @@ def _connect() -> sqlite3.Connection:
 
 
 def _read_all() -> dict[str, str]:
+    rows = _aigcdo_rows()
+    if rows is not None:
+        return rows
     conn = _connect()
     try:
         rows = conn.execute("SELECT key, value FROM runtime_settings").fetchall()
@@ -747,7 +759,7 @@ def _write_many(values: dict[str, str]) -> None:
 
 def _migrate_third_party_gateway_settings() -> None:
     """Atomically migrate legacy gateway settings without deleting their source."""
-    if not _uses_ce_gateway_settings():
+    if not _uses_ce_gateway_settings() or _aigcdo_rows() is not None:
         return
     conn = _connect()
     try:

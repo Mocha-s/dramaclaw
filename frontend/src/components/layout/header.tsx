@@ -10,6 +10,7 @@ import {
   Bell,
   Bolt,
   Camera,
+  Wallet,
   Check,
   ChevronRight,
   Languages,
@@ -38,7 +39,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAppStore } from "@/stores/app-store";
-import { authRequired, isCeRuntime, phoneOtpEntryVisible } from "@/lib/runtime-config";
+import { authProvider, authRequired, isCeRuntime, localModelSettingsEnabled, phoneOtpEntryVisible } from "@/lib/runtime-config";
 import { resetUserSessionState } from "@/lib/reset-region-state";
 import { useModelGatewayConfig } from "@/lib/queries/model-gateway";
 import { useOrgBranding } from "@/lib/queries/org-branding";
@@ -105,6 +106,8 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
   const setPikoAccessory = useAppStore((s) => s.setPikoAccessory);
   const setLanguage = useAppStore((s) => s.setLanguage);
   const showLogout = authRequired();
+  // The gateway owns this account: avatar and password are not managed here.
+  const gatewayAccount = authProvider() === "aigcdo";
   const ceRuntime = isCeRuntime();
   const orgBranding = useOrgBranding(!ceRuntime && Boolean(username));
   const brandName = orgBranding.data?.branding
@@ -120,7 +123,7 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
   const displayName = accountSecurity.data?.phone_masked ?? storedDisplayName ?? username ?? "User";
   const avatarInitial = displayName.slice(0, 1).toUpperCase();
   const activeLanguage = normalize(i18n.resolvedLanguage ?? i18n.language);
-  const modelGatewayConfig = useModelGatewayConfig(ceRuntime);
+  const modelGatewayConfig = useModelGatewayConfig(localModelSettingsEnabled());
   const releaseNotifications = useReleaseNotifications(i18n.resolvedLanguage ?? i18n.language);
   const releaseFeed = releaseNotifications.data?.data;
   const announcements = useAnnouncements();
@@ -362,7 +365,8 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
 
         {/* Actions */}
         <div className="flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1">
-          <div ref={settingsAnchorRef} className="relative">
+          {/* AIGCDO: every settings page is operator-owned or not yet per-user, so no entry. */}
+          <div ref={settingsAnchorRef} className="relative" hidden={gatewayAccount}>
             <Button
               type="button"
               variant="ghost"
@@ -450,8 +454,12 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
               avatarUrl={avatarUrl}
               displayName={displayName}
               hasUnreadNotification={hasUnreadNotification}
-              onChangeAvatar={openAvatarDialog}
-              onChangePassword={showLogout ? openPasswordDialog : undefined}
+              onAccount={gatewayAccount ? () => {
+                closeAccountPanelNow();
+                window.location.assign("/account");
+              } : undefined}
+              onChangeAvatar={gatewayAccount ? undefined : openAvatarDialog}
+              onChangePassword={showLogout && !gatewayAccount ? openPasswordDialog : undefined}
               onBindPhone={canBindPhone ? () => {
                 closeAccountPanelNow();
                 setPhoneBindingOpen(true);
@@ -592,6 +600,7 @@ function AccountPanel({
   avatarUrl,
   displayName,
   hasUnreadNotification,
+  onAccount,
   onChangeAvatar,
   onChangePassword,
   onBindPhone,
@@ -611,7 +620,8 @@ function AccountPanel({
   avatarUrl: string | null;
   displayName: string;
   hasUnreadNotification: boolean;
-  onChangeAvatar: () => void;
+  onAccount?: () => void;
+  onChangeAvatar?: () => void;
   onChangePassword?: () => void;
   onBindPhone?: () => void;
   onLanguageChange: (lang: Supported) => void;
@@ -665,11 +675,20 @@ function AccountPanel({
             unread={hasUnreadNotification}
             onClick={onNotifications}
           />
-          <AccountMenuRow
-            icon={<Camera className="size-3.5" />}
-            label={t("header.account.changeAvatar")}
-            onClick={onChangeAvatar}
-          />
+          {onAccount ? (
+            <AccountMenuRow
+              icon={<Wallet className="size-3.5" />}
+              label={t("header.account.billing")}
+              onClick={onAccount}
+            />
+          ) : null}
+          {onChangeAvatar ? (
+            <AccountMenuRow
+              icon={<Camera className="size-3.5" />}
+              label={t("header.account.changeAvatar")}
+              onClick={onChangeAvatar}
+            />
+          ) : null}
           {onChangePassword ? (
             <AccountMenuRow
               icon={<KeyRound className="size-3.5" />}

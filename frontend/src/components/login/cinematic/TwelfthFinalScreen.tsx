@@ -42,7 +42,7 @@ export function TwelfthFinalScreen({
       <div className={styles.content}>
         <img
           className={styles.mark}
-          src="/login-cinematic/final-mark.png"
+          src="/brand/aigcdo-icon.svg"
           alt=""
           draggable={false}
           aria-hidden="true"

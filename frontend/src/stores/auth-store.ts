@@ -14,6 +14,8 @@ export interface CurrentUser {
   credit_balance: number;
   credential_kind?: string;
   avatar_url?: string | null;
+  // AIGCDO: the gateway account's email; its username is an opaque storage id.
+  email?: string;
 }
 
 interface GetCurrentUserOptions {
@@ -77,6 +79,7 @@ async function resolveDisplayName(
   user: CurrentUser,
   previousDisplayName: string | null = null,
 ): Promise<string> {
+  if (user.email) return user.email;
   if (!GENERATED_PHONE_USERNAME.test(user.username)) return user.username;
   const fallback = previousDisplayName || "User";
   try {
@@ -124,6 +127,11 @@ export const useAuthStore = create<AuthState>()(
           throw new Error(err.error || err.detail || "Login failed");
         }
         const data = await res.json();
+        if (res.status === 202 || data.data?.requires_2fa === true ||
+            typeof data.data?.username !== "string" || !data.data.username ||
+            typeof data.data?.role !== "string") {
+          throw new Error("Incomplete login response; reload the sign-in page");
+        }
         const displayName = await resolveDisplayName(data.data);
         // The response body carries identity only; the HttpOnly cookie is the credential.
         cachedCurrentUser = data.data;

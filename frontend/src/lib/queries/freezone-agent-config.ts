@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
+import { authProvider } from "@/lib/runtime-config";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiCall } from "@/api/client";
@@ -48,6 +49,8 @@ export function useFreezoneAgentConfigItems(kind: FreezoneAgentConfigKind) {
     queryKey: freezoneAgentConfigQueryKey(kind),
     queryFn: () =>
       apiCall<FreezoneAgentConfigPayload[]>(`freezone/agent-config/${kind}`),
+    // AIGCDO withholds this installation-wide store (503); do not ask for it.
+    enabled: authProvider() !== "aigcdo",
   });
 }
 

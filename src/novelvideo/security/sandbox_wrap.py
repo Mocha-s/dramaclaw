@@ -104,6 +104,11 @@ def wrap_command(cmd: list[str], spec: SandboxSpec) -> list[str]:
     - Otherwise → warn and return raw cmd (dev convenience).
     """
     system = platform.system()
+    if _multi_user():
+        # Mutually untrusted users: never the read-everything profile, never unsandboxed.
+        if system != "Linux":
+            raise RuntimeError("multi-user Agent workers need the Linux per-user sandbox")
+        return _wrap_linux_per_user(cmd, spec)
     if system == "Linux":
         return _wrap_linux(cmd, spec)
     if system == "Darwin":
@@ -182,6 +187,138 @@ def _sandbox_can_run(binary: str) -> bool:
         ok = False
     _SANDBOX_PROBE_CACHE[binary] = ok
     return ok
+
+
+def _multi_user() -> bool:
+    """AIGCDO serves mutually untrusted users from one host process."""
+    from novelvideo.shared.runtime_env import auth_provider
+
+    return auth_provider() == "aigcdo"
+
+
+def per_user_argv(
+    bwrap: str, cmd: list[str], *, home: Path, mounts: list[tuple[str, Path]],
+) -> list[str]:
+    """bubblewrap argv for one user's view of the filesystem (#346 P1②).
+
+    ``mounts`` is applied in order: ``hide`` empties a tree, ``show`` binds one path back
+    read-only, ``blank`` empties a file. Peer isolation is then a property of the mount
+    namespace rather than of a profile: what is not mounted cannot be read. The fresh
+    /proc of a new PID namespace keeps the host process (whose environment carries the
+    deployment key) and its /proc/<pid>/root out of reach. Only ``home`` is writable.
+    """
+    args = [
+        bwrap, "--unshare-user", "--unshare-pid", "--unshare-ipc", "--die-with-parent",
+        "--new-session", "--cap-drop", "ALL",
+        "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc",
+    ]
+    for kind, path in mounts:
+        args += {
+            "hide": ["--tmpfs", str(path)],
+            "show": ["--ro-bind", str(path), str(path)],
+            "blank": ["--ro-bind", "/dev/null", str(path)],
+        }[kind]
+    args += ["--bind", str(home), str(home)]
+    # A hidden tree is a tmpfs: left writable it would be scratch space that eats host RAM.
+    for kind, path in mounts:
+        if kind == "hide":
+            args += ["--remount-ro", str(path)]
+    return [*args, "--chdir", str(home), "--", *cmd]
+
+
+def per_user_sandbox_ok(bwrap: str | None = None) -> bool:
+    """Prove on this host that a wrapped process cannot read a peer; cached per binary.
+
+    bubblewrap needs unprivileged user namespaces and a mountable /proc. Where the
+    container or kernel withholds them this returns False and no multi-user worker starts.
+    """
+    bwrap = bwrap or shutil.which("bwrap") or ""
+    cached = _SANDBOX_PROBE_CACHE.get("per-user:" + bwrap)
+    if cached is not None:
+        return cached
+    ok = False
+    try:
+        with tempfile.TemporaryDirectory(prefix="per-user-sbx-probe-") as tmp:
+            root = Path(tmp).resolve() / "data"
+            home = root / "alice" / ".hermes"
+            home.mkdir(parents=True)
+            (root / "alice" / "own").write_text("own")
+            (root / "bob").mkdir()
+            (root / "bob" / "secret").write_text("peer")
+            script = (
+                # Subshell: a failed redirection on the special builtin ":" would exit dash itself.
+                'test ! -e "$1" && test -r "$2" && : > "$3/written" && ! (: > "$2.new") 2>/dev/null'
+                ' && test "$(readlink /proc/self/ns/pid)" != "$4"'
+            )
+            proc = subprocess.run(
+                per_user_argv(
+                    bwrap,
+                    ["/bin/sh", "-c", script, "probe", str(root / "bob" / "secret"),
+                     str(root / "alice" / "own"), str(home), os.readlink("/proc/self/ns/pid")],
+                    home=home, mounts=[("hide", root), ("show", root / "alice")],
+                ),
+                capture_output=True, timeout=30, env={"PATH": "/usr/bin:/bin"},
+            )
+            ok = proc.returncode == 0 and (home / "written").exists()
+            if not ok:
+                _log.error(
+                    "per-user sandbox probe failed: %s",
+                    proc.stderr.decode(errors="replace")[-400:],
+                )
+    except (OSError, subprocess.SubprocessError):
+        ok = False
+    _SANDBOX_PROBE_CACHE["per-user:" + bwrap] = ok
+    return ok
+
+
+def _per_user_mounts(spec: SandboxSpec) -> list[tuple[str, Path]]:
+    """Hide every shared tree wholesale, then show back only this user's slice."""
+    from novelvideo import config
+
+    mounts: list[tuple[str, Path]] = [
+        ("hide", path)
+        for path in (Path.home(), Path("/tmp"), Path("/var/tmp"), Path("/run"), SUPERTALE_ROOT)
+        if path != Path("/") and path.is_dir()
+    ]
+    # Of the checkout only the code a worker runs: not .env, .git, logs or a legacy data tree.
+    mounts += [
+        ("show", SUPERTALE_ROOT / name)
+        for name in ("src", "integrations", ".hermes", ".venv") if (SUPERTALE_ROOT / name).exists()
+    ]
+    roots: list[Path] = []
+    for kind in ("state", "output", "runtime"):
+        # The API resolves its roots in config; Hermes homes follow _data_dir. Cover both, and
+        # create the API's: a root that appears after the worker started shows through "/".
+        authoritative = Path(getattr(config, f"{kind.upper()}_DIR"))
+        authoritative.mkdir(parents=True, exist_ok=True)
+        roots += [root for root in {authoritative, _data_dir(kind)} if root.is_dir()]
+    private = list(roots)
+    if os.environ.get("AIGCDO_STATE_DIR", "").strip():
+        private.append(Path(os.environ["AIGCDO_STATE_DIR"].strip()))
+        private[-1].mkdir(parents=True, exist_ok=True)
+    mounts += [("hide", path) for path in private]
+    mounts += [
+        ("show", path)
+        for path in (
+            # Not _shared: it is installation-wide and holds other users' replay traces.
+            *(root / spec.user for root in roots),
+            *spec.extra_read_paths,
+        )
+        if path.exists()
+    ]
+    return mounts
+
+
+def _wrap_linux_per_user(cmd: list[str], spec: SandboxSpec) -> list[str]:
+    bwrap = shutil.which("bwrap")
+    if not bwrap or not per_user_sandbox_ok(bwrap):
+        raise RuntimeError(
+            "per-user sandbox unavailable (bubblewrap needs unprivileged user namespaces "
+            "and a mountable /proc); refusing to run a multi-user Agent worker"
+        )
+    return per_user_argv(
+        bwrap, cmd, home=spec.resolved_hermes_home(), mounts=_per_user_mounts(spec),
+    )
 
 
 def _wrap_linux(cmd: list[str], spec: SandboxSpec) -> list[str]:
@@ -395,7 +532,7 @@ def _sandbox_required() -> bool:
         return True
     if os.environ.get("ST_CONTROL_PLANE_DSN", "").strip():
         return True
-    return False
+    return _multi_user()
 
 
 def _dev_unsandboxed_opt_in() -> bool:

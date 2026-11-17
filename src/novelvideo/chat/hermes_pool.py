@@ -50,6 +50,7 @@ from novelvideo.chat.hermes_workspace import (
     freezone_python_hook_dir,
 )
 from novelvideo.ports import get_auth_session_port
+from novelvideo.ports.registry import PortNotRegistered
 from novelvideo.ports.auth_contract import AgentSessionToken
 
 _log = logging.getLogger(__name__)
@@ -426,7 +427,7 @@ class HermesPool:
                         canvas_id=normalized_canvas_id,
                         reason="model-gateway-change",
                     )
-                elif self._token_needs_renewal(slot):
+                elif self._token_needs_renewal(slot) or await self._agent_session_stale(slot):
                     slot = await self._rotate_slot_locked(
                         slot,
                         model=model,
@@ -740,6 +741,15 @@ class HermesPool:
     def _token_needs_renewal(self, slot: _WorkerSlot) -> bool:
         renew_at = int(time.time()) + max(0, self._token_renew_skew_secs)
         return slot.token.exp <= renew_at
+
+    @staticmethod
+    async def _agent_session_stale(slot: _WorkerSlot) -> bool:
+        """Multi-user ports bind a worker token to one browser session; a re-login replaces it."""
+        try:
+            check = getattr(get_auth_session_port(), "agent_session_stale", None)
+        except PortNotRegistered:
+            return False
+        return check is not None and await check(slot.token.value)
 
     @staticmethod
     def _slot_key(username: str, agent_profile: str = "main") -> str:

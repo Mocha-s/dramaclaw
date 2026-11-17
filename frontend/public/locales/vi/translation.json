@@ -25,8 +25,8 @@
     "totalMaxDuration": "Tổng thời lượng tham chiếu: {{actual}} giây; tối đa {{expected}} giây."
   },
   "app": {
-    "title": "SuperTale",
-    "subtitle": "Bàn làm việc tạo và commit asset của SuperTale",
+    "title": "AIGCDO",
+    "subtitle": "Bàn làm việc tạo và commit asset của AIGCDO",
     "updateRequired": {
       "title": "App đã được cập nhật",
       "description": "Trang này đang dùng file app đã hết hạn. Tải lại để dùng bản mới nhất.",
@@ -123,8 +123,8 @@
       "qrAlt": "Mã QR WeChat doanh nghiệp",
       "items": {
         "difference": {
-          "question": "DramaClaw khác gì một công cụ tạo video AI thông thường?",
-          "answer": "Công cụ thông thường xoay quanh một prompt, một đoạn clip hay một tấm ảnh. DramaClaw dựng quanh cả một dự án hoàn chỉnh: nhập chữ, gây dựng asset, lên kế hoạch tập, sản xuất cú máy và dựng bản cuối — một vòng sản xuất truy vết được, làm nhóm được, dùng lại được."
+          "question": "AIGCDO khác gì một công cụ tạo video AI thông thường?",
+          "answer": "Công cụ thông thường xoay quanh một prompt, một đoạn clip hay một tấm ảnh. AIGCDO dựng quanh cả một dự án hoàn chỉnh: nhập chữ, gây dựng asset, lên kế hoạch tập, sản xuất cú máy và dựng bản cuối — một vòng sản xuất truy vết được, làm nhóm được, dùng lại được."
         },
         "gettingStarted": {
           "question": "Lần đầu dùng thì nên bắt đầu từ đâu?",
@@ -143,7 +143,7 @@
           "answer": "Nguyên nhân thường gặp khiến phải làm đi làm lại trong video AI không nằm ở khâu tạo cuối cùng — mà ở phía trên: nhân vật không ổn định, bối cảnh mơ hồ, đạo cụ không có ảnh mẫu, giọng không nhất quán. Biến những thứ đó thành asset ở Shrimp Pond sẽ gỡ được rất nhiều rối rắm ở khâu cú máy."
         },
         "contentTypes": {
-          "question": "DramaClaw hợp với những loại nội dung nào?",
+          "question": "AIGCDO hợp với những loại nội dung nào?",
           "answer": "Phim ngắn AI, phim truyện tranh, trailer tiểu thuyết, video bình phim, quảng cáo và video đào tạo — cùng với những dự án nhóm cần duy trì nhân vật IP và nội dung ra theo tập trong thời gian dài. Người làm một mình chạy được cả dây chuyền; nhóm thì sản xuất cùng nhau được."
         },
         "teamRoles": {
@@ -155,8 +155,8 @@
           "answer": "Tìm đúng khâu đang hỏng: văn bản đã rõ chưa, tạo hình nhân vật đã đúng chưa, bối cảnh và đạo cụ đã có ảnh mẫu chưa, phác thảo đã mô tả được cú máy chưa, khung đầu đã ổn định chưa, âm thanh có khớp không? Đừng bắt đầu bằng cách tạo lại video hết lần này tới lần khác — sửa asset ở phía trên và phần mô tả cú máy trước đã."
         },
         "dcUniverse": {
-          "question": "“Make Your DC Universe.” nghĩa là gì?",
-          "answer": "DC không chỉ là viết tắt của DramaClaw — nó còn là vũ trụ nội dung của chính mỗi người sáng tạo. DramaClaw sinh ra để giúp bạn bắt đầu từ một câu chuyện rồi dựng dần lên nhân vật, thế giới, asset bối cảnh và khả năng sản xuất cả một bộ phim dài kỳ."
+          "question": "“Make Your AIGCDO Universe.” nghĩa là gì?",
+          "answer": "AIGCDO giúp bạn bắt đầu từ một câu chuyện rồi dựng dần lên nhân vật, thế giới, asset bối cảnh và khả năng sản xuất cả một bộ phim dài kỳ — vũ trụ nội dung của riêng bạn."
         },
         "afterLogin": {
           "question": "Đăng nhập xong thì tôi vào đâu?",
@@ -199,12 +199,12 @@
     },
     "fifth": {
       "heading": "Biến nghìn ý tưởng thành asset",
-      "lead1": "DramaClaw sắp chúng vào thư viện asset của dự án,",
+      "lead1": "AIGCDO sắp chúng vào thư viện asset của dự án,",
       "lead2": "để những lần tạo cú máy sau tham chiếu được, quản lý một chỗ, và lùi về phiên bản cũ khi cần."
     },
     "seventh": {
       "heading": "Từ quay số hên xui thành một dây chuyền thật",
-      "lead": "DramaClaw chia nhỏ cái bấp bênh của video AI ra thành văn bản, asset, cú máy và luồng tác vụ",
+      "lead": "AIGCDO chia nhỏ cái bấp bênh của video AI ra thành văn bản, asset, cú máy và luồng tác vụ",
       "steps": {
         "01": {
           "title": "Đưa tiền đề vào",
@@ -234,7 +234,7 @@
     },
     "eighth": {
       "heading": "Sinh ra cho những bộ phim hoàn chỉnh",
-      "lead": "DramaClaw quan tâm tới chuyện một bộ phim được làm tiếp thế nào: đưa chữ vào, giữ nhân vật nhất quán, tái dùng bối cảnh, theo tiến độ từng cú máy, cả nhóm cùng bàn giao.",
+      "lead": "AIGCDO quan tâm tới chuyện một bộ phim được làm tiếp thế nào: đưa chữ vào, giữ nhân vật nhất quán, tái dùng bối cảnh, theo tiến độ từng cú máy, cả nhóm cùng bàn giao.",
       "statementTitle": "Night Passage Protocol · Chuỗi cú máy 08",
       "statementBody": "Một con tàu hàng không đăng ký kéo cả bí mật của thành phố chìm xuống tầng đêm.",
       "decisions": {
@@ -259,7 +259,7 @@
     "ninth": {
       "headingTop": "Một dòng, thẳng vào",
       "headingAccent": "cú máy",
-      "lead": "Bạn không cần kịch bản hoàn chỉnh. Đưa ra một hướng đi và DramaClaw bóc nó thành nhân vật, xung đột, bối cảnh cùng một chuỗi cú máy mà bạn đẩy tiếp được.",
+      "lead": "Bạn không cần kịch bản hoàn chỉnh. Đưa ra một hướng đi và AIGCDO bóc nó thành nhân vật, xung đột, bối cảnh cùng một chuỗi cú máy mà bạn đẩy tiếp được.",
       "featuredWork": "Luban's Craft",
       "steps": {
         "01": {
@@ -286,7 +286,7 @@
     },
     "twelfth": {
       "heading": "Đẩy một dòng thành cả một vũ trụ xem được",
-      "lead": "Đưa cho nó một xung đột nhân vật hay một thế giới, để DramaClaw bóc thành các node cú máy rồi cứ thế nối dài",
+      "lead": "Đưa cho nó một xung đột nhân vật hay một thế giới, để AIGCDO bóc thành các node cú máy rồi cứ thế nối dài",
       "primaryCta": "Bắt đầu sáng tạo",
       "secondaryCta": "Đăng ký tài khoản"
     },
@@ -299,7 +299,7 @@
     },
     "second": {
       "title": "Từ ý tưởng thành dự án",
-      "subtitle": "Trong DramaClaw, sáng tạo không còn dừng ở một prompt và một kết quả"
+      "subtitle": "Trong AIGCDO, sáng tạo không còn dừng ở một prompt và một kết quả"
     },
     "third": {
       "title": "Để câu chuyện làm điểm xuất phát",
@@ -341,8 +341,8 @@
       "eyebrow": "Giao diện",
       "title": "Một dây chuyền có dẫn đường và một canvas tự do",
       "lede": "Luồng chính bóc tiểu thuyết thành tập phim, nhân vật, storyboard, khung đầu, video và bản dựng cuối — mỗi bước một trang. Canvas chiếu bất kỳ cú máy nào lên sơ đồ node để bạn làm lại thoải mái rồi đồng bộ kết quả về. Hai bên đọc chung một bộ asset.",
-      "windowTitle": "DramaClaw — Tập 03 · Canvas",
-      "alt": "Phác thảo canvas DramaClaw bản desktop: tab tập phim ở trên, danh sách cú máy bên trái, canvas node ở giữa, bảng tham số bên phải.",
+      "windowTitle": "AIGCDO — Tập 03 · Canvas",
+      "alt": "Phác thảo canvas AIGCDO bản desktop: tab tập phim ở trên, danh sách cú máy bên trái, canvas node ở giữa, bảng tham số bên phải.",
       "caption": "Hình minh hoạ (khung nhìn canvas)"
     },
     "capability": {
@@ -408,7 +408,7 @@
       },
       "v120": {
         "title": "Credits theo tính năng minh bạch, đón cả agent bên ngoài",
-        "description": "Giá từng tính năng, mức phí ước tính và lịch sử sử dụng gom về một chỗ, và các agent chạy trên máy như Claude Code có thể điều khiển DramaClaw CE qua MCP."
+        "description": "Giá từng tính năng, mức phí ước tính và lịch sử sử dụng gom về một chỗ, và các agent chạy trên máy như Claude Code có thể điều khiển AIGCDO CE qua MCP."
       }
     },
     "faq": {
@@ -417,7 +417,7 @@
       "items": {
         "macGatekeeper": {
           "question": "macOS báo không xác minh được nhà phát triển, phải làm sao?",
-          "answer": "Mở Finder → Applications, tìm DramaClaw, giữ Control rồi bấm vào biểu tượng, chọn Open, sau đó xác nhận Open trong hộp thoại. Chỉ phải làm một lần; sau đó app mở bình thường."
+          "answer": "Mở Finder → Applications, tìm ứng dụng đã tải xuống, giữ Control rồi bấm vào biểu tượng, chọn Open, sau đó xác nhận Open trong hộp thoại. Chỉ phải làm một lần; sau đó app mở bình thường."
         },
         "winSmartScreen": {
           "question": "Windows báo đã bảo vệ máy của tôi, phải làm sao?",
@@ -456,6 +456,7 @@
     "notifications": "Thông báo",
     "account": {
       "open": "Mở menu tài khoản",
+      "billing": "Số dư và nạp tiền",
       "changeAvatar": "Đổi ảnh đại diện",
       "changePassword": "Đổi mật khẩu",
       "selectLanguage": "Chọn ngôn ngữ",
@@ -886,7 +887,7 @@
     "ingestAutomationMissingFile": "Không đọc được file truyện đã tải lên. Hãy chọn lại.",
     "attachmentOnlyPrompt": "Hãy phân tích file tôi vừa tải lên.",
     "attachmentAnalysisUploading": "Đang tải file lên để phân tích: {{filename}}",
-    "settingsHint": "Tài khoản và đăng nhập do SuperTale quản lý. Các thiết lập này chỉ điều khiển cách hiển thị chat và hành vi tệp đính kèm.",
+    "settingsHint": "Tài khoản và đăng nhập do AIGCDO quản lý. Các thiết lập này chỉ điều khiển cách hiển thị chat và hành vi tệp đính kèm.",
     "scrollToBottom": "Về cuối",
     "taskCompleteNotice": "✅ {{label}} đã xong. Bảo mình xem kết quả, hoặc đi tiếp bước sau.",
     "taskFailedNotice": "{{label}} thất bại: {{reason}}\nXử lý đúng chỗ báo lỗi rồi hãy làm tiếp.",
@@ -2209,8 +2210,8 @@
       "subtitle": "Tiếp tục với truyện, asset và cú máy của bạn",
       "noAccount": "Chưa có tài khoản?",
       "applyAccount": "Đăng ký dùng thử",
-      "showcaseLabel": "Thư viện DramaClaw",
-      "showcaseEyebrow": "LÀM BẰNG DRAMACLAW",
+      "showcaseLabel": "Thư viện AIGCDO",
+      "showcaseEyebrow": "LÀM BẰNG AIGCDO",
       "showcaseMeta": "Dây chuyền đang chạy",
       "showcaseTitle": "Trí tưởng tượng chạy hết công suất",
       "showcaseDescription": "Nhân vật, storyboard, âm thanh và cú máy cùng tiến trên một dây chuyền",
@@ -2258,17 +2259,17 @@
     },
     "stage": {
       "eyebrow": "Nền tảng sáng tác phim",
-      "headline": "Vũ Trụ DC Của Riêng Bạn",
+      "headline": "Vũ Trụ AIGCDO Của Riêng Bạn",
       "headlines": {
         "createUniverse": "Mở Ra Vũ Trụ Sáng Tạo Của Bạn",
         "dramaUniverse": "Mở Ra Vũ Trụ Phim Ảnh Của Bạn",
         "storyWorld": "Kiến Tạo Thế Giới Truyện Của Bạn"
       },
       "headlinePrefix": "Vũ Trụ",
-      "headlineBrand": "DC",
+      "headlineBrand": "AIGCDO",
       "headlineSuffix": "Của Riêng Bạn",
       "subtitlePrefix": "Vũ Trụ",
-      "subtitleBrand": "DC",
+      "subtitleBrand": "AIGCDO",
       "subtitleSuffix": "",
       "start": "Cảm hứng bắt đầu từ đây",
       "sub": "NƠI MỖI TIA CẢM HỨNG GẶP GỠ SỨC MẠNH SÁNG TẠO AI DỄ DÀNG",
@@ -2277,7 +2278,7 @@
     },
     "community": {
       "label": "Tác phẩm cộng đồng",
-      "heading": "DramaClaw TV",
+      "heading": "AIGCDO TV",
       "likes": "{{count}} lượt thích",
       "openWork": "Mở tác phẩm \"{{title}}\"",
       "works": {
@@ -2733,6 +2734,7 @@
     "error": "Đã có lỗi xảy ra",
     "novelImportRequired": "Vui lòng nhập truyện trước",
     "insufficientCredits": "Không đủ credits. Vui lòng liên hệ quản trị viên để nạp thêm.",
+    "insufficientCredits_aigcdo": "Không đủ credits. Hãy nạp thêm trong mục Số dư và nạp tiền của menu tài khoản rồi thử lại.",
     "billingRuleNotConfigured": "Chưa cấu hình quy tắc tính phí. Vui lòng liên hệ quản trị viên để thiết lập giá credits.",
     "billingRuleNotConfiguredShort": "Cấu hình",
     "projectDefaultQueueFull": "Hàng đợi mặc định của dự án này đã đầy",
@@ -2891,7 +2893,7 @@
     "novelFormat": {
       "button": "Hướng dẫn định dạng phim tinh phẩm",
       "title": "Định dạng phim tinh phẩm",
-      "intro": "Kịch bản phim tinh phẩm cần có ranh giới tập và phân cảnh rõ ràng. DramaClaw tách kịch bản theo dòng đầu cảnh trước khi tạo hình ảnh, lời thoại và âm thanh cho từng dòng; hệ thống không tự bịa ra điểm ngắt cảnh cho văn xuôi không có tiêu đề.",
+      "intro": "Kịch bản phim tinh phẩm cần có ranh giới tập và phân cảnh rõ ràng. AIGCDO tách kịch bản theo dòng đầu cảnh trước khi tạo hình ảnh, lời thoại và âm thanh cho từng dòng; hệ thống không tự bịa ra điểm ngắt cảnh cho văn xuôi không có tiêu đề.",
       "standardStatus": "Chuẩn · sẵn sàng nhập",
       "standardStatusHint": "Hỗ trợ nhiều định dạng thông dụng trong ngành. Metadata đầy đủ về bối cảnh, thời gian và INT/EXT sẽ được phân tích chính xác.",
       "warningStatus": "Có thể sửa · vẫn cho nhập",
@@ -5095,7 +5097,7 @@
           "style": {
             "label": "Phong cách",
             "options": {
-              "supertale_production": "Chuẩn dựng SuperTale",
+              "supertale_production": "Chuẩn dựng AIGCDO",
               "cinematic_realistic": "Điện ảnh tả thực",
               "clean_sketch": "Phác thảo nét sạch",
               "spiderverse_mixed": "Đa chất liệu"
@@ -7519,7 +7521,7 @@
         "mediaCatalogCheckFailed": "Không kiểm tra được danh mục model media chính thức. Hãy thử lại sau."
       },
       "custom": {
-        "description": "CE dùng một NewAPI cục bộ chạy trên SQLite. DramaClaw sẽ tự kết nối cơ sở dữ liệu, tạo runtime token và bật kênh cục bộ.",
+        "description": "CE dùng một NewAPI cục bộ chạy trên SQLite. AIGCDO sẽ tự kết nối cơ sở dữ liệu, tạo runtime token và bật kênh cục bộ.",
         "init": "Khởi tạo Local NewAPI",
         "repair": "Kiểm tra & sửa",
         "initialized": "Local NewAPI đã sẵn sàng.",
@@ -7538,7 +7540,7 @@
         "setupConfirmPassword": "Xác nhận mật khẩu",
         "setupPasswordPlaceholder": "Ít nhất 8 ký tự",
         "setupConfirmPasswordPlaceholder": "Nhập lại lần nữa",
-        "setupPasswordOnlyOnce": "Tên đăng nhập và mật khẩu này chỉ được gửi tới NewAPI của bạn khi tạo quản trị viên đầu tiên trên một bản NewAPI mới tinh. Nếu NewAPI đã khởi tạo rồi, việc nhập mật khẩu ở đây sẽ không đổi mật khẩu quản trị hiện có. DramaClaw không lưu mật khẩu này và không dùng nó cho các thao tác về sau; hãy tự giữ lại để đăng nhập bảng quản trị NewAPI sau khi thiết lập lần đầu.",
+        "setupPasswordOnlyOnce": "Tên đăng nhập và mật khẩu này chỉ được gửi tới NewAPI của bạn khi tạo quản trị viên đầu tiên trên một bản NewAPI mới tinh. Nếu NewAPI đã khởi tạo rồi, việc nhập mật khẩu ở đây sẽ không đổi mật khẩu quản trị hiện có. AIGCDO không lưu mật khẩu này và không dùng nó cho các thao tác về sau; hãy tự giữ lại để đăng nhập bảng quản trị NewAPI sau khi thiết lập lần đầu.",
         "setupRequired": "Local NewAPI chưa được khởi tạo. Hãy nhập mật khẩu thiết lập kèm xác nhận rồi thử lại.",
         "setupAlreadyInitializedPasswordIgnored": "NewAPI của bạn đã được khởi tạo trước đó. Lần chạy này không gọi endpoint thiết lập của NewAPI và không đổi mật khẩu quản trị hiện có; mật khẩu bạn nhập đã bị bỏ qua và xoá đi.",
         "setupPasswordMissingUsername": "Hãy nhập tên đăng nhập quản trị.",
@@ -7558,7 +7560,7 @@
         "apiKey": "API Key",
         "capabilitiesLabel": "Năng lực",
         "models": "Ánh xạ model",
-        "requestModel": "Mẫu model DramaClaw",
+        "requestModel": "Mẫu model AIGCDO",
         "upstreamModel": "Model upstream",
         "unifiedRoute": "Tuyến văn bản thống nhất",
         "unifiedRouteNone": "Không dùng tuyến thống nhất",
@@ -8029,7 +8031,7 @@
     "missingAnyApiKeyMessage": "Nhà cung cấp phía backend chưa được cấu hình.",
     "openProvidersSettings": "Xem các nhà cung cấp",
     "aboutAppName": "Beat Workbench",
-    "aboutIntro": "Bàn làm việc tạo ứng viên, thử nghiệm ảnh tự do và commit asset của SuperTale.",
+    "aboutIntro": "Bàn làm việc tạo ứng viên, thử nghiệm ảnh tự do và commit asset của AIGCDO.",
     "aboutVersionLabel": "Phiên bản",
     "aboutVersionUnknown": "Không rõ",
     "aboutAuthorLabel": "Tác giả",
@@ -8683,8 +8685,8 @@
     "retryQuote": "Làm mới báo giá"
   },
   "paymentReturn": {
-    "back": "Quay lại DramaClaw",
-    "returnButton": "Quay lại DramaClaw",
+    "back": "Quay lại AIGCDO",
+    "returnButton": "Quay lại AIGCDO",
     "orderNumber": "Mã đơn của người bán",
     "retry": "Kiểm tra lại",
     "states": {
@@ -8694,7 +8696,7 @@
       },
       "credited": {
         "title": "Đã cộng điểm",
-        "description": "Máy chủ đã xác nhận thanh toán và cộng điểm. Bạn có thể quay lại DramaClaw."
+        "description": "Máy chủ đã xác nhận thanh toán và cộng điểm. Bạn có thể quay lại AIGCDO."
       },
       "closed": {
         "title": "Đơn đã đóng",

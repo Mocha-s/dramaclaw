@@ -79,7 +79,7 @@ import {
   type FeatureModelProvider,
   type MediaStorageProvider,
 } from "@/stores/settingsStore";
-import { isCeRuntime } from "@/lib/runtime-config";
+import { localModelSettingsEnabled } from "@/lib/runtime-config";
 import { FreezoneSkillRecipeSettings } from "./freezone-skill-recipe-settings";
 import { TaskLimitsSettings } from "./task-limits-settings";
 
@@ -101,7 +101,7 @@ const MODEL_CONFIGURATION_GUIDE_URL =
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { t } = useTranslation();
-  const ceRuntime = isCeRuntime();
+  const ceRuntime = localModelSettingsEnabled();
   const [page, setPage] = useState<
     "models" | "storage" | "task-limits" | "freezone-skills" | "freezone-recipes"
   >(

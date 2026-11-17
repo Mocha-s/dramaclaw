@@ -106,6 +106,7 @@ import { api, uploadApi } from "@/lib/api";
 import { backendErrorToastMessage, jsonWithBackendError } from "@/lib/api-errors";
 import { dedupeGenerationErrors } from "@/features/canvas/application/generationErrorReport";
 import { p } from "@/lib/api-path";
+import { authProvider } from "@/lib/runtime-config";
 import { validateFreezoneAgentConfigPayload } from "@/lib/freezone-agent-config-schema";
 import {
   SUPERCHAT_CANVAS_CONTEXT_REQUEST_EVENT,
@@ -12570,7 +12571,7 @@ export function SuperChatPanel({
   const selectedCanvasNodeId = useCanvasStore((state) => state.selectedNodeId);
   const chat = useSuperChat({
     project: params.project,
-    displayName: displayName || "SuperTale",
+    displayName: displayName || "AIGCDO",
     surface: variant === "freezone" ? "freezone" : undefined,
     freezoneCanvasId: variant === "freezone" ? freezoneCanvasId ?? canvasId : null,
     freezoneAgentId: variant === "freezone" ? freezoneAgentId : null,
@@ -12724,6 +12725,11 @@ export function SuperChatPanel({
 
   useEffect(() => {
     if (!isFreezoneLayout || freezoneRecipeCatalogLoaded) return;
+    if (authProvider() === "aigcdo") {
+      // Withheld there (503): an empty catalog without the failed request.
+      setFreezoneRecipeCatalogLoaded(true);
+      return;
+    }
     let cancelled = false;
     void apiCall<FreezoneAgentConfigPayload[]>("freezone/agent-config/recipes")
       .then((items) => {

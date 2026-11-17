@@ -52,7 +52,13 @@ async def build_request_egress_context(
 
     # 端口在函数体内惰性取，照 `generators/video_generator.py:2733` 的先例：
     # 进程启动顺序与 bootstrap 无关，且调用点可被独立替换。
+    from novelvideo import aigcdo_model_runtime
     from novelvideo.ports import get_authz_port
+
+    if aigcdo_model_runtime.active():
+        # No organizations here: the boundary already bound this request to its user's own key,
+        # and the AIGCDO authz port only admits tasks it issued, never an ad-hoc request id.
+        return None
 
     # 先生成一次性 id 再喂给 admit_model_task，照 `ports/local/tasks.py:139-150`
     # 的既定形状（那里先有 `state.task_id` 才调 `sign_top_level`）。

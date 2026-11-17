@@ -570,7 +570,13 @@ def ensure_user_hermes_workspace(
 
     # hermes config (only write if missing — user may have customized)
     config_yaml = home / "config.yaml"
-    if not config_yaml.exists():
+    try:
+        usable = isinstance(yaml.safe_load(config_yaml.read_text(encoding="utf-8")), dict)
+    except (OSError, yaml.YAMLError):
+        # Missing, or torn by a worker killed mid-write: the policy steps below skip a file
+        # they cannot parse, so keeping it would run the agent without its tool restrictions.
+        usable = False
+    if not usable:
         config_yaml.write_text(
             (
                 _default_freezone_config_yaml()

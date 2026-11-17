@@ -114,9 +114,25 @@ def _record_resource_request(resource_key: str) -> tuple[int, int]:
 
 
 def create_app() -> FastAPI:
-    register_verification_routes()
+    from novelvideo.shared.runtime_env import auth_provider
 
-    application = FastAPI(title="NovelVideo API", openapi_tags=OPENAPI_TAGS)
+    provider = auth_provider()
+    aigcdo = None
+    if provider == "aigcdo":
+        from novelvideo.ports.registry import ensure_bootstrap, get_port
+        from novelvideo.aigcdo_deployment import AigcdoDeployment
+
+        ensure_bootstrap()
+        aigcdo = get_port("lifecycle")
+        if not isinstance(aigcdo, AigcdoDeployment) or get_port("auth") is not aigcdo.auth:
+            raise RuntimeError("AIGCDO application requires its own registered ports")
+    else:
+        register_verification_routes()
+
+    application = FastAPI(
+        title="NovelVideo API", openapi_tags=OPENAPI_TAGS,
+        **({"docs_url": None, "redoc_url": None, "openapi_url": None} if aigcdo else {}),
+    )
     mount_api_coverage_middleware(application)
 
     @application.exception_handler(ProjectTaskLimitExceeded)
@@ -394,8 +410,16 @@ def create_app() -> FastAPI:
         try:
             from novelvideo.ports.registry import ensure_bootstrap, get_port
 
+            if auth_provider() != provider:
+                raise RuntimeError("Changing authentication provider requires rebuilding the app in a fresh process")
+            if aigcdo is not None and (
+                get_port("lifecycle") is not aigcdo or get_port("auth") is not aigcdo.auth
+            ):
+                raise RuntimeError("AIGCDO deployment changed after application construction")
             ensure_bootstrap()
-            await get_port("lifecycle").on_startup(register_as_worker=True)
+            await get_port("lifecycle").on_startup(register_as_worker=aigcdo is None)
+            if aigcdo is not None:
+                return
 
             from novelvideo.sqlite_pragmas import litestream_enabled
 
@@ -440,6 +464,9 @@ def create_app() -> FastAPI:
     async def shutdown() -> None:
         from novelvideo.ports.registry import PortNotRegistered, get_port
 
+        if aigcdo is not None:
+            await aigcdo.on_shutdown()
+            return
         for state_name in (
             "official_media_catalog_updater",
             "third_party_model_refresh_updater",
@@ -461,7 +488,12 @@ def create_app() -> FastAPI:
             return
         await lifecycle.on_shutdown()
 
-    application.include_router(api_router)
+    if aigcdo is not None:
+        from novelvideo.api.aigcdo_composition import configure_aigcdo_app
+
+        configure_aigcdo_app(application, aigcdo)
+    else:
+        application.include_router(api_router)
 
     @application.get(
         "/static/projects/{project}/{file_path:path}", include_in_schema=False

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -82,7 +82,7 @@ class AgentAuthenticatedUser(AuthenticatedUser):
 
 @dataclass(frozen=True)
 class AgentSessionToken:
-    value: str
+    value: str = field(repr=False)
     session_id: str
     user: str
     scopes: tuple[str, ...]
@@ -120,7 +120,7 @@ class ExternalAgentKeyToken:
 class LoginResult:
     user: AuthenticatedUser
     session_id: str
-    raw_cookie: str
+    raw_cookie: str = field(repr=False)
 
 
 __all__ = [

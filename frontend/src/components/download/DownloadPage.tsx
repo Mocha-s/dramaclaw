@@ -202,12 +202,12 @@ export function DownloadPage() {
     <div className={styles.page} ref={pageRef}>
       <header className={styles.top}>
         <div className={styles.topInner}>
-          <a className={styles.brand} href="#top" aria-label="DramaClaw">
-            <img className={styles.brandMark} src="/brand/logo-d.png" alt="" aria-hidden="true" />
+          <a className={styles.brand} href="#top" aria-label="AIGCDO">
+            <img className={styles.brandMark} src="/brand/aigcdo-icon.svg" alt="" aria-hidden="true" />
             <img
               className={styles.brandWordmark}
-              src="/brand/dramaclaw-wordmark.png"
-              alt="DramaClaw"
+              src="/brand/aigcdo-wordmark.svg"
+              alt="AIGCDO"
             />
           </a>
           <nav className={styles.topNav}>
@@ -229,8 +229,8 @@ export function DownloadPage() {
               <img
                 className={clsx(styles.heroWordmark, styles.rise)}
                 data-reveal=""
-                src="/brand/dramaclaw-wordmark.png"
-                alt="DramaClaw"
+                src="/brand/aigcdo-wordmark.svg"
+                alt="AIGCDO"
               />
 
               {/* slogan 与登录页共用同一批 auth.stage.* 键,两处永远同步。 */}
@@ -451,8 +451,8 @@ export function DownloadPage() {
           <div className={styles.footerRow}>
             <img
               className={styles.footerWordmark}
-              src="/brand/dramaclaw-wordmark.png"
-              alt="DramaClaw"
+              src="/brand/aigcdo-wordmark.svg"
+              alt="AIGCDO"
             />
             <nav className={styles.footerLinks}>
               <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">

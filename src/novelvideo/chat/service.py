@@ -1874,6 +1874,11 @@ def _chat_backend() -> str:
         or os.environ.get("SUPERTALE_CHAT_BACKEND")
         or "codex"
     ).strip().lower() or "codex"
+    from novelvideo import aigcdo_model_runtime
+
+    if aigcdo_model_runtime.active():
+        # Mutually untrusted users: only Hermes workers run inside the per-user sandbox.
+        preferred = "hermes"
     if preferred == "hermes":
         # Explicit "hermes" must succeed — do NOT silently fall back to
         # claude/codex. A missing hermes binary is a config error to surface.

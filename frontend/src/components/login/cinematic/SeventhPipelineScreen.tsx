@@ -52,7 +52,7 @@ export function SeventhPipelineScreen({
         </span>
       </div>
 
-      <div className={styles.pipeline} aria-label="DramaClaw production pipeline">
+      <div className={styles.pipeline} aria-label="AIGCDO production pipeline">
         <div className={styles.track} aria-hidden="true" />
         <div className={styles.trackFill} aria-hidden="true" />
         {steps.map((stepId, index) => {

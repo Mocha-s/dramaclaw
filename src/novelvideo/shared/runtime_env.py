@@ -37,6 +37,14 @@ def is_ce_effective() -> bool:
     return edition() == "ce" and not os.environ.get("ST_CONTROL_PLANE_DSN", "").strip()
 
 
+def auth_provider() -> str:
+    _load_env()
+    provider = os.environ.get("SUPERTALE_AUTH_PROVIDER", "legacy").strip().lower()
+    if provider not in {"legacy", "aigcdo"}:
+        raise RuntimeError("SUPERTALE_AUTH_PROVIDER must be legacy or aigcdo")
+    return provider
+
+
 def uses_local_ce_runtime() -> bool:
     """Return whether local CE-owned settings should back the current process.
 

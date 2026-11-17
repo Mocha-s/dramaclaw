@@ -93,7 +93,7 @@ export const api = ky.create({
       },
     ],
     afterResponse: [
-      async ({ response }) => {
+      async ({ request, response }) => {
         if (response.status === 400) {
           // Edge dispatcher returns 400 { ok: false, error: "no_region" } when the
           // server-region cookie is missing or points at a decommissioned region.
@@ -129,6 +129,10 @@ export const api = ky.create({
           return;
         }
         if (response.status === 401) {
+          // Invalid submitted credentials do not revoke an existing session or 2FA challenge.
+          if (request.method === "POST" && [
+            "/api/v1/auth/login", "/api/v1/auth/login/2fa", "/api/v1/auth/register",
+          ].includes(new URL(request.url).pathname)) return;
           await handleSessionExpired();
         }
       },
