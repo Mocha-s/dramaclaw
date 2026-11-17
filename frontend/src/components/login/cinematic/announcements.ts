@@ -92,7 +92,8 @@ const PayloadSchema = z.union([
  * 直连 OSS 就没有那层边缘缓存，对象自己的 `Cache-Control: max-age=60` 是唯一一层，
  * 覆盖上传后最多一分钟全网见效。代价是这个域名必须在 OSS 的跨域设置里放行本站来源。
  */
-export const DEFAULT_ANNOUNCEMENTS_URL = "https://nfg-web.cdnfg.com/dramaclaw/announcements.json";
+// Written by the administrator (see /admin); a single-user install has none.
+export const DEFAULT_ANNOUNCEMENTS_URL = "/api/v1/announcements";
 
 export function announcementsUrl(): string {
   const override = import.meta.env.VITE_LOGIN_ANNOUNCEMENTS_URL?.trim();

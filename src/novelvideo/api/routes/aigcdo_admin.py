@@ -125,11 +125,12 @@ def create_aigcdo_admin_router(deployment, secure: bool) -> APIRouter:
 
     @router.get("/announcements")
     async def public_announcements():
-        return {"ok": True, "data": {"announcements": [
+        # The shape the announcement drawer already reads (formerly a static JSON file).
+        return JSONResponse({"announcements": [
             {"id": item["id"], "publishedAt": item["published_at"], "pinned": item["pinned"],
              "i18n": {"zh": {"title": item["title"], "body": item["body"]}}}
             for item in announcements()
-        ]}}
+        ]})
 
     @router.get("/admin/session")
     async def session():
@@ -142,7 +143,7 @@ def create_aigcdo_admin_router(deployment, secure: bool) -> APIRouter:
             "credits_per_usd": format(policy.credits_per_unit, "f"), "decimals": policy.decimal_places,
         }}
 
-    @router.put("/admin/credits")
+    @router.post("/admin/credits")
     async def save_credits(request: Request):
         body = await _body(request, _Credits)
         try:
@@ -160,7 +161,7 @@ def create_aigcdo_admin_router(deployment, secure: bool) -> APIRouter:
     async def list_announcements():
         return {"ok": True, "data": {"items": announcements()}}
 
-    @router.put("/admin/announcements")
+    @router.post("/admin/announcements")
     async def save_announcements(request: Request):
         body = await _body(request, _Announcements)
         if len({item.id for item in body.items}) != len(body.items):

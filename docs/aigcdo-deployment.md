@@ -54,7 +54,23 @@ uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_
 `EMBEDDING_API_KEY` 等，完整名单见 `aigcdo_model_runtime.SHARED_CREDENTIAL_ENV`），
 否则拒绝启动：共享 Key 意味着运营替所有用户付费。
 
-### 模型目录
+### 管理员
+
+| 变量 | 要求 |
+| --- | --- |
+| `AIGCDO_ADMIN_USERNAME` | 管理员账号。与密码同时设置或同时不设；不设则没有管理入口 |
+| `AIGCDO_ADMIN_PASSWORD` | 至少 12 个字符 |
+
+管理员不是网关账号，在 `https://<站点>/admin` 登录（不过人机验证，会话 12 小时）。
+登录后是与单机模式相同的设置：模型与渠道、任务与队列、媒体存储，另有积分比例和公告。
+管理员没有网关 Key，不能创作，也看不到用户项目；普通用户访问这些接口返回 403。
+
+- 指向 AIGCDO 网关的分组里填的 Key 只用于拉取上游模型列表和价格，用户生成时用各自的 Key。
+- 指向其他地址的分组只允许 Embedding 能力（用管理员填的 Key）；文本和媒体放到外部地址会被忽略。
+- 积分比例保存后立即生效，已创建的订单沿用下单时的比例。
+- 下面的模型目录文件和积分环境变量只是首次启动的初始值，管理员保存后以保存的为准。
+
+### 模型目录（可选的初始值）
 
 `AIGCDO_MODEL_CATALOG` 指向一份只含模型元数据的 JSON，
 示例见 [`aigcdo-model-catalog.example.json`](aigcdo-model-catalog.example.json)：

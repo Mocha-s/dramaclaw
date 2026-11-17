@@ -84,5 +84,27 @@
     "PARTIALLY_REFUNDED": "Partially refunded",
     "REFUNDED": "Refunded",
     "REFUND_FAILED": "Refund failed"
+  },
+  "admin": {
+    "heading": "AIGCDO Admin",
+    "username": "Administrator account",
+    "signedInAs": "Signed in: {{username}}",
+    "openSettings": "Open settings",
+    "signOut": "Sign out",
+    "loginFailed": "Wrong account or password, or too many attempts.",
+    "credits": "Credit ratio",
+    "creditsHint": "Balances and usage are shown as credits at this ratio. Changes apply at once; existing orders keep the ratio they were created under.",
+    "ratio": "Credits shown per 1 USD of balance",
+    "decimals": "Credit decimals (0–8)",
+    "save": "Save",
+    "saved": "Saved",
+    "saveError": "Could not save. Check the input and retry.",
+    "announcements": "Announcements",
+    "noAnnouncements": "No announcements",
+    "title": "Title",
+    "body": "Body",
+    "pinned": "Pinned",
+    "remove": "Remove",
+    "add": "New announcement"
   }
 }

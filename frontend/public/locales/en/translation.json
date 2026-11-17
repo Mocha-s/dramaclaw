@@ -7172,7 +7172,9 @@
       "storage": "Media Storage",
       "taskLimits": "Tasks & Queues",
       "freezoneSkills": "Freezone Skills",
-      "freezoneRecipes": "Freezone Recipes"
+      "freezoneRecipes": "Freezone Recipes",
+      "credits": "Credit ratio",
+      "announcements": "Announcements"
     },
     "taskLimits": {
       "title": "Tasks & Queues",

@@ -16,6 +16,8 @@ import {
   Plus,
   RotateCw,
   Trash2,
+  Coins,
+  Megaphone,
 } from "lucide-react";
 
 import {
@@ -79,7 +81,8 @@ import {
   type FeatureModelProvider,
   type MediaStorageProvider,
 } from "@/stores/settingsStore";
-import { localModelSettingsEnabled } from "@/lib/runtime-config";
+import { authProvider, localModelSettingsEnabled } from "@/lib/runtime-config";
+import { AdminAnnouncementsSection, AdminCreditsSection } from "@/components/aigcdo/admin-sections";
 import { FreezoneSkillRecipeSettings } from "./freezone-skill-recipe-settings";
 import { TaskLimitsSettings } from "./task-limits-settings";
 
@@ -102,8 +105,10 @@ const MODEL_CONFIGURATION_GUIDE_URL =
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { t } = useTranslation();
   const ceRuntime = localModelSettingsEnabled();
+  // The AIGCDO administrator: the single-user pages plus credits and announcements.
+  const aigcdoAdmin = ceRuntime && authProvider() === "aigcdo";
   const [page, setPage] = useState<
-    "models" | "storage" | "task-limits" | "freezone-skills" | "freezone-recipes"
+    "models" | "storage" | "task-limits" | "freezone-skills" | "freezone-recipes" | "credits" | "announcements"
   >(
     () => (ceRuntime ? "models" : "freezone-skills"),
   );
@@ -214,8 +219,26 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 </button>
               </>
             ) : null}
+            {aigcdoAdmin ? (["credits", "announcements"] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                aria-current={page === key ? "page" : undefined}
+                onClick={() => setPage(key)}
+                className={cn(
+                  "relative flex h-10 items-center justify-center gap-2 rounded-md px-2 text-sm font-medium transition-colors sm:justify-start sm:px-3",
+                  page === key
+                    ? "bg-white/[0.09] text-foreground"
+                    : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground",
+                )}
+              >
+                {key === "credits" ? <Coins className="size-4" aria-hidden /> : <Megaphone className="size-4" aria-hidden />}
+                <span className="hidden sm:inline">{t(`settings.pages.${key}`)}</span>
+              </button>
+            )) : null}
             <button
               type="button"
+              hidden={aigcdoAdmin}
               aria-current={page === "freezone-skills" || page === "freezone-recipes" ? "page" : undefined}
               onClick={() => setPage("freezone-skills")}
               className={cn(
@@ -241,6 +264,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <div className="min-w-0 flex-1">
               <ScrollArea className="h-full [&_[data-slot=scroll-area-scrollbar]]:!w-1 [&_[data-slot=scroll-area-scrollbar]]:!border-l-0 [&_[data-slot=scroll-area-scrollbar]]:!p-0">
                 <MediaStorageSection />
+              </ScrollArea>
+            </div>
+          ) : page === "credits" || page === "announcements" ? (
+            <div className="min-w-0 flex-1">
+              <ScrollArea className="h-full [&_[data-slot=scroll-area-scrollbar]]:!w-1 [&_[data-slot=scroll-area-scrollbar]]:!border-l-0 [&_[data-slot=scroll-area-scrollbar]]:!p-0">
+                {page === "credits" ? <AdminCreditsSection /> : <AdminAnnouncementsSection />}
               </ScrollArea>
             </div>
           ) : page === "task-limits" ? (

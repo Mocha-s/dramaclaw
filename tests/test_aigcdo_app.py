@@ -865,19 +865,19 @@ async def test_operator_administrator_configures_but_never_generates(composed_ap
     assert (await client.get("/api/v1/projects")).status_code == 401
     assert (await client.get("/api/v1/account/billing/balance")).status_code == 401
 
-    assert (await client.put("/api/v1/admin/credits", json={"credits_per_usd": "0", "decimals": 2})).status_code == 400
-    assert (await client.put("/api/v1/admin/credits", json={"credits_per_usd": "1000", "decimals": 0})).status_code == 200
+    assert (await client.post("/api/v1/admin/credits", json={"credits_per_usd": "0", "decimals": 2})).status_code == 400
+    assert (await client.post("/api/v1/admin/credits", json={"credits_per_usd": "1000", "decimals": 0})).status_code == 200
     item = {"id": "a1", "title": "维护通知", "body": "今晚维护", "pinned": True, "published_at": "2026-11-18T10:00:00+08:00"}
-    assert (await client.put("/api/v1/admin/announcements", json={"items": [item, item]})).status_code == 400
-    assert (await client.put("/api/v1/admin/announcements", json={"items": [item]})).status_code == 200
+    assert (await client.post("/api/v1/admin/announcements", json={"items": [item, item]})).status_code == 400
+    assert (await client.post("/api/v1/admin/announcements", json={"items": [item]})).status_code == 200
     assert (await client.post("/api/v1/auth/admin/logout")).status_code == 200
     client.cookies.clear()
 
-    public = (await client.get("/api/v1/announcements")).json()["data"]["announcements"]
+    public = (await client.get("/api/v1/announcements")).json()["announcements"]
     assert public[0]["i18n"]["zh"]["title"] == "维护通知" and public[0]["pinned"] is True
     await login(client)
     assert (await client.get("/api/v1/account/billing/balance")).json()["data"]["available_credits"] == "12500"
-    for method, path in (("GET", "/api/v1/admin/credits"), ("PUT", "/api/v1/admin/announcements"),
+    for method, path in (("GET", "/api/v1/admin/credits"), ("POST", "/api/v1/admin/announcements"),
                          ("GET", "/api/v1/model-gateway/config")):
         assert (await client.request(method, path, json={})).status_code == 403
 

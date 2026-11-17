@@ -126,9 +126,16 @@ export function authProvider(): "legacy" | "aigcdo" | "unavailable" {
   return runtimeConfig.authProvider ?? "legacy";
 }
 
-/** Model keys, channels and task limits are operator-owned unless this is a single-user install. */
+let adminSession = false;
+
+/** Set by the /admin page once the operator administrator has signed in. */
+export function setAdminSession(value: boolean): void {
+  adminSession = value;
+}
+
+/** Model keys, channels and task limits belong to the single-user owner or the AIGCDO administrator. */
 export function localModelSettingsEnabled(): boolean {
-  return isCeRuntime() && authProvider() === "legacy";
+  return isCeRuntime() && (authProvider() === "legacy" || adminSession);
 }
 
 export function browserModelSource(): BrowserModelSourceConfig {

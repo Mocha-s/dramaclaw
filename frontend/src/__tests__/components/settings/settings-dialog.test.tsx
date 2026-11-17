@@ -33,6 +33,7 @@ const freezoneAgentConfigMocks = vi.hoisted(() => ({
 vi.mock("@/lib/runtime-config", () => ({
   isCeRuntime: () => runtimeState.isCeRuntime,
   localModelSettingsEnabled: () => runtimeState.isCeRuntime && !runtimeState.aigcdo,
+  authProvider: () => (runtimeState.aigcdo ? "aigcdo" : "legacy"),
 }));
 
 vi.mock("@/lib/queries/freezone-agent-config", () => ({

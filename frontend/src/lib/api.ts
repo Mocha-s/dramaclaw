@@ -133,6 +133,9 @@ export const api = ky.create({
           if (request.method === "POST" && [
             "/api/v1/auth/login", "/api/v1/auth/login/2fa", "/api/v1/auth/register",
           ].includes(new URL(request.url).pathname)) return;
+          // The operator administrator's session is separate from the user's; /admin handles its own 401.
+          if (/^\/api\/v1\/(admin|auth\/admin|model-gateway|config\/task-limits)(\/|$)/.test(new URL(request.url).pathname)
+            && window.location.pathname.startsWith("/admin")) return;
           await handleSessionExpired();
         }
       },

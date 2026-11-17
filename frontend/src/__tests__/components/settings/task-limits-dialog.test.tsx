@@ -12,7 +12,7 @@ const taskLimitsMocks = vi.hoisted(() => ({
   refetch: vi.fn(),
 }));
 
-vi.mock("@/lib/runtime-config", () => ({ isCeRuntime: () => true, localModelSettingsEnabled: () => true }));
+vi.mock("@/lib/runtime-config", () => ({ isCeRuntime: () => true, localModelSettingsEnabled: () => true, authProvider: () => "legacy" }));
 vi.mock("@/components/settings/freezone-skill-recipe-settings", () => ({
   FreezoneSkillRecipeSettings: () => null,
 }));

@@ -24,7 +24,7 @@ beforeAll(async () => {
 
 // 公告内容来自 OSS 上的 JSON。仓库里 public/announcements.json 就是要传上去的那份，
 // 直接拿它当夹具：既测组件，也顺手验这份 JSON 的形状能过 schema。
-const SHIPPED_PAYLOAD = JSON.parse(readFileSync("public/announcements.json", "utf8"));
+const SHIPPED_PAYLOAD = JSON.parse(readFileSync("src/__tests__/components/login/announcements.fixture.json", "utf8"));
 
 function stubFetch(impl: () => unknown) {
   const fetchMock = vi.fn(async () => impl() as Response);
@@ -80,7 +80,7 @@ describe("AnnouncementEntry", () => {
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     // 直连 OSS，不是 `media.ts` 那个 CDN 前缀：CDN 有 30 天边缘缓存，且查询串被过滤出缓存键，
     // 挂时间戳也刷不动，改完公告一个月才见效。这行钉住域名，防止有人顺手"统一"回 cdn()。
-    expect(url).toBe("https://nfg-web.cdnfg.com/dramaclaw/announcements.json");
+    expect(url).toBe("/api/v1/announcements");
     // 登录页是未登录状态下打开的，别把 cookie 带去 OSS。
     expect(init).toMatchObject({ credentials: "omit", cache: "no-cache" });
   });

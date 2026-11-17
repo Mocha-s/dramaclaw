@@ -84,5 +84,27 @@
     "PARTIALLY_REFUNDED": "部分退款",
     "REFUNDED": "已退款",
     "REFUND_FAILED": "退款失败"
+  },
+  "admin": {
+    "heading": "AIGCDO 管理",
+    "username": "管理员账号",
+    "signedInAs": "已登录：{{username}}",
+    "openSettings": "打开设置",
+    "signOut": "退出",
+    "loginFailed": "账号或密码不正确，或尝试过于频繁。",
+    "credits": "积分比例",
+    "creditsHint": "用户余额与账单按此比例显示为积分。修改后立即生效；已创建的订单沿用下单时的比例。",
+    "ratio": "每 1 美元余额显示的积分数",
+    "decimals": "积分小数位（0–8）",
+    "save": "保存",
+    "saved": "已保存",
+    "saveError": "保存失败，请检查输入后重试。",
+    "announcements": "公告",
+    "noAnnouncements": "暂无公告",
+    "title": "标题",
+    "body": "正文",
+    "pinned": "置顶",
+    "remove": "删除",
+    "add": "新增公告"
   }
 }

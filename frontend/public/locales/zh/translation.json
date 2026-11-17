@@ -7172,7 +7172,9 @@
       "storage": "媒体存储",
       "taskLimits": "任务与队列",
       "freezoneSkills": "造境 Skills",
-      "freezoneRecipes": "造境 Recipes"
+      "freezoneRecipes": "造境 Recipes",
+      "credits": "积分比例",
+      "announcements": "公告"
     },
     "taskLimits": {
       "title": "任务与队列",
