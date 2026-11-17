@@ -32,6 +32,7 @@ import { CreditBalanceBadge } from "@/components/layout/credit-balance-badge";
 import { BrandLockup } from "@/components/layout/brand-lockup";
 import { NotificationDrawer } from "@/components/notifications/notification-drawer";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { AigcdoAccountDialog } from "@/components/aigcdo/account-page";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAppStore } from "@/stores/app-store";
@@ -63,6 +64,7 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
   const navigate = useNavigate();
   const params = useParams({ strict: false }) as { project?: string };
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [releaseNotificationStateVersion, setReleaseNotificationStateVersion] = useState(0);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
@@ -424,7 +426,7 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
               hasUnreadNotification={hasUnreadNotification}
               onAccount={gatewayAccount ? () => {
                 closeAccountPanelNow();
-                window.location.assign("/account");
+                setAccountDialogOpen(true);
               } : undefined}
               onChangeAvatar={gatewayAccount ? undefined : openAvatarDialog}
               onChangePassword={showLogout && !gatewayAccount ? openPasswordDialog : undefined}
@@ -470,6 +472,7 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
         onBound={() => { void accountSecurity.refetch(); }}
       /> : null}
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      {gatewayAccount ? <AigcdoAccountDialog open={accountDialogOpen} onOpenChange={setAccountDialogOpen} /> : null}
       {settingsWarningBubble
         ? createPortal(
             <div

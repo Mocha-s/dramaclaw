@@ -155,7 +155,7 @@ def register_aigcdo_ports() -> None:
     from novelvideo.ports.local import LocalEgress
     from novelvideo.ports.local.credit_quote import LocalCreditQuote
     from novelvideo.ports.local.egress_operations import LocalEgressOperations
-    from novelvideo.ports.local.release_feed import LocalReleaseFeed
+    from novelvideo.ports.local.release_feed import NoOpReleaseFeed
     from novelvideo.ports.local.tasks import InlineTaskBackend, InMemoryCancellationStore
     from novelvideo.ports.local.usage import NoOpProviderInstrumentation, NoOpUsageMeter
     from novelvideo.ports.product_surface_access import LocalProductSurfaceAccess
@@ -171,7 +171,8 @@ def register_aigcdo_ports() -> None:
         ("usage_meter", NoOpUsageMeter()),
         ("provider_instrumentation", NoOpProviderInstrumentation()),
         ("credit_quote", LocalCreditQuote()),
-        ("release_feed", LocalReleaseFeed()),
+        # The upstream project's release notes are not ours; announcements come from the administrator.
+        ("release_feed", NoOpReleaseFeed()),
         ("product_surface_access", LocalProductSurfaceAccess()),
         ("egress", LocalEgress()),
         ("egress_operations", LocalEgressOperations()),

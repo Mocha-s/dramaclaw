@@ -99,5 +99,6 @@
     "pinned": "置顶",
     "remove": "删除",
     "add": "新增公告"
-  }
+  },
+  "abandonAttempt": "放弃这次操作，重新下单"
 }

@@ -7,6 +7,7 @@ path,license_expression,copyright,evidence
 .github/ISSUE_TEMPLATE/failing_test.yml,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 .github/ISSUE_TEMPLATE/feature_request.yml,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 .github/PULL_REQUEST_TEMPLATE.md,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+.github/hooks/impeccable.json,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 .github/labels.yml,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 .github/workflows/banned-words.yml,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 .github/workflows/canvas-command-push.yml,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation

@@ -99,5 +99,6 @@
     "pinned": "Pinned",
     "remove": "Remove",
     "add": "New announcement"
-  }
+  },
+  "abandonAttempt": "Abandon this attempt and start over"
 }

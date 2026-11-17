@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   amountWithinLimits, beginCheckoutAttempt, clearCheckoutAttempt, readCheckoutAttempt,
@@ -21,8 +22,12 @@ const muted = "text-sm text-white/50";
 const queryOptions = { retry: false as const, staleTime: 0, gcTime: 0 };
 type Created = Awaited<ReturnType<typeof accountApi.create>>;
 
+// Inside the account dialog the frame is the dialog itself: no page chrome.
+const InDialog = createContext(false);
+
 function PageFrame({ title, children }: { title: string; children: React.ReactNode }) {
   const { t } = useTranslation("account");
+  if (useContext(InDialog)) return <div className="flex flex-col gap-5">{children}</div>;
   return <main id="main-content" tabIndex={-1} className="h-dvh overflow-y-auto overflow-x-hidden ui-scrollbar bg-background px-6 py-8 text-foreground">
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -233,6 +238,11 @@ function Recharge({ userId }: { userId: string }) {
         {busy ? t("creating") : attempt ? t("retryAttempt") : t("create")}
       </Button>
     </form> : attempt ? <Button onClick={() => void submit()} disabled={busy || saved.error}>{t("retryAttempt")}</Button> : null}
+    {attempt && !created && !busy ? <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => {
+      // An unpaid order charges nothing, so abandoning an unconfirmed attempt is safe for the user.
+      try { clearCheckoutAttempt(userId); } catch { setError("storageError"); return; }
+      setAttempt(null); setError("");
+    }}>{t("abandonAttempt")}</Button> : null}
     {error ? <p role="alert" className="text-sm text-destructive">{t(error)}</p> : null}
     {created ? <>
       <OrderPanel key={created.order.id} userId={userId} orderId={created.order.id}
@@ -349,6 +359,27 @@ export function AigcdoAccountPage({ userId }: { userId: string }) {
   return <AccountIdentityBoundary key={userId} userId={userId}>
     {(id) => <AccountContent key={id} userId={id} />}
   </AccountIdentityBoundary>;
+}
+
+/** Balance, top-up, orders and usage in a floating window, like Settings. */
+export function AigcdoAccountDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation("account");
+  const identity = useQuery({
+    queryKey: ["aigcdo-account-dialog-identity"], queryFn: ({ signal }) => accountApi.identity(signal),
+    enabled: open, ...queryOptions,
+  });
+  return <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent showCloseButton
+      className="flex h-[min(82vh,760px)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-lg border border-border bg-black p-0 ring-0 sm:max-w-[880px]">
+      <DialogHeader className="border-b border-border px-5 py-4"><DialogTitle>{t("title")}</DialogTitle></DialogHeader>
+      <div className="ui-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
+        <InDialog.Provider value>
+          {identity.data ? <AigcdoAccountPage userId={identity.data.id} />
+            : <p role={identity.isError ? "alert" : "status"}>{t(identity.isError ? "loadError" : "loading")}</p>}
+        </InDialog.Provider>
+      </div>
+    </DialogContent>
+  </Dialog>;
 }
 
 export function AigcdoPaymentResult({ userId, orderId }: { userId: string; orderId: string | null }) {
