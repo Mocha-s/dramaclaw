@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { cloneElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +11,7 @@ import { Header } from "@/components/layout/header";
 const runtimeState = vi.hoisted(() => ({
   authRequired: true, isCe: false, phoneVisible: false, provider: "legacy" as "legacy" | "aigcdo",
 }));
-const authState = vi.hoisted(() => ({ username: "local", logout: vi.fn() }));
+const authState = vi.hoisted(() => ({ username: "local", role: "user", logout: vi.fn() }));
 const resetUserSessionStateMock = vi.hoisted(() => vi.fn());
 const securityState = vi.hoisted(() => ({
   data: undefined as
@@ -37,6 +37,7 @@ vi.mock("@/lib/runtime-config", () => ({
   isCeRuntime: () => runtimeState.isCe,
   localModelSettingsEnabled: () => runtimeState.isCe && (runtimeState.provider ?? "legacy") === "legacy",
   phoneOtpEntryVisible: () => runtimeState.phoneVisible,
+  setAdminSession: () => undefined,
 }));
 
 vi.mock("@/lib/queries/model-gateway", () => ({
@@ -364,7 +365,13 @@ describe("Header runtime gating", () => {
       expect(screen.queryByText("Change avatar")).not.toBeInTheDocument();
       // Nothing in Settings is user-editable there; a visible entry only leads to a dead page.
       expect(screen.queryByRole("button", { name: /settings/i })).not.toBeInTheDocument();
+      // Administrators (named gateway accounts) get the single-user Settings entry back.
+      cleanup();
+      authState.role = "admin";
+      renderHeader();
+      expect(screen.getByRole("button", { name: /settings/i })).toBeInTheDocument();
     } finally {
+      authState.role = "user";
       runtimeState.provider = "legacy";
       runtimeState.isCe = false;
     }

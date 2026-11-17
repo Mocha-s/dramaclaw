@@ -128,7 +128,7 @@ export function authProvider(): "legacy" | "aigcdo" | "unavailable" {
 
 let adminSession = false;
 
-/** Set by the /admin page once the operator administrator has signed in. */
+/** Set by the header once /auth/me says the signed-in gateway account is an administrator. */
 export function setAdminSession(value: boolean): void {
   adminSession = value;
 }

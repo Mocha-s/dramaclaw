@@ -10,7 +10,7 @@ import re
 import secrets
 import time
 from contextlib import asynccontextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import aiosqlite
@@ -308,6 +308,13 @@ class AigcdoAuthPort:
         self.store = store
         self.gateway = gateway
         self._verified: dict[str, tuple[float, bytes, dict]] = {}
+        # Who administers this installation; the gateway's own admin role means nothing here.
+        self.admin_gateway_ids: set[int] = set()
+
+    async def _created(self, session: GatewaySession) -> LoginResult:
+        result = await self.store.create(session)
+        role = "admin" if session.user.id in self.admin_gateway_ids else "user"
+        return replace(result, user=replace(result.user, role=role))
 
     async def login(
         self, email: str, password: str, *, turnstile_token: str = "",
@@ -315,17 +322,17 @@ class AigcdoAuthPort:
         result = await self.gateway.login(email, password, turnstile_token=turnstile_token)
         if isinstance(result, GatewayLoginChallenge):
             return result
-        return await self.store.create(result)
+        return await self._created(result)
 
     async def register(
         self, email: str, password: str, *, verify_code: str = "", turnstile_token: str = "",
     ) -> LoginResult:
-        return await self.store.create(await self.gateway.register(
+        return await self._created(await self.gateway.register(
             email, password, verify_code=verify_code, turnstile_token=turnstile_token,
         ))
 
     async def login_2fa(self, temp_token: str, code: str) -> LoginResult:
-        return await self.store.create(await self.gateway.login_2fa(temp_token, code))
+        return await self._created(await self.gateway.login_2fa(temp_token, code))
 
     async def verify_session(self, raw_cookie: str | None) -> dict:
         session = await self.store.load(raw_cookie)
@@ -372,7 +379,8 @@ class AigcdoAuthPort:
                 await self.store.delete(session.cookie_hash)
                 raise AuthError(AuthFailureReason.REVOKED) from None
             raise
-        return await self.store.confirm_identity(session, user)
+        verified = await self.store.confirm_identity(session, user)
+        return {**verified, "role": "admin" if session.gateway_id in self.admin_gateway_ids else "user"}
 
     async def revoke_session(self, raw_cookie: str) -> None:
         session = await self.store.take_for_logout(raw_cookie)

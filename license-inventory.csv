@@ -262,6 +262,7 @@ frontend/public/brand/dramaclaw-logo-login.png,Elastic-2.0,2026 SuperTale contri
 frontend/public/brand/dramaclaw-wordmark.png,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/public/brand/logo-d.png,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/public/brand/party-founding-105.mp4,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
+frontend/public/brand/qr-placeholder.svg,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/public/favicon.svg,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/public/icons.svg,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/public/images/aperture/f-1-4.png,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
@@ -918,7 +919,6 @@ frontend/src/components/account/avatar-upload-dialog.tsx,Elastic-2.0,2026 SuperT
 frontend/src/components/account/password-change-dialog.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/components/account/phone-binding-dialog.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/components/aigcdo/account-page.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
-frontend/src/components/aigcdo/admin-page.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/components/aigcdo/admin-sections.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/components/aigcdo/login-form.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/components/aigcdo/turnstile.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
@@ -1848,8 +1848,6 @@ frontend/src/routes/_app/projects.$project/styles.tsx,Elastic-2.0,2026 SuperTale
 frontend/src/routes/_app/projects.$project/tasks.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/routes/account.lazy.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/routes/account.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
-frontend/src/routes/admin.lazy.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
-frontend/src/routes/admin.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/routes/checkout.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/routes/download.lazy.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation
 frontend/src/routes/login.tsx,Elastic-2.0,2026 SuperTale contributors,REUSE.toml aggregate annotation

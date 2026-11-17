@@ -14,7 +14,7 @@ from novelvideo.api.auth import (
     AUTH_COOKIE_NAME, _bearer_token_from_request, _enforce_agent_request_boundary,
     _reject_unsupported_credential_classes, _verify_agent_bearer, get_api_user,
 )
-from novelvideo.api.routes.aigcdo_admin import ADMIN_COOKIE, ADMIN_USER, create_aigcdo_admin_router
+from novelvideo.api.routes.aigcdo_admin import create_aigcdo_admin_router
 from novelvideo.api.routes.aigcdo_auth import create_aigcdo_auth_router, require_aigcdo_origin
 from novelvideo.api.routes.aigcdo_billing import create_aigcdo_billing_router
 from novelvideo.api.routes.aigcdo_payments import create_aigcdo_payments_router
@@ -27,15 +27,13 @@ _PUBLIC = {
     ("POST", "/api/v1/auth/register"),
     ("POST", "/api/v1/auth/login/2fa"),
     ("POST", "/api/v1/auth/logout"),
-    ("POST", "/api/v1/auth/admin/login"),
-    ("POST", "/api/v1/auth/admin/logout"),
     ("GET", "/api/v1/announcements"),
 }
 # Installation-wide editable state that has no per-user form yet.
 _WITHHELD = ("/freezone/agent-config", "/freezone/skill-imports")
 # Offered only while this host can isolate each user's Agent worker (deployment.agent_ready).
 _AGENT = "/api/v1/chat"
-# The operator administrator's area: the single-user settings routes plus /admin.
+# Administrators only: the single-user settings routes plus /admin.
 _ADMIN_AREA = ("/api/v1/model-gateway", "/api/v1/config/task-limits", "/api/v1/admin")
 _MANAGEMENT = (*_ADMIN_AREA, "/api/v1/diagnostics")
 _LOOPBACK = {"127.0.0.1", "::1"}
@@ -109,19 +107,7 @@ class AigcdoBoundary:
 
         request = Request(scope)
         reference = None
-        if any(path == prefix or path.startswith(prefix + "/") for prefix in _ADMIN_AREA) and (
-            self.deployment.admin.verify(request.cookies.get(ADMIN_COOKIE))
-        ):
-            try:
-                require_aigcdo_origin(request, self.deployment.origin)
-            except HTTPException as exc:
-                await JSONResponse({"ok": False, "error": exc.detail}, status_code=exc.status_code)(scope, receive, no_store)
-                return
-            request.state.aigcdo_user = ADMIN_USER
-            # No user key in scope: the administrator configures, it never generates.
-            with admin_scope():
-                await self.app(scope, receive, no_store)
-            return
+        administrator = False
         try:
             _reject_unsupported_credential_classes(request)
             if request.headers.get("authorization"):
@@ -133,8 +119,12 @@ class AigcdoBoundary:
                     request.state.aigcdo_user = await self.deployment.auth.verify_session(cookie)
                     reference = self.deployment.auth.store._hash(cookie)
             if reference is not None:
-                if any(path == prefix or path.startswith(prefix + "/") for prefix in _MANAGEMENT):
-                    raise HTTPException(403, "Administrator sign-in required")
+                if any(path == prefix or path.startswith(prefix + "/") for prefix in _MANAGEMENT) and not (
+                    administrator := request.state.aigcdo_user.get("role") == "admin"
+                    and request.state.aigcdo_user.get("credential_kind") == "browser_session"
+                    and path.startswith(_ADMIN_AREA)
+                ):
+                    raise HTTPException(403, "Administrator account required")
                 if any(part in path for part in _WITHHELD) or (
                     _AGENT in path and not self.deployment.agent_ready
                 ):
@@ -153,7 +143,11 @@ class AigcdoBoundary:
         except Exception:
             response = JSONResponse({"ok": False, "error": "Authentication service unavailable"}, status_code=503)
         else:
-            if reference is not None:
+            if reference is not None and administrator:
+                # Stored settings as they are; everywhere else an administrator is an ordinary user.
+                with admin_scope():
+                    await self._run(reference, scope, receive, no_store)
+            elif reference is not None:
                 await self._run(reference, scope, receive, no_store)
             else:
                 await self.app(scope, receive, no_store)
@@ -185,7 +179,7 @@ def configure_aigcdo_app(application, deployment: AigcdoDeployment) -> None:
     router.include_router(create_aigcdo_auth_router(
         deployment.auth, deployment.origin, application_keys=deployment.application_keys,
     ))
-    router.include_router(create_aigcdo_admin_router(deployment, deployment.origin.startswith("https://")))
+    router.include_router(create_aigcdo_admin_router(deployment))
     router.include_router(create_aigcdo_billing_router(deployment.billing))
     router.include_router(create_aigcdo_payments_router(deployment.payments))
     # Registered first, so the AIGCDO auth routes shadow the single-user ones. Every creative

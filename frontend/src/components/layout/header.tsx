@@ -35,7 +35,7 @@ import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAppStore } from "@/stores/app-store";
-import { authProvider, authRequired, isCeRuntime, localModelSettingsEnabled, phoneOtpEntryVisible } from "@/lib/runtime-config";
+import { authProvider, authRequired, isCeRuntime, localModelSettingsEnabled, phoneOtpEntryVisible, setAdminSession } from "@/lib/runtime-config";
 import { resetUserSessionState } from "@/lib/reset-region-state";
 import { useModelGatewayConfig } from "@/lib/queries/model-gateway";
 import { useOrgBranding } from "@/lib/queries/org-branding";
@@ -84,7 +84,7 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
   // 面板由点击/键盘打开时「钉住」：此时鼠标移开不再收走它。悬停打开的面板不钉。
   const accountPanelPinnedRef = useRef(false);
   const settingsAnchorRef = useRef<HTMLDivElement | null>(null);
-  const { username, displayName: storedDisplayName, logout } = useAuthStore();
+  const { username, displayName: storedDisplayName, role, logout } = useAuthStore();
   const queryClient = useQueryClient();
   // 退出登录是 SPA 内部跳转（不刷新页面），必须一并清掉 React Query 缓存和
   // 用户级 zustand/localStorage 状态，否则换账号登录后 projectSummaries 等
@@ -98,6 +98,9 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
   const showLogout = authRequired();
   // The gateway owns this account: avatar and password are not managed here.
   const gatewayAccount = authProvider() === "aigcdo";
+  // AIGCDO: only administrators (named gateway accounts) get the single-user Settings.
+  const gatewayAdmin = gatewayAccount && role === "admin";
+  setAdminSession(gatewayAdmin);
   const ceRuntime = isCeRuntime();
   const orgBranding = useOrgBranding(!ceRuntime && Boolean(username));
   const brandName = orgBranding.data?.branding
@@ -346,8 +349,8 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
 
         {/* Actions */}
         <div className="flex min-w-0 flex-1 shrink-0 items-center justify-end gap-1">
-          {/* AIGCDO: every settings page is operator-owned or not yet per-user, so no entry. */}
-          <div ref={settingsAnchorRef} className="relative" hidden={gatewayAccount}>
+          {/* AIGCDO: Settings is the administrators' entry; other users have nothing to edit there. */}
+          <div ref={settingsAnchorRef} className="relative" hidden={gatewayAccount && !gatewayAdmin}>
             <Button
               type="button"
               variant="ghost"

@@ -23,7 +23,7 @@ const ANCHORED_POPOVER_PANELS: ReadonlySet<QuickPanel> = new Set([
   'tool',
   'shortcuts',
 ]);
-const PRODUCT_MANUAL_URL = 'https://neo-flying.feishu.cn/docx/T2UgdVA4Fo1A5KxCh0vckDz3nTg';
+const PRODUCT_MANUAL_URL = 'https://api.aigcdo.top';
 
 interface CanvasQuickActionBarProps {
   placement?: 'bottom-right' | 'top-right';

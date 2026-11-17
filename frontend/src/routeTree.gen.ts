@@ -14,7 +14,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RechargeRouteImport } from './routes/recharge'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
@@ -80,11 +79,6 @@ const CheckoutRoute = CheckoutRouteImport.update({
   path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/admin.lazy').then((d) => d.Route))
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -265,7 +259,6 @@ const AppProjectsProjectEpisodesEpisodeAudioLazyRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/recharge': typeof RechargeRoute
@@ -294,7 +287,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/recharge': typeof RechargeRoute
@@ -326,7 +318,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/recharge': typeof RechargeRoute
@@ -359,7 +350,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/account'
-    | '/admin'
     | '/checkout'
     | '/login'
     | '/recharge'
@@ -388,7 +378,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/account'
-    | '/admin'
     | '/checkout'
     | '/login'
     | '/recharge'
@@ -419,7 +408,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/account'
-    | '/admin'
     | '/checkout'
     | '/login'
     | '/recharge'
@@ -451,7 +439,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AccountRoute: typeof AccountRoute
-  AdminRoute: typeof AdminRoute
   CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
   RechargeRoute: typeof RechargeRoute
@@ -489,13 +476,6 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account': {
@@ -738,7 +718,6 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AccountRoute: AccountRoute,
-  AdminRoute: AdminRoute,
   CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
   RechargeRoute: RechargeRoute,

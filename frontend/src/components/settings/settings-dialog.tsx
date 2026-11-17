@@ -100,7 +100,7 @@ const MEDIA_STORAGE_PROVIDERS: MediaStorageProvider[] = [
 // Codex 本地桥接暂时隐藏（保留组件代码，后端就绪后改回 true 即可恢复）。
 const SHOW_CODEX_BRIDGE = false;
 const MODEL_CONFIGURATION_GUIDE_URL =
-  "https://github.com/dramaclaw/dramaclaw/blob/main/docs/en/getting-started/configuring-models.md";
+  "https://api.aigcdo.top/docs/";
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const { t } = useTranslation();

@@ -49,8 +49,7 @@ def deployment_env(monkeypatch, tmp_path):
         monkeypatch.delenv(name, raising=False)
     for name, value in values.items():
         monkeypatch.setenv(name, value)
-    monkeypatch.setenv("AIGCDO_ADMIN_USERNAME", "operator")
-    monkeypatch.setenv("AIGCDO_ADMIN_PASSWORD", "operator-test-password")
+    monkeypatch.setenv("AIGCDO_ADMIN_USER_IDS", "74")  # bob; 75 holds the gateway's own admin role
     for name in ("OUTPUT_DIR", "STATE_DIR", "RUNTIME_DIR"):
         monkeypatch.setattr(config, name, str(tmp_path / name.lower()))
     registry._PORTS.clear()
@@ -850,43 +849,38 @@ def test_administrator_settings_reach_users_with_their_own_key(deployment_env):
             settings.save_capability_defaults(embedding_group_id="embed", embedding_model="bge")
 
 
-async def test_operator_administrator_configures_but_never_generates(composed_app):
+async def test_named_gateway_accounts_administer_and_still_create(composed_app):
     _, client, _ = composed_app
-    admin = {"username": "operator", "password": "operator-test-password"}
-    assert (await client.get("/api/v1/admin/session")).status_code == 401
-    assert (await client.post("/api/v1/auth/admin/login", json={**admin, "password": "wrong-password-1"})).status_code == 401
-    assert (await client.post("/api/v1/auth/admin/login", json=admin, headers={"Origin": "https://evil.example"})).status_code == 403
-    assert (await client.post("/api/v1/auth/admin/login", json=admin)).status_code == 200
-    assert (await client.get("/api/v1/admin/session")).json()["data"] == {"username": "operator"}
-    # The single-user settings routes, unchanged, are the administrator's.
+    admin = await login(client, "bob@example.test")
+    assert admin["role"] == "admin"
+    assert (await client.get("/api/v1/auth/me")).json()["data"]["role"] == "admin"
+    # The single-user settings routes, unchanged, plus credits and announcements.
     assert (await client.get("/api/v1/model-gateway/config")).status_code == 200
     assert (await client.get("/api/v1/config/task-limits")).status_code == 200
-    # No gateway account behind it: nothing outside the admin area.
-    assert (await client.get("/api/v1/projects")).status_code == 401
-    assert (await client.get("/api/v1/account/billing/balance")).status_code == 401
-
+    assert (await client.get("/api/v1/diagnostics")).status_code == 403
     assert (await client.post("/api/v1/admin/credits", json={"credits_per_usd": "0", "decimals": 2})).status_code == 400
     assert (await client.post("/api/v1/admin/credits", json={"credits_per_usd": "1000", "decimals": 0})).status_code == 200
     item = {"id": "a1", "title": "维护通知", "body": "今晚维护", "pinned": True, "published_at": "2026-11-18T10:00:00+08:00"}
     assert (await client.post("/api/v1/admin/announcements", json={"items": [item, item]})).status_code == 400
     assert (await client.post("/api/v1/admin/announcements", json={"items": [item]})).status_code == 200
-    assert (await client.post("/api/v1/auth/admin/logout")).status_code == 200
-    client.cookies.clear()
+    # An administrator is also an ordinary user with their own projects and balance.
+    assert (await client.post("/api/v1/projects", json={"name": "admin_project"})).status_code == 200
+    assert (await client.get("/api/v1/account/billing/balance")).json()["data"]["available_credits"] == "12500"
 
+    client.cookies.clear()
     public = (await client.get("/api/v1/announcements")).json()["announcements"]
     assert public[0]["i18n"]["zh"]["title"] == "维护通知" and public[0]["pinned"] is True
-    await login(client)
-    assert (await client.get("/api/v1/account/billing/balance")).json()["data"]["available_credits"] == "12500"
-    for method, path in (("GET", "/api/v1/admin/credits"), ("POST", "/api/v1/admin/announcements"),
-                         ("GET", "/api/v1/model-gateway/config")):
-        assert (await client.request(method, path, json={})).status_code == 403
+    # Neither an ordinary user nor the gateway's own admin role gets in.
+    for email in ("alice@example.test", "admin@example.test"):
+        client.cookies.clear()
+        assert (await login(client, email))["role"] == "user"
+        for method, path in (("GET", "/api/v1/admin/credits"), ("POST", "/api/v1/admin/announcements"),
+                             ("GET", "/api/v1/model-gateway/config")):
+            assert (await client.request(method, path, json={})).status_code == 403
 
 
-@pytest.mark.parametrize("env", [
-    {"AIGCDO_ADMIN_PASSWORD": ""}, {"AIGCDO_ADMIN_USERNAME": ""}, {"AIGCDO_ADMIN_PASSWORD": "short"},
-])
-def test_half_configured_or_weak_administrator_refuses_boot(deployment_env, monkeypatch, env):
-    for name, value in env.items():
-        monkeypatch.setenv(name, value)
+@pytest.mark.parametrize("value", ["abc", "0", "220,-1"])
+def test_invalid_administrator_ids_refuse_boot(deployment_env, monkeypatch, value):
+    monkeypatch.setenv("AIGCDO_ADMIN_USER_IDS", value)
     with pytest.raises(RuntimeError, match="Invalid AIGCDO deployment configuration"):
         create_app()

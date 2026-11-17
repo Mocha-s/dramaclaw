@@ -83,12 +83,16 @@ class AigcdoDeployment:
         deployment.application_keys = AigcdoApplicationKeys(
             deployment.auth, AigcdoApplicationKeyStore(state_dir / "application-keys.db", key), group_id=group_id,
         )
-        from novelvideo.api.routes.aigcdo_admin import AigcdoAdmin, stored_credit_policy
+        from novelvideo.api.routes.aigcdo_admin import stored_credit_policy
 
         try:
-            deployment.admin = AigcdoAdmin(key)
+            # Gateway user ids (immutable), not emails: the same ids the migration script takes.
+            admins = {int(part) for part in os.environ.get("AIGCDO_ADMIN_USER_IDS", "").split(",") if part.strip()}
+            if any(value <= 0 for value in admins):
+                raise ValueError("ids must be positive")
         except ValueError:
             raise RuntimeError("Invalid AIGCDO deployment configuration") from None
+        deployment.auth.admin_gateway_ids = admins
         policy = stored_credit_policy(policy)  # the administrator's saved ratio beats the environment
         deployment.billing = AigcdoBilling(deployment.auth, policy)
         deployment.payments = AigcdoPayments(

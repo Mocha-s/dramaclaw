@@ -186,6 +186,10 @@ async def test_live_gateway_role_and_suspension_are_authoritative(store, monkeyp
         transport=httpx.MockTransport(lambda _: ok(profile))
     ) as gateway:
         auth = AigcdoAuthPort(store, gateway)
+        # The gateway's admin role is not ours; administrators are named by gateway user id.
+        assert (await auth.verify_session(first.raw_cookie))["role"] == "user"
+        auth.admin_gateway_ids = {73}
+        auth._verified.clear()
         assert (await auth.verify_session(first.raw_cookie))["role"] == "admin"
         profile["status"] = "disabled"
         with pytest.raises(AuthError) as caught:
