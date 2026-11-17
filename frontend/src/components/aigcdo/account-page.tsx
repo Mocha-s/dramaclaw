@@ -14,17 +14,20 @@ import {
 } from "@/lib/queries/aigcdo-account";
 import { SESSION_EXPIRED_EVENT } from "@/lib/session-expiry";
 
-const panel = "rounded-lg border border-border bg-card p-4 text-card-foreground";
+// Same surface, table and muted-text treatment as the app's own billing views (BillingOrdersTab).
+const panel = "rounded-lg border border-white/10 bg-white/[0.03] p-5 text-foreground";
+const heading = "text-base font-semibold text-white";
+const muted = "text-sm text-white/50";
 const queryOptions = { retry: false as const, staleTime: 0, gcTime: 0 };
 type Created = Awaited<ReturnType<typeof accountApi.create>>;
 
 function PageFrame({ title, children }: { title: string; children: React.ReactNode }) {
   const { t } = useTranslation("account");
-  return <main id="main-content" tabIndex={-1} className="h-dvh overflow-y-auto overflow-x-hidden ui-scrollbar bg-background p-4 text-foreground">
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+  return <main id="main-content" tabIndex={-1} className="h-dvh overflow-y-auto overflow-x-hidden ui-scrollbar bg-background px-6 py-8 text-foreground">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{title}</h1>
-        <a className="text-sm underline" href="/">{t("home")}</a>
+        <h1 className="text-[28px] font-semibold tracking-tight text-white">{title}</h1>
+        <a className="rounded-md border border-white/10 px-3 py-1.5 text-sm text-white/72 transition-colors hover:bg-white/[0.05] hover:text-white" href="/">{t("home")}</a>
       </header>
       {children}
     </div>
@@ -33,7 +36,7 @@ function PageFrame({ title, children }: { title: string; children: React.ReactNo
 
 function Pager({ page, pages, change }: { page: number; pages: number; change: (page: number) => void }) {
   const { t } = useTranslation("account");
-  return <div className="mt-3 flex items-center justify-end gap-2 text-sm">
+  return <div className="mt-3 flex items-center justify-end gap-2 text-sm text-white/50">
     <Button variant="outline" onClick={() => change(page - 1)} disabled={page <= 1}>{t("previous")}</Button>
     <span>{t("page", { page, pages })}</span>
     <Button variant="outline" onClick={() => change(page + 1)} disabled={page >= pages}>{t("next")}</Button>
@@ -113,7 +116,7 @@ function OrderPanel({ userId, orderId, checkout, onOrder }: {
     {query.isPending ? <p>{t("loading")}</p> : null}
     {query.isError || error ? <p role="alert">{t("loadError")}</p> : null}
     {order && !query.isError ? <>
-      <h2 className="text-lg font-semibold">
+      <h2 className={heading}>
         {order.status === "COMPLETED" && !orderIsCredited(order) ? t("unknown") : t(`status.${order.status}`)}
       </h2>
       <p className="break-all font-mono text-sm">{order.out_trade_no}</p>
@@ -122,10 +125,10 @@ function OrderPanel({ userId, orderId, checkout, onOrder }: {
         <div><dt>{t("creditedAmount")}</dt><dd>{order.amount}</dd></div>
       </dl>
       {payUrl ? <a href={payUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
-        className="w-fit rounded-md border border-border px-4 py-2 text-sm underline">{t("pay")}</a> : null}
+        className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90">{t("pay")}</a> : null}
       {qr ? <PaymentQr value={qr} /> : null}
     </> : null}
-    <p className="text-sm">{t("authoritative")}</p>
+    <p className={muted}>{t("authoritative")}</p>
     <div className="flex flex-wrap gap-2">
       <Button variant="outline" disabled={checking || query.isFetching}
         onClick={() => { if (!abort.current) void query.refetch(); }}>{t("retry")}</Button>
@@ -208,29 +211,29 @@ function Recharge({ userId }: { userId: string }) {
     setAttempt(null); setCreated(null); setLatestOrder(null); setError("");
   }
   return <section className={`${panel} flex flex-col gap-3`}>
-    <h2 className="text-lg font-semibold">{t("recharge")}</h2>
+    <h2 className={heading}>{t("recharge")}</h2>
     {query.isPending ? <p>{t("loading")}</p> : null}
     {query.isError ? <div><p role="alert">{t("loadError")}</p>
       <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>{t("retry")}</Button></div> : null}
     {query.data?.balance_disabled || (!query.isPending && !query.isError && available.length === 0)
       ? <p>{t("disabled")}</p> : null}
     {currency ? <form className="flex flex-col gap-3" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
-      <label htmlFor="aigcdo-amount" className="text-sm">{t("amount", { currency })}</label>
+      <label htmlFor="aigcdo-amount" className={muted}>{t("amount", { currency })}</label>
       <Input id="aigcdo-amount" value={amount} inputMode="decimal" autoComplete="off"
         disabled={Boolean(attempt) || busy} onChange={(e) => setAmount(e.target.value)} />
       <fieldset disabled={Boolean(attempt) || busy} className="flex flex-wrap gap-2">
-        <legend className="mb-2 text-sm">{t("method")}</legend>
+        <legend className={`mb-2 ${muted}`}>{t("method")}</legend>
         {available.map((m) => <Button key={m} type="button"
           variant={(attempt?.paymentType ?? selected) === m ? "default" : "outline"}
           aria-pressed={(attempt?.paymentType ?? selected) === m} onClick={() => setMethod(m)}>{t(m)}</Button>)}
       </fieldset>
-      <p className="text-sm">{t("priceNote")}</p>
+      <p className={muted}>{t("priceNote")}</p>
       <Button type="submit" disabled={busy || saved.error || query.isError ||
         (!attempt && (query.data?.balance_disabled || !selected))}>
         {busy ? t("creating") : attempt ? t("retryAttempt") : t("create")}
       </Button>
     </form> : attempt ? <Button onClick={() => void submit()} disabled={busy || saved.error}>{t("retryAttempt")}</Button> : null}
-    {error ? <p role="alert" className="text-sm">{t(error)}</p> : null}
+    {error ? <p role="alert" className="text-sm text-destructive">{t(error)}</p> : null}
     {created ? <>
       <p className="text-sm">{t("expected", { credits: created.expected_credits })}</p>
       <OrderPanel key={created.order.id} userId={userId} orderId={created.order.id}
@@ -254,38 +257,38 @@ function AccountContent({ userId }: { userId: string }) {
     <section className={panel} aria-live="polite">
       {balance.isPending ? <p>{t("loading")}</p> : null}
       {balance.isError ? <p role="alert">{t("balanceError")}</p> : balance.data ? <dl className="grid gap-4 sm:grid-cols-2">
-        <div><dt className="text-sm">{t("available")}</dt><dd className="break-all text-2xl font-semibold">{balance.data.available_credits}</dd></div>
-        <div><dt className="text-sm">{t("frozen")}</dt><dd className="break-all text-2xl font-semibold">{balance.data.frozen_credits}</dd></div>
+        <div><dt className={muted}>{t("available")}</dt><dd className="mt-1 break-all text-[32px] font-semibold leading-none tabular-nums text-white">{balance.data.available_credits}</dd></div>
+        <div><dt className={muted}>{t("frozen")}</dt><dd className="mt-1 break-all text-[32px] font-semibold leading-none tabular-nums text-white/60">{balance.data.frozen_credits}</dd></div>
       </dl> : null}
-      <Button variant="outline" className="mt-3" disabled={balance.isFetching} onClick={() => void balance.refetch()}>{t("retry")}</Button>
+      <Button variant="outline" size="sm" className="mt-4" disabled={balance.isFetching} onClick={() => void balance.refetch()}>{t("retry")}</Button>
     </section>
     <Recharge userId={userId} />
     <section className={panel}>
-      <h2 className="mb-3 text-lg font-semibold">{t("orders")}</h2>
+      <h2 className={`mb-3 ${heading}`}>{t("orders")}</h2>
       {orders.isError ? <p role="alert">{t("loadError")}</p> : orders.isPending ? <p>{t("loading")}</p> :
-        orders.data?.items.length ? <ul className="flex flex-col gap-3">
-          {orders.data.items.map((order) => <li key={order.id} className="flex flex-wrap justify-between gap-2 text-sm">
-            <a className="break-all underline" href={`/payment/result?order_id=${encodeURIComponent(order.id)}`}>{order.out_trade_no}</a>
+        orders.data?.items.length ? <ul className="divide-y divide-white/8 rounded-lg border border-white/10">
+          {orders.data.items.map((order) => <li key={order.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+            <a className="break-all font-mono text-xs text-white/82 hover:text-white hover:underline" href={`/payment/result?order_id=${encodeURIComponent(order.id)}`}>{order.out_trade_no}</a>
             <span>{order.pay_amount} {order.currency}</span>
             <span>{order.status === "COMPLETED" && !orderIsCredited(order) ? t("unknown") : t(`status.${order.status}`)}</span>
           </li>)}
         </ul> : <p>{t("empty")}</p>}
-      <Button className="mt-3" variant="outline" disabled={orders.isFetching} onClick={() => void orders.refetch()}>{t("retry")}</Button>
+      <Button className="mt-3" size="sm" variant="outline" disabled={orders.isFetching} onClick={() => void orders.refetch()}>{t("retry")}</Button>
       <Pager page={orderPage} pages={orders.data?.pages ?? orderPage} change={setOrderPage} />
     </section>
     <section className={panel}>
-      <h2 className="mb-3 text-lg font-semibold">{t("usage")}</h2>
+      <h2 className={`mb-3 ${heading}`}>{t("usage")}</h2>
       {usage.isError ? <p role="alert">{t("loadError")}</p> : usage.isPending ? <p>{t("loading")}</p> :
-        usage.data?.items.length ? <div className="overflow-x-auto"><table className="w-full text-left text-sm">
-          <thead><tr><th className="p-2">{t("model")}</th><th className="p-2">{t("time")}</th>
-            <th className="p-2">{t("walletDebit")}</th></tr></thead>
-          <tbody>{usage.data.items.map((item) => <tr key={item.id}>
-            <td className="p-2">{item.model}<span className="block">{t(item.billing_type)}</span></td>
-            <td className="p-2">{new Date(item.occurred_at).toLocaleString()}</td>
-            <td className="p-2">{item.wallet_debit_credits}</td>
+        usage.data?.items.length ? <div className="overflow-x-auto rounded-lg border border-white/10"><table className="w-full text-left text-sm">
+          <thead className="bg-white/[0.045] text-xs text-white/40"><tr><th className="px-4 py-3 font-medium">{t("model")}</th><th className="px-4 py-3 font-medium">{t("time")}</th>
+            <th className="px-4 py-3 text-right font-medium">{t("walletDebit")}</th></tr></thead>
+          <tbody>{usage.data.items.map((item) => <tr key={item.id} className="border-t border-white/8">
+            <td className="px-4 py-3 font-medium">{item.model}<span className="block text-xs font-normal text-white/40">{t(item.billing_type)}</span></td>
+            <td className="px-4 py-3 text-xs tabular-nums text-white/48">{new Date(item.occurred_at).toLocaleString()}</td>
+            <td className="px-4 py-3 text-right font-medium tabular-nums">{item.wallet_debit_credits}</td>
           </tr>)}</tbody>
         </table></div> : <p>{t("empty")}</p>}
-      <Button className="mt-3" variant="outline" disabled={usage.isFetching} onClick={() => void usage.refetch()}>{t("retry")}</Button>
+      <Button className="mt-3" size="sm" variant="outline" disabled={usage.isFetching} onClick={() => void usage.refetch()}>{t("retry")}</Button>
       <Pager page={usagePage} pages={usage.data?.pages ?? usagePage} change={setUsagePage} />
     </section>
   </PageFrame>;
@@ -360,6 +363,6 @@ function PaymentResultContent({ userId, orderId }: { userId: string; orderId: st
   return <PageFrame title={t("result")}>
     {orderId ? <OrderPanel key={`${userId}:${orderId}`} userId={userId} orderId={orderId} /> :
       <p role="alert">{t("missingOrder")}</p>}
-    <a href="/account" className="text-sm underline">{t("account")}</a>
+    <a href="/account" className="text-sm text-white/72 hover:text-white hover:underline">{t("account")}</a>
   </PageFrame>;
 }
