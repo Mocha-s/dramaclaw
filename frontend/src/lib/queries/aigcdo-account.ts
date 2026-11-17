@@ -11,8 +11,7 @@ const policy = z.object({
 });
 export const accountIdentitySchema = z.object({ id: z.string().min(1), username: z.string(), role: z.string() });
 export const balanceSchema = z.object({
-  ledger_unit: z.literal("USD"), available_amount: decimal, frozen_amount: decimal,
-  available_credits: decimal, frozen_credits: decimal, policy,
+  available_credits: decimal, frozen_credits: decimal,
 });
 const method = z.object({
   payment_type: z.string(), currency: z.string().regex(/^[A-Z]{3}$/),
@@ -45,8 +44,7 @@ export const ordersSchema = z.object({ items: z.array(orderSchema), ...paginatio
 export const usageSchema = z.object({
   items: z.array(z.object({
     id, request_id: z.string(), model: z.string(), occurred_at: timestamp,
-    billing_type: z.enum(["wallet", "subscription"]), charged_amount: decimal,
-    refunded_amount: decimal, net_amount: decimal, net_credits: decimal,
+    billing_type: z.enum(["wallet", "subscription"]), net_credits: decimal,
     wallet_debit_credits: decimal,
   })), ...pagination,
 });

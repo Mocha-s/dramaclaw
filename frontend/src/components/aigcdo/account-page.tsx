@@ -278,11 +278,11 @@ function AccountContent({ userId }: { userId: string }) {
       {usage.isError ? <p role="alert">{t("loadError")}</p> : usage.isPending ? <p>{t("loading")}</p> :
         usage.data?.items.length ? <div className="overflow-x-auto"><table className="w-full text-left text-sm">
           <thead><tr><th className="p-2">{t("model")}</th><th className="p-2">{t("time")}</th>
-            <th className="p-2">{t("net")}</th><th className="p-2">{t("walletDebit")}</th></tr></thead>
+            <th className="p-2">{t("walletDebit")}</th></tr></thead>
           <tbody>{usage.data.items.map((item) => <tr key={item.id}>
             <td className="p-2">{item.model}<span className="block">{t(item.billing_type)}</span></td>
             <td className="p-2">{new Date(item.occurred_at).toLocaleString()}</td>
-            <td className="p-2">{item.net_amount}</td><td className="p-2">{item.wallet_debit_credits}</td>
+            <td className="p-2">{item.wallet_debit_credits}</td>
           </tr>)}</tbody>
         </table></div> : <p>{t("empty")}</p>}
       <Button className="mt-3" variant="outline" disabled={usage.isFetching} onClick={() => void usage.refetch()}>{t("retry")}</Button>

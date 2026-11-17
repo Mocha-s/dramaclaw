@@ -60,12 +60,8 @@ class AigcdoBilling:
             raise AigcdoGatewayError("invalid_response")
         available = self.policy.display(user.balance)
         frozen = self.policy.display(user.frozen_balance)
-        return {
-            "ledger_unit": "USD", "available_amount": str(user.balance),
-            "frozen_amount": str(user.frozen_balance),
-            "available_credits": available, "frozen_credits": frozen,
-            "policy": self.policy.metadata(),
-        }
+        # Users see credits only; the gateway's USD ledger and the ratio stay server-side.
+        return {"available_credits": available, "frozen_credits": frozen}
 
     async def usage(self, cookie: str | None, **filters) -> dict:
         query = GatewayUsageQuery.model_validate(filters)
@@ -86,8 +82,7 @@ class AigcdoBilling:
                 "id": str(item.id), "request_id": item.request_id, "model": item.model,
                 "occurred_at": item.created_at.isoformat(),
                 "billing_type": "wallet" if item.billing_type == 0 else "subscription",
-                "charged_amount": str(item.actual_cost), "refunded_amount": str(item.refunded_cost),
-                "net_amount": str(item.net_actual_cost), "net_credits": net,
+                "net_credits": net,
                 "wallet_debit_credits": net if item.billing_type == 0 else self.policy.display(Decimal(0)),
                 "input_tokens": item.input_tokens, "output_tokens": item.output_tokens,
             })
@@ -95,7 +90,6 @@ class AigcdoBilling:
         return {
             "items": items, "total": page.total, "page": page.page,
             "page_size": page.page_size, "pages": page.pages,
-            "ledger_unit": "USD", "policy": self.policy.metadata(),
             "filters": {**query.model_dump(mode="json", exclude={"page", "page_size"}, exclude_none=True),
                         "timezone": "UTC"},
         }

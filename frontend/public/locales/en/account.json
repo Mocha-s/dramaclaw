@@ -56,7 +56,6 @@
   "subscription": "Subscription usage",
   "wallet": "Wallet usage",
   "walletDebit": "Wallet credits charged",
-  "net": "Net cost (USD)",
   "model": "Model",
   "time": "Time",
   "empty": "No records",

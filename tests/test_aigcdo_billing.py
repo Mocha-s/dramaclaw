@@ -74,15 +74,10 @@ async def billing_fixture(tmp_path, handler=None):
 async def test_balance_is_already_available_and_conversion_is_exact(tmp_path):
     async with billing_fixture(tmp_path) as (service, (alice, bob), _):
         a, b = await asyncio.gather(service.balance(alice.raw_cookie), service.balance(bob.raw_cookie))
-        assert a["available_amount"] == "12.34567891"
-        assert a["frozen_amount"] == "2"
         assert a["available_credits"] == "1234.5679"
         assert a["frozen_credits"] == "200.0000"
         assert b["available_credits"] == "-25.0000"
-        assert a["ledger_unit"] == "USD"
-        assert a["policy"] == {
-            "credits_per_unit": "100", "decimal_places": 4, "rounding": "ROUND_HALF_UP", "version": "test-v1",
-        }
+        assert set(a) == {"available_credits", "frozen_credits"}  # no USD, no ratio
         assert "email" not in a and "user_id" not in a
 
 
@@ -94,9 +89,8 @@ async def test_usage_preserves_refunds_and_separates_subscription_from_wallet(tm
     async with billing_fixture(tmp_path, handler) as (service, (alice, _), _):
         result = await service.usage(alice.raw_cookie)
         a, b = result["items"]
-        assert a["charged_amount"] == "0.12345678"
-        assert a["refunded_amount"] == "0.02345678"
-        assert a["net_amount"] == "0.1"
+        assert not {"charged_amount", "refunded_amount", "net_amount"} & set(a)
+        assert "policy" not in result and "ledger_unit" not in result
         assert a["net_credits"] == "10.0000"
         assert a["wallet_debit_credits"] == "10.0000"
         assert b["billing_type"] == "subscription"
