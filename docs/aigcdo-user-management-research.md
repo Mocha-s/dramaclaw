@@ -623,6 +623,22 @@ Hermes 进程身份/专属模型配置与操作系统挂载隔离也仍需完成
 回滚方法（如需要）：停服，用上面的备份覆盖 `state/local/projects.db`，
 再 `docker compose up -d api web`（不带 AIGCDO 覆盖文件）。
 
+### 生产部署（2026-11-17）
+
+提交 `6a638b31` 已推送。按用户要求部署到生产服务器，域名 `canvas.aigcdo.top`，本机恢复单机模式。
+
+- 本机：还原迁移前的项目注册表与 `.env`，不带 AIGCDO 覆盖文件重启；13 个项目可见、免登录。
+- 生产：服务器只有 4 GB 内存且跑着另一个产品，镜像在本机构建后 `docker save | docker load` 传过去；
+  部署目录 `/opt/aigcdo-canvas`（compose、`.env`、模型目录），API 内存上限 1800 MB，web 只监听 `127.0.0.1:8088`。
+- nginx 新站点 `canvas-aigcdo`，用服务器上已有的 Cloudflare Origin 证书（`*.aigcdo.top`）；原有站点复测 200。
+- 配置随迁：模型目录（本机现有 7 个分组导出）、Embedding、MinIO 媒体中转（改用环境变量）、任务并发额度。
+  存量项目文件按用户要求暂不传。
+- 公网验证：`/config` 报 AIGCDO 模式；未登录访问项目 401；登录表单显示 Turnstile 组件，
+  在该域名下不再报 `110200`。无头浏览器过不了 Cloudflare 的人机检测，真实登录需人工点一次。
+- **对话助手在生产上自动停用**：该机 `kernel.apparmor_restrict_unprivileged_userns=1`（Ubuntu 24.04 默认），
+  bubblewrap 报 `setting up uid map: Permission denied`。按设计失败即关闭，其余功能不受影响。
+  启用需要在宿主机把该 sysctl 设为 0（会放宽整台机器的限制，待用户决定）。
+
 ### 剩余实施清单（接续顺序）
 
 | 下一块 | 对应研究编号 | 必须完成的接线与验收 | 所需外部输入 |

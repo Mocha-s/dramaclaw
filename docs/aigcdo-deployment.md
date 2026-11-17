@@ -112,6 +112,8 @@ bubblewrap 沙箱（`security/sandbox_wrap.py::per_user_argv`）：
 1. 目录里填了 `agentModel`；
 2. 装了 Hermes CLI（镜像自带；源码运行要自己装）；
 3. 能创建沙箱：需要 `bwrap`、内核允许非特权 user namespace，并且能挂载新的 `/proc`。
+   Ubuntu 24.04 宿主机还要 `sysctl kernel.apparmor_restrict_unprivileged_userns=0`，
+   否则 bwrap 报 `setting up uid map: Permission denied`。
    在 Docker 里这要求 `security_opt` 同时有 `seccomp:unconfined`、`apparmor:unconfined` 和 `systempaths=unconfined`（2026-11-17 逐项实测，缺一不可）。
 
 **还没做的**：工作进程的出站网络没有限制（#346 P1② 的第二项）。
