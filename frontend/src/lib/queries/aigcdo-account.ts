@@ -95,6 +95,10 @@ export const accountApi = {
     await assertIdentity(userId, signal);
     return request(`${root}/payments/orders/${id.parse(orderId)}/verify`, orderSchema, { json: {}, signal, expectedUserId: userId });
   },
+  cancel: async (userId: string, orderId: string, signal?: AbortSignal) => {
+    await assertIdentity(userId, signal);
+    return request(`${root}/payments/orders/${id.parse(orderId)}/cancel`, orderSchema, { json: {}, signal, expectedUserId: userId });
+  },
   create: async (userId: string, attempt: CheckoutAttempt, signal?: AbortSignal) => {
     await assertIdentity(userId, signal);
     return request(`${root}/payments/orders`, createdSchema, {

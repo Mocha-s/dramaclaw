@@ -121,6 +121,13 @@ class Gateway:
             order["paid_at"] = "2026-11-15T00:01:00Z"
             order["completed_at"] = "2026-11-15T00:02:00Z"
             return ok(order)
+        if path.endswith("/cancel"):
+            assert request.method == "POST"
+            order = self.orders.get(int(path.split("/")[-2]))
+            if order is None or order["user_id"] != uid:
+                return httpx.Response(404)
+            order["status"] = "CANCELLED"
+            return ok({"success": True})
         if "/orders/" in path:
             assert request.method == "GET"
             if self.read_started:
@@ -223,6 +230,15 @@ async def test_timeout_never_reposts_but_orders_remain_queryable(tmp_path):
         assert caught.value.code == "payment_pending"
         listed = await service.orders(alice.raw_cookie)
         assert len(listed["items"]) == 1 and len(remote.posts) == 1
+
+
+async def test_cancel_is_limited_to_the_callers_own_order(tmp_path):
+    async with setup(tmp_path) as (service, remote, (alice, bob), _):
+        oid = int((await create(service, alice))["order"]["id"])
+        with pytest.raises(AigcdoGatewayError):
+            await service.cancel(bob.raw_cookie, oid)
+        assert remote.orders[oid]["status"] == "PENDING"
+        assert (await service.cancel(alice.raw_cookie, oid))["status"] == "CANCELLED"
 
 
 async def test_order_ownership_and_verify_do_not_use_browser_payment_status(tmp_path):

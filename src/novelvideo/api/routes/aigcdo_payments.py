@@ -77,4 +77,9 @@ def create_aigcdo_payments_router(payments: AigcdoPayments) -> APIRouter:
         await _body(request, _Input)
         return {"ok": True, "data": await payments.verify(cookie(request), order_id(value))}
 
+    @router.post("/orders/{value}/cancel")
+    async def cancel(value: str, request: Request):
+        await _body(request, _Input)
+        return {"ok": True, "data": await payments.cancel(cookie(request), order_id(value))}
+
     return router

@@ -100,5 +100,7 @@
     "remove": "Remove",
     "add": "New announcement"
   },
-  "abandonAttempt": "Abandon this attempt and start over"
+  "abandonAttempt": "Abandon this attempt and start over",
+  "tooManyPending": "Too many unpaid orders; no new order was created. Cancel or finish the old ones below, then try again.",
+  "cancelOrder": "Cancel order"
 }

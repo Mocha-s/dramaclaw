@@ -15,6 +15,7 @@ import {
   PanelRightOpen,
   PictureInPicture2,
   Plus,
+  Sparkles,
   Search,
   Workflow,
 } from "lucide-react";
@@ -3272,7 +3273,7 @@ function FreezoneChatToggleButton({
   expanded: boolean;
   onClick: () => void;
 }) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const { t } = useTranslation();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [entered, setEntered] = useState(false);
   const [pos, setPos] = useState(loadChatLauncherPos);
@@ -3378,21 +3379,6 @@ function FreezoneChatToggleButton({
     onClick();
   }, [onClick]);
 
-  const playMotion = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.currentTime = 0;
-    void video.play().catch(() => undefined);
-  }, []);
-
-  const stopMotion = useCallback(() => {
-    const video = videoRef.current;
-    if (video) {
-      video.pause();
-      video.currentTime = 0;
-    }
-  }, []);
-
   return (
     <Button
       ref={buttonRef}
@@ -3411,24 +3397,17 @@ function FreezoneChatToggleButton({
       }}
       aria-label={label}
       aria-expanded={expanded}
-      onMouseEnter={playMotion}
-      onMouseLeave={stopMotion}
-      onFocus={playMotion}
-      onBlur={stopMotion}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
     >
-      <video
-        ref={videoRef}
-        src="/images/xia-dao-launcher.mp4"
-        muted
-        loop
-        playsInline
-        preload="auto"
-        className="pointer-events-none absolute left-0 top-1/2 w-full -translate-y-1/2 rounded-[6px] object-cover brightness-[1.08] saturate-[1.02] shadow-[0_4px_10px_rgba(0,0,0,0.2)] transition-[filter] duration-200 ease-out group-hover/xia-dao:brightness-[1.16] group-focus-visible/xia-dao:brightness-[1.16]"
+      <span
+        className="pointer-events-none absolute left-0 top-1/2 flex w-full -translate-y-1/2 items-center justify-center gap-1.5 rounded-[6px] border border-white/15 bg-[#14181d] text-sm font-semibold tracking-wide text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] transition-colors duration-200 ease-out group-hover/xia-dao:border-primary/60 group-focus-visible/xia-dao:border-primary/60"
         style={{ height: CHAT_LAUNCHER_VISUAL_HEIGHT }}
         aria-hidden="true"
-      />
+      >
+        <Sparkles className="size-3.5 text-primary" />
+        {t("freezone.chat.title")}
+      </span>
     </Button>
   );
 }

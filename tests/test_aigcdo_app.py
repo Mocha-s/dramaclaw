@@ -284,7 +284,7 @@ async def test_project_routes_and_media_enforce_real_owners(composed_app):
     image.write_text("alice-private-data")
     response = await client.get(f"/static/projects/{project_id}/proof.txt")
     assert response.status_code == 200 and response.text == "alice-private-data"
-    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["cache-control"] == "private"  # browser may reuse it; shared caches may not
     client.cookies.clear()
     await login(client, "bob@example.test")
     second = await client.post("/api/v1/projects", json={"name": "demo"})

@@ -102,7 +102,14 @@ class AigcdoBoundary:
 
         async def no_store(message):
             if message["type"] == "http.response.start":
-                MutableHeaders(scope=message)["Cache-Control"] = "no-store"
+                headers = MutableHeaders(scope=message)
+                policy = [part.strip() for part in headers.get("cache-control", "").split(",") if part.strip()]
+                if path.startswith("/static/") and message["status"] in (200, 206, 304) and "no-store" not in policy:
+                    # Media keeps its route's own policy so the browser stops re-downloading every
+                    # image on every paint; "private" keeps a user's file out of shared caches (CDN).
+                    headers["Cache-Control"] = ", ".join(["private", *(p for p in policy if p not in ("public", "private"))])
+                else:
+                    headers["Cache-Control"] = "no-store"
             await send(message)
 
         request = Request(scope)

@@ -479,6 +479,9 @@ class AigcdoGatewayClient:
             raise AigcdoGatewayError("invalid_response")
         return result
 
+    async def cancel_payment_order(self, access_token: str, order_id: int) -> None:
+        await self._request("POST", f"payment/orders/{order_id}/cancel", access_token=access_token, body={})
+
     async def verify_payment_order(self, access_token: str, out_trade_no: str):
         from novelvideo.aigcdo_payment_contract import GatewayPaymentOrder
 

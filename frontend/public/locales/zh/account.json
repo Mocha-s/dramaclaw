@@ -100,5 +100,7 @@
     "remove": "删除",
     "add": "新增公告"
   },
-  "abandonAttempt": "放弃这次操作，重新下单"
+  "abandonAttempt": "放弃这次操作，重新下单",
+  "tooManyPending": "未支付的订单太多，网关没有创建新订单。请先在下方“充值订单”里取消或完成旧订单，再重新下单。",
+  "cancelOrder": "取消订单"
 }

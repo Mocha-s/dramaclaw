@@ -259,6 +259,18 @@ class AigcdoPayments:
         await self.auth.store.load(cookie)
         return self._public(data)
 
+    async def cancel(self, cookie: str | None, order_id: int) -> dict:
+        """Cancel the caller's own unpaid order; the gateway decides whether it still can be."""
+        session = await self._session(cookie)
+        token = session.tokens.access_token.get_secret_value()
+        original = await self.auth.gateway.payment_order(token, order_id)
+        self._order_data(original, session.gateway_id)
+        if original.id != order_id:
+            raise AigcdoGatewayError("invalid_response")
+        await self.auth.store.load(cookie)
+        await self.auth.gateway.cancel_payment_order(token, order_id)
+        return await self.order(cookie, order_id)
+
     async def verify(self, cookie: str | None, order_id: int) -> dict:
         session = await self._session(cookie)
         token = session.tokens.access_token.get_secret_value()

@@ -113,8 +113,25 @@ function OrderPanel({ userId, orderId, checkout, onOrder }: {
       abort.current = null;
     }
   }
+  async function cancel() {
+    if (abort.current) return;
+    const controller = new AbortController();
+    abort.current = controller;
+    setChecking(true);
+    setError(false);
+    try {
+      const next = await accountApi.cancel(userId, orderId, controller.signal);
+      if (!controller.signal.aborted) client.setQueryData(accountQueryKey(userId, "order", orderId), next);
+      void client.invalidateQueries({ queryKey: accountQueryKey(userId, "orders") });
+    } catch {
+      if (!controller.signal.aborted) setError(true);
+    } finally {
+      if (!controller.signal.aborted) setChecking(false);
+      abort.current = null;
+    }
+  }
   const canPay = order?.status === "PENDING" && Date.parse(order.expires_at) > now &&
-    !query.isError && !query.isFetching && !error && !checking;
+    !query.isError && !error && !checking;  // not isFetching: the 5 s poll would blank the QR code
   const payUrl = canPay && checkout?.pay_url ? safeCheckoutLink(checkout.pay_url) : null;
   const qr = canPay && checkout?.qr_code ? safeQrPayload(checkout.qr_code) : null;
   return <section className={`${panel} flex flex-col gap-3`} aria-live="polite">
@@ -140,6 +157,9 @@ function OrderPanel({ userId, orderId, checkout, onOrder }: {
       <Button variant="outline" disabled={checking || !order || query.isError || !orderIsProcessing(order)} onClick={() => void verify()}>
         {t("checkPayment")}
       </Button>
+      {order?.status === "PENDING" && !query.isError ? <Button variant="outline" disabled={checking} onClick={() => void cancel()}>
+        {t("cancelOrder")}
+      </Button> : null}
     </div>
   </section>;
 }
@@ -201,6 +221,13 @@ function Recharge({ userId }: { userId: string }) {
         setAttempt(null);
         setError("requestError");
         void query.refetch();
+        return;
+      }
+      if (error instanceof AccountApiError && error.status === 429) {
+        // The gateway refused outright (too many unpaid orders): nothing was created.
+        try { clearCheckoutAttempt(userId); } catch { setError("storageError"); return; }
+        setAttempt(null);
+        setError("tooManyPending");
         return;
       }
       // Even a client timeout can occur after the order was created.
@@ -280,6 +307,9 @@ function AccountContent({ userId }: { userId: string }) {
             <a className="break-all font-mono text-xs text-white/82 hover:text-white hover:underline" href={`/payment/result?order_id=${encodeURIComponent(order.id)}`}>{order.out_trade_no}</a>
             <span>{order.pay_amount} {order.currency}</span>
             <span>{order.status === "COMPLETED" && !orderIsCredited(order) ? t("unknown") : t(`status.${order.status}`)}</span>
+            {order.status === "PENDING" ? <Button size="sm" variant="outline" onClick={() => {
+              void accountApi.cancel(userId, order.id).catch(() => undefined).then(() => orders.refetch());
+            }}>{t("cancelOrder")}</Button> : null}
           </li>)}
         </ul> : <p>{t("empty")}</p>}
       <Button className="mt-3" size="sm" variant="outline" disabled={orders.isFetching} onClick={() => void orders.refetch()}>{t("retry")}</Button>
