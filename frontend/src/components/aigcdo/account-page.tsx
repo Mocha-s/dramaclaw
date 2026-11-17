@@ -220,7 +220,8 @@ function Recharge({ userId }: { userId: string }) {
         disabled={Boolean(attempt) || busy} onChange={(e) => setAmount(e.target.value)} />
       <fieldset disabled={Boolean(attempt) || busy} className="flex flex-wrap gap-2">
         <legend className="mb-2 text-sm">{t("method")}</legend>
-        {available.map((m) => <Button key={m} type="button" variant="outline"
+        {available.map((m) => <Button key={m} type="button"
+          variant={(attempt?.paymentType ?? selected) === m ? "default" : "outline"}
           aria-pressed={(attempt?.paymentType ?? selected) === m} onClick={() => setMethod(m)}>{t(m)}</Button>)}
       </fieldset>
       <p className="text-sm">{t("priceNote")}</p>

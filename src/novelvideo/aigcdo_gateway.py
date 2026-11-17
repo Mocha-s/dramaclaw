@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from datetime import date
+import logging
 import re
 from typing import Annotated, Any, Literal, TypeVar
 
@@ -19,6 +20,8 @@ from pydantic import (
     model_validator,
 )
 
+
+logger = logging.getLogger(__name__)
 
 _ERRORS = {
     "authentication_failed": (401, "Gateway authentication failed"),
@@ -256,9 +259,20 @@ class AigcdoGatewayClient:
             headers["Idempotency-Key"] = idempotency_key
         try:
             response = await self._http.request(method, path, json=body, headers=headers, params=params)
-        except httpx.RequestError:
+        except httpx.RequestError as exc:
+            logger.warning("AIGCDO gateway unreachable for %s %s: %s", method, path, type(exc).__name__)
             raise AigcdoGatewayError("gateway_unavailable") from None
 
+        if response.status_code >= 400:
+            # Operators need the gateway's own reason; callers only ever get the safe code.
+            try:
+                reason = str(response.json().get("reason") or "")[:80]
+            except (ValueError, AttributeError):
+                reason = ""
+            logger.warning(
+                "AIGCDO gateway refused %s %s: HTTP %s %s", method, path, response.status_code,
+                reason if re.fullmatch(r"[A-Za-z0-9_.-]*", reason) else "",
+            )
         if response.status_code >= 500:
             raise AigcdoGatewayError("gateway_unavailable")
         if response.status_code in {401, 403, 404, 429}:

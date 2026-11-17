@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import json
 import os
 import re
@@ -20,6 +21,9 @@ from novelvideo.aigcdo_gateway import AigcdoGatewayError
 from novelvideo.aigcdo_payment_contract import GatewayCreatedOrder, GatewayPaymentOrder
 from novelvideo.aigcdo_sessions import AigcdoAuthPort
 from novelvideo.api.routes.aigcdo_auth import trusted_app_origin
+
+
+logger = logging.getLogger(__name__)
 
 
 class AigcdoPaymentStore:
@@ -187,7 +191,11 @@ class AigcdoPayments:
                 if exc.status_code >= 500:
                     raise AigcdoGatewayError("payment_pending") from None
                 raise
-            self._validate_created(created, order, session.gateway_id, method.currency, payment_type)
+            try:
+                self._validate_created(created, order, session.gateway_id, method.currency, payment_type)
+            except AigcdoGatewayError:
+                logger.warning("AIGCDO order %s was created but its checkout is not a supported form", order.id)
+                raise
             cached = {
                 "order_id": order.id,
                 "out_trade_no": order.out_trade_no,
