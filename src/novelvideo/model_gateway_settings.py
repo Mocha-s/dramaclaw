@@ -2118,6 +2118,11 @@ def get_model_gateway_settings() -> dict[str, str]:
     data.setdefault("model_gateway_mode", MODE_OFFICIAL)
     if _uses_ce_gateway_settings():
         data.setdefault("custom_llm_mode", CUSTOM_LLM_MODE_ADVANCED)
+    from novelvideo import aigcdo_model_runtime
+
+    if aigcdo_model_runtime.active():
+        # One gateway, no platform key: the administrator's view is the group list too.
+        data.update(model_gateway_mode=MODE_CUSTOM, custom_llm_mode=CUSTOM_LLM_MODE_ADVANCED)
     return data
 
 

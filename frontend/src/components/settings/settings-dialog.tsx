@@ -391,8 +391,10 @@ function ModelConfigSection({ open }: { open: boolean }) {
     ? !config.effective.configured || !config.llmEffective.configured
     : false;
 
-  const [mode, setMode] = useState<GatewayMode>("official");
-  const modeChosenByUser = useRef(false);
+  // AIGCDO has one gateway and no platform key: only the group list ("custom") applies.
+  const aigcdo = authProvider() === "aigcdo";
+  const [mode, setMode] = useState<GatewayMode>(aigcdo ? "custom" : "official");
+  const modeChosenByUser = useRef(aigcdo);
   // 配置加载后，把激活的 tab 同步到服务端当前 mode。
   const serverMode = config?.mode;
   useEffect(() => {
@@ -506,6 +508,7 @@ function ModelConfigSection({ open }: { open: boolean }) {
 
       <Tabs
         className="mt-4"
+        hidden={aigcdo}
         value={mode}
         onValueChange={(value) => {
           const nextMode = value as GatewayMode;
@@ -555,7 +558,7 @@ function ModelConfigSection({ open }: { open: boolean }) {
       {mode === "custom" || mode === "hybrid" ? (
         <ThirdPartyGatewayPanel config={config} loading={loading} />
       ) : null}
-      {mode === "custom" ? (
+      {mode === "custom" && !aigcdo ? (
         <CustomLlmSettings config={config} loading={loading} />
       ) : null}
     </section>
