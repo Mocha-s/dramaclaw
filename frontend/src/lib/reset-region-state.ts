@@ -7,7 +7,6 @@ import { useEpisodeWorkbenchStore } from "@/stores/episode-workbench-store";
 import { useSaveStatusStore } from "@/stores/save-status-store";
 import { useSeenPoolStore } from "@/stores/seen-pool-store";
 import { useTaskCenterStore } from "@/task-center/store";
-import { useRewardEventsStore } from "@/features/rewards/reward-events-store";
 
 // UX chrome keys that must survive a region switch.
 const PRESERVE_KEYS = new Set<string>([
@@ -41,7 +40,6 @@ function resetSessionScopedState(
   useEpisodeWorkbenchStore.getState().reset();
   useTaskCenterStore.getState().reset();
   useAspectRatioStore.getState().reset();
-  useRewardEventsStore.getState().reset();
 
   deps.queryClient.clear();
 

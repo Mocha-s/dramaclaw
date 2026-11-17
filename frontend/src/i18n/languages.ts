@@ -11,7 +11,9 @@
  * Adding a locale: add the tag here, add `locales/<tag>/translation.json`, and
  * add its label key to `LANGUAGE_LABEL_KEYS` in `components/layout/header.tsx`.
  */
-export const SUPPORTED = ["zh", "en", "vi", "pt"] as const;
+// Chinese only (2026-11-17). `locales/en` stays in the repo as the reference key set for
+// tests and the backend i18n gate; it is not selectable and is dropped from the image.
+export const SUPPORTED = ["zh"] as const;
 export type Supported = (typeof SUPPORTED)[number];
 
 export function normalize(lng: string | undefined): Supported {

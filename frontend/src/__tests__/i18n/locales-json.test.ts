@@ -19,7 +19,7 @@ function loadLocale(language: string): unknown {
 }
 
 describe("locale translation files", () => {
-  it.each(["en", "zh", "vi", "pt"])("%s translation JSON is valid", (language) => {
+  it.each(["en", "zh"])("%s translation JSON is valid", (language) => {
     const content = readFileSync(`public/locales/${language}/translation.json`, "utf8");
 
     expect(() => JSON.parse(content)).not.toThrow();
@@ -28,7 +28,7 @@ describe("locale translation files", () => {
   // `en` is the reference key set. A locale may leave a value in English on
   // purpose — prompt fragments, domain terms and product names all stay as they
   // are — but it may never be missing a key, or i18next renders the raw key.
-  it.each(["zh", "vi", "pt"])("keeps %s aligned with the en key set", (language) => {
+  it.each(["zh"])("keeps %s aligned with the en key set", (language) => {
     const en = loadLocale("en");
     const other = loadLocale(language);
     const enKeys = new Set(collectKeys(en));
@@ -36,13 +36,6 @@ describe("locale translation files", () => {
 
     expect([...enKeys].filter((key) => !otherKeys.has(key)).sort()).toEqual([]);
     expect([...otherKeys].filter((key) => !enKeys.has(key)).sort()).toEqual([]);
-  });
-
-  it("defines the Niu Lai accessory name and selection feedback", () => {
-    const zh = JSON.parse(readFileSync("public/locales/zh/translation.json", "utf8"));
-
-    expect(zh.myBuddy.debug.accessories.niulai).toBe("牛来");
-    expect(zh.myBuddy.debug.accessoryFeedback.niulai).toBe("妈妈！");
   });
 
   it("uses the requested custom prompt label for Seedance2 guidance in Chinese", () => {

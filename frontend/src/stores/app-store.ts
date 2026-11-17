@@ -12,7 +12,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { quotaSafeStateStorage } from "@/lib/localStorageQuota";
-import type { PikoAccessoryDisplayId } from "@/features/companion/piko-accessories";
 import type { ProjectStatus } from "@/types/project";
 
 export const TASK_PANEL_HEIGHT_MIN = 200;
@@ -34,35 +33,6 @@ interface AppState {
   taskPanelHeight: number;
   aiAssistantOpen: boolean;
   aiAssistantWidth: number;
-  /**
-   * 顶部陪伴形象：'piko'（默认，CSS 像素小人）或某只 petdex 宠物的 slug。
-   * 属全局 UI 偏好（region-agnostic），随 supertale-app 持久化、不随区域切换清除。
-   */
-  companionKind: string;
-  /**
-   * 选中的 petdex 宠物（来自全量 manifest，含同源反代精灵图地址）。companionKind 非
-   * 'piko' 时据此渲染——manifest 宠物不在内置精选表里，必须把地址一并持久化。
-   */
-  companionPet: {
-    slug: string;
-    displayName: string;
-    spritesheetUrl: string;
-    submittedBy?: string;
-    cols?: number;
-    rows?: number;
-    /** 导入宠物（IndexedDB）。spritesheetUrl 是会话级 blob，刷新后按 slug 重解析。 */
-    imported?: boolean;
-  } | null;
-  /** Piko 专属道具选择；petdex 宠物不挂道具。 */
-  pikoAccessory: PikoAccessoryDisplayId;
-  /**
-   * 陪伴形象在视口中的位置（占视口宽/高的百分比 0–100），可在整页任意拖动。
-   * null = 未拖动过，用默认落点。拖动后写入并持久化。属全局 UI 偏好。
-   */
-  companionXPercent: number | null;
-  companionYPercent: number | null;
-  /** 是否隐藏陪伴形象（workbuddy）。true = 全局隐藏。属全局 UI 偏好，持久化。 */
-  companionHidden: boolean;
   toggleAiAssistant: () => void;
   setLanguage: (lang: string) => void;
   setTheme: (theme: Theme) => void;
@@ -72,11 +42,6 @@ interface AppState {
   setTaskPanelHeight: (h: number) => void;
   setAiAssistantOpen: (open: boolean) => void;
   setAiAssistantWidth: (w: number) => void;
-  /** 选 Piko 传 'piko'+null；选宠物传 slug + 宠物信息。 */
-  setCompanion: (kind: string, pet: AppState["companionPet"]) => void;
-  setPikoAccessory: (accessory: PikoAccessoryDisplayId) => void;
-  setCompanionPosition: (xPercent: number, yPercent: number) => void;
-  setCompanionHidden: (hidden: boolean) => void;
   /**
    * Re-clamp viewport-relative panel dimensions against the current window size.
    * Call this on window `resize` so a panel sized on a large screen (or restored
@@ -100,26 +65,6 @@ function clampTaskPanelHeight(height: number): number {
   return Math.min(max, Math.max(TASK_PANEL_HEIGHT_MIN, Math.round(height)));
 }
 
-function persistedCompanionPet(pet: AppState["companionPet"]): AppState["companionPet"] {
-  if (!pet) return null;
-  const spritesheetUrl =
-    pet.spritesheetUrl &&
-    !pet.spritesheetUrl.startsWith("data:") &&
-    !pet.spritesheetUrl.startsWith("blob:") &&
-    pet.spritesheetUrl.length <= 2048
-      ? pet.spritesheetUrl
-      : "";
-  return {
-    slug: pet.slug,
-    displayName: pet.displayName,
-    spritesheetUrl,
-    submittedBy: pet.submittedBy,
-    cols: pet.cols,
-    rows: pet.rows,
-    imported: pet.imported,
-  };
-}
-
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
@@ -129,12 +74,6 @@ export const useAppStore = create<AppState>()(
       dashboardView: "card",
       aiAssistantOpen: false,
       aiAssistantWidth: AI_ASSISTANT_WIDTH_DEFAULT,
-      companionKind: "piko",
-      companionPet: null,
-      pikoAccessory: "none",
-      companionXPercent: null,
-      companionYPercent: null,
-      companionHidden: false,
       toggleAiAssistant: () =>
         set((s) => ({ aiAssistantOpen: !s.aiAssistantOpen })),
       setLanguage: (lang) => set({ language: lang }),
@@ -147,11 +86,6 @@ export const useAppStore = create<AppState>()(
       setAiAssistantOpen: (open) => set({ aiAssistantOpen: open }),
       setAiAssistantWidth: (w) => set({ aiAssistantWidth: clampAiAssistantWidth(w) }),
       setTaskPanelHeight: (h) => set({ taskPanelHeight: clampTaskPanelHeight(h) }),
-      setCompanion: (kind, pet) => set({ companionKind: kind, companionPet: pet }),
-      setPikoAccessory: (accessory) => set({ pikoAccessory: accessory }),
-      setCompanionPosition: (xPercent, yPercent) =>
-        set({ companionXPercent: xPercent, companionYPercent: yPercent }),
-      setCompanionHidden: (hidden) => set({ companionHidden: hidden }),
       clampDimensionsToViewport: () =>
         set((s) => {
           const aiAssistantWidth = clampAiAssistantWidth(s.aiAssistantWidth);
@@ -168,21 +102,13 @@ export const useAppStore = create<AppState>()(
     {
       name: "supertale-app",
       storage: createJSONStorage(() => quotaSafeStateStorage),
-      version: 7,
+      version: 8,
       migrate: (persisted: unknown, fromVersion: number) => {
         const base = (persisted ?? {}) as Record<string, unknown>;
         delete base.sidebarCollapsed;
         delete base.sidebarWidth;
-        if (fromVersion < 6) {
-          base.companionXPercent = null;
-          base.companionYPercent = null;
-        }
-        if (fromVersion < 4 && base.companionKind == null) {
-          base.companionKind = "piko";
-        }
-        if (fromVersion < 5 && base.pikoAccessory == null) {
-          base.pikoAccessory = "none";
-        }
+        // The companion mascot was removed; drop what older versions persisted for it.
+        for (const key of ["companionKind", "companionPet", "pikoAccessory", "companionHidden"]) delete base[key];
         if (fromVersion < 1) {
           return {
             ...base,
@@ -212,13 +138,6 @@ export const useAppStore = create<AppState>()(
           };
         }
         return base;
-      },
-      partialize: (state) => {
-        const { companionXPercent: _x, companionYPercent: _y, ...persisted } = state;
-        return {
-          ...persisted,
-          companionPet: persistedCompanionPet(state.companionPet),
-        };
       },
     },
   ),

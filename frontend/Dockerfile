@@ -22,7 +22,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
-RUN pnpm build
+# Chinese only: locales/en is the reference key set for tests, not a shipped language.
+RUN pnpm build && rm -rf dist/locales/en
 
 # Parse the rendered runtime template in CI without building the SPA image.
 FROM nginx:1.27-alpine AS nginx-config-test
