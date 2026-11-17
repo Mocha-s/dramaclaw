@@ -5757,7 +5757,8 @@
       "perRequest": "/req",
       "perSecond": "/s",
       "perImage": "/img",
-      "from": "from"
+      "from": "from",
+      "credits": "credits"
     },
     "searchPlaceholder": "Search models",
     "noMatch": "No matching models",

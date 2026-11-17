@@ -702,7 +702,7 @@ def _rename_legacy_identity(home: Path) -> None:
     for path in (home / "SOUL.md", home / "memories" / "MEMORY.md"):
         try:
             text = path.read_text(encoding="utf-8")
-        except OSError:
+        except (OSError, ValueError):
             continue
         renamed = text
         for legacy, current in _LEGACY_NAMES:

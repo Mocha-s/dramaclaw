@@ -19,6 +19,8 @@ from urllib.parse import urlsplit
 
 import httpx
 
+from novelvideo import aigcdo_model_runtime
+
 from novelvideo.model_gateway_settings import (
     _is_external_http_url,
     get_third_party_gateway_groups,
@@ -47,6 +49,8 @@ def _plaza_endpoint() -> tuple[str, str] | None:
         api_key = str(group.get("apiKey") or "").strip()
         if not parsed.netloc or not api_key or not _is_external_http_url(origin):
             continue
+        if aigcdo_model_runtime.active() and not aigcdo_model_runtime._gateway(origin):
+            continue  # the embedding-only group belongs to another provider, which has no plaza
         return origin, api_key
     return None
 
@@ -238,4 +242,20 @@ def attach_model_usage(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
         name = str(entry.get("upstreamModel") or entry.get("gatewayModel") or "").strip()
         usage = index.get(name)
         result.append({**entry, **usage} if usage else entry)
-    return result
+    return _in_credits(result) if aigcdo_model_runtime.active() else result
+
+
+def _in_credits(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """AIGCDO users see credits only, so prices leave here already converted."""
+    from novelvideo.ports.registry import get_port
+
+    ratio = float(get_port("lifecycle").billing.policy.credits_per_unit)
+    converted = []
+    for entry in catalog:
+        entry = {**entry, "priceCurrency": "credits"}
+        if isinstance(entry.get("priceValue"), (int, float)):
+            entry["priceValue"] = round(entry["priceValue"] * ratio, 4)
+        if isinstance(entry.get("priceTiers"), list):
+            entry["priceTiers"] = [{**tier, "value": round(tier["value"] * ratio, 4)} for tier in entry["priceTiers"]]
+        converted.append(entry)
+    return converted

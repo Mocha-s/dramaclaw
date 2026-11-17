@@ -151,12 +151,15 @@ def _catalog(path: str) -> dict:
 
 
 _USER_HIDDEN = (
-    "platform_gateway", "custom_newapi_api", "custom_newapi_base", "brainclaw_", "sub2api_", "agent_llm_",
+    "platform_gateway", "custom_newapi_", "official_newapi", "brainclaw_", "sub2api_", "agent_llm_", "aigcdo.",
 )
 
 
 def _gateway(url: object) -> bool:
-    parts = urlsplit(str(url or ""))
+    try:
+        parts = urlsplit(str(url or ""))
+    except ValueError:  # a malformed stored URL must not take every user's settings down
+        return False
     return f"{parts.scheme}://{parts.netloc}".lower() == GATEWAY_ORIGIN
 
 

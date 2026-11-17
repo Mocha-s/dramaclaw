@@ -5,10 +5,6 @@ import type { CheckoutAttempt } from "@/lib/aigcdo-account";
 const decimal = z.string().max(128).regex(/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/);
 const id = z.string().regex(/^[1-9]\d{0,17}$/);
 const timestamp = z.string().datetime({ offset: true });
-const policy = z.object({
-  credits_per_unit: decimal, decimal_places: z.number().int().min(0).max(8),
-  rounding: z.literal("ROUND_HALF_UP"), version: z.string(),
-});
 export const accountIdentitySchema = z.object({ id: z.string().min(1), username: z.string(), role: z.string() });
 export const balanceSchema = z.object({
   available_credits: decimal, frozen_credits: decimal,
@@ -22,21 +18,19 @@ export const checkoutSchema = z.object({
   balance_recharge_multiplier: decimal, recharge_fee_rate: decimal,
   recharge_bonus_mode: z.enum(["bonus", "discount"]),
   recharge_bonus_tiers: z.array(z.object({ min_amount: decimal, bonus_percent: decimal })),
-  global_min: decimal, global_max: decimal, policy,
+  global_min: decimal, global_max: decimal,
 });
 export const orderSchema = z.object({
-  id, amount: decimal, pay_amount: decimal, bonus_amount: decimal,
+  id, credits: decimal, pay_amount: decimal,
   currency: z.string().regex(/^[A-Z]{3}$/), payment_type: z.string(), out_trade_no: z.string(),
   status: z.enum(["PENDING", "PAID", "RECHARGING", "COMPLETED", "EXPIRED", "CANCELLED", "FAILED",
     "REFUND_REQUESTED", "REFUNDING", "REFUND_PENDING", "PARTIALLY_REFUNDED", "REFUNDED", "REFUND_FAILED"]),
   fulfilled: z.boolean(), created_at: timestamp, expires_at: timestamp,
   paid_at: timestamp.nullable(), completed_at: timestamp.nullable(),
-  ledger_unit: z.literal("USD"),
 });
 export type AccountOrder = z.infer<typeof orderSchema>;
 export const createdSchema = z.object({
   order: orderSchema, checkout: z.object({ pay_url: z.string(), qr_code: z.string() }).nullable(),
-  expected_credits: decimal, policy,
 });
 const pagination = { page: z.number().int().positive(), page_size: z.number().int().positive(),
   pages: z.number().int().positive(), total: z.number().int().nonnegative() };

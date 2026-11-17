@@ -7,6 +7,7 @@ only them to these routes and to the single-user settings routes.
 from __future__ import annotations
 
 import time
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Annotated
 
@@ -93,6 +94,14 @@ def create_aigcdo_admin_router(deployment) -> APIRouter:
         body = await _body(request, _Announcements)
         if len({item.id for item in body.items}) != len(body.items):
             raise HTTPException(400, "Duplicate announcement id")
+        for item in body.items:
+            try:
+                # The drawer rejects the whole list if one entry is blank or has an impossible date.
+                datetime.fromisoformat(item.published_at.replace("Z", "+00:00"))
+            except ValueError:
+                raise HTTPException(400, "Invalid announcement date") from None
+            if not item.title.strip() or not item.body.strip():
+                raise HTTPException(400, "Announcement needs a title and a body")
         write_runtime_json(_ANNOUNCEMENTS_KEY, [item.model_dump() for item in body.items])
         return {"ok": True}
 

@@ -61,6 +61,7 @@ export interface ModelOption {
   priceFrom?: boolean;
   /** 上游广场的分档价（已含倍率、按价格升序）。 */
   priceTiers?: Array<{ label: string; value: number }>;
+  priceCurrency?: string;
   resolutionOptions?: string[];
   qualityOptions?: string[];
   humanReview?: boolean;
@@ -324,18 +325,23 @@ export function ProviderModelPicker({
       : model.priceUnit === 'image'
         ? t('modelPicker.price.perImage')
         : t('modelPicker.price.perRequest');
+  // AIGCDO sends prices already in credits (priceCurrency); everything else is USD.
+  const priceText = (model: ModelOption, value: number): string =>
+    model.priceCurrency === 'credits'
+      ? `${value.toFixed(2)} ${t('modelPicker.price.credits')}`
+      : `$${value.toFixed(3)}`;
   // 档位价铺成一行：`1k $0.887 · 2k $1.848 · 4k $11.220/张`，单位只在末尾说一次。
   const modelTierLine = (model: ModelOption): string | null => {
     const tiers = model.priceTiers;
     if (!tiers?.length) return null;
-    const parts = tiers.map((tier) => `${tier.label} $${tier.value.toFixed(3)}`);
+    const parts = tiers.map((tier) => `${tier.label} ${priceText(model, tier.value)}`);
     return `${parts.join(' · ')}${priceUnitLabel(model)}`;
   };
   const modelPriceLabel = (model: ModelOption): string | null => {
     // 有档位时价格由档位行负责，右边的单价位让出来。
     if (model.priceValue == null || model.priceTiers?.length) return null;
     const prefix = model.priceFrom ? `${t('modelPicker.price.from')} ` : '';
-    return `${prefix}$${model.priceValue.toFixed(3)}${priceUnitLabel(model)}`;
+    return `${prefix}${priceText(model, model.priceValue)}${priceUnitLabel(model)}`;
   };
 
   const syncPopoverPosition = () => {
@@ -467,7 +473,7 @@ export function ProviderModelPicker({
                               {tier.label}
                             </span>
                             <span className="text-[11px] font-medium tabular-nums text-text-dark/90">
-                              ${tier.value.toFixed(3)}
+                              {priceText(model, tier.value)}
                             </span>
                           </span>
                         ))}

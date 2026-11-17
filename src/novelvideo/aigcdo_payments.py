@@ -136,6 +136,13 @@ class AigcdoPayments:
         data["fulfilled"] = order.status == "COMPLETED"
         return data
 
+    def _public(self, data: dict) -> dict:
+        """What a user's browser gets: credits and what they pay, never the USD ledger or the ratio."""
+        shown = {k: v for k, v in data.items() if k not in {"amount", "bonus_amount", "fee_rate", "refund_amount", "ledger_unit"}}
+        # shortcut: shown at the current ratio, like the balance; store a per-order ratio if they must differ.
+        shown["credits"] = self.policy.display(Decimal(str(data["amount"])))
+        return shown
+
     async def checkout(self, cookie: str | None) -> dict:
         session = await self._session(cookie)
         info = await self.auth.gateway.payment_checkout(session.tokens.access_token.get_secret_value())
@@ -144,7 +151,6 @@ class AigcdoPayments:
             name: details for name, details in data["methods"].items()
             if name in {"alipay", "wxpay"} and details["payment_type"] == name
         }
-        data["policy"] = self.policy.metadata()
         await self.auth.store.load(cookie)
         return data
 
@@ -216,10 +222,7 @@ class AigcdoPayments:
             order.status == "PENDING" and order.expires_at > datetime.now(timezone.utc)
         ) else None
         await self.auth.store.load(cookie)
-        return {
-            "order": data, "checkout": checkout,
-            "expected_credits": cached["expected_credits"], "policy": cached["policy"],
-        }
+        return {"order": self._public(data), "checkout": checkout}
 
     @staticmethod
     def _validate_created(
@@ -241,7 +244,7 @@ class AigcdoPayments:
         result = await self.auth.gateway.payment_orders(
             session.tokens.access_token.get_secret_value(), page=page, page_size=page_size,
         )
-        items = [self._order_data(order, session.gateway_id) for order in result.items]
+        items = [self._public(self._order_data(order, session.gateway_id)) for order in result.items]
         await self.auth.store.load(cookie)
         return {"items": items, "page": result.page, "page_size": result.page_size,
                 "total": result.total, "pages": result.pages}
@@ -253,7 +256,7 @@ class AigcdoPayments:
             raise AigcdoGatewayError("invalid_response")
         data = self._order_data(order, session.gateway_id)
         await self.auth.store.load(cookie)
-        return data
+        return self._public(data)
 
     async def verify(self, cookie: str | None, order_id: int) -> dict:
         session = await self._session(cookie)
@@ -268,4 +271,4 @@ class AigcdoPayments:
             raise AigcdoGatewayError("invalid_response")
         result = self._order_data(order, session.gateway_id)
         await self.auth.store.load(cookie)
-        return result
+        return self._public(result)

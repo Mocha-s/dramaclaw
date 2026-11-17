@@ -5757,7 +5757,8 @@
       "perRequest": "/次",
       "perSecond": "/秒",
       "perImage": "/张",
-      "from": "起"
+      "from": "起",
+      "credits": "积分"
     },
     "searchPlaceholder": "搜索模型",
     "noMatch": "没有匹配的模型",

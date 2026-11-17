@@ -122,7 +122,7 @@ function OrderPanel({ userId, orderId, checkout, onOrder }: {
       <p className="break-all font-mono text-sm">{order.out_trade_no}</p>
       <dl className="grid gap-2 text-sm sm:grid-cols-2">
         <div><dt>{t("actualPayment")}</dt><dd>{order.pay_amount} {order.currency}</dd></div>
-        <div><dt>{t("creditedAmount")}</dt><dd>{order.amount}</dd></div>
+        <div><dt>{t("creditedAmount")}</dt><dd>{order.credits}</dd></div>
       </dl>
       {payUrl ? <a href={payUrl} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
         className="w-fit rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90">{t("pay")}</a> : null}
@@ -235,7 +235,6 @@ function Recharge({ userId }: { userId: string }) {
     </form> : attempt ? <Button onClick={() => void submit()} disabled={busy || saved.error}>{t("retryAttempt")}</Button> : null}
     {error ? <p role="alert" className="text-sm text-destructive">{t(error)}</p> : null}
     {created ? <>
-      <p className="text-sm">{t("expected", { credits: created.expected_credits })}</p>
       <OrderPanel key={created.order.id} userId={userId} orderId={created.order.id}
         checkout={created.checkout} onOrder={setLatestOrder} />
       {latestOrder && !orderIsProcessing(latestOrder) ? <Button variant="outline" onClick={reset}>{t("newOrder")}</Button> : null}
