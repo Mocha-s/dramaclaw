@@ -43,7 +43,7 @@ def _resolve_paths(project_dir: Path) -> tuple[Path, Path]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run visual gate on sketch edit output.")
-    parser.add_argument("project_dir", help="SuperTale project directory")
+    parser.add_argument("project_dir", help="AIGCDO project directory")
     parser.add_argument("--episode-num", type=int, required=True)
     parser.add_argument(
         "--summary-name",

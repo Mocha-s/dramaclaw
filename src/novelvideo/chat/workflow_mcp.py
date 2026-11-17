@@ -1,7 +1,7 @@
-"""Standalone MCP server for shared DramaClaw Workflow Skills and Recipes.
+"""Standalone MCP server for shared AIGCDO Workflow Skills and Recipes.
 
 This server is deliberately read/compile-only. Canvas authorization, approval,
-and commit remain in the existing DramaClaw MCP adapter, so every agent shares
+and commit remain in the existing AIGCDO MCP adapter, so every agent shares
 the same deterministic plans without duplicating the protected write boundary.
 """
 
@@ -283,19 +283,19 @@ async def list_resource_templates() -> list[types.ResourceTemplate]:
 
     return [
         types.ResourceTemplate(
-            name="DramaClaw Workflow Skill",
+            name="AIGCDO Workflow Skill",
             uriTemplate="dramaclaw-workflow://skills/{skill_id}",
             description="One portable Workflow Skill planning package",
             mimeType="application/json",
         ),
         types.ResourceTemplate(
-            name="DramaClaw Workflow Recipe",
+            name="AIGCDO Workflow Recipe",
             uriTemplate="dramaclaw-workflow://recipes/{recipe_id}",
             description="One portable Workflow Recipe definition",
             mimeType="application/json",
         ),
         types.ResourceTemplate(
-            name="DramaClaw Workflow Skill Reference",
+            name="AIGCDO Workflow Skill Reference",
             uriTemplate="dramaclaw-workflow://skills/{skill_id}/references/{reference}",
             description="One allow-listed reference document for a Workflow Skill",
             mimeType="text/markdown",
@@ -342,7 +342,7 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="workflow_catalog_search",
             description=(
-                "Search compact shared DramaClaw workflow Skill or Recipe metadata. "
+                "Search compact shared AIGCDO workflow Skill or Recipe metadata. "
                 "Use Skills for workflow routing and Recipes for exact custom topology planning."
             ),
             inputSchema=_object_schema(
@@ -414,7 +414,7 @@ async def list_tools() -> list[types.Tool]:
             name="workflow_intent_compile",
             description=(
                 "Deterministically compile one freezone_workflow_intent.v1 into a validated "
-                "workflow plan. This is read-only; use the authorized DramaClaw workflow draft "
+                "workflow plan. This is read-only; use the authorized AIGCDO workflow draft "
                 "or graph tool to persist and commit it."
             ),
             inputSchema=_object_schema(

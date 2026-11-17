@@ -95,7 +95,7 @@ def _connect_local_websocket(socket_path: Path, **options):
 def _deny_unexpected_approval(method: str, _params: dict | None) -> dict:
     """Fail closed if the runtime asks for authority outside approved MCP tools.
 
-    Canvas mutations use DramaClaw's business approval bridge. Native command
+    Canvas mutations use AIGCDO's business approval bridge. Native command
     and file approvals are deliberately not a second way around that contract.
     """
 
@@ -112,7 +112,7 @@ def _control_dir() -> Path:
 
     # macOS limits Unix-domain socket paths to roughly 104 bytes. CODEX_HOME is
     # intentionally below the configured state root and can easily exceed that.
-    # These files are operating-system IPC state, not DramaClaw runtime data, so
+    # These files are operating-system IPC state, not AIGCDO runtime data, so
     # keep them under a fixed short path instead of following TMPDIR/runtime.
     if os.name == "nt":
         from novelvideo.chat.codex_app_server_windows import private_control_root

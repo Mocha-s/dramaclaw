@@ -1,4 +1,4 @@
-"""Prepare per-beat sketch edit teacher tasks from a SuperTale project."""
+"""Prepare per-beat sketch edit teacher tasks from a AIGCDO project."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Prepare sketch-edit teacher tasks from a project path and episode number."
     )
-    parser.add_argument("project_dir", help="SuperTale project directory, e.g. /path/to/project")
+    parser.add_argument("project_dir", help="AIGCDO project directory, e.g. /path/to/project")
     parser.add_argument("--episode-num", type=int, required=True, help="Episode number to prepare")
     parser.add_argument("--output", required=True, help="Output tasks JSONL path")
     parser.add_argument("--limit", type=int, default=0, help="Optional max beat count for quick checks")

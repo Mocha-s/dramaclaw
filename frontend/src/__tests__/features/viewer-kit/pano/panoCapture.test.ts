@@ -17,7 +17,7 @@ describe("pano capture camera math", () => {
     expect(zoomToFov(fovToZoom(70))).toBeCloseTo(70, 5);
   });
 
-  it("reports the same focal-length approximation as the legacy SuperTale pano viewer", () => {
+  it("reports the same focal-length approximation as the legacy AIGCDO pano viewer", () => {
     expect(fovToFocal(160)).toBe(3);
     expect(fovToFocal(70)).toBe(26);
     expect(fovToFocal(8)).toBe(257);

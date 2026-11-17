@@ -5,7 +5,7 @@ import type { PushTarget } from "./push";
 import type { MainlineContext } from "@/features/freezone/context/mainlineContext";
 import type { SceneAsset } from "@/types/scene";
 
-// SuperTale `/api/v1/projects` returns a list of project summaries belonging
+// AIGCDO `/api/v1/projects` returns a list of project summaries belonging
 // to the authenticated user. Shape based on
 // SuperTale/src/novelvideo/api/routes/projects.py:27-44.
 
@@ -158,7 +158,7 @@ export async function updateBeat(
 
 // ---------- Static URL helpers ---------- //
 
-// SuperTale serves user assets at `/static/<user>/<project>/...`. The backend
+// AIGCDO serves user assets at `/static/<user>/<project>/...`. The backend
 // embeds `<user>/<project>` in URLs it returns (frame_url, video_url, identity
 // image_url, portrait_url). For assets the backend doesn't directly expose
 // (sketch, director-render combined.png), we derive a URL by rewriting the

@@ -3,7 +3,7 @@
 The risk is not Static routing. It is that three of these changes are not
 opt-in features at all:
 
-- every worker DramaClaw launches now carries the per-turn credential latch,
+- every worker AIGCDO launches now carries the per-turn credential latch,
   whether or not BrainClaw is configured;
 - a latched worker refuses any host but its configured gateway;
 - the workspace no longer writes the gateway key to disk.
@@ -137,7 +137,7 @@ def test_the_install_is_paired_and_says_so(byo_gateway):
     """A BYO deployment is compatible *with the fork installed*, not without.
 
     This is the honest form of the compatibility claim. Per-turn credentials
-    are not optional, so a stock Hermes cannot serve this DramaClaw at all —
+    are not optional, so a stock Hermes cannot serve this AIGCDO at all —
     and the refusal happens before a worker exists, naming the cause, rather
     than at the first turn as a connection error.
     """

@@ -1,6 +1,6 @@
 """Hermes 的 Freezone 画布工具入口。
 
-这些工具名是虾画和 Agent 的稳定集成点。Handler 保持轻量：
+这些工具名是造境和 Agent 的稳定集成点。Handler 保持轻量：
 读上下文、预校验、写命令都尽量转交给前端画布桥接层处理。
 """
 
@@ -772,7 +772,7 @@ def _no_canvas_candidate(reason: str) -> str:
         {
             "ok": False,
             "code": "canvas_not_found",
-            "message": "没有找到可操作的虾画画布，请先在浏览器中创建或打开一个画布。",
+            "message": "没有找到可操作的造境画布，请先在浏览器中创建或打开一个画布。",
             "reason": reason,
             "agent_instruction": (
                 "Ask the user to open or create a Freezone canvas, then retry with a canvas_id."
@@ -790,7 +790,7 @@ def _canvas_context_unavailable(error: dict[str, Any] | None) -> str:
             "error": error,
             "agent_instruction": (
                 "Do not retry the canvas write tool yet. Ask the user to start the local "
-                "DramaClaw API on http://127.0.0.1:8780 or provide explicit project_id "
+                "AIGCDO API on http://127.0.0.1:8780 or provide explicit project_id "
                 "and canvas_id after the API is reachable."
             ),
         }
@@ -10553,7 +10553,7 @@ _SKILL_STUDIO_INPUT_PARAMETER_SCHEMA = {
 _SKILL_STUDIO_SKILL_SCHEMA = {
     "type": "object",
     "description": (
-        "Complete 虾画 Skill catalog draft. Do not include Recipe drafts inside skill; "
+        "Complete 造境 Skill catalog draft. Do not include Recipe drafts inside skill; "
         "put any Recipe drafts in the tool's top-level recipes parameter."
     ),
     "properties": {
@@ -10701,7 +10701,7 @@ _SKILL_STUDIO_SKILL_SCHEMA = {
 _SKILL_STUDIO_RECIPE_SCHEMA = {
     "type": "object",
     "allOf": [_HTML_RECIPE_FORMAT_CONSTRAINT],
-    "description": "Complete 虾画 Recipe catalog draft.",
+    "description": "Complete 造境 Recipe catalog draft.",
     "properties": {
         "id": {
             "type": "string",
@@ -11277,7 +11277,7 @@ TOOLS = (
         "freezone_present_agent_catalog_draft",
         _schema(
             "freezone_present_agent_catalog_draft",
-            "Legacy small-draft path for presenting an editable Skill/Recipe catalog draft for 虾画 Skill Studio. Prefer the chunked draft tools for normal Skill Studio drafts: begin, put skill, put each recipe, then finish. Do not paste final JSON in prose and do not claim it is saved.",
+            "Legacy small-draft path for presenting an editable Skill/Recipe catalog draft for 造境 Skill Studio. Prefer the chunked draft tools for normal Skill Studio drafts: begin, put skill, put each recipe, then finish. Do not paste final JSON in prose and do not claim it is saved.",
             {
                 "skill_studio_session_id": {
                     "type": "string",
@@ -11315,7 +11315,7 @@ TOOLS = (
         "freezone_put_agent_catalog_draft_outline",
         _schema(
             "freezone_put_agent_catalog_draft_outline",
-            "Submit the internal 虾画 Skill Studio capability outline before creating a chunked draft. Use this after modeling the reusable Skill goal, Skill-level constraints, planned executable stages, and existing Recipe reuse. For create drafts with Recipes, call this before freezone_begin_agent_catalog_draft.",
+            "Submit the internal 造境 Skill Studio capability outline before creating a chunked draft. Use this after modeling the reusable Skill goal, Skill-level constraints, planned executable stages, and existing Recipe reuse. For create drafts with Recipes, call this before freezone_begin_agent_catalog_draft.",
             {
                 "skill_studio_session_id": {
                     "type": "string",
@@ -11382,7 +11382,7 @@ TOOLS = (
         "freezone_begin_agent_catalog_draft",
         _schema(
             "freezone_begin_agent_catalog_draft",
-            "Begin a chunked 虾画 Skill Studio draft. Before calling this, decide the target number of Recipe chunks and pass expected_recipe_count, using 0 only when this draft intentionally has no Recipes. This tool only emits progress and does not wait for user confirmation.",
+            "Begin a chunked 造境 Skill Studio draft. Before calling this, decide the target number of Recipe chunks and pass expected_recipe_count, using 0 only when this draft intentionally has no Recipes. This tool only emits progress and does not wait for user confirmation.",
             {
                 "skill_studio_session_id": {
                     "type": "string",
@@ -11442,7 +11442,7 @@ TOOLS = (
         "freezone_put_agent_catalog_skill",
         _schema(
             "freezone_put_agent_catalog_skill",
-            "Submit the Skill chunk for the current 虾画 Skill Studio draft. Do not include Recipe drafts inside skill.",
+            "Submit the Skill chunk for the current 造境 Skill Studio draft. Do not include Recipe drafts inside skill.",
             {
                 "skill_studio_session_id": {
                     "type": "string",
@@ -11459,7 +11459,7 @@ TOOLS = (
         "freezone_put_agent_catalog_recipe",
         _schema(
             "freezone_put_agent_catalog_recipe",
-            "Submit one Recipe chunk for the current 虾画 Skill Studio draft. Call once per Recipe instead of passing all recipes in one tool call.",
+            "Submit one Recipe chunk for the current 造境 Skill Studio draft. Call once per Recipe instead of passing all recipes in one tool call.",
             {
                 "skill_studio_session_id": {
                     "type": "string",
@@ -11480,7 +11480,7 @@ TOOLS = (
         "freezone_patch_agent_catalog_draft",
         _schema(
             "freezone_patch_agent_catalog_draft",
-            "Apply small JSON Pointer patches for local edits to the current 虾画 Skill Studio draft session. For local edits, prefer this tool over regenerating unchanged Skill/Recipe chunks. Use put_skill or put_recipe only when replacing an entire object. Always finish with freezone_finish_agent_catalog_draft after patching.",
+            "Apply small JSON Pointer patches for local edits to the current 造境 Skill Studio draft session. For local edits, prefer this tool over regenerating unchanged Skill/Recipe chunks. Use put_skill or put_recipe only when replacing an entire object. Always finish with freezone_finish_agent_catalog_draft after patching.",
             {
                 "skill_studio_session_id": {
                     "type": "string",
@@ -11538,7 +11538,7 @@ TOOLS = (
         "freezone_finish_agent_catalog_draft",
         _schema(
             "freezone_finish_agent_catalog_draft",
-            "Finish a chunked 虾画 Skill Studio draft, assemble previously submitted chunks, and present the editable draft card. Do not pass the full Skill/Recipe catalog in this call; this schema intentionally has no skill or recipes parameters.",
+            "Finish a chunked 造境 Skill Studio draft, assemble previously submitted chunks, and present the editable draft card. Do not pass the full Skill/Recipe catalog in this call; this schema intentionally has no skill or recipes parameters.",
             {
                 "skill_studio_session_id": {
                     "type": "string",
@@ -11562,7 +11562,7 @@ TOOLS = (
         "freezone_list_agent_catalog",
         _schema(
             "freezone_list_agent_catalog",
-            "List compact saved 虾画 Skill or Recipe summaries for Skill Studio discovery and reuse. Read-only: does not return full Recipe system_prompt, does not save catalog files, does not execute workflows, and does not write canvas nodes. Use query to find reusable Recipes before creating new ones.",
+            "List compact saved 造境 Skill or Recipe summaries for Skill Studio discovery and reuse. Read-only: does not return full Recipe system_prompt, does not save catalog files, does not execute workflows, and does not write canvas nodes. Use query to find reusable Recipes before creating new ones.",
             {
                 "kind": {
                     "type": "string",
@@ -11590,7 +11590,7 @@ TOOLS = (
         "freezone_get_saved_skill",
         _schema(
             "freezone_get_saved_skill",
-            "Read one existing saved 虾画 Skill configuration by id for Skill Studio editing. Read-only: does not save catalog files, does not execute workflows, and does not write canvas nodes. Use this when revising a saved Skill and conversation history only has the saved id or an incomplete draft.",
+            "Read one existing saved 造境 Skill configuration by id for Skill Studio editing. Read-only: does not save catalog files, does not execute workflows, and does not write canvas nodes. Use this when revising a saved Skill and conversation history only has the saved id or an incomplete draft.",
             {
                 "skill_id": {
                     "type": "string",
@@ -11605,7 +11605,7 @@ TOOLS = (
         "freezone_get_saved_recipe",
         _schema(
             "freezone_get_saved_recipe",
-            "Read one existing saved 虾画 Recipe configuration by id for Skill Studio editing. Read-only: does not save catalog files, does not execute workflows, and does not write canvas nodes. Use this when revising a saved Recipe and conversation history only has the saved id or an incomplete draft.",
+            "Read one existing saved 造境 Recipe configuration by id for Skill Studio editing. Read-only: does not save catalog files, does not execute workflows, and does not write canvas nodes. Use this when revising a saved Recipe and conversation history only has the saved id or an incomplete draft.",
             {
                 "recipe_id": {
                     "type": "string",
@@ -12359,7 +12359,7 @@ TOOLS = (
         "freezone_open_mainline_projection",
         _schema(
             "freezone_open_mainline_projection",
-            "Mainline -> canvas only. Open/map/project a mainline episode, beat, or asset into the user's personal Freezone canvas. This mirrors the frontend 虾画/虾画编辑 toolbar button: the frontend asks the user to confirm, then opens the projected canvas. Use this when the user asks to open/map mainline content into 虾画/Freezone; do not use slot-candidate tools for this direction, and do not use this tool to submit canvas nodes back to the mainline. If the user asks to map a category such as 人物/身份/肖像/场景/道具 but does not provide an exact asset name/id, first call freezone_get_mainline_projection_assets for that category, using asset_kind=character for all people/identity/portrait requests, then pass the selected candidate's projection_request to this tool.",
+            "Mainline -> canvas only. Open/map/project a mainline episode, beat, or asset into the user's personal Freezone canvas. This mirrors the frontend 造境/造境编辑 toolbar button: the frontend asks the user to confirm, then opens the projected canvas. Use this when the user asks to open/map mainline content into 造境/Freezone; do not use slot-candidate tools for this direction, and do not use this tool to submit canvas nodes back to the mainline. If the user asks to map a category such as 人物/身份/肖像/场景/道具 but does not provide an exact asset name/id, first call freezone_get_mainline_projection_assets for that category, using asset_kind=character for all people/identity/portrait requests, then pass the selected candidate's projection_request to this tool.",
             {
                 **_SCOPE_PROPS,
                 "scope": {

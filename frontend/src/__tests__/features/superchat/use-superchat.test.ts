@@ -987,7 +987,7 @@ describe("updateAssistantUiEvents", () => {
 });
 
 describe("normalizeMessage", () => {
-  it("strips internal DramaClaw context blocks from displayed text", () => {
+  it("strips internal AIGCDO context blocks from displayed text", () => {
     const normalized = normalizeMessage({
       id: "backend-user-1",
       role: "user",
@@ -1003,7 +1003,7 @@ file_1_filename: 她与她的江山.docx
     expect(normalized?.text).toBe("上传了哪些文件了");
   });
 
-  it("strips internal SuperTale canvas command blocks from displayed text", () => {
+  it("strips internal AIGCDO canvas command blocks from displayed text", () => {
     const normalized = normalizeMessage({
       id: "backend-user-2",
       role: "user",
@@ -1026,7 +1026,7 @@ This Freezone chat can change the current canvas by returning a JSON block.
       created_at: "2026-07-10T08:00:00Z",
     });
 
-    expect(normalized?.text).toBe("这轮操作没有收到虾导的有效回复，请稍后重试。");
+    expect(normalized?.text).toBe("这轮操作没有收到导台的有效回复，请稍后重试。");
   });
 
   it("preserves backend ui events for persisted canvas feedback", () => {
@@ -3119,7 +3119,7 @@ describe("Skill Studio draft response", () => {
       saved_recipe_ids: [],
     });
     expect(payload.message).toContain("用户已取消 Skill Studio 草稿保存");
-    expect(payload.message).toContain("本次草稿不会写入虾画配置");
+    expect(payload.message).toContain("本次草稿不会写入造境配置");
     expect(payload.message).toContain("不要重新提交");
     expect(payload.agent_instruction).toContain("Do not resubmit");
     expect(payload.agent_instruction).toContain("Do not call any Skill Studio");

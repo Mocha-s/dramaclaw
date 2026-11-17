@@ -1,6 +1,6 @@
 """Lightweight scene-world manifest for explicit scene-reference assets.
 
-This is not the DramaClaw DirectorWorld used for editable blocking. It is a
+This is not the AIGCDO DirectorWorld used for editable blocking. It is a
 small optional manifest kept for render prompt compatibility.
 The editable DirectorWorld lives under output/<project>/director_worlds/<scene_id>/.
 """
@@ -20,7 +20,7 @@ def _default_scene_world_payload(scene_dir: Path) -> dict[str, Any]:
         "source": "scene_reference_chain",
         "role": "style_reference_manifest",
         "director_world_note": (
-            "This file supports scene reference prompts only. DramaClaw DirectorWorld "
+            "This file supports scene reference prompts only. AIGCDO DirectorWorld "
             "is the editable geometry/camera source of truth."
         ),
         "view_index": [

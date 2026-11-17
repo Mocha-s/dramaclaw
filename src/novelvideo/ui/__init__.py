@@ -1,6 +1,6 @@
 """Deprecated NiceGUI UI package.
 
-SuperTale's supported UI is the React frontend backed by the REST API
+AIGCDO's supported UI is the React frontend backed by the REST API
 (`novelvideo.api.app:app`). The old NiceGUI implementation has been removed to
 prevent new product code from depending on it.
 """

@@ -154,7 +154,7 @@ export function KeyElementsBar({
         </div>
       ) : visibleKey.length > 0 ? (
         // hoverable 浮层承载「添加到对话」pill：TooltipContent 走 Portal，不受这条
-        // overflow-x-auto 裁剪；hover 缩略图即在其正上方浮出，点 pill 把该节点 @ 进虾导。
+        // overflow-x-auto 裁剪；hover 缩略图即在其正上方浮出，点 pill 把该节点 @ 进导台。
         <TooltipProvider delay={120}>
           <div className="flex items-start gap-3 overflow-x-auto">
             {visibleKey.map((item) => (
@@ -196,7 +196,7 @@ export function KeyElementsBar({
                   <button
                     type="button"
                     onClick={(event) => {
-                      // 不冒泡到缩略图：它的 onClick 会打开详情，这里只要把节点 @ 进虾导。
+                      // 不冒泡到缩略图：它的 onClick 会打开详情，这里只要把节点 @ 进导台。
                       event.stopPropagation();
                       addNodesToChat([item.nodeId]);
                     }}

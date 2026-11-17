@@ -58,7 +58,7 @@ const imageModelMocks = vi.hoisted(() => ({
 
 function getFreezoneComposerTextbox(): HTMLElement {
   return screen.getByRole("textbox", {
-    name: "想画什么、改哪里，直接告诉虾画",
+    name: "想画什么、改哪里，直接告诉造境",
   });
 }
 
@@ -78,8 +78,8 @@ vi.mock("react-i18next", async () => {
     t: (key: string, options?: Record<string, unknown>) => {
       if (localeState.language === "en") return enT(key, { defaultValue: key, ...options });
       const translations: Record<string, string> = {
-        "aiAssistant.placeholder": "写下灵感、剧情或任务，虾导来接住",
-        "aiAssistant.freezonePlaceholder": "想画什么、改哪里，直接告诉虾画",
+        "aiAssistant.placeholder": "写下灵感、剧情或任务，导台来接住",
+        "aiAssistant.freezonePlaceholder": "想画什么、改哪里，直接告诉造境",
         "aiAssistant.canvasReferenceOnlyPrompt": "请基于当前选中的画布节点继续。",
         "aiAssistant.send": "发送",
         "aiAssistant.queuedCount": "待发送 {{count}} 条",
@@ -300,7 +300,7 @@ describe("SuperChatPanel Freezone selection attachment state", () => {
     );
 
     expect(getFreezoneComposerTextbox()).toBeInTheDocument();
-    expect(screen.getByText("想画什么、改哪里，直接告诉虾画")).toBeInTheDocument();
+    expect(screen.getByText("想画什么、改哪里，直接告诉造境")).toBeInTheDocument();
   });
 
   it("renders Freezone-only header actions when provided", () => {
@@ -712,7 +712,7 @@ describe("SuperChatPanel Freezone selection attachment state", () => {
     const copyButton = screen.getByRole("button", { name: "复制" });
     // 工具条靠 top-full + mt-1 悬浮在气泡下方的消息间距里，容器不再用 hover:pb-10
     // 给它预留高度——hover 改高度会触发消息列表的 ResizeObserver，贴底时整条列表
-    // 会往上抖（见「消除虾导消息 hover 时列表跳动」）。
+    // 会往上抖（见「消除导台消息 hover 时列表跳动」）。
     expect(copyButton.parentElement).toHaveClass("absolute");
     expect(copyButton.parentElement).toHaveClass("top-full");
     expect(copyButton.parentElement).toHaveClass("mt-1");
@@ -1757,7 +1757,7 @@ describe("SuperChatPanel Freezone selection attachment state", () => {
       {
         id: "assistant-a",
         role: "assistant",
-        text: "这轮操作没有收到虾导的有效回复，请稍后重试。",
+        text: "这轮操作没有收到导台的有效回复，请稍后重试。",
         displayName: "Agent",
         timestamp: Date.now(),
         turnId: "turn-a",
@@ -1809,7 +1809,7 @@ describe("SuperChatPanel Freezone selection attachment state", () => {
       />,
     );
 
-    expect(screen.queryByText("这轮操作没有收到虾导的有效回复，请稍后重试。")).not.toBeInTheDocument();
+    expect(screen.queryByText("这轮操作没有收到导台的有效回复，请稍后重试。")).not.toBeInTheDocument();
     // Expired approvals are expanded by default so recovery is immediately visible.
     expect(await screen.findByRole("button", { name: "重新执行" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "重新执行" }));

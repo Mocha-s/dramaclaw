@@ -26,7 +26,7 @@ from pathlib import Path
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Record a human override on a trace row.")
-    parser.add_argument("project_dir", help="SuperTale project directory")
+    parser.add_argument("project_dir", help="AIGCDO project directory")
     parser.add_argument("--verdict", required=True, choices=["accept", "veto"])
     parser.add_argument("--reason", default="", help="Short free-text rationale")
     parser.add_argument("--actor", default="", help="Who is making the call (email / username)")

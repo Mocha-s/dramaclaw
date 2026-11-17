@@ -668,16 +668,16 @@ def _settings_db_path() -> Path:
     return Path(config.STATE_DIR) / "local" / "settings.db"
 
 
-def _aigcdo_rows() -> dict[str, str] | None:
-    """AIGCDO never reads the single-user store: its rows carry the scoped user's key."""
+def _aigcdo_user_view() -> bool:
+    """Under AIGCDO only the administrator reads and writes the stored settings as they are."""
     from novelvideo import aigcdo_model_runtime
 
-    return aigcdo_model_runtime.settings_rows() if aigcdo_model_runtime.active() else None
+    return aigcdo_model_runtime.active() and not aigcdo_model_runtime.admin()
 
 
-def _connect() -> sqlite3.Connection:
-    if _aigcdo_rows() is not None:
-        raise RuntimeError("legacy model gateway settings are disabled under AIGCDO")
+def _connect(*, user_read: bool = False) -> sqlite3.Connection:
+    if _aigcdo_user_view() and not user_read:
+        raise RuntimeError("model gateway settings are administrator-only under AIGCDO")
     path = _settings_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     for attempt in range(3):
@@ -717,13 +717,16 @@ def _connect() -> sqlite3.Connection:
 
 
 def _read_all() -> dict[str, str]:
-    rows = _aigcdo_rows()
-    if rows is not None:
-        return rows
-    conn = _connect()
+    conn = _connect(user_read=True)
     try:
         rows = conn.execute("SELECT key, value FROM runtime_settings").fetchall()
-        return {str(row["key"]): str(row["value"]) for row in rows}
+        stored = {str(row["key"]): str(row["value"]) for row in rows}
+        if _aigcdo_user_view():
+            from novelvideo import aigcdo_model_runtime
+
+            # Users never see the administrator's keys: gateway groups carry their own.
+            return aigcdo_model_runtime.user_rows(stored)
+        return stored
     finally:
         conn.close()
 
@@ -759,7 +762,7 @@ def _write_many(values: dict[str, str]) -> None:
 
 def _migrate_third_party_gateway_settings() -> None:
     """Atomically migrate legacy gateway settings without deleting their source."""
-    if not _uses_ce_gateway_settings() or _aigcdo_rows() is not None:
+    if not _uses_ce_gateway_settings() or _aigcdo_user_view():
         return
     conn = _connect()
     try:

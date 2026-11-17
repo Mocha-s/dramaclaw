@@ -1,7 +1,7 @@
-"""Sign the BrainClaw Control Context for a DramaClaw request.
+"""Sign the BrainClaw Control Context for a AIGCDO request.
 
 BrainClaw cannot derive which trajectory or project a request belongs to, and that
-identity cannot be reconstructed afterwards, so DramaClaw states it here. The
+identity cannot be reconstructed afterwards, so AIGCDO states it here. The
 grouping IDs are HMACs of DramaClaw-side identifiers: BrainClaw only ever
 compares them for equality and never learns the underlying project, session or
 user.

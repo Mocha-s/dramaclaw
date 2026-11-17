@@ -49,6 +49,8 @@ def deployment_env(monkeypatch, tmp_path):
         monkeypatch.delenv(name, raising=False)
     for name, value in values.items():
         monkeypatch.setenv(name, value)
+    monkeypatch.setenv("AIGCDO_ADMIN_USERNAME", "operator")
+    monkeypatch.setenv("AIGCDO_ADMIN_PASSWORD", "operator-test-password")
     for name in ("OUTPUT_DIR", "STATE_DIR", "RUNTIME_DIR"):
         monkeypatch.setattr(config, name, str(tmp_path / name.lower()))
     registry._PORTS.clear()
@@ -122,7 +124,7 @@ async def composed_app(deployment_env, monkeypatch):
 @pytest.mark.parametrize("name", [
     "AIGCDO_APP_ORIGIN", "AIGCDO_STATE_DIR", "AIGCDO_ENCRYPTION_KEY",
     "AIGCDO_APPLICATION_GROUP_ID", "AIGCDO_CREDITS_PER_USD",
-    "AIGCDO_CREDIT_DECIMALS", "AIGCDO_CREDIT_POLICY_VERSION", "AIGCDO_MODEL_CATALOG",
+    "AIGCDO_CREDIT_DECIMALS", "AIGCDO_CREDIT_POLICY_VERSION",
 ])
 def test_missing_config_refuses_boot_without_local_fallback(deployment_env, monkeypatch, name):
     monkeypatch.delenv(name)
@@ -311,8 +313,9 @@ async def test_old_global_management_and_unwired_execution_cannot_run(composed_a
         response = await client.post(path, json={})
         assert response.status_code == 503
         assert response.json()["code"] == "aigcdo_integration_pending"
+    # A gateway account with the admin role is not the operator administrator.
     await login(client, "admin@example.test")
-    assert (await client.put("/api/v1/model-gateway/mode", json={"mode": "custom"})).status_code == 410
+    assert (await client.get("/api/v1/model-gateway/config")).status_code == 403
     assert all("/v1/chat/completions" not in path for _, path in remote.requests)
 
 
@@ -584,7 +587,7 @@ def test_cold_process_boots_after_cognee_config_import(deployment_env, tmp_path)
 
 
 def test_operator_embedding_endpoint_is_independent_of_the_user_key(deployment_env, monkeypatch):
-    from novelvideo import aigcdo_model_runtime
+    from novelvideo import aigcdo_model_runtime, model_gateway_settings
     from novelvideo.embedding_models import (
         embedding_gateway_credentials, embedding_gateway_model, embedding_model_binding_for_new_project,
     )
@@ -617,7 +620,7 @@ def test_operator_embedding_endpoint_is_independent_of_the_user_key(deployment_e
     assert (routed["model"], routed["api_base"]) == ("openai/BAAI/bge-m3", "https://embed.example.test/v1")
     # The operator key never rides in the per-user rows that feed every other capability.
     with aigcdo_model_runtime.user_key_scope("sk-user-a"):
-        assert "sk-operator-embedding" not in json.dumps(aigcdo_model_runtime.settings_rows())
+        assert "sk-operator-embedding" not in json.dumps(model_gateway_settings._read_all())
 
 
 @pytest.mark.parametrize("env", [
@@ -809,3 +812,81 @@ async def test_request_paths_have_no_organization_egress_identity(composed_app):
     assert await build_request_egress_context(
         requester_user_id=user["id"], project_id="p", task_type="chat",
     ) is None
+
+
+def test_administrator_settings_reach_users_with_their_own_key(deployment_env):
+    from novelvideo import aigcdo_model_runtime, model_gateway_settings as settings
+    from novelvideo.config import get_effective_newapi_gateway_config
+    from novelvideo.embedding_models import embedding_gateway_credentials, embedding_model_binding_for_new_project
+
+    create_app()
+    mapping = [{"requestPattern": "*", "upstreamModel": "m"}]
+    with aigcdo_model_runtime.admin_scope():
+        settings.save_third_party_gateway_groups([
+            {"id": "gw", "name": "gw", "protocol": "openai", "baseUrl": "https://api.aigcdo.top",
+             "apiKey": "sk-admin-listing", "capabilities": ["image"],
+             "modelMappings": [{"requestPattern": "admin-image", "upstreamModel": "admin-image"}]},
+            {"id": "foreign", "name": "foreign", "protocol": "openai", "baseUrl": "https://other.example/v1",
+             "apiKey": "sk-admin-foreign", "capabilities": ["video"],
+             "modelMappings": [{"requestPattern": "foreign-video", "upstreamModel": "foreign-video"}]},
+            {"id": "embed", "name": "embed", "protocol": "openai", "baseUrl": "https://embed.example/v1",
+             "apiKey": "sk-admin-embed", "capabilities": ["embedding"],
+             "modelMappings": [{"requestPattern": "bge", "upstreamModel": "bge"}]},
+        ], activate=True)
+        settings.save_capability_defaults(embedding_group_id="embed", embedding_model="bge")
+        # The administrator works with the stored settings as they are.
+        assert [g["apiKey"] for g in settings.get_third_party_gateway_groups()][0] == "sk-admin-listing"
+    del mapping
+    with aigcdo_model_runtime.user_key_scope("sk-user-a"):
+        image = get_effective_newapi_gateway_config(capability="image", model="admin-image")
+        assert (image.api_key, image.base_url) == ("sk-user-a", "https://api.aigcdo.top/v1")
+        # Media on someone else's endpoint would run on the operator's key for every user.
+        assert get_effective_newapi_gateway_config(capability="video", model="foreign-video").api_key == ""
+        rows = json.dumps(settings._read_all())
+        assert "sk-admin-listing" not in rows and "sk-admin-foreign" not in rows
+        assert embedding_gateway_credentials(embedding_model_binding_for_new_project()) == (
+            "sk-admin-embed", "https://embed.example/v1")
+        with pytest.raises(RuntimeError):
+            settings.save_capability_defaults(embedding_group_id="embed", embedding_model="bge")
+
+
+async def test_operator_administrator_configures_but_never_generates(composed_app):
+    _, client, _ = composed_app
+    admin = {"username": "operator", "password": "operator-test-password"}
+    assert (await client.get("/api/v1/admin/session")).status_code == 401
+    assert (await client.post("/api/v1/auth/admin/login", json={**admin, "password": "wrong-password-1"})).status_code == 401
+    assert (await client.post("/api/v1/auth/admin/login", json=admin, headers={"Origin": "https://evil.example"})).status_code == 403
+    assert (await client.post("/api/v1/auth/admin/login", json=admin)).status_code == 200
+    assert (await client.get("/api/v1/admin/session")).json()["data"] == {"username": "operator"}
+    # The single-user settings routes, unchanged, are the administrator's.
+    assert (await client.get("/api/v1/model-gateway/config")).status_code == 200
+    assert (await client.get("/api/v1/config/task-limits")).status_code == 200
+    # No gateway account behind it: nothing outside the admin area.
+    assert (await client.get("/api/v1/projects")).status_code == 401
+    assert (await client.get("/api/v1/account/billing/balance")).status_code == 401
+
+    assert (await client.put("/api/v1/admin/credits", json={"credits_per_usd": "0", "decimals": 2})).status_code == 400
+    assert (await client.put("/api/v1/admin/credits", json={"credits_per_usd": "1000", "decimals": 0})).status_code == 200
+    item = {"id": "a1", "title": "维护通知", "body": "今晚维护", "pinned": True, "published_at": "2026-11-18T10:00:00+08:00"}
+    assert (await client.put("/api/v1/admin/announcements", json={"items": [item, item]})).status_code == 400
+    assert (await client.put("/api/v1/admin/announcements", json={"items": [item]})).status_code == 200
+    assert (await client.post("/api/v1/auth/admin/logout")).status_code == 200
+    client.cookies.clear()
+
+    public = (await client.get("/api/v1/announcements")).json()["data"]["announcements"]
+    assert public[0]["i18n"]["zh"]["title"] == "维护通知" and public[0]["pinned"] is True
+    await login(client)
+    assert (await client.get("/api/v1/account/billing/balance")).json()["data"]["available_credits"] == "12500"
+    for method, path in (("GET", "/api/v1/admin/credits"), ("PUT", "/api/v1/admin/announcements"),
+                         ("GET", "/api/v1/model-gateway/config")):
+        assert (await client.request(method, path, json={})).status_code == 403
+
+
+@pytest.mark.parametrize("env", [
+    {"AIGCDO_ADMIN_PASSWORD": ""}, {"AIGCDO_ADMIN_USERNAME": ""}, {"AIGCDO_ADMIN_PASSWORD": "short"},
+])
+def test_half_configured_or_weak_administrator_refuses_boot(deployment_env, monkeypatch, env):
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    with pytest.raises(RuntimeError, match="Invalid AIGCDO deployment configuration"):
+        create_app()

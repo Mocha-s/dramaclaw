@@ -2,7 +2,7 @@
 
 These tests intentionally distinguish the two boundaries involved here:
 
-* DramaClaw business and canvas access is MCP-only.
+* AIGCDO business and canvas access is MCP-only.
 * The Codex runtime is not an MCP-only file reader: it receives a workspace cwd
   and may read managed bootstrap files. Native mutation and command surfaces
   must therefore remain disabled and the runtime sandbox must stay read-only.
@@ -142,7 +142,7 @@ async def test_every_codex_thread_is_deny_all_and_read_only(monkeypatch, tmp_pat
         env={},
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=(),
         thread_config={"mcp_servers.dramaclaw.required": True},
         turn_metadata={},

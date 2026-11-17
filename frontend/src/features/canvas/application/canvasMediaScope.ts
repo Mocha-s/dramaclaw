@@ -13,7 +13,7 @@ import type { CanvasNodeData } from '@/features/canvas/domain/canvasNodes';
  * 保存被后端 `canvas_media_scope_mismatch` 拒绝之后的自愈。
  *
  * 静态资源按 URL 里的项目 id 独立鉴权，所以一张画布不能存别的项目的媒体地址：源项目
- * 成员看着一切正常，换个同样合法的本项目成员打开就是整片 403（SuperTale#192）。后端
+ * 成员看着一切正常，换个同样合法的本项目成员打开就是整片 403（AIGCDO#192）。后端
  * 因此在 PUT 时拦下**本次新引入**的外项目引用，并回一份 `refs` 清单（节点 id + 字段
  * 路径 + 原 URL）。
  *

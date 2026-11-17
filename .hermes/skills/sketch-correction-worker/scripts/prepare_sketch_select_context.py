@@ -17,7 +17,7 @@ from novelvideo.verification.sketch_select_context import prepare_sketch_select_
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare local-first sketch select context.")
-    parser.add_argument("project_dir", help="SuperTale project directory, e.g. output/admin/new")
+    parser.add_argument("project_dir", help="AIGCDO project directory, e.g. output/admin/new")
     parser.add_argument("--episode-num", type=int, required=True, help="Episode number")
     parser.add_argument(
         "--output",

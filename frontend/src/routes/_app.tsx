@@ -272,7 +272,7 @@ function AppLayout() {
               </main>
               {/* 必须挂在被 re-key 的 motion.div 外面：key 里带着 $section，
                   放进去就等于每次切换重建一遍画布，保活也就没了意义。作为
-                  <main> 的后继兄弟绝对定位，在虾画时正好盖住它。 */}
+                  <main> 的后继兄弟绝对定位，在造境时正好盖住它。 */}
               <FreezoneCanvasHost />
               {routeSwitchPending ? (
                 <div

@@ -40,7 +40,7 @@
       "const": "freezone_workflow_plan.v1"
     }
   },
-  "title": "DramaClaw Workflow stable MCP contract",
+  "title": "AIGCDO Workflow stable MCP contract",
   "type": "object",
   "x-source-sha256": "a9e877b2e5d34570fbd4a5c41e54ddfd25f4fa130d1cac9711f1bab5993c3c9e"
 }

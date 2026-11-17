@@ -211,7 +211,7 @@ describe("director episode auto mode", () => {
     expect(resolveDirectorVoicePolicy("使用系统声线继续")).toBe("system");
     expect(resolveDirectorVoicePolicy("系统声一")).toBe("system");
     expect(resolveDirectorVoicePolicy("使用系统声音")).toBe("system");
-    expect(resolveDirectorVoicePolicy("我去虾塘上传或录制")).toBe("custom");
+    expect(resolveDirectorVoicePolicy("我去片场上传或录制")).toBe("custom");
     expect(resolveDirectorVoicePolicy("使用自定义声音")).toBe("custom");
     expect(resolveDirectorVoicePolicy("你说系统还是自定义？")).toBeNull();
   });

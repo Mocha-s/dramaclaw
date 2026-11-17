@@ -8,7 +8,7 @@ sign something the Gateway never receives.
 
 Two keys with different lifetimes are used, and they are never the same file:
 
-* the *signing* key proves the envelope came from DramaClaw and rotates freely;
+* the *signing* key proves the envelope came from AIGCDO and rotates freely;
   it is shared with BrainClaw through the identical keyring JSON the Go
   verifier loads, so the two ends cannot drift on encoding.
 * the *grouping* key mints the opaque trajectory/project IDs and must outlive
@@ -62,7 +62,7 @@ class ControlContextScope:
     """The DramaClaw-side identity of the work a request belongs to.
 
     ``trajectory_id`` and ``project_id`` are raw internal identifiers. They are
-    hashed here, in DramaClaw, and are never sent as-is. Only a process that
+    hashed here, in AIGCDO, and are never sent as-is. Only a process that
     holds the grouping key may use this form.
     """
 
@@ -76,7 +76,7 @@ class ControlContextScope:
 class OpaqueControlContextScope:
     """The same identity, already pseudonymised by whoever owns the grouping key.
 
-    This is the form a signer outside DramaClaw receives. It exists so the
+    This is the form a signer outside AIGCDO receives. It exists so the
     grouping key never has to leave DramaClaw: a downstream signer can prove an
     envelope came from us without being able to derive, or reverse, any group
     id. ``grouping_key_epoch`` travels with the ids because the deriving side,
@@ -122,7 +122,7 @@ class ControlContextRuntime:
 
         ``grouping_key_path`` is optional on purpose. A signer that only ever
         receives ``OpaqueControlContextScope`` — anything running outside
-        DramaClaw — must be able to start without the grouping key, because
+        AIGCDO — must be able to start without the grouping key, because
         holding it would let that process derive or correlate group ids. When
         it is absent, raw scopes are refused rather than silently mishandled.
         """

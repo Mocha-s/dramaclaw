@@ -1,1 +1,1 @@
-"""Storage helpers for SuperTale runtime integrations."""
+"""Storage helpers for AIGCDO runtime integrations."""

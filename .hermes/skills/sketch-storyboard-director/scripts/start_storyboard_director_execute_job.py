@@ -20,7 +20,7 @@ from _api_runtime import api_enabled, start_edit_execute_via_api  # noqa: E402
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Start storyboard director execute job.")
-    parser.add_argument("project_dir", help="SuperTale project directory, e.g. output/admin/new")
+    parser.add_argument("project_dir", help="AIGCDO project directory, e.g. output/admin/new")
     parser.add_argument("--episode-num", type=int, required=True, help="Episode number")
     parser.add_argument("--labels-name", default="storyboard_labels.jsonl")
     return parser.parse_args()

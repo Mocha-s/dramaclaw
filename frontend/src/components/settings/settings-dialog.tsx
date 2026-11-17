@@ -1189,7 +1189,7 @@ function CapabilityModelDefaultsBlock({ config }: { config: ModelGatewayConfig |
         {t("settings.modelConfig.capabilityDefaults.title", { defaultValue: "能力默认模型" })}
       </h4>
       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-        {t("settings.modelConfig.capabilityDefaults.description", { defaultValue: "虾集文本和视觉功能共用文本网关模型；Embedding 和媒体模型从已配置的第三方组读取。" })}
+        {t("settings.modelConfig.capabilityDefaults.description", { defaultValue: "藏境文本和视觉功能共用文本网关模型；Embedding 和媒体模型从已配置的第三方组读取。" })}
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <CapabilityDefaultRow

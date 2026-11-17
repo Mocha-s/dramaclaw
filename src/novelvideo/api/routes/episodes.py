@@ -258,7 +258,7 @@ async def list_episodes(project: str, user: dict = Depends(get_api_user)):
 
     # 裸 factory 把关闭责任丢给调用点，而这里正常返回和抛错两条路都没有 close()——
     # 每个 SQLiteStore 背后是一条 aiosqlite 连接加一个后台线程，按请求数累积。
-    # 本 PR 给这个路由加了 beat_count 之后它是分集列表的唯一数据源，进一次虾镜就走
+    # 本 PR 给这个路由加了 beat_count 之后它是分集列表的唯一数据源，进一次镜界就走
     # 一次，泄漏更明显。
     store_scope = (
         sqlite_store_for_context_scope(resolved.ctx)

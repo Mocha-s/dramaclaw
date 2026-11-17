@@ -303,8 +303,8 @@ export function Header({ ambientBackground = false }: { ambientBackground?: bool
   };
 
   return (
-    // marginRight：自由画布的虾导抽屉打开时是一块通屏高的浮层，会盖住顶栏右侧。
-    // 顶栏整条往左收，右上角那组入口（设置/通知/伙伴/算力/头像）与中间的 虾画/虾集
+    // marginRight：自由画布的导台抽屉打开时是一块通屏高的浮层，会盖住顶栏右侧。
+    // 顶栏整条往左收，右上角那组入口（设置/通知/伙伴/算力/头像）与中间的 造境/藏境
     // 就跟着往左靠，仍然可见可点（对标 liblib）。抽屉没开时变量不存在 → 0px，原样。
     <div
       className={`relative z-20 shrink-0 text-sidebar-foreground ${

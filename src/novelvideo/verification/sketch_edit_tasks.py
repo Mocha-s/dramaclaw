@@ -1,4 +1,4 @@
-"""Prepare episode-level sketch edit teacher tasks from a SuperTale project."""
+"""Prepare episode-level sketch edit teacher tasks from a AIGCDO project."""
 
 from __future__ import annotations
 

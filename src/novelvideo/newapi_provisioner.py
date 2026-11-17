@@ -940,7 +940,7 @@ def build_channel_payload(
             other_settings or {}, ensure_ascii=False, separators=(",", ":")
         ),
         "other": "",
-        "remark": f"created by DramaClaw CE provisioner for {provider_label}",
+        "remark": f"created by AIGCDO CE provisioner for {provider_label}",
     }
     if not channel["key"] and provider_key != "comfyui":
         raise ValueError("upstreamKey is required")

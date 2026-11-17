@@ -150,12 +150,12 @@ def test_export_bundle_api_returns_skill_with_recipes(bundle_client: TestClient)
 
 def test_bundle_api_round_trips_structured_legal_metadata(bundle_client: TestClient) -> None:
     legal = {
-        "copyright": "2026 SuperTale contributors",
+        "copyright": "2026 AIGCDO contributors",
         "license": {
             "id": "Elastic-2.0",
             "text": "Elastic License 2.0 terms.",
         },
-        "notice": "DramaClaw trademark rights are reserved.",
+        "notice": "AIGCDO trademark rights are reserved.",
     }
     install = bundle_client.post(
         "/api/v1/freezone/agent-config/bundles:install",

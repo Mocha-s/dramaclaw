@@ -227,7 +227,7 @@ export function useImageGenerationForm(
     );
   }, [data.model, availableModels]);
   const modelId = selectedModel?.id ?? '';
-  // 虾集的分辨率档位是统一产品选项，不随当前 catalog 模型筛选；
+  // 藏境的分辨率档位是统一产品选项，不随当前 catalog 模型筛选；
   // 对模型不支持的选项由上游返回错误并保留到任务日志。
   const modelSizeOptions: readonly string[] = [...FREEZONE_IMAGE_RESOLUTIONS];
   const modelAspectOptions = useMemo(() => {

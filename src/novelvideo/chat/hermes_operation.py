@@ -8,7 +8,7 @@ for a credential that failed to decrypt. Every successful turn stayed
 Two rules shape everything here.
 
 **Only a proof of non-submission may say "rejected".** Once the prompt has been
-written to the ACP stream, DramaClaw cannot know whether Hermes reached the
+written to the ACP stream, AIGCDO cannot know whether Hermes reached the
 gateway, so anything after that point is ``unknown``. That makes ``unknown``
 more common than intuition suggests, which is the honest outcome: an operation
 that might have spent money must not be recorded as one that certainly did not.

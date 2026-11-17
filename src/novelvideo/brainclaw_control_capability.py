@@ -1,9 +1,9 @@
-"""Issue the short-lived capability Hermes carries to the DramaClaw Gateway.
+"""Issue the short-lived capability Hermes carries to the AIGCDO Gateway.
 
 This is a *different* envelope from the BrainClaw Control Context, on a
 different hop:
 
-    DramaClaw --capability--> Gateway --control context--> BrainClaw
+    AIGCDO --capability--> Gateway --control context--> BrainClaw
 
 The distinction that matters: the Control Context is bound to one exact request
 (method, path, body digest), because the Gateway mints it once the outbound
@@ -21,7 +21,7 @@ replay it until it expires. Everything below follows from that:
 Trusted mode uses no shared signing key. Verified mode retains the original
 two-signature protocol for deployments that need cryptographic caller
 authentication. In both modes the local grouping key never appears here:
-DramaClaw derives opaque ids and the envelope carries only those results.
+AIGCDO derives opaque ids and the envelope carries only those results.
 
 The trust decision is made by the paired Claymore channel, never by this
 header alone. Claymore channels default to ``off``; only an administrator may

@@ -106,7 +106,7 @@ describe('添加到对话（画布节点 / 故事板共用入口）', () => {
     expect(onLocate).not.toHaveBeenCalled();
   });
 
-  // 落地半边（事件 → 虾导 draft 追加 @[名](id) 行内 chip）改由
+  // 落地半边（事件 → 导台 draft 追加 @[名](id) 行内 chip）改由
   // freezone-node-suggestions.test.ts 的 appendFreezoneNodeMentions 单测覆盖。
 
   describe('故事板详情头部', () => {

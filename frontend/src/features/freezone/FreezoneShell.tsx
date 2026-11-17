@@ -182,7 +182,7 @@ interface FreezoneShellProps {
   project: SupertaleProjectSummary;
   canvasId: string;
   /**
-   * 画布是否是当前正在看的页面。顶栏切到「虾集」时宿主不再卸载本组件，只把
+   * 画布是否是当前正在看的页面。顶栏切到「藏境」时宿主不再卸载本组件，只把
    * active 置 false（见 FreezoneCanvasHost）——保活换来的是切换不掉帧，代价是
    * 得手动交出那些「只有前台该做」的事：全局快捷键（透传成 Canvas 的
    * suspended）和两条轮询。默认 true，让直接挂载 FreezoneShell 的调用方
@@ -225,7 +225,7 @@ const FREEZONE_CHAT_MIN_BOARD_CONTENT_WIDTH = 680;
 const CHAT_PANE_WIDTH_VAR = "--freezone-chat-pane-width";
 const AGENT_HISTORY_PANE_WIDTH_VAR = "--freezone-agent-history-pane-width";
 /**
- * 虾导两种摆法：停靠右侧（通高抽屉，顶栏等据 --freezone-dock-width 让位）或浮窗
+ * 导台两种摆法：停靠右侧（通高抽屉，顶栏等据 --freezone-dock-width 让位）或浮窗
  * （圆角悬浮窗压在内容上，可拖动，谁也不挤）。用户在聊天头部切换，偏好存本地。
  */
 type FreezoneChatDockMode = "docked" | "floating";
@@ -319,7 +319,7 @@ function storeChatFloatPos(pos: { right: number; top: number }): void {
 }
 
 /**
- * 虾画 agent 的开合状态：持久化到 localStorage，刷新/重进画布后恢复，避免工作流中
+ * 造境 agent 的开合状态：持久化到 localStorage，刷新/重进画布后恢复，避免工作流中
  * 一刷新就丢掉已打开的对话。key 同样避开 `supertale-` 前缀（会被 reset-region-state
  * 的清扫误删）——开合只是 UI 偏好，跨区域保留没问题。
  */
@@ -934,7 +934,7 @@ function stringOrUndefined(value: unknown): string | undefined {
 }
 
 /**
- * Mounts the shared xyflow canvas inside the SuperTale Beat Workbench shell.
+ * Mounts the shared xyflow canvas inside the AIGCDO Beat Workbench shell.
  * Canvas switching lives inside the left AssetLibraryPanel (主线资产 / 画布 tabs).
  * Commit still lives on eligible canvas nodes. Sync status is
  * intentionally not shown — `useCanvasSync` still loads + persists via
@@ -1019,8 +1019,8 @@ export function FreezoneShell({
   const syncingProjectionRef = useRef<string | null>(null);
   const removingProjectionRef = useRef<string | null>(null);
   const emittedExternalCanvasCommandKeysRef = useRef<Set<string>>(new Set());
-  // 顶栏在「虾画 / 虾集」之间切换会整体卸载再挂载本组件，但画布数据留在全局 store 里。
-  // 如果这里从 false 起步，回到虾画就会先把画面换成「正在加载画布…」，等 hydrate 回来
+  // 顶栏在「造境 / 藏境」之间切换会整体卸载再挂载本组件，但画布数据留在全局 store 里。
+  // 如果这里从 false 起步，回到造境就会先把画面换成「正在加载画布…」，等 hydrate 回来
   // 才重新画出来 —— 看着就是卡。同一个画布重进时直接渲染 store 里的既有内容，
   // hydrate 期间只叠一层轻量 overlay。
   //
@@ -1079,7 +1079,7 @@ export function FreezoneShell({
     (mode: FreezoneViewMode) => {
       if (mode === "board") {
         setBoardMounted(true);
-        // 进入故事板默认展开虾导，便于直接对着素材开聊。
+        // 进入故事板默认展开导台，便于直接对着素材开聊。
         setChatOpen(true);
       }
       setViewMode(mode);
@@ -1231,7 +1231,7 @@ export function FreezoneShell({
   const handleBlankPaneClick = useCallback(() => {
     setAssetPanelCollapsed(true);
     setDebugPanelOpen(false);
-    // 点画布空白不再自动关闭虾画 agent：用户要求它只能靠面板右上角的关闭按钮
+    // 点画布空白不再自动关闭造境 agent：用户要求它只能靠面板右上角的关闭按钮
     // （onOpenChange(false)）手动关，避免工作流中误点空白就丢掉对话。
   }, []);
 
@@ -1243,10 +1243,10 @@ export function FreezoneShell({
     prefetchFreezoneVideoCameraTemplates(projectId);
   }, [projectId]);
 
-  // 依赖里带 active，是因为离开虾画时地址栏的 ?canvas= 会跟着路由一起没掉，而
+  // 依赖里带 active，是因为离开造境时地址栏的 ?canvas= 会跟着路由一起没掉，而
   // 保活之后 canvasId / projectId 都是钉住不变的 —— 切回来这个 effect 不会重跑，
   // 结果就是屏幕上开着某张画布，地址栏却是光秃秃的 /freezone，复制出去的链接
-  // 打不开这张画布。非激活时直接跳过：那会儿地址栏归虾集管。
+  // 打不开这张画布。非激活时直接跳过：那会儿地址栏归藏境管。
   useEffect(() => {
     if (!active) return;
     rememberLastCanvas(projectId, canvasId);
@@ -1273,8 +1273,8 @@ export function FreezoneShell({
 
   useEffect(() => {
     if (!mcpDirectCanvasApplyEnabled()) return;
-    // 在虾集时不轮询：保活期间画布没人看，没必要为它占着请求配额。
-    // `active` 在依赖里，切回虾画会重跑本 effect —— 末尾那次立即调用就顺带
+    // 在藏境时不轮询：保活期间画布没人看，没必要为它占着请求配额。
+    // `active` 在依赖里，切回造境会重跑本 effect —— 末尾那次立即调用就顺带
     // 补上了「离开这段时间里画布有没有被别处改过」的新鲜度检查。以前靠整体
     // 重新挂载触发 hydrate 来保证这件事，保活之后这里是唯一的补偿点。
     if (!active) return;
@@ -1373,7 +1373,7 @@ export function FreezoneShell({
     sync.revision,
     sync.status,
   ]);
-  // 从虾集切回虾画时补一次投影状态。下面那个拉取 effect 用
+  // 从藏境切回造境时补一次投影状态。下面那个拉取 effect 用
   // (canvasId, revision, refreshToken) 去重，光把 `active` 加进它的依赖并不会
   // 真的重新拉；推一下 token 才是它认的信号。只在 false → true 这一沿触发，
   // 避免每次依赖变化都多打一发请求。
@@ -1679,7 +1679,7 @@ export function FreezoneShell({
   // 画布节点 / 故事板卡片、详情头部的「添加到对话」——两个视图是同一份节点数据的
   // 两种投影，所以入口只发事件，落地统一收在这里（追加行内 mention + 展开聊天），
   // 避免两边各写一套后行为漂移。和 @ 菜单同一套模型：不选中画布节点、不出引用条，
-  // 而是把 @[节点名](id) 行内 chip 插进虾导 draft（drain 见 SuperChatPanel）。
+  // 而是把 @[节点名](id) 行内 chip 插进导台 draft（drain 见 SuperChatPanel）。
   // 过滤画布上已不存在的 id：全是幽灵就不展开聊天。
   useEffect(() => {
     return canvasEventBus.subscribe("freezone/add-nodes-to-chat", ({ nodeIds }) => {
@@ -2176,8 +2176,8 @@ export function FreezoneShell({
               canvasId={canvasId}
               onBlankPaneClick={handleBlankPaneClick}
               controlsPlacement="bottom-right"
-              // 保活到虾集时也算 suspended：Canvas 的 6 处 window/document 键盘
-              // 监听（含 capture 阶段）都读这个开关，否则在虾集的输入框里打字会
+              // 保活到藏境时也算 suspended：Canvas 的 6 处 window/document 键盘
+              // 监听（含 capture 阶段）都读这个开关，否则在藏境的输入框里打字会
               // 被画布快捷键截走。
               suspended={!active || viewMode === "board" || Boolean(htmlTarget)}
             />
@@ -2246,7 +2246,7 @@ export function FreezoneShell({
             <AssetBoardView
               // 必须带上 active：故事板保活用的是 `visibility: visible`
               // （AssetBoardView.tsx:435），会穿透宿主容器上的 invisible ——
-              // 不接这个开关，故事板视图下切到虾集，它会浮在虾集页面上。
+              // 不接这个开关，故事板视图下切到藏境，它会浮在藏境页面上。
               // 顺带也停掉它对 canvas store 的订阅和媒体播放（paused={!visible}）。
               visible={active && viewMode === "board" && !htmlTarget}
               onLocateNode={handleLocateNode}
@@ -2260,7 +2260,7 @@ export function FreezoneShell({
 
               left-4：对齐故事板内容区的 px-4 左内边距，两个视图切来切去开关不跳位；
               工作流态那侧素材抽屉的把手/卡片已下移让开这条顶部窄带（AssetLibraryPanel）。
-              选中态样式仍对齐头部「虾画/虾集」产品切换（project-header-navigation.tsx
+              选中态样式仍对齐头部「造境/藏境」产品切换（project-header-navigation.tsx
               的 ProjectHeaderNavigation）：手写胶囊 + 滑块，滑块宽度跟着按钮收成 44px。
               容器底色沿用硬编码 #262626（与故事板背景同色），圆角按 10px 走圆角矩形。 */}
           {!showBlockingLoading && !htmlTarget && (
@@ -2324,9 +2324,9 @@ export function FreezoneShell({
             open={chatOpen}
             onOpenChange={handleChatOpenChange}
             // 抽屉会往 <html> 上广播 --freezone-dock-width，顶栏 / 任务状态条 / 任务
-            // 面板据此整条往左收。以前离开虾画会整棵卸载、effect 清理顺手把变量删掉；
-            // 保活之后没人卸载，虾集的顶栏就一直挂着虾导抽屉的让位量（顶栏被挤窄、
-            // 虾画·虾集 与右上角那组入口整体左移）。所以非激活时按「抽屉没开」广播。
+            // 面板据此整条往左收。以前离开造境会整棵卸载、effect 清理顺手把变量删掉；
+            // 保活之后没人卸载，藏境的顶栏就一直挂着导台抽屉的让位量（顶栏被挤窄、
+            // 造境·藏境 与右上角那组入口整体左移）。所以非激活时按「抽屉没开」广播。
             hostActive={active}
             // 故事板：抽屉挤占左侧内容宽度（对标 liblib）；工作流：浮在画布上，
             // 画布视口不受影响（否则每次开合聊天都会让 ReactFlow 重排一次视口）。
@@ -3236,7 +3236,7 @@ function formatAgentHistoryTime(timestamp: number): string {
 }
 
 /**
- * 虾导入口的位置（相对容器右下角的 right/bottom 偏移，px）。
+ * 导台入口的位置（相对容器右下角的 right/bottom 偏移，px）。
  * 注意 key 不用 `supertale-` 前缀——那个前缀会被 reset-region-state 的
  * localStorage 清扫误删；这只是个 UI 位置偏好，跨区域保留没问题。
  */

@@ -1231,7 +1231,7 @@ function buildCanvasCommandCatalog(canvasId: string): Record<string, unknown> {
             optional: ["project_id"],
             field_notes: {
               request:
-                "Open an episode/beat/asset mainline preset in the user's personal Freezone canvas through the same frontend path as the 虾画 toolbar button. Requires user confirmation before execution.",
+                "Open an episode/beat/asset mainline preset in the user's personal Freezone canvas through the same frontend path as the 造境 toolbar button. Requires user confirmation before execution.",
               "request.scope": "episode, beat, or asset.",
               "request.episode": "Required for episode and beat scopes.",
               "request.beat": "Required for beat scope.",

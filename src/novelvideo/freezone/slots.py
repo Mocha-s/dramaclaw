@@ -1,4 +1,4 @@
-"""Canonical SuperTale asset slots used by Freezone commits.
+"""Canonical AIGCDO asset slots used by Freezone commits.
 
 A slot is not a canvas node and not a recipe. It is the controlled canonical
 write target shared by the main pipeline and Freezone's Commit to Asset flow.

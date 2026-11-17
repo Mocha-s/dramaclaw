@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
-// SuperTale project-scoped task endpoints — read task state, subscribe to SSE.
+// AIGCDO project-scoped task endpoints — read task state, subscribe to SSE.
 //
-// We use native EventSource because SuperTale auth is cookie-based and
+// We use native EventSource because AIGCDO auth is cookie-based and
 // HttpOnly cookies are sent on the EventSource handshake automatically
 // (no header needed). If the cookie is missing/expired, the stream returns
 // a 401 immediately and we surface that to the caller.
@@ -128,7 +128,7 @@ export async function getTaskByKey(
   projectId: string,
   episode: number = 0,
 ): Promise<TaskState | null> {
-  // SuperTale's per-task GET is keyed by (task_type, project_id, episode);
+  // AIGCDO's per-task GET is keyed by (task_type, project_id, episode);
   // for freezone we keep episode=0 and scope-search via the SSE stream
   // for the specific job_id.
   try {

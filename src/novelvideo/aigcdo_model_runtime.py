@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
 GATEWAY_ORIGIN = "https://api.aigcdo.top"
 CATALOG_ENV = "AIGCDO_MODEL_CATALOG"
@@ -36,6 +37,21 @@ _DEFAULT_FIELDS = {"textGroupId", "textModel", "textReasoningEffort"}
 EMBEDDING_ENV = ("AIGCDO_EMBEDDING_BASE_URL", "AIGCDO_EMBEDDING_API_KEY", "AIGCDO_EMBEDDING_MODEL")
 
 _USER_KEY: ContextVar[str] = ContextVar("aigcdo_user_key", default="")
+_ADMIN: ContextVar[bool] = ContextVar("aigcdo_admin", default=False)
+
+
+def admin() -> bool:
+    return _ADMIN.get()
+
+
+@contextmanager
+def admin_scope():
+    """The administrator's request: stored settings are read and written as they are."""
+    token = _ADMIN.set(True)
+    try:
+        yield
+    finally:
+        _ADMIN.reset(token)
 
 
 def active() -> bool:
@@ -57,11 +73,36 @@ def scoped_user_key() -> str:
     return _USER_KEY.get() or os.environ.get(CHILD_KEY_ENV, "")
 
 
-def embedding_endpoint() -> dict | None:
-    """Operator-configured embedding endpoint, or None when novel import is not offered."""
+def embedding_endpoint(stored: dict[str, str] | None = None) -> dict | None:
+    """Operator-configured embedding endpoint, or None when novel import is not offered.
+
+    The environment wins; otherwise the administrator's embedding group in settings.
+    """
     base_url, api_key, model = (os.environ.get(name, "").strip() for name in EMBEDDING_ENV)
     dimensions = os.environ.get("AIGCDO_EMBEDDING_DIMENSIONS", "").strip() or "1024"
     if not (base_url or api_key or model):
+        if stored is None:
+            from novelvideo.model_gateway_settings import _connect
+
+            conn = _connect(user_read=True)
+            try:
+                stored = {str(k): str(v) for k, v in conn.execute("SELECT key, value FROM runtime_settings")}
+            finally:
+                conn.close()
+        try:
+            defaults = json.loads(stored.get("third_party_capability_defaults") or "{}")
+            saved = json.loads(stored.get("custom_newapi_embedding_model") or "{}")
+        except ValueError:
+            return None
+        for group in _stored_groups(stored):
+            if (group.get("id") == defaults.get("embeddingGroupId") and "embedding" in (group.get("capabilities") or [])
+                    and defaults.get("embeddingModel") and group.get("apiKey")
+                    and str(group.get("baseUrl") or "").startswith("https://") and not _gateway(group.get("baseUrl"))):
+                # shortcut: 1024 unless the admin saved an embedding dimension; add a field if models differ.
+                return {
+                    "base_url": str(group["baseUrl"]).rstrip("/"), "api_key": str(group["apiKey"]),
+                    "model": str(defaults["embeddingModel"]), "dimensions": int(saved.get("dimension") or 1024),
+                }
         return None
     if not (base_url.startswith("https://") and api_key and model
             and dimensions.isdecimal() and int(dimensions) > 0):
@@ -109,31 +150,74 @@ def _catalog(path: str) -> dict:
     return load_catalog(path)
 
 
-def settings_rows() -> dict[str, str]:
-    """What the legacy settings store would hold, for the scoped user only."""
-    catalog = _catalog(os.environ.get(CATALOG_ENV, ""))
+_USER_HIDDEN = (
+    "platform_gateway", "custom_newapi_api", "custom_newapi_base", "brainclaw_", "sub2api_", "agent_llm_",
+)
+
+
+def _gateway(url: object) -> bool:
+    parts = urlsplit(str(url or ""))
+    return f"{parts.scheme}://{parts.netloc}".lower() == GATEWAY_ORIGIN
+
+
+def _stored_groups(stored: dict[str, str]) -> list[dict]:
+    try:
+        groups = json.loads(stored.get("third_party_gateway_groups") or "[]")
+    except ValueError:
+        return []
+    return [group for group in groups if type(group) is dict] if type(groups) is list else []
+
+
+def user_rows(stored: dict[str, str]) -> dict[str, str]:
+    """The administrator's settings as one user may use them.
+
+    Gateway groups get the scoped user's own key (the administrator's is only for listing
+    models and prices). Any other endpoint may only serve embeddings, on the administrator's
+    key: text or media there would bill the operator for every user.
+    """
     key = scoped_user_key()
-    rows = {
-        "model_gateway_mode": "custom",
-        "custom_llm_mode": "advanced",
-        "third_party_gateway_migration_version": "1",
-        "third_party_gateway_groups": json.dumps(
-            [{**group, "apiKey": key} for group in catalog["groups"]], ensure_ascii=False,
-        ),
-        "third_party_capability_defaults": json.dumps(
-            catalog["capabilityDefaults"], ensure_ascii=False,
-        ),
-    }
-    embedding = embedding_endpoint()
+    groups = _stored_groups(stored)
+    catalog = None
+    if not groups and os.environ.get(CATALOG_ENV, "").strip():
+        # First boot: the optional catalog file seeds the model list until the admin saves one.
+        catalog = _catalog(os.environ[CATALOG_ENV])
+        groups = [{**group, "baseUrl": GATEWAY_ORIGIN} for group in catalog["groups"]]
+    rows = {name: value for name, value in stored.items() if not name.startswith(_USER_HIDDEN)}
+    rows.update(
+        model_gateway_mode="custom", custom_llm_mode="advanced",
+        third_party_gateway_migration_version="1",
+        third_party_gateway_groups=json.dumps([
+            {**group, "apiKey": key} if _gateway(group.get("baseUrl")) else group
+            for group in groups
+            if _gateway(group.get("baseUrl")) or group.get("capabilities") == ["embedding"]
+        ], ensure_ascii=False),
+    )
+    if catalog is not None:
+        rows["third_party_capability_defaults"] = json.dumps(catalog["capabilityDefaults"], ensure_ascii=False)
+    embedding = embedding_endpoint(stored)
     if embedding:
-        # Only the vector size is settings-shaped; the endpoint and its key stay out of user rows.
         rows["custom_newapi_embedding_model"] = json.dumps({
             "provider": "operator", "upstreamModel": embedding["model"],
             "dimension": embedding["dimensions"],
         })
-    if catalog["agentModel"]:
+    agent_model = catalog["agentModel"] if catalog is not None else (
+        stored.get("agent_llm_model", "") if _gateway(stored.get("agent_llm_base_url")) else ""
+    )
+    if agent_model:
         rows.update(
             agent_llm_mode="third_party", agent_llm_base_url=GATEWAY_ORIGIN,
-            agent_llm_api_key=key, agent_llm_model=catalog["agentModel"],
+            agent_llm_api_key=key, agent_llm_model=agent_model,
         )
     return rows
+
+
+def agent_model() -> str:
+    """The Agent model users get, or "" when the Agent is not offered."""
+    from novelvideo.model_gateway_settings import _read_all
+
+    with user_key_scope(""):
+        token = _ADMIN.set(False)
+        try:
+            return _read_all().get("agent_llm_model", "")
+        finally:
+            _ADMIN.reset(token)

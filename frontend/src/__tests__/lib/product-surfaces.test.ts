@@ -18,9 +18,9 @@ describe("product surface access", () => {
           },
           {
             surface_code: "assistant" as const,
-            label: "虾导",
+            label: "导台",
             available: false,
-            unavailable_message: "虾导功能暂未开放",
+            unavailable_message: "导台功能暂未开放",
           },
           {
             surface_code: "payment" as const,
@@ -34,7 +34,7 @@ describe("product surface access", () => {
 
     expect(surfaceAccess(data, "assistant")).toMatchObject({
       available: false,
-      unavailable_message: "虾导功能暂未开放",
+      unavailable_message: "导台功能暂未开放",
     });
     expect(surfaceAccess(data, "freezone")).toBeUndefined();
     expect(surfaceAccess(data, "payment")?.available).toBe(false);

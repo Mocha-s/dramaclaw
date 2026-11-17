@@ -160,7 +160,7 @@ export const realSceneSketchRepairCapability: GenerationCapability = {
     const lighting = stringifyParamValue(params.lighting) || "昏暗市井暖光";
     // i18n-exempt-end
 
-    const prompt = `Create a repaired real-scene storyboard sketch for the current SuperTale beat.
+    const prompt = `Create a repaired real-scene storyboard sketch for the current AIGCDO beat.
 
 Camera parameters:
 - shot size: ${shotType}

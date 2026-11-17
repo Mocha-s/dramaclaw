@@ -81,12 +81,12 @@ def _bundle_payload(**overrides) -> dict:
 
 def _legal_payload() -> dict:
     return {
-        "copyright": "2026 SuperTale contributors",
+        "copyright": "2026 AIGCDO contributors",
         "license": {
             "id": "Elastic-2.0",
             "text": "Elastic License 2.0 terms.",
         },
-        "notice": "DramaClaw trademark rights are reserved.",
+        "notice": "AIGCDO trademark rights are reserved.",
     }
 
 
@@ -138,7 +138,7 @@ def test_validate_agent_bundle_rejects_high_minimum_dramaclaw_version(
 ) -> None:
     bundle = _bundle_payload(min_dramaclaw_version="99.0.0")
 
-    with pytest.raises(ValueError, match="requires DramaClaw >= 99.0.0"):
+    with pytest.raises(ValueError, match="requires AIGCDO >= 99.0.0"):
         agent_bundle_store.validate_agent_bundle(bundle)
 
 

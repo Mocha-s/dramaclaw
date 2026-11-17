@@ -3,7 +3,7 @@
 import type { ModelProviderDefinition } from '../types';
 
 // OpenRouter — proxies multiple model families (Google Gemini, etc).
-// SuperTale `_image_provider_config(provider="openrouter")` reads OPENROUTER_API_KEY.
+// AIGCDO `_image_provider_config(provider="openrouter")` reads OPENROUTER_API_KEY.
 export const provider: ModelProviderDefinition = {
   id: 'openrouter',
   name: 'OpenRouter',

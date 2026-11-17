@@ -26,7 +26,7 @@ describe("assistant success summary", () => {
     expect(isGenerationSuccessSummaryText("图片生成成功，下一步生成视频。")).toBe(false);
   });
 
-  it("classifies natural DramaClaw completion replies without requiring a checkmark", () => {
+  it("classifies natural AIGCDO completion replies without requiring a checkmark", () => {
     expect(assistantCompletionPrefix("第3集身份规划已完成。本集身份全部复用。"))
       .toBe("第3集身份规划已完成。");
     expect(assistantCompletionPrefix("第 3 集剧本生成完成。下一步生成草图。"))

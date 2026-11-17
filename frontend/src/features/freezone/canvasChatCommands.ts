@@ -3907,7 +3907,7 @@ function commandLabel(command: CanvasChatCommand): string {
       if (command.action === "sync_beat_context_to_mainline") return "同步镜头上下文";
       return "打开节点动作";
     case "open_mainline_projection":
-      return "打开主线虾画";
+      return "打开主线造境";
     case "run_workflow":
       return "运行工作流";
     default:

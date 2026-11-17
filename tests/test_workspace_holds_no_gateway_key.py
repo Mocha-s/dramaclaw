@@ -78,7 +78,7 @@ def test_no_credential_mode_can_put_a_key_back_on_disk(monkeypatch, tmp_path):
     the worker still failed closed, and now a live credential sat on disk too.
 
     Half a compatibility mode is more dangerous than none, because it reads as
-    a supported path. New DramaClaw is installed paired with the Hermes fork.
+    a supported path. New AIGCDO is installed paired with the Hermes fork.
     """
     monkeypatch.setattr(hermes_workspace, "effective_gateway_credentials",
                         lambda: (PLATFORM, "https://gateway.example"))

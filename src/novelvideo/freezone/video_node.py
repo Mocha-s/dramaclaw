@@ -185,7 +185,7 @@ def normalize_video_resolution(value: str | None) -> str:
 
 
 def normalize_freezone_generation_resolution(value: str | None) -> str:
-    """Normalize casing only; pass unsupported虾集 generation tiers upstream."""
+    """Normalize casing only; pass unsupported藏境 generation tiers upstream."""
     return normalize_video_resolution(value)
 
 

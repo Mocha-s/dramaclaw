@@ -6,7 +6,7 @@ They never touch the queue backend, the API layer, or task_state.
 Provider selection (since v1.1):
 - `provider` / `model` / `quality` get threaded into
   `get_grid_generation_config(provider_override=, model_override=)` for the
-          image generation/edit path so the caller can pick the supported SuperTale
+          image generation/edit path so the caller can pick the supported AIGCDO
           providers: `newapi` / `huimeng` / `openrouter` / `openai`.
 - A legacy `provider="volcengine"` branch remains for old canvases/scripts, but
   the Freezone UI no longer exposes it.
@@ -67,7 +67,7 @@ async def run_freezone_gen(
 ) -> Path:
     """text → image (with optional reference images).
 
-    Routes through nanobanana_grid for the supported SuperTale providers.
+    Routes through nanobanana_grid for the supported AIGCDO providers.
     """
     out = output_path_for_job(project_dir, output_task_type or "freezone_gen", job_id)
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -64,7 +64,7 @@ vi.mock("react-i18next", () => ({
         "settings.pages.models": "模型与渠道",
         "settings.pages.storage": "媒体存储",
         "settings.pages.taskLimits": "任务与队列",
-        "settings.pages.freezoneSkills": "虾画 Skills",
+        "settings.pages.freezoneSkills": "造境 Skills",
         "settings.statusConfigured": `${options?.page ?? ""}已配置`,
         "settings.statusNotConfigured": `${options?.page ?? ""}未配置`,
         "settings.taskLimits.title": "任务与队列",

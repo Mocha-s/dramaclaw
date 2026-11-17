@@ -1,4 +1,4 @@
-"""A DramaClaw that authenticates per turn must not run on a stock Hermes.
+"""A AIGCDO that authenticates per turn must not run on a stock Hermes.
 
 The failure it prevents is the one that cost the most to find: a stock Hermes
 accepts the ACP prompt, drops the `_meta` extension the credential travels in,
@@ -11,7 +11,7 @@ it put the real key back on disk while the worker kept the placeholder and the
 latch, so a "legacy" deployment carried the old design's exposure and the new
 design's behaviour at the same time.
 
-The probe runs in the worker's interpreter, not this one. DramaClaw does not
+The probe runs in the worker's interpreter, not this one. AIGCDO does not
 import Hermes — it launches it as a subprocess, usually from a different
 virtualenv — so importing here would answer about the wrong environment in both
 directions: an API process without Hermes would refuse despite a correct fork

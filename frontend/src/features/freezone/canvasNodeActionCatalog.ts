@@ -560,7 +560,7 @@ function imageSizeSchema(_node: CanvasNode): CanvasEditableFieldSchema {
     type: "enum",
     label: "分辨率",
     options: [...IMAGE_SIZE_OPTIONS],
-    description: "使用虾塘全局图片分辨率档位；模型不支持时由上游返回错误。",
+    description: "使用片场全局图片分辨率档位；模型不支持时由上游返回错误。",
   };
 }
 
@@ -621,7 +621,7 @@ function videoQualitySchema(node: CanvasNode): CanvasEditableFieldSchema {
     label: "清晰度",
     options: [...VIDEO_QUALITY_OPTIONS],
     current_value: (node.data as { quality?: unknown }).quality ?? null,
-    description: "使用虾镜全局视频分辨率档位；模型不支持时由上游返回错误。",
+    description: "使用镜界全局视频分辨率档位；模型不支持时由上游返回错误。",
   };
 }
 
@@ -843,7 +843,7 @@ function editableSchemaForNode(node: CanvasNode): Record<string, CanvasEditableF
           label: "语音模式",
           options: ["clone"],
           description:
-            "仅 audioKind=speech 时生效。虾画只使用自定义声线；未选择有效 voiceRef 时跳过语音生成。",
+            "仅 audioKind=speech 时生效。造境只使用自定义声线；未选择有效 voiceRef 时跳过语音生成。",
         },
         text: { type: "string", label: "文本" },
         emotionPrompt: { type: "string", label: "情绪提示" },

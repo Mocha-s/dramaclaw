@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--project-dir",
         required=True,
-        help="SuperTale project directory (used only to resolve the user-shared verification.db)",
+        help="AIGCDO project directory (used only to resolve the user-shared verification.db)",
     )
     parser.add_argument("--code", required=True, help="snake_case failure-mode id")
     parser.add_argument(

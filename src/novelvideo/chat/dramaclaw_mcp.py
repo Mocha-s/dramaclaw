@@ -1,8 +1,8 @@
-"""MCP bridge for DramaClaw tools.
+"""MCP bridge for AIGCDO tools.
 
 Hermes uses ``.hermes/plugins/dramaclaw`` directly. Claude, Codex, and other
 MCP-speaking agents use this stdio server to call that same toolset without
-duplicating DramaClaw API wrappers.
+duplicating AIGCDO API wrappers.
 """
 
 from __future__ import annotations
@@ -254,7 +254,7 @@ def _output_schema_for_tool(name: str) -> dict[str, Any]:
     """Read the explicit contract declared next to the plugin tool definition."""
     schema_entry = _agent_tools().get(name)
     if schema_entry is None:
-        raise ValueError(f"unknown DramaClaw tool: {name}")
+        raise ValueError(f"unknown AIGCDO tool: {name}")
     schema, _handler = schema_entry
     output_schema = schema.get("output_schema")
     if not isinstance(output_schema, dict):
@@ -578,7 +578,7 @@ async def list_resources() -> list[types.Resource]:
                 types.Resource(
                     name=target.relative_to(root).as_posix(),
                     uri=target.as_uri(),
-                    description="DramaClaw agent skill resource",
+                    description="AIGCDO agent skill resource",
                     mimeType="text/markdown",
                     size=target.stat().st_size,
                 )
@@ -589,7 +589,7 @@ async def list_resources() -> list[types.Resource]:
 
 @SERVER.list_resource_templates()
 async def list_resource_templates() -> list[types.ResourceTemplate]:
-    """DramaClaw exposes concrete skill files, not parameterized resources."""
+    """AIGCDO exposes concrete skill files, not parameterized resources."""
     logger.info("mcp resources/templates/list scope=%s count=0", _scope_kind())
     return []
 
@@ -923,7 +923,7 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[types.TextCont
         )
         return structured_result
 
-    raise ValueError(f"unknown DramaClaw tool: {name}")
+    raise ValueError(f"unknown AIGCDO tool: {name}")
 
 
 async def _main() -> None:

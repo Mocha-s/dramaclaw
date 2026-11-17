@@ -1,6 +1,6 @@
 ---
 name: sketch-correction-worker
-description: Use when doing single-beat sketch quality control and preparing correction labels from a SuperTale project path and episode number. This skill turns one episode's selected sketches plus local script beat data into select_result.jsonl, select_summary.json, tasks.jsonl, and labels.jsonl for edit execution. Prefer using the current local coding agent model directly as the teacher unless the user explicitly asks to call an external model.
+description: Use when doing single-beat sketch quality control and preparing correction labels from a AIGCDO project path and episode number. This skill turns one episode's selected sketches plus local script beat data into select_result.jsonl, select_summary.json, tasks.jsonl, and labels.jsonl for edit execution. Prefer using the current local coding agent model directly as the teacher unless the user explicitly asks to call an external model.
 compatibility: Designed for skill-aware coding agents. Requires Python 3.10+ and access to local project files, selected sketches, and verify_reports.
 metadata:
   {"openclaw":{"emoji":"✏️","primaryEnv":"SUPERTALE_API_KEY"}}
@@ -29,7 +29,7 @@ Use this skill when the user wants:
 - or, if explicitly requested, the freedom to swap in a stronger remote model later
 
 ## Inputs
-- A SuperTale project path that contains `data.db` or `scripts/epXXX_script.json`
+- A AIGCDO project path that contains `data.db` or `scripts/epXXX_script.json`
 - An episode number
 - Optionally an output path and beat limit
 

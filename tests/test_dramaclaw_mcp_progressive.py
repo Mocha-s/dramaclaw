@@ -1086,7 +1086,7 @@ async def test_freezone_scope_rejects_direct_mainline_write_call(monkeypatch):
     monkeypatch.setenv("DRAMACLAW_PROJECT_ID", "project-a")
     monkeypatch.setenv("DRAMACLAW_TOOL_MODE", "freezone_canvas")
 
-    with pytest.raises(ValueError, match="unknown DramaClaw tool"):
+    with pytest.raises(ValueError, match="unknown AIGCDO tool"):
         await dramaclaw_mcp.call_tool(
             "dramaclaw_render_first_frames",
             {"episode": 1},
@@ -1101,7 +1101,7 @@ async def test_freezone_scope_rejects_direct_mainline_write_call(monkeypatch):
 async def test_legacy_bridge_wrappers_are_unavailable(monkeypatch, wrapper_name):
     monkeypatch.setenv("DRAMACLAW_PROJECT_ID", "project-a")
 
-    with pytest.raises(ValueError, match="unknown DramaClaw tool"):
+    with pytest.raises(ValueError, match="unknown AIGCDO tool"):
         await dramaclaw_mcp.call_tool(wrapper_name, {})
 
 

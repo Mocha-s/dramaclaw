@@ -25,9 +25,9 @@ type FreezoneCanvasRootProps = {
 };
 
 /**
- * 虾画路由的实际内容。从 routes/_app/projects.$project/freezone.lazy.tsx 搬出来，
+ * 造境路由的实际内容。从 routes/_app/projects.$project/freezone.lazy.tsx 搬出来，
  * 是因为它现在的宿主不是那条路由，而是 FreezoneCanvasHost —— 只有挂在路由之外，
- * 才能在切到虾集时不被卸载。
+ * 才能在切到藏境时不被卸载。
  */
 export default function FreezoneCanvasRoot({
   project,
@@ -71,7 +71,7 @@ export default function FreezoneCanvasRoot({
     [freezoneProjects, project],
   );
 
-  // 保活期间地址栏是虾集的，`?canvas=` 已经没了。照常算的话 canvasId 会掉回
+  // 保活期间地址栏是藏境的，`?canvas=` 已经没了。照常算的话 canvasId 会掉回
   // 默认值，FreezoneShell 会当成「切换了画布」重新 hydrate 一遍 —— 正是保活要
   // 省掉的开销，还会把用户当前打开的画布换掉。所以只在激活时更新，其余时候
   // 把上一次的值钉住。

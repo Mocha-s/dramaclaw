@@ -213,7 +213,7 @@ def _import_cognee_without_logging_takeover():
                 # guard every later setup call.
                 detached_handlers = _detach_cognee_private_file_handlers(logging_utils)
                 logger.warning(
-                    "Cognee was imported before DramaClaw installed its logging "
+                    "Cognee was imported before AIGCDO installed its logging "
                     "guard; application logging may already have been replaced; "
                     "detached %d private file handler(s)",
                     detached_handlers,
@@ -271,7 +271,7 @@ def _normalize_llm_model(provider: str, model: str) -> str:
     if _uses_newapi_gateway(provider):
         # Cognee 底层使用 LiteLLM。裸 gemini-* 会被 LiteLLM 误判为
         # Gemini/Vertex 直连模型，从而要求 Google ADC。这里仅给 LiteLLM
-        # 标明 OpenAI-compatible 路由；SuperTale .env 仍只暴露 newAPI 逻辑模型名。
+        # 标明 OpenAI-compatible 路由；AIGCDO .env 仍只暴露 newAPI 逻辑模型名。
         if not model.startswith(("openai/", "custom/")):
             return f"openai/{model}"
     return model
@@ -1352,7 +1352,7 @@ def init_cognee() -> None:
     if cognee_gateway_restart_required():
         raise RuntimeError(
             "模型网关配置已更新，Cognee 仍持有启动时的旧配置；"
-            "请重启 DramaClaw 后再使用小说知识库。"
+            "请重启 AIGCDO 后再使用小说知识库。"
         )
 
     from novelvideo.model_gateway_runtime import current_model_gateway_context
@@ -1373,7 +1373,7 @@ def init_cognee() -> None:
     )
     if not api_key:
         raise ValueError(
-            "未设置 Cognee LLM Key。请配置 DramaClaw 模型网关；"
+            "未设置 Cognee LLM Key。请配置 AIGCDO 模型网关；"
             "CE 在设置页配置，EE 通过 NEWAPI_API_KEY 配置。"
         )
 

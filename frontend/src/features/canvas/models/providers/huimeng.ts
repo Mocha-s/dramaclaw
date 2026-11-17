@@ -3,7 +3,7 @@
 import type { ModelProviderDefinition } from '../types';
 
 // HuiMeng Tasks API — domestic-friendly proxy.
-// SuperTale `_image_provider_config(provider="huimeng")` reads HUIMENGI_API_KEY.
+// AIGCDO `_image_provider_config(provider="huimeng")` reads HUIMENGI_API_KEY.
 export const provider: ModelProviderDefinition = {
   id: 'huimeng',
   name: 'HuiMeng',

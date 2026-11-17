@@ -14,7 +14,7 @@ export interface PromoteToAssetOptions {
 
 /**
  * Commit is the boundary between free canvas experiments and canonical
- * SuperTale assets. The backend endpoint is still /freezone/push; this wrapper
+ * AIGCDO assets. The backend endpoint is still /freezone/push; this wrapper
  * keeps UI/product code from treating it as a generic file copy.
  */
 export async function promoteToAsset(

@@ -203,15 +203,15 @@ _CODEX_CONTROL_CAPABILITY_METADATA = "dramaclaw_control_context_capability"
 _ACTIVE_CODEX_TURNS: dict[tuple[str, str], tuple[str, str] | tuple[str, str, str]] = {}
 _ACTIVE_CODEX_TURNS_LOCK = threading.Lock()
 _CODEX_DEVELOPER_INSTRUCTIONS = (
-    "You are the DramaClaw creative assistant. Use the required dramaclaw MCP "
-    "server for all DramaClaw data reads and writes. Inspect the available scope-filtered "
+    "You are the AIGCDO creative assistant. Use the required dramaclaw MCP "
+    "server for all AIGCDO data reads and writes. Inspect the available scope-filtered "
     "concrete MCP tools and their schemas, then call the selected tool directly. Do not guess "
     "a tool name or argument schema. "
     "Do not use shell commands, "
     "local file editing, web search, or other external tools."
 )
 _CODEX_FREEZONE_DEVELOPER_INSTRUCTIONS = (
-    "You are the DramaClaw creative assistant inside the Xi画/Freezone canvas. "
+    "You are the AIGCDO creative assistant inside the Xi画/Freezone canvas. "
     "An assistant message ends the current agent turn. When the user's request requires a "
     "canvas read or write, call the required tool before emitting any assistant message. Do "
     "not send a progress or status message before that tool call. Continue using tools until "
@@ -570,8 +570,8 @@ _DRAMACLAW_SCRIPT_UPLOAD_MODEL_REPLY_INSTRUCTIONS = """[DRAMACLAW_SCRIPT_UPLOAD_
 
 回复目标：
 - 语气自然，不要像系统错误提示。
-- 明确表达：虾导不提供生成剧本功能。
-- 引导用户去“虾料”上传已有剧本文档。
+- 明确表达：导台不提供生成剧本功能。
+- 引导用户去“灵感”上传已有剧本文档。
 - 说明上传后你可以继续帮他推进分集、画面、配音、成片等后续制作。
 - 只回复 1-2 句，不要列步骤，不要输出 markdown 标题。
 [/DRAMACLAW_SCRIPT_UPLOAD_GUIDANCE]
@@ -580,7 +580,7 @@ _JSON_RENDER_CHAT_INSTRUCTIONS = """[RENDERING_CONTRACT]
 这是硬性输出合同，优先级高于普通叙述习惯。违反时必须自我修正后再回复。
 
 触发条件：
-- 只有在回复需要展示图片、肖像、身份图、草图、首帧、视频、音频等可视/可播放媒体时，才需要调用对应的 DramaClaw 展示工具。
+- 只有在回复需要展示图片、肖像、身份图、草图、首帧、视频、音频等可视/可播放媒体时，才需要调用对应的 AIGCDO 展示工具。
 - 角色列表、剧集规划、项目进度、任务状态、脚本/beat 摘要、表格、长篇正文、普通结构化说明默认使用 markdown；如果没有图片/视频/音频媒体，不要使用媒体展示工具。
 - 用户说“继续生成视频”“恢复”“接着做”“下一步”时，只推进未完成任务并汇报本轮状态。
 - 除非用户同时明确要求展示、查看、播放或预览，否则不要读取或展示此前已经生成的 beat 视频。
@@ -595,7 +595,7 @@ _JSON_RENDER_CHAT_INSTRUCTIONS = """[RENDERING_CONTRACT]
 
 资源 URL 规则：
 - 展示工具会读取 API 返回的可访问 URL 字段（portrait_url、image_url、sketch_url、frame_url、video_url、audio_url、url）并准备可展示媒体。
-- 如果工具/API 只返回本地文件路径或你不确定 URL 是否可访问，必须先调用相应 DramaClaw 展示工具；不能自己按经验拼 /static 路径。
+- 如果工具/API 只返回本地文件路径或你不确定 URL 是否可访问，必须先调用相应 AIGCDO 展示工具；不能自己按经验拼 /static 路径。
 - 如果没有正式结果 URL、URL 为空、或资源尚未生成，只说明当前状态，不要伪造媒体展示。
 - 如果工具/API 返回多个候选字段，优先使用明确的 *_url 字段；不要使用 *_path 作为 src，除非 API 明确说明该 path 已是浏览器可访问 URL。
 
@@ -681,7 +681,7 @@ Scope:
 - Inspect project assets, tasks, skill runs, and canvas data; answer explanations naturally.
 - Turn creative ideas into working canvas material only when the user asks to create or land it.
 - Keep image, audio, video, and composition work inside Freezone. Do not start, mutate, or use
-  DramaClaw mainline production tools unless the user explicitly asks for the main project pipeline.
+  AIGCDO mainline production tools unless the user explicitly asks for the main project pipeline.
 - Freezone accepts creative instructions directly in chat. Do not require the user to save or upload
   a `.txt` screenplay, and do not apply the mainline NovelVideo ingest/upload prerequisite here.
 
@@ -1938,7 +1938,7 @@ def _codex_model() -> str:
 
         # CE is configured interactively and SQLite is authoritative. Only the
         # explicit Custom + BrainClaw choice sends the literal ``brainclaw``
-        # model; Official and Hybrid send DramaClaw's logical Codex alias and
+        # model; Official and Hybrid send AIGCDO's logical Codex alias and
         # let RelayClaw decide what serves it, and Advanced mode sends the same
         # alias to the user-selected NewAPI gateway.
         from novelvideo.model_gateway_settings import (
@@ -2420,7 +2420,7 @@ def _evidence_identity(
 ) -> dict[str, str]:
     """Name the trajectory and project this turn belongs to.
 
-    ``project_group_id`` is the DramaClaw project, or the home sentinel when
+    ``project_group_id`` is the AIGCDO project, or the home sentinel when
     there is none — BrainClaw refuses to invent a grouping it cannot see, so the
     caller must say "no project" explicitly rather than omit it.
 
@@ -3391,7 +3391,7 @@ def _codex_turn_gateway_credentials(authorization=None) -> tuple[str, str]:
     configured_key, configured_base_url = effective_gateway_credentials()
     configured_base_url = str(configured_base_url or "").strip().rstrip("/")
     if not configured_base_url:
-        raise RuntimeError("Codex requires a configured DramaClaw model gateway URL")
+        raise RuntimeError("Codex requires a configured AIGCDO model gateway URL")
 
     if is_ce_effective():
         # CE owns a local SQLite settings database. UI changes to endpoint/key
@@ -3426,7 +3426,7 @@ def _codex_turn_gateway_credentials(authorization=None) -> tuple[str, str]:
         api_key = str(credential.api_key or "").strip()
 
     if not api_key:
-        raise RuntimeError("Codex requires a per-turn DramaClaw model gateway key")
+        raise RuntimeError("Codex requires a per-turn AIGCDO model gateway key")
     return api_key, configured_base_url
 
 
@@ -3632,7 +3632,7 @@ def _dramaclaw_mcp_servers(
     if freezone_canvas and not focused_execution:
         # The shared Workflow MCP owns portable discovery and deterministic
         # compilation only. Protected canvas writes stay on the existing
-        # DramaClaw MCP server, preserving the Hermes approval boundary.
+        # AIGCDO MCP server, preserving the Hermes approval boundary.
         servers["dramaclaw_workflows"] = {
             "type": "stdio",
             "command": sys.executable,
@@ -3682,7 +3682,7 @@ def _codex_mcp_config_overrides(
                     separators=(",", ":"),
                 )
             )
-        # DramaClaw MCP is the sole business write boundary. Its short-lived,
+        # AIGCDO MCP is the sole business write boundary. Its short-lived,
         # project-scoped bearer token remains the authority for every call;
         # pre-approving this server avoids a separate Guardian model request
         # that cannot inherit per-turn NewAPI credentials.
@@ -3695,10 +3695,10 @@ def _codex_gateway_provider_overrides(
 ) -> tuple[str, ...]:
     normalized_base_url = str(base_url or "").strip().rstrip("/")
     if not normalized_base_url:
-        raise RuntimeError("Codex requires a configured DramaClaw model gateway URL")
+        raise RuntimeError("Codex requires a configured AIGCDO model gateway URL")
     prefix = f"model_providers.{_CODEX_MODEL_PROVIDER}"
     return (
-        f"{prefix}.name={json.dumps('DramaClaw Gateway')}",
+        f"{prefix}.name={json.dumps('AIGCDO Gateway')}",
         f"{prefix}.base_url={json.dumps(normalized_base_url)}",
         f"{prefix}.experimental_bearer_token={json.dumps(_CODEX_PER_TURN_CREDENTIAL_PLACEHOLDER)}",
         f'{prefix}.wire_api="responses"',
@@ -3723,7 +3723,7 @@ def _codex_gateway_config_overrides(
         "features.hooks=false",
         # Native memories are CODEX_HOME-global. The shared node runtime must
         # not let one project's learned preferences bleed into another; the
-        # project thread and DramaClaw project state remain authoritative.
+        # project thread and AIGCDO project state remain authoritative.
         "features.memories=false",
         "features.multi_agent=false",
         "features.plugins=false",
@@ -4221,8 +4221,8 @@ def _script_creation_model_reply_prompt(
 ) -> str | None:
     if not prompt:
         return None
-    # 虾画的动态工作流可以把一句创意展开成短视频脚本、广告文案和分镜文本节点。
-    # “必须从虾料上传剧本”的限制只属于主线 NovelVideo 摄入流程，不能在进入
+    # 造境的动态工作流可以把一句创意展开成短视频脚本、广告文案和分镜文本节点。
+    # “必须从灵感上传剧本”的限制只属于主线 NovelVideo 摄入流程，不能在进入
     # Freezone workflow Skill 前把合法的画布创作请求提前拦截。
     if tool_mode == "freezone_canvas":
         return None
@@ -4541,7 +4541,7 @@ async def _stream_assistant_reply_hermes(
                     stream_prompt,
                     current_project=project or None,
                     # Evidence identity for this turn. Raw ids: they are hashed
-                    # inside DramaClaw and never leave the process as-is.
+                    # inside AIGCDO and never leave the process as-is.
                     **_evidence_identity(project, store_scope, agent_profile),
                 ):
                     if stream_event.type == "egress_submitted":
@@ -4977,7 +4977,7 @@ async def _stream_assistant_reply_hermes(
             tool_mode=tool_mode,
         )
         if not assistant_text.strip():
-            assistant_text = "这轮操作没有收到虾导的有效回复，请稍后重试。"
+            assistant_text = "这轮操作没有收到导台的有效回复，请稍后重试。"
         if (
             _allows_mainline_media_ui_specs(tool_mode)
             and not tool_ui_specs
@@ -5015,7 +5015,7 @@ async def _stream_assistant_reply_hermes(
                     username,
                     store_scope,
                     "assistant",
-                    "这轮操作没有收到虾导的有效回复，请稍后重试。",
+                    "这轮操作没有收到导台的有效回复，请稍后重试。",
                     media=[],
                     turn_id=turn_id,
                     idempotency_key=f"assistant:{turn_id}" if turn_id else None,
@@ -5025,7 +5025,7 @@ async def _stream_assistant_reply_hermes(
                     add_assistant_message,
                     username,
                     project,
-                    "这轮操作没有收到虾导的有效回复，请稍后重试。",
+                    "这轮操作没有收到导台的有效回复，请稍后重试。",
                     [],
                     project_dir=project_dir,
                     project_state_dir=project_state_dir,

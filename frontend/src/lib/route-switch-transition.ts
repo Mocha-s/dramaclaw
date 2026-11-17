@@ -54,7 +54,7 @@ function clearScheduled(): void {
 /**
  * 先亮 loading，再跳转。`navigate` 里放实际的 router 跳转调用。
  *
- * 只该用在会换掉整页内容的导航上（顶栏「虾画 / 虾集」、虾集子页菜单）。改
+ * 只该用在会换掉整页内容的导航上（顶栏「造境 / 藏境」、藏境子页菜单）。改
  * search 参数这类原地更新别用，白等两帧还要闪一下遮罩。
  */
 export function beginRouteSwitch(navigate: () => void): void {

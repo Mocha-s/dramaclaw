@@ -8,13 +8,13 @@ import type { ProjectSection } from "@/components/layout/project-navigation-rout
 
 /**
  * 记住每个项目的导航位置：
- * - lastSectionByProject：项目内最后停留的区块（虾画 freezone 或虾集各子页），
- *   进入项目时恢复到这里，而不是固定落到虾画。
- * - lastXiajiSectionByProject：最后停留的虾集子页（虾料/虾塘/虾镜/虾导/虾格），
- *   顶部切到「虾集」时恢复到这里，而不是固定落到虾料。
+ * - lastSectionByProject：项目内最后停留的区块（造境 freezone 或藏境各子页），
+ *   进入项目时恢复到这里，而不是固定落到造境。
+ * - lastXiajiSectionByProject：最后停留的藏境子页（灵感/片场/镜界/导台/范式），
+ *   顶部切到「藏境」时恢复到这里，而不是固定落到灵感。
  */
 
-/** 可被记忆的区块：虾画 + 虾集五个子页（tasks 等其它路由不参与记忆）。 */
+/** 可被记忆的区块：造境 + 藏境五个子页（tasks 等其它路由不参与记忆）。 */
 const REMEMBERED_SECTIONS = new Set<ProjectSection>([
   "freezone",
   "ingest",

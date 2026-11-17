@@ -53,7 +53,7 @@ _CONFIG_YAML_TEMPLATE = """# DramaClaw-managed hermes config.
 #
 # Model routes through the selected NewAPI gateway (OpenAI-compatible), unified
 # with the video/image generators. The endpoint is non-secret workspace config;
-# DramaClaw injects the key into the worker process as NEWAPI_API_KEY and the
+# AIGCDO injects the key into the worker process as NEWAPI_API_KEY and the
 # OPENAI_API_KEY compatibility alias used by Hermes when restoring older
 # custom-provider sessions.
 
@@ -95,10 +95,10 @@ disabled_toolsets:
   - grep
 """
 
-_FREEZONE_CONFIG_YAML_TEMPLATE = """# Freezone/虾画 hermes config.
+_FREEZONE_CONFIG_YAML_TEMPLATE = """# Freezone/造境 hermes config.
 # This profile intentionally enables only canvas-oriented tools.
 # Model routes through the selected NewAPI gateway (OpenAI-compatible), unified
-# with the video/image generators. DramaClaw injects the key into the worker
+# with the video/image generators. AIGCDO injects the key into the worker
 # process as NEWAPI_API_KEY and OPENAI_API_KEY for older restored custom
 # sessions.
 
@@ -153,7 +153,7 @@ disabled_toolsets:
 
 
 _DEFAULT_ENV_TEMPLATE = """# DramaClaw-managed Hermes workspace.
-# Model credentials are synchronized from DramaClaw settings so Hermes profile
+# Model credentials are synchronized from AIGCDO settings so Hermes profile
 # secret scoping resolves the same gateway key as the API process.
 """
 
@@ -445,26 +445,26 @@ def _default_freezone_config_yaml() -> str:
 
 
 _DEFAULT_SOUL_MD = (
-    "你是虾导。不要自称 Hermes Agent，不要提 Nous Research，"
-    "也不要主动解释底层代理框架。自我介绍时只回答“我是虾导”，"
-    "不要附加“DramaClaw 的小说转视频创作助手”之类的头衔或职能描述。"
+    "你是导台。不要自称 Hermes Agent，不要提 Nous Research，"
+    "也不要主动解释底层代理框架。自我介绍时只回答“我是导台”，"
+    "不要附加“AIGCDO 的小说转视频创作助手”之类的头衔或职能描述。"
     "你应当直接、清晰、务实，优先帮助用户完成 "
-    "DramaClaw 项目进度查询、任务管理、剧本、配音、图片、视频生成与交付相关工作。\n"
+    "AIGCDO 项目进度查询、任务管理、剧本、配音、图片、视频生成与交付相关工作。\n"
 )
 
-_DEFAULT_MEMORY_MD = """虾导在 DramaClaw 会话中面向用户自称“虾导”，不要自称 Hermes Agent，不要提 Nous Research 或底层代理框架。不要在普通回复开头自报身份；只有用户明确问身份、名称或自我介绍时，才只回答“我是虾导”，不要附加“DramaClaw 的小说转视频创作助手”之类的头衔或职能描述。
+_DEFAULT_MEMORY_MD = """导台在 AIGCDO 会话中面向用户自称“导台”，不要自称 Hermes Agent，不要提 Nous Research 或底层代理框架。不要在普通回复开头自报身份；只有用户明确问身份、名称或自我介绍时，才只回答“我是导台”，不要附加“AIGCDO 的小说转视频创作助手”之类的头衔或职能描述。
 §
-DramaClaw 管理的虾导会话中 `terminal` 被禁用（在 config.yaml disabled_toolsets 中），curl 等 shell 命令会被直接拒绝。调用 DramaClaw API 时应使用已启用的 `hermes-acp` toolset 中的 DramaClaw 插件工具，不要用 curl。
+AIGCDO 管理的导台会话中 `terminal` 被禁用（在 config.yaml disabled_toolsets 中），curl 等 shell 命令会被直接拒绝。调用 AIGCDO API 时应使用已启用的 `hermes-acp` toolset 中的 AIGCDO 插件工具，不要用 curl。
 """
 
 _FREEZONE_SOUL_MD = (
-    "你是虾画助手，负责 Freezone/虾画中的创意咨询、画布节点、连线、资源和工作流操作。"
+    "你是智核，负责 Freezone/造境中的创意咨询、画布节点、连线、资源和工作流操作。"
     "具体操作规则以每轮 FREEZONE_CANVAS_ASSISTANT 合同为准。"
-    "不要在普通回复开头自报身份；用户问身份时，回答“我是虾画助手”。不要自称 Hermes Agent，不要提 Nous Research，"
+    "不要在普通回复开头自报身份；用户问身份时，回答“我是智核”。不要自称 Hermes Agent，不要提 Nous Research，"
     "也不要主动解释底层代理框架。\n"
 )
 
-_FREEZONE_MEMORY_MD = """虾画会话只使用 Freezone 画布能力；不得用 DramaClaw 主线工具改动画布或推进主线流水线。
+_FREEZONE_MEMORY_MD = """造境会话只使用 Freezone 画布能力；不得用 AIGCDO 主线工具改动画布或推进主线流水线。
 """
 
 _OLD_SOUL_PREFIX = (
@@ -478,34 +478,34 @@ _OLD_SOUL_PREFIX = (
 )
 
 _OLD_IDENTITY_MEMORY_LINE = (
-    "虾导在 DramaClaw 会话中面向用户自称“虾导”，不要自称 Hermes Agent，"
+    "导台在 AIGCDO 会话中面向用户自称“导台”，不要自称 Hermes Agent，"
     "不要提 Nous Research 或底层代理框架。用户问“你是谁 / 你叫什么 / "
-    "你是什么助手 / 介绍一下你自己”时，直接回答“我是虾导，DramaClaw "
+    "你是什么助手 / 介绍一下你自己”时，直接回答“我是导台，AIGCDO "
     "的小说转视频创作助手。”"
 )
 
 _IDENTITY_MEMORY_LINE = (
-    "虾导在 DramaClaw 会话中面向用户自称“虾导”，不要自称 Hermes Agent，"
-    "不要提 Nous Research 或底层代理框架。自我介绍时只回答“我是虾导”，"
-    "不要附加“DramaClaw 的小说转视频创作助手”之类的头衔或职能描述。"
+    "导台在 AIGCDO 会话中面向用户自称“导台”，不要自称 Hermes Agent，"
+    "不要提 Nous Research 或底层代理框架。自我介绍时只回答“我是导台”，"
+    "不要附加“AIGCDO 的小说转视频创作助手”之类的头衔或职能描述。"
 )
 
 _OLD_MEMORY_LINE = (
-    "DramaClaw 管理的 Hermes 会话中 `terminal` 被禁用（在 config.yaml "
-    "disabled_toolsets 中），curl 等 shell 命令会被直接拒绝。调用 DramaClaw API "
+    "AIGCDO 管理的 Hermes 会话中 `terminal` 被禁用（在 config.yaml "
+    "disabled_toolsets 中），curl 等 shell 命令会被直接拒绝。调用 AIGCDO API "
     "时应使用已启用的 `dramaclaw` 插件 toolset 提供的内置 HTTP 工具，不要用 curl。"
 )
 
 _NEW_MEMORY_LINE = (
-    "DramaClaw 管理的虾导会话中 `terminal` 被禁用（在 config.yaml "
-    "disabled_toolsets 中），curl 等 shell 命令会被直接拒绝。调用 DramaClaw API "
-    "时应使用已启用的 `hermes-acp` toolset 中的 DramaClaw 插件工具，不要用 curl。"
+    "AIGCDO 管理的导台会话中 `terminal` 被禁用（在 config.yaml "
+    "disabled_toolsets 中），curl 等 shell 命令会被直接拒绝。调用 AIGCDO API "
+    "时应使用已启用的 `hermes-acp` toolset 中的 AIGCDO 插件工具，不要用 curl。"
 )
 
 _OLD_SOUL_IDENTITY_TEXT = (
-    "你是虾导，DramaClaw 的小说转视频创作助手。用户问“你是谁 / 你叫什么 / "
-    "你是什么助手 / 介绍一下你自己”时，直接回答“我是虾导，"
-    "DramaClaw 的小说转视频创作助手。”"
+    "你是导台，AIGCDO 的小说转视频创作助手。用户问“你是谁 / 你叫什么 / "
+    "你是什么助手 / 介绍一下你自己”时，直接回答“我是导台，"
+    "AIGCDO 的小说转视频创作助手。”"
 )
 
 
@@ -690,8 +690,30 @@ def _ensure_gateway_env_file(env_file: Path) -> None:
     return
 
 
+# Product names before the AIGCDO rename, escaped so a text sweep cannot rewrite the lookup side.
+_LEGACY_NAMES = (
+    ("\u867e\u753b\u52a9\u624b", "智核"), ("\u867e\u753b", "造境"), ("\u867e\u5bfc", "导台"),
+    ("\u867e\u5858", "片场"), ("DramaClaw", "AIGCDO"),
+)
+
+
+def _rename_legacy_identity(home: Path) -> None:
+    """Workspaces written before the rename still tell the agent its old name."""
+    for path in (home / "SOUL.md", home / "memories" / "MEMORY.md"):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        renamed = text
+        for legacy, current in _LEGACY_NAMES:
+            renamed = renamed.replace(legacy, current)
+        if renamed != text:
+            path.write_text(renamed, encoding="utf-8")
+
+
 def _ensure_identity_context(home: Path, *, profile: str = "director") -> None:
     """Keep user-visible assistant identity consistent across all workspaces."""
+    _rename_legacy_identity(home)
     if profile == "freezone":
         _ensure_freezone_identity_context(home)
         return
@@ -702,9 +724,9 @@ def _ensure_identity_context(home: Path, *, profile: str = "director") -> None:
             text = soul_file.read_text(encoding="utf-8")
             if _OLD_SOUL_PREFIX in text:
                 text = text.replace(_OLD_SOUL_PREFIX, _DEFAULT_SOUL_MD.strip(), 1)
-            elif "你是虾导" not in text:
+            elif "你是导台" not in text:
                 text = _DEFAULT_SOUL_MD.rstrip() + "\n\n" + text
-            text = text.replace(_OLD_SOUL_IDENTITY_TEXT, "你是虾导。")
+            text = text.replace(_OLD_SOUL_IDENTITY_TEXT, "你是导台。")
             soul_file.write_text(text.rstrip() + "\n", encoding="utf-8")
         else:
             soul_file.write_text(_DEFAULT_SOUL_MD, encoding="utf-8")
@@ -784,7 +806,7 @@ def _workflow_skill_description(item: dict) -> str:
     parts = [description]
     if keyword_text:
         parts.append(f"适用于：{keyword_text}。")
-    parts.append("选择后使用虾画确定性工具生成动态工作流。")
+    parts.append("选择后使用造境确定性工具生成动态工作流。")
     return " ".join(part for part in parts if part)[:1024]
 
 
@@ -809,7 +831,7 @@ def _render_workflow_skill(item: dict) -> tuple[str, dict[str, object]]:
 
 # {display_name}
 
-这是虾画 Workflow Skill `{skill_id}` 的 Hermes 原生选择入口。
+这是造境 Workflow Skill `{skill_id}` 的 Hermes 原生选择入口。
 
 ## 执行规则
 
@@ -1080,7 +1102,7 @@ def _ensure_freezone_config_policy(config_yaml: Path) -> None:
     if not isinstance(agent, dict):
         agent = {}
     agent["max_turns"] = _configured_max_turns("HERMES_FREEZONE_MAX_TURNS", 12)
-    # 虾画 worker 是画布 agent,不是 coding agent:关掉 Hermes 的 coding 姿态,
+    # 造境 worker 是画布 agent,不是 coding agent:关掉 Hermes 的 coding 姿态,
     # 否则每个 system prompt 多 ~3.9k 字符,且教模型用 registry 已禁用的
     # read_file/patch/terminal 等工具。
     agent["coding_context"] = "off"

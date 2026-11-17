@@ -85,7 +85,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 AI_ASSISTANT_CHAT_FEATURE_KEY = "assistant.chat"
-EMPTY_AGENT_REPLY_MESSAGE = "这轮操作没有收到虾导的有效回复，请稍后重试。"
+EMPTY_AGENT_REPLY_MESSAGE = "这轮操作没有收到导台的有效回复，请稍后重试。"
 
 # 出网台账里这条链路的 capability 口径。取自
 # `chat/hermes_egress.py:131` 的 `capability="agent.hermes.text"`，与 EG-07 对齐；
@@ -2007,7 +2007,7 @@ def _completion_text_or_existing(event_text: object, existing: str) -> str:
 def _is_completion_notice(text: str) -> bool:
     return text in {
         "当前任务已开始处理。请稍后让我查看当前任务进度，或在任务完成后再继续下一步。",
-        "刚才这一步没有成功启动任务。请先根据返回的错误补齐前置条件；如果是配音缺少声线，可以到「虾塘」上传或录制缺失声线后再继续。",
+        "刚才这一步没有成功启动任务。请先根据返回的错误补齐前置条件；如果是配音缺少声线，可以到「片场」上传或录制缺失声线后再继续。",
     }
 
 
@@ -2184,7 +2184,7 @@ async def _require_ai_assistant_access(
         access = await _assistant_surface_access(user=user, scope=scope)
         if not access or access.get("available") is not True:
             message = str(
-                (access or {}).get("unavailable_message") or "虾画功能暂未开放"
+                (access or {}).get("unavailable_message") or "造境功能暂未开放"
             )
             raise HTTPException(status_code=403, detail=message)
     user_id = await _requester_user_id_for_chat(user, scope)

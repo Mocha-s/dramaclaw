@@ -1,7 +1,7 @@
 {
   "version": 1,
   "catalogVersion": "2026.09.11.1",
-  "name": "DramaClaw CE official media models",
+  "name": "AIGCDO CE official media models",
   "mediaModels": {
     "LingShan-G2": {
       "provider": "newapi",

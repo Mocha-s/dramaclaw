@@ -1,4 +1,4 @@
-# DramaClaw Agent Kit
+# AIGCDO Agent Kit
 
 面向本机源码可得 `dramaclaw-ce` 的跨 Agent Skill + MCP 发布包。它让 Codex、Claude Code、
 OpenClaw、Hermes、WorkBuddy 及其他支持标准 stdio MCP 的 Agent 复用同一套 Workflow
@@ -6,7 +6,7 @@ Skill、Recipe 编译器、业务审批和 Freezone 画布写入链路。
 
 ## 边界
 
-本目录是宿主适配包，不复制 DramaClaw 的业务实现：
+本目录是宿主适配包，不复制 AIGCDO 的业务实现：
 
 ```text
 第三方 Agent
@@ -19,7 +19,7 @@ Skill、Recipe 编译器、业务审批和 Freezone 画布写入链路。
 ```
 
 - `scripts/launch_mcp.py workflows` 启动公共 Workflow MCP。
-- `scripts/launch_mcp.py tools` 启动授权 DramaClaw MCP，并复用 CE 内现有 Hermes 工具实现。
+- `scripts/launch_mcp.py tools` 启动授权 AIGCDO MCP，并复用 CE 内现有 Hermes 工具实现。
 - 所有项目、任务和画布写入仍由本机 CE API 与 Freezone 前端 bridge 执行。
 - 不包含 API Key、Agent Token、用户项目、SQLite、画布状态或生成媒体。
 - 内置 Hermes 无需改链路；它继续使用原生插件。这个包只为外部 Agent 提供等价入口。

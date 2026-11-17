@@ -403,7 +403,7 @@ def get_newapi_text_pydantic_model(
         not llm_config.api_key or not llm_config.base_url
     ):
         raise ValueError(
-            "No Sub2API text group matches DramaClaw model "
+            "No Sub2API text group matches AIGCDO model "
             f"'{request_model_name}'. Add a mapping from this request model to an upstream model."
         )
     if llm_config.model and (
@@ -509,7 +509,7 @@ def get_newapi_text_pydantic_model(
         env_base_url="MODEL_BASE_URL",
     )
     if not api_key:
-        raise ValueError("API key not set. Configure DramaClawAPI credentials.")
+        raise ValueError("API key not set. Configure AIGCDO API credentials.")
     return _newapi_text_openai_model(
         model_name,
         api_key=api_key,
@@ -523,7 +523,7 @@ def get_newapi_text_pydantic_model(
 def get_newapi_structured_output_model_settings(*, model: str = "") -> dict:
     """Resolve reasoning settings for PydanticAI structured output requests.
 
-    DramaClaw sends opaque ``DC-*`` aliases through an OpenAI-compatible
+    AIGCDO sends opaque ``DC-*`` aliases through an OpenAI-compatible
     NewAPI endpoint.  PydanticAI cannot infer thinking capabilities from those
     aliases, so its unified ``thinking=False`` setting is silently ignored.
     Use the explicit OpenAI-compatible wire contract that existing deployments

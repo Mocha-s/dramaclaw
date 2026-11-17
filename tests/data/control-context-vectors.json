@@ -20,11 +20,11 @@
   "erratum": {
     "audit": "11162 files / 12471 records scanned across production capture, canary capture, eval captures, eval results, eval batches and profiles. 12 group id occurrences, 1 non-conforming — this test vector. No formal record was affected, so no record was downgraded and no id was rewritten.",
     "date": "2026-08-18",
-    "field_rename": "episode_group_id renamed to trajectory_group_id on 2026-08-19, before any production release. 'Episode' is DramaClaw's drama-episode term; this field groups the checkpoints of one agent trajectory, so the two would have collided permanently. The HMAC namespace moved with it, so every derived id changes. No dual field, alias or migration: nothing had shipped.",
+    "field_rename": "episode_group_id renamed to trajectory_group_id on 2026-08-19, before any production release. 'Episode' is AIGCDO's drama-episode term; this field groups the checkpoints of one agent trajectory, so the two would have collided permanently. The HMAC namespace moved with it, so every derived id changes. No dual field, alias or migration: nothing had shipped.",
     "id": "control-context-v1-erratum-1",
     "not_a_protocol_change": "No version bump: group_id() always produced 16 lowercase hex characters. The 15-character vector was defective test data, not protocol behaviour anyone should keep supporting.",
     "previous_sha256": "1a16ff299d425c3b09c678fc35857d141112c9851959270859f3d4f8130014b8",
-    "resolution": "Enforce ^hmac-sha256:[0-9a-f]{16}$ in the BrainClaw verifier, the Gateway capability verifier and signer, and the DramaClaw opaque scope; regenerate every vector with the real signer; add negatives for raw ids, 15/17 characters, non-hex, uppercase, empty suffix and a wrong algorithm prefix.",
+    "resolution": "Enforce ^hmac-sha256:[0-9a-f]{16}$ in the BrainClaw verifier, the Gateway capability verifier and signer, and the AIGCDO opaque scope; regenerate every vector with the real signer; add negatives for raw ids, 15/17 characters, non-hex, uppercase, empty suffix and a wrong algorithm prefix.",
     "what": "The previous positive vector carried a project_group_id with 15 hex characters. group_id() is hexdigest()[:16] and can only emit 16, so that value was hand-written and violated the generation contract it was meant to demonstrate.",
     "why_it_mattered": "BrainClaw's verifier only checked the 'hmac-sha256:' prefix and a non-empty suffix — loose enough to accept the defective vector, and therefore loose enough to accept a raw identifier behind the prefix. An external caller could not exploit this without a valid Gateway->BrainClaw signature; the exposure is the signing path itself, any future trusted issuer, and defence in depth."
   },
@@ -230,7 +230,7 @@
       "why": "a different algorithm prefix"
     }
   ],
-  "note": "Frozen cross-language vectors. Both the DramaClaw signer and the BrainClaw Go verifier must reproduce these byte-for-byte before either is trusted. Signing covers the exact payload base64 string, never a re-serialized JSON object, so canonicalization can never diverge between languages. Every value here is produced by the shipped signer; none is hand-written.",
+  "note": "Frozen cross-language vectors. Both the AIGCDO signer and the BrainClaw Go verifier must reproduce these byte-for-byte before either is trusted. Signing covers the exact payload base64 string, never a re-serialized JSON object, so canonicalization can never diverge between languages. Every value here is produced by the shipped signer; none is hand-written.",
   "opaque_group_id_pattern": "^hmac-sha256:[0-9a-f]{16}$",
   "payload": {
     "checkpoint_ordinal": 4,

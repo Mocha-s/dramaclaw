@@ -3237,7 +3237,7 @@ export function useSuperChat({
     }).then(() => {
       setApprovals((current) => current.filter((item) => item.id !== approval.id));
     }).catch(() => {
-      setError("授权请求已失效，请让虾导重新执行该操作");
+      setError("授权请求已失效，请让导台重新执行该操作");
     });
   }, []);
 

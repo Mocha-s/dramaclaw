@@ -147,7 +147,7 @@ def test_mainline_script_creation_still_requires_uploaded_script():
     )
 
     assert routed is not None
-    assert "虾料" in routed
+    assert "灵感" in routed
 
 
 def test_freezone_workflow_can_expand_an_idea_into_script_nodes():
@@ -3882,7 +3882,7 @@ def test_codex_client_carries_dramaclaw_mcp_servers(tmp_path):
         },
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=overrides,
     )
 
@@ -3932,7 +3932,7 @@ def test_codex_client_carries_freezone_scope_into_mcp_process(tmp_path):
         },
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=overrides,
     )
 
@@ -3980,7 +3980,7 @@ def test_codex_client_keeps_gateway_credentials_in_turn_metadata(tmp_path):
         env={"DRAMACLAW_AGENT_TOKEN_FILE": "/tmp/turn.token"},
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=chat_service._codex_gateway_config_overrides(
             "https://gateway.example/v1"
         ),
@@ -5064,7 +5064,7 @@ def test_prompt_injects_json_render_contract(monkeypatch, tmp_path):
     )
 
     assert "[RENDERING_CONTRACT]" in prompt
-    assert "才需要调用对应的 DramaClaw 展示工具" in prompt
+    assert "才需要调用对应的 AIGCDO 展示工具" in prompt
     assert "不要向用户解释内部渲染格式、渲染机制、工具调用过程或工具名" in prompt
     assert "不要用文字列表、文件名列表、Beat 名称列表或 URL 列表替代媒体展示" in prompt
     assert "必须调用对应展示工具" in prompt
@@ -5191,7 +5191,7 @@ def test_freezone_prompt_allows_creative_ideation_canvas_framework_without_mainl
     assert "videoComposeNode is terminal" in prompt
     assert "never connect planning text or prompts to it" in prompt
     assert "Do not start, mutate, or use" in prompt
-    assert "DramaClaw mainline production tools" in prompt
+    assert "AIGCDO mainline production tools" in prompt
     assert "[RENDERING_CONTRACT]" not in prompt
     assert "dramaclaw_get_episode_media" not in prompt
     assert "do not generate/plan scripts" not in prompt
@@ -6436,7 +6436,7 @@ async def test_freezone_hermes_recovers_once_from_repeated_read(
             prompts.append(prompt)
             yield backend_sdk.ChatBackendEvent(
                 type="complete",
-                text="本轮操作已停止：虾导重复读取同一项状态。",
+                text="本轮操作已停止：导台重复读取同一项状态。",
                 guard={
                     "reason": "tool_call_guard",
                     "guard_reason": "repeated_read",
@@ -7260,7 +7260,7 @@ def test_extract_tool_chat_error_maps_render_prereq_task_error():
 
     assert chat_error is not None
     assert "Render 任务没有生成可用图片" in chat_error
-    assert "虾塘" in chat_error
+    assert "片场" in chat_error
     assert raw_error in chat_error
 
 

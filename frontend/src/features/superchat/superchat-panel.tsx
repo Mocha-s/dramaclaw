@@ -3991,7 +3991,7 @@ function canvasCommandFeedbackIsTimeoutCancelled(feedback: CanvasCommandFeedback
 
 type CanvasFeedbackVisualTone = "muted" | "warning" | "destructive" | "success";
 
-const EMPTY_AGENT_REPLY_TEXT = "这轮操作没有收到虾导的有效回复，请稍后重试。";
+const EMPTY_AGENT_REPLY_TEXT = "这轮操作没有收到导台的有效回复，请稍后重试。";
 
 function canvasContextActivityVisualTone(activity: CanvasContextActivity): CanvasFeedbackVisualTone {
   if (activity.status === "failed") {
@@ -6409,7 +6409,7 @@ export function buildSkillStudioDraftToolResultForTest(
       event.skill_studio_session_id ? `Skill Studio 会话：${event.skill_studio_session_id}` : "",
       textField(skill.id) ? `Skill：${textField(skill.id)}` : "",
       savedRecipeIds.length > 0 ? `Recipes：${savedRecipeIds.join("、")}` : "",
-      "该 Skill / Recipe 已写入虾画配置，可立即使用。请不要再要求用户保存为正式能力。",
+      "该 Skill / Recipe 已写入造境配置，可立即使用。请不要再要求用户保存为正式能力。",
     ].filter(Boolean).join("\n"),
   };
 }
@@ -6444,7 +6444,7 @@ export function buildSkillStudioDraftCancelToolResultForTest(
     message: [
       "用户已取消 Skill Studio 草稿保存。",
       event.skill_studio_session_id ? `Skill Studio 会话：${event.skill_studio_session_id}` : "",
-      "本次草稿不会写入虾画配置。",
+      "本次草稿不会写入造境配置。",
       "这是用户点击取消按钮，不是修改请求，也不是重新提交请求。",
       "请只确认取消结果，不要重新提交、重新展示、保存或修改这个草稿。",
     ].filter(Boolean).join("\n"),
@@ -6516,7 +6516,7 @@ function skillStudioDraftFooterText({
   cancelled: boolean;
   revisionPending: boolean;
 }): string {
-  if (submitted) return "已添加到虾画 Skills / Recipes";
+  if (submitted) return "已添加到造境 Skills / Recipes";
   if (cancelled) return "已取消，本草稿不会保存";
   if (revisionPending) return "AI 调整中，请按后续问题补充修改方向";
   return "保存前可展开各项继续微调";
@@ -9930,7 +9930,7 @@ async function buildAttachmentAnalysisContext(
 ): Promise<string> {
   const lines = [
     "[DRAMACLAW_ATTACHMENT_CONTEXT]",
-    "The user attached file(s). No explicit video-generation instruction was detected, so do not start the DramaClaw/SuperTale video pipeline unless the user asks for it later. Analyze the attached text when available, and ask a focused follow-up if the intent is ambiguous.",
+    "The user attached file(s). No explicit video-generation instruction was detected, so do not start the AIGCDO video pipeline unless the user asks for it later. Analyze the attached text when available, and ask a focused follow-up if the intent is ambiguous.",
   ];
 
   for (const prepared of preparedAttachments) {
@@ -9997,7 +9997,7 @@ function appendIngestAutomationContext(
     result.taskType ? `task_type: ${result.taskType}` : null,
     result.taskKey ? `task_key: ${result.taskKey}` : null,
     result.message ? `message: ${result.message}` : null,
-    "The uploaded novel has already been submitted to the project ingest API. Continue the DramaClaw/SuperTale video creation workflow from this task instead of asking the user to upload a novel again.",
+    "The uploaded novel has already been submitted to the project ingest API. Continue the AIGCDO video creation workflow from this task instead of asking the user to upload a novel again.",
     "[/DRAMACLAW_INGEST_AUTOMATION]",
   ].filter((line): line is string => line !== null).join("\n");
 }
@@ -11274,7 +11274,7 @@ function canvasCommandPlanLabel(command: CanvasChatCommand): string {
       if (command.action === "open_video_viewer") return "打开视频";
       return "执行节点动作";
     case "open_mainline_projection":
-      return "打开主线虾画";
+      return "打开主线造境";
     default:
       return "画布操作";
   }
@@ -12550,7 +12550,7 @@ export function SuperChatPanel({
     void apiCall<AgentCapabilityPriceReference>("chat/agent-capability-price-reference")
       .then(setAgentBillingReference)
       .catch(() => {
-        toast.error("暂时无法加载虾导计费说明");
+        toast.error("暂时无法加载导台计费说明");
       });
   }, [agentBillingReference, isFreezoneLayout]);
   const shouldStickToBottomRef = useRef(true);
@@ -15478,7 +15478,7 @@ export function SuperChatPanel({
           );
         persistSkillStudioUiEvent(event.turn_id, persistedEvent);
       }
-      toast.success("已添加到虾画 Skills / Recipes");
+      toast.success("已添加到造境 Skills / Recipes");
       return true;
     } catch (error) {
       console.error("[superchat] skill studio draft submit failed", error);
@@ -15788,7 +15788,7 @@ export function SuperChatPanel({
       )}
       <section className="relative z-10 flex min-w-0 flex-1 flex-col">
         {isFreezoneLayout && (
-          // data-freezone-chat-drag-handle：虾导切成浮窗时，宿主靠它认出「按住这里拖窗」。
+          // data-freezone-chat-drag-handle：导台切成浮窗时，宿主靠它认出「按住这里拖窗」。
           <div
             data-freezone-chat-drag-handle=""
             className="flex min-h-9 shrink-0 items-center gap-2 border-b border-white/[0.06] bg-black/[0.16] px-3 py-1 backdrop-blur-xl"
@@ -15819,8 +15819,8 @@ export function SuperChatPanel({
               variant="ghost"
               size="icon-sm"
               onClick={() => setAgentBillingOpen(true)}
-              aria-label="虾导计费说明"
-              title="虾导计费说明"
+              aria-label="导台计费说明"
+              title="导台计费说明"
               className="text-muted-foreground hover:bg-white/[0.08] hover:text-foreground"
             >
               <Gauge className="size-4" />
@@ -16845,7 +16845,7 @@ export function SuperChatPanel({
         <Dialog open={agentBillingOpen} onOpenChange={setAgentBillingOpen}>
           <DialogContent className="w-[calc(100vw-2rem)] border-white/10 bg-background/95 p-0 backdrop-blur-xl sm:max-w-[min(46.08rem,calc(100vw-3rem))]">
             <div className="border-b border-white/10 px-5 py-4">
-              <DialogTitle>虾导 Agent 积分参考</DialogTitle>
+              <DialogTitle>导台 Agent 积分参考</DialogTitle>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 {agentBillingReference?.note
                   ?? "普通聊天和画布操作免费；仅高级 Agent 能力交付计费。"}

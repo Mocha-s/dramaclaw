@@ -1128,7 +1128,7 @@ def _codex_thread_config(
         config[key.strip()] = value
 
     # Resolve declared environment variables for every MCP server instead of
-    # special-casing the original DramaClaw adapter. This keeps independently
+    # special-casing the original AIGCDO adapter. This keeps independently
     # packaged, standards-based MCP servers usable without exposing unrelated
     # process environment values.
     env_var_suffix = ".env_vars"
@@ -1362,7 +1362,7 @@ class CodexThread:
 
             with shared_codex(config) as codex:
                 thread_options = {
-                    # The only pre-approved tools belong to DramaClaw's
+                    # The only pre-approved tools belong to AIGCDO's
                     # project-scoped MCP server. Keep the global policy at
                     # deny-all so shell/filesystem/network escalation cannot
                     # trigger a second, credential-less Guardian model call.

@@ -40,7 +40,7 @@ class AigcdoDeployment:
         names = (
             "AIGCDO_APP_ORIGIN", "AIGCDO_STATE_DIR", "AIGCDO_ENCRYPTION_KEY",
             "AIGCDO_APPLICATION_GROUP_ID", "AIGCDO_CREDITS_PER_USD",
-            "AIGCDO_CREDIT_DECIMALS", "AIGCDO_CREDIT_POLICY_VERSION", aigcdo_model_runtime.CATALOG_ENV,
+            "AIGCDO_CREDIT_DECIMALS", "AIGCDO_CREDIT_POLICY_VERSION",
         )
         shared = [
             name for name in aigcdo_model_runtime.SHARED_CREDENTIAL_ENV
@@ -69,7 +69,9 @@ class AigcdoDeployment:
                 values["AIGCDO_CREDIT_POLICY_VERSION"],
             )
             aigcdo_model_runtime._catalog.cache_clear()
-            aigcdo_model_runtime._catalog(values[aigcdo_model_runtime.CATALOG_ENV])
+            # Optional seed for the model list; the administrator's saved settings replace it.
+            if os.environ.get(aigcdo_model_runtime.CATALOG_ENV, "").strip():
+                aigcdo_model_runtime._catalog(os.environ[aigcdo_model_runtime.CATALOG_ENV].strip())
             aigcdo_model_runtime.embedding_endpoint()
         except (ValueError, InvalidOperation, UnicodeError):
             raise RuntimeError("Invalid AIGCDO deployment configuration") from None
@@ -81,6 +83,13 @@ class AigcdoDeployment:
         deployment.application_keys = AigcdoApplicationKeys(
             deployment.auth, AigcdoApplicationKeyStore(state_dir / "application-keys.db", key), group_id=group_id,
         )
+        from novelvideo.api.routes.aigcdo_admin import AigcdoAdmin, stored_credit_policy
+
+        try:
+            deployment.admin = AigcdoAdmin(key)
+        except ValueError:
+            raise RuntimeError("Invalid AIGCDO deployment configuration") from None
+        policy = stored_credit_policy(policy)  # the administrator's saved ratio beats the environment
         deployment.billing = AigcdoBilling(deployment.auth, policy)
         deployment.payments = AigcdoPayments(
             deployment.auth, AigcdoPaymentStore(state_dir / "payments.db", key), policy, origin,
@@ -113,8 +122,8 @@ class AigcdoDeployment:
         from novelvideo.chat.hermes_pool import _hermes_cli_path
         from novelvideo.security.sandbox_wrap import SandboxSpec, wrap_command
 
-        if not aigcdo_model_runtime._catalog(os.environ[aigcdo_model_runtime.CATALOG_ENV])["agentModel"]:
-            return "the model catalog names no agentModel"
+        if not aigcdo_model_runtime.agent_model():
+            return "no Agent model is configured"
         cli = _hermes_cli_path()
         if not cli.exists():
             return "the Hermes CLI is not installed"

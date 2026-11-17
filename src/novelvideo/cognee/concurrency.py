@@ -231,7 +231,7 @@ def install_cognee_pipeline_concurrency(
         getattr(llm_config, "embedding_rate_limit_enabled", False)
     ):
         raise ValueError(
-            "Cognee native rate limit settings cannot be combined with DramaClaw "
+            "Cognee native rate limit settings cannot be combined with AIGCDO "
             "pipeline concurrency controls"
         )
 

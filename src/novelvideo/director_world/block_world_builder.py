@@ -878,7 +878,7 @@ def resolve_model_config(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate a SuperTale Minecraft-style scene spec from text and optional image."
+        description="Generate a AIGCDO Minecraft-style scene spec from text and optional image."
     )
     parser.add_argument("--description", help="Scene description prompt.")
     parser.add_argument(

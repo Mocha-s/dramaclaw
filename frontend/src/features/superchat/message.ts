@@ -5,7 +5,7 @@ import { hasStructuredContent } from "@/features/superchat/spec-extract";
 
 const INTERNAL_CONTEXT_BLOCK_RE =
   /\n?\[((?:DRAMACLAW|SUPERTALE)_[A-Z0-9_]+)\][\s\S]*?\[\/\1\]\n?/g;
-const EMPTY_AGENT_REPLY_TEXT = "这轮操作没有收到虾导的有效回复，请稍后重试。";
+const EMPTY_AGENT_REPLY_TEXT = "这轮操作没有收到导台的有效回复，请稍后重试。";
 const EMPTY_AGENT_REPLY_PLACEHOLDERS = new Set([
   "(hermes returned no content)",
   "(agent returned no content)",

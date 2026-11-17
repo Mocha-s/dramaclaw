@@ -179,7 +179,7 @@ export function directorAutoConfirmationTransportText(
 ): string {
   const voiceInstruction = options.voiceChoiceRequired
     ? " Before starting, the user must choose a voice policy. Explicitly present both Chinese choices: " +
-      "‘1）缺失声线由虾导自动匹配系统声线；2）我会到「虾塘」上传或录制自定义声线。’ " +
+      "‘1）缺失声线由导台自动匹配系统声线；2）我会到「片场」上传或录制自定义声线。’ " +
       `${options.voiceErrors?.length ? `Known missing items: ${options.voiceErrors.join("；")}. ` : ""}` +
       "Ask the user to reply 系统声线 or 自定义声线; do not start yet."
     : " Then ask the user to reply 继续 or 确认 to start.";
@@ -194,7 +194,7 @@ export function directorAutoConfirmationTransportText(
 
 export function resolveDirectorVoicePolicy(text: string): DirectorVoicePolicy | null {
   const normalized = text.trim();
-  const system = /(?:系统声(?:线|音|一)|系统配音|虾导匹配)/u.test(normalized);
+  const system = /(?:系统声(?:线|音|一)|系统配音|导台匹配)/u.test(normalized);
   const custom = /(?:自定义声(?:线|音)|上传(?:或录制)?|录制声线|声音采样|自定义配音)/u.test(normalized);
   if (system === custom) return null;
   return system ? "system" : "custom";
@@ -221,7 +221,7 @@ export function emphasizeDirectorVoiceChoiceLabels(text: string): string {
 export function directorAutoVoiceChoiceTransportText(text: string): string {
   return `${text}\n\n[DRAMACLAW_VOICE_POLICY_REQUIRED]\n`+
     "Do not start episode auto and do not call generation tools. The user's voice policy is still " +
-    "unclear. Ask only: ‘请选择：1）缺失声线由虾导自动匹配系统声线；2）我会到「虾塘」上传或录制自定义声线。’ " +
+    "unclear. Ask only: ‘请选择：1）缺失声线由导台自动匹配系统声线；2）我会到「片场」上传或录制自定义声线。’ " +
     "Ask them to reply 系统声线 or 自定义声线.\n[/DRAMACLAW_VOICE_POLICY_REQUIRED]";
 }
 
@@ -239,7 +239,7 @@ export function markDirectorAutoHandled(
 
 export function directorAutoRunTransportText(text: string): string {
   return `${text}\n\n[DRAMACLAW_RUN_MODE]\nmode=episode_auto\n`+
-    "The user enabled 本集自动 in the outer 虾导 UI. Treat this as approval to select and start " +
+    "The user enabled 本集自动 in the outer 导台 UI. Treat this as approval to select and start " +
     "the next safe mainline step without asking for per-step confirmation. Keep the one-write-per-turn " +
     "limit. Before any write, inspect the current artifact and the latest task for that exact step. " +
     "If the artifact is merely missing and prerequisites are ready, start its generation. Do not let " +
@@ -261,7 +261,7 @@ export function directorAutoRunTransportText(text: string): string {
 
 export function directorAutoUserMessageTransportText(text: string): string {
   return `${text}\n\n[DRAMACLAW_AUTO_USER_MESSAGE]\n`+
-    "The durable backend already owns progression of the active outer 虾导 episode auto run. First " +
+    "The durable backend already owns progression of the active outer 导台 episode auto run. First " +
     "understand the user's actual intent; do not start the next mainline task merely because this " +
     "message arrived. For a question, explanation, result view, or progress/status request, answer or " +
     "read only and leave automatic progression running. If the message may change, redo, replace, or " +
@@ -275,7 +275,7 @@ export function directorAutoUserMessageTransportText(text: string): string {
 
 export function directorAutoInterventionTransportText(text: string): string {
   return `${text}\n\n[DRAMACLAW_AUTO_INTERVENTION_CONFIRMATION]\n`+
-    "The outer 虾导 episode auto run is suspended while waiting for the user's answer about a possible " +
+    "The outer 导台 episode auto run is suspended while waiting for the user's answer about a possible " +
     "modification. Interpret the answer semantically. If the user declines/cancels the modification or " +
     "asks to keep the original result and continue automatically, call " +
     "dramaclaw_control_episode_auto(action='resume') and acknowledge that automatic production resumed. " +

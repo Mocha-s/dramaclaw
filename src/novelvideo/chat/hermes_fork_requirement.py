@@ -1,4 +1,4 @@
-"""DramaClaw and the Hermes fork are installed as a pair, and this enforces it.
+"""AIGCDO and the Hermes fork are installed as a pair, and this enforces it.
 
 Workers authenticate per turn unconditionally: `build_hermes_child_env` gives
 every worker a placeholder credential and the per-turn latch, and the real key
@@ -28,7 +28,7 @@ class HermesForkMissing(RuntimeError):
 #: Probed in the worker's own interpreter, not this one.
 #:
 #: The first version imported the modules here and was wrong in both
-#: directions. DramaClaw does not import Hermes — it launches it as a
+#: directions. AIGCDO does not import Hermes — it launches it as a
 #: subprocess, often from a different virtualenv — so an API process that has
 #: never installed Hermes would refuse to start even with a correct fork
 #: installed for the worker, while an API process that happened to have a stock
@@ -150,8 +150,8 @@ def require_hermes_fork(cli_path=None, extra_path=None) -> None:
         return
     raise HermesForkMissing(
         f"the installed Hermes cannot carry a per-turn credential: {detail}. "
-        "DramaClaw and the Hermes fork are installed as a pair; a stock Hermes "
+        "AIGCDO and the Hermes fork are installed as a pair; a stock Hermes "
         "drops the _meta extension the credential travels in, so every turn "
         "would fail closed and report a connection error. Install the fork "
-        "(HERMES_INSTALL_SPEC) or run a DramaClaw from before per-turn "
+        "(HERMES_INSTALL_SPEC) or run a AIGCDO from before per-turn "
         "credentials.")

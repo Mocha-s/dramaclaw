@@ -196,7 +196,7 @@ class IndexTTS2FalClient:
             return TTSResult(success=False, error="ORG_EGRESS_DENIED")
         if context is None and not self.api_key:
             key_name = (
-                "DramaClawAPI API key"
+                "AIGCDO API API key"
                 if self.provider == "newapi"
                 else "FAL_KEY/FAL_API_KEY"
             )
@@ -437,7 +437,7 @@ class IndexTTS2FalClient:
                     if not result_url:
                         return TTSResult(
                             success=False,
-                            error="DramaClawAPI IndexTTS2 response missing audio bytes or URL",
+                            error="AIGCDO API IndexTTS2 response missing audio bytes or URL",
                         )
                     if not await copy_archived_result(
                         payload.get("archive"), output_path

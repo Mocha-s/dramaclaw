@@ -90,7 +90,7 @@ REPEATED_VALIDATION_TOOL_CALL_LIMIT = max(
 TOOL_DETAIL_LIMIT = 1600
 PERMISSION_REQUEST_TIMEOUT_SECONDS = 60.0
 CONTENT_FILTER_MESSAGE = (
-    "本轮回复被模型网关的内容安全过滤拦截了，虾导没有拿到可用输出。"
+    "本轮回复被模型网关的内容安全过滤拦截了，导台没有拿到可用输出。"
     "请把需求拆得更具体，避免一次性要求完成整集或包含敏感/违规描述；"
     "也可以先让我只列当前制作进度和下一步。"
 )
@@ -278,11 +278,11 @@ def _turn_tool_call_limit_for_tool(name: object) -> int | None:
 def _tool_call_limit_stop_message(name: object) -> str:
     if _is_freezone_tool(name):
         return (
-            "本轮操作已停止：虾画连续调用工具过多，可能在重复读取或修改 Skill Studio 草稿。"
+            "本轮操作已停止：造境连续调用工具过多，可能在重复读取或修改 Skill Studio 草稿。"
             "请缩小修改范围，例如只调整 Skill 元信息，或只调整某一个 Recipe。"
         )
     return (
-        "本轮操作已停止：虾导连续调用工具过多，可能在自动推进过大范围。"
+        "本轮操作已停止：导台连续调用工具过多，可能在自动推进过大范围。"
         "请缩小指令范围，例如只检查前置条件，或只启动一个具体 beat 的视频任务。"
     )
 
@@ -356,7 +356,7 @@ class _TurnToolCallGuard:
             self._validation_signature_counts[signature] = validation_count
             if validation_count >= REPEATED_VALIDATION_TOOL_CALL_LIMIT:
                 return (
-                    "本轮操作已停止：虾画重复校验同一批画布命令，且没有执行新的写入。"
+                    "本轮操作已停止：造境重复校验同一批画布命令，且没有执行新的写入。"
                     "请重新发送一条明确的继续或重试指令。"
                 )
         if not _is_dramaclaw_write_tool(tool_name) and not _is_freezone_canvas_write_tool(tool_name):
@@ -386,7 +386,7 @@ class _TurnToolCallGuard:
             if repeat_count > REPEATED_READ_TOOL_CALL_LIMIT:
                 subject = "同一个画布节点" if _is_freezone_tool(tool_name) else "同一项状态"
                 return (
-                    f"本轮操作已停止：虾导重复读取{subject}，且没有产生新的操作。"
+                    f"本轮操作已停止：导台重复读取{subject}，且没有产生新的操作。"
                     "请重新发送一条明确的继续或重试指令。"
                 )
 
@@ -930,7 +930,7 @@ class HermesSdkThread:
 
         What neither may do is forward stderr verbatim at anything above debug.
         Worker stderr carries prompts, tool output and provider bodies, so a
-        warning-level echo would route user content into DramaClaw's logs
+        warning-level echo would route user content into AIGCDO's logs
         through a path no telemetry allowlist governs. The Freezone line is
         promoted because it is a fixed marker; an error is reduced to its
         exception type and the pid.
@@ -947,7 +947,7 @@ class HermesSdkThread:
                 text = line.decode("utf-8", "replace").rstrip()
                 if not text:
                     continue
-                if "DramaClaw Freezone warning" in text:
+                if "AIGCDO Freezone warning" in text:
                     _log.warning("hermes[%s] %s", self._username, text)
                 elif _WORKER_DIAGNOSTIC.search(text):
                     match = _WORKER_ERROR_TYPE.search(text)
@@ -1100,7 +1100,7 @@ class HermesSdkThread:
         """Send a prompt and yield ChatBackendEvent items as hermes streams them.
 
         ``current_project`` is included as a prompt prefix so per-user hermes
-        knows which DramaClaw project the user is talking about (see plan).
+        knows which AIGCDO project the user is talking about (see plan).
 
         ``trajectory_id`` and ``project_id`` are raw internal identifiers used to
         mint this turn's egress capability. They are hashed before they leave

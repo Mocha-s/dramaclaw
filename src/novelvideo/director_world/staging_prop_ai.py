@@ -15,7 +15,7 @@ from .paths import shape_hint_registry_path, shape_hints_dir
 STAGING_PROP_MODEL = "DC-staging-prop-planner-LLM"
 
 
-SYSTEM_PROMPT = """You are BuilderGPT inside SuperTale's DirectorWorld editor.
+SYSTEM_PROMPT = """You are BuilderGPT inside AIGCDO's DirectorWorld editor.
 
 Generate exactly one temporary staging prop for blocking.
 

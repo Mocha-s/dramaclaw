@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Elastic-2.0
-# SPDX-FileCopyrightText: 2026 SuperTale contributors
+# SPDX-FileCopyrightText: 2026 AIGCDO contributors
 """S3-compatible transient media relay using explicit, long-lived credentials."""
 
 from __future__ import annotations

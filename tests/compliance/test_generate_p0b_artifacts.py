@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Elastic-2.0
-# SPDX-FileCopyrightText: 2026 SuperTale contributors
+# SPDX-FileCopyrightText: 2026 AIGCDO contributors
 
 from __future__ import annotations
 

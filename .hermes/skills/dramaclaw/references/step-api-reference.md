@@ -1,4 +1,4 @@
-# DramaClaw 步骤 API 参考
+# AIGCDO 步骤 API 参考
 
 本文件只记录各步骤的端点、参数和任务类型，不拥有流程顺序决策权。Steps 1-7 的顺序以
 `playbooks/init.md` 为准，Steps 8-16 的顺序以 `playbooks/episode.md` 为准；恢复定位以
@@ -17,7 +17,7 @@
 
 ## 当前项目准备阶段
 
-项目创建由前端/系统完成，虾导不会调用 `POST /projects`。以下步骤均要求
+项目创建由前端/系统完成，导台不会调用 `POST /projects`。以下步骤均要求
 `DRAMACLAW_PROJECT_ID` 已绑定到一个存在的项目。
 
 ### Step 1: 上传小说 [SYNC]

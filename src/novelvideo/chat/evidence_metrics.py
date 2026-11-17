@@ -1,4 +1,4 @@
-"""Shared counters for the DramaClaw end of the evidence plane.
+"""Shared counters for the AIGCDO end of the evidence plane.
 
 Every outcome here was already decided on each turn and then kept nowhere. That
 is tolerable while a canary is watching; in production it means the three ways

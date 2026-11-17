@@ -27,7 +27,7 @@ def _resolve_db_path(project_dir: Path) -> Path:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Print sketch-edit convergence trend.")
-    parser.add_argument("project_dir", help="SuperTale project directory")
+    parser.add_argument("project_dir", help="AIGCDO project directory")
     parser.add_argument(
         "--episode-num",
         type=int,

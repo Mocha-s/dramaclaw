@@ -1,7 +1,7 @@
 """Freezone REST 接口。
 
 所有接口统一挂在 `/api/v1/projects/{project}/freezone/*` 下，并沿用
-SuperTale 现有鉴权约定（`Depends(get_api_user)`）。
+AIGCDO 现有鉴权约定（`Depends(get_api_user)`）。
 """
 
 from __future__ import annotations
@@ -4072,7 +4072,7 @@ def _normalize_skill_input_url_scope(
                 code="skill_input_media_url_unsupported",
                 category="validation",
                 message="unsupported project API media URL",
-                user_action_hint="Use a project media URL returned by the SuperTale API.",
+                user_action_hint="Use a project media URL returned by the AIGCDO API.",
             )
         url_project = unquote(parts[4])
         if url_project != project:
@@ -4134,7 +4134,7 @@ def _normalize_skill_input_url_scope(
             code="skill_input_media_url_unsupported",
             category="validation",
             message="unsupported project API media URL",
-            user_action_hint="Use a project media URL returned by the SuperTale API.",
+            user_action_hint="Use a project media URL returned by the AIGCDO API.",
         )
 
 
@@ -13573,7 +13573,7 @@ def _projection_group_id(projection_key: str) -> str:
 
     slug 只是给人看的可读部分，是**有损**的：中文角色名会被整段换成 ``_`` 再 strip
     掉，``asset:character:林小满`` 和 ``asset:character:顾南城`` 都会塌成
-    ``asset_character``——两个角色于是共用一个组 id，第二个人进虾画时组名被顶掉、
+    ``asset_character``——两个角色于是共用一个组 id，第二个人进造境时组名被顶掉、
     两个人的节点挤进同一个组。唯一性一律交给 key 的稳定摘要来保证。
     """
     slug = re.sub(r"[^A-Za-z0-9]+", "_", projection_key).strip("_").lower()[:35]
@@ -16840,7 +16840,7 @@ async def restore_canvas_history(
             user=user,
         )
         _stamp_canvas_mainline_context_project_id(prepared, project)
-        # 回滚也是一次写入：旧版本里的外项目引用不能借着「恢复历史」重新落库(SuperTale#192)。
+        # 回滚也是一次写入：旧版本里的外项目引用不能借着「恢复历史」重新落库(AIGCDO#192)。
         # 与 PUT 同一条判据——只拦相对当前版本新引入的，当前版本已有的照常放行。
         reject_new_foreign_media_refs(prepared, existing=existing, project_id=ctx.project_id)
         return prepared
@@ -17062,7 +17062,7 @@ async def put_canvas(
         )
         _stamp_canvas_mainline_context_project_id(prepared, project)
         # 静态资源按 URL 里的项目 id 独立鉴权:画布存下别的项目的媒体地址,源项目成员
-        # 看着一切正常,换个同样合法的本项目成员打开就是整片 403(SuperTale#192)。
+        # 看着一切正常,换个同样合法的本项目成员打开就是整片 403(AIGCDO#192)。
         # 只拦本次新引入的,库里已有的历史脏引用照常放行——否则一个脏节点就能把整张
         # 老画布永久锁死,而那些画布正是本守卫要解决的问题的受害者。
         reject_new_foreign_media_refs(prepared, existing=existing, project_id=ctx.project_id)
@@ -17815,7 +17815,7 @@ def _sync_env_only_to_selected_background(
     Why mirror at all:
       PlayCanvas editor writes env_only.png / actor_overlay_black.png /
       actor_mask.png / combined.png directly via /@fs proxy when the user
-      exports. There is no SuperTale write route to hook into, so we cannot
+      exports. There is no AIGCDO write route to hook into, so we cannot
       guarantee selected_background.png is updated at write time without
       touching PlayCanvas.
 

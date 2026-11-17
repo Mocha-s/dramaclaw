@@ -20,13 +20,13 @@ function parseProjectLocation(pathname: string): {
 /**
  * 让画布在同一个项目内保活。
  *
- * 顶栏「虾画 / 虾集」切换原本是一次普通的路由跳转，而 projects.$project 下没有
+ * 顶栏「造境 / 藏境」切换原本是一次普通的路由跳转，而 projects.$project 下没有
  * layout route，两边是平级兄弟；_app.tsx 又按 `/projects/$project/$section` 给
  * 动画容器算 key。结果就是每切一次，FreezoneShell + Canvas + ReactFlow 整棵子树
  * 连同它上千个节点组件一起销毁重建，卸载和挂载都落在同一次 commit 里 —— 这就是
  * 「点完按钮要停顿一下才换页」，且两个方向都停。
  *
- * 这里把画布提到被 re-key 的动画容器之外、按项目挂载一次，切到虾集时只是隐藏
+ * 这里把画布提到被 re-key 的动画容器之外、按项目挂载一次，切到藏境时只是隐藏
  * 并置为非激活。用 visibility 而不是 display:none 是有意的：display:none 会让
  * 容器尺寸归零，ReactFlow 的 ResizeObserver 会因此重置视口，切回来画布的缩放和
  * 位置就没了。visibility:hidden 保留布局尺寸，切回来还是原样。
@@ -39,7 +39,7 @@ export function FreezoneCanvasHost() {
   const { project, section } = parseProjectLocation(pathname);
   const isFreezone = section === "freezone";
 
-  // 只有真的进过虾画才挂载：在虾集里从头到尾没开过画布的用户，不该为它付出
+  // 只有真的进过造境才挂载：在藏境里从头到尾没开过画布的用户，不该为它付出
   // 挂载成本，也不该多打那些 canvas 请求。
   // 惰性初值而不是先 null 再由 effect 补：直接把地址栏敲成 /freezone 进来时，
   // 前者首帧就能挂上画布，后者要白等一帧。
@@ -58,7 +58,7 @@ export function FreezoneCanvasHost() {
     }
   }, [isFreezone, project, mountedProject]);
 
-  // 画布不再被卸载，正在播的视频/音频就不会跟着停 —— 切到虾集后会变成看不见的
+  // 画布不再被卸载，正在播的视频/音频就不会跟着停 —— 切到藏境后会变成看不见的
   // 后台声音。隐藏时统一暂停一次（只暂停、不恢复：切回来是否继续播由用户决定，
   // 自动续播比静音更让人意外）。
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,7 +91,7 @@ export function FreezoneCanvasHost() {
       inert={!isFreezone}
     >
       <Suspense fallback={<FreezoneChunkLoading />}>
-        {/* key 必须带项目：在虾画里直接换项目（ProjectSwitcher 会保持在虾画）
+        {/* key 必须带项目：在造境里直接换项目（ProjectSwitcher 会保持在造境）
             原本靠 _app.tsx 那个带 $project 的 re-key 整棵重建，画布提出来之后
             没人做这件事了。不重建的话 FreezoneShell 的一堆按项目来的状态会串台
             —— 最刺眼的是 hasRenderedCanvas 只置不清，新项目 hydrate 期间屏幕上
@@ -106,7 +106,7 @@ export function FreezoneCanvasHost() {
   );
 }
 
-/** 首次进入虾画、画布 chunk 还在下载时的占位，沿用原路由的加载态。 */
+/** 首次进入造境、画布 chunk 还在下载时的占位，沿用原路由的加载态。 */
 function FreezoneChunkLoading() {
   return (
     <div className="flex h-full w-full items-center justify-center bg-bg-dark text-text-muted">

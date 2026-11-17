@@ -1240,7 +1240,7 @@ function ProjectDashboard() {
     }
   };
 
-  // 进项目恢复上次停留的区块（虾画 / 虾集子页，默认虾画）；上次在虾镜且
+  // 进项目恢复上次停留的区块（造境 / 藏境子页，默认造境）；上次在镜界且
   // 有剧集深链则直达该集。
   const resolveProjectEntry = useCallback((project: string): string => {
     let section =

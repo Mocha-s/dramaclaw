@@ -125,7 +125,7 @@ def _ensure_minimum_dramaclaw_version(bundle: dict[str, Any]) -> None:
     minimum = str(bundle["min_dramaclaw_version"])
     current = current_dramaclaw_version()
     if parse_semver(current) < parse_semver(minimum):
-        raise ValueError(f"Bundle requires DramaClaw >= {minimum}; current version is {current}")
+        raise ValueError(f"Bundle requires AIGCDO >= {minimum}; current version is {current}")
 
 
 def _ensure_no_existing_skill_id(username: str, skill: dict[str, Any]) -> None:
@@ -283,4 +283,4 @@ def _bundle_meta_legal(skill: dict[str, Any], bundle_meta: dict[str, Any]) -> di
 def _default_bundle_author(skill: dict[str, Any], *, username: str) -> str:
     if skill.get("_catalog_source") == "builtin":
         return "DramaClaw"
-    return username.strip() or "DramaClaw User"
+    return username.strip() or "AIGCDO User"

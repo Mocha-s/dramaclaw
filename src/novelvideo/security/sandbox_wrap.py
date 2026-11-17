@@ -27,7 +27,7 @@ from typing import Iterable
 
 _log = logging.getLogger(__name__)
 
-# SuperTale repo root: src/novelvideo/security/sandbox_wrap.py → parents[3]
+# AIGCDO repo root: src/novelvideo/security/sandbox_wrap.py → parents[3]
 SUPERTALE_ROOT = Path(__file__).resolve().parents[3]
 SANDBOX_PROFILES_DIR = SUPERTALE_ROOT / "deploy" / "sandbox"
 SEATBELT_BASE_POLICY = SANDBOX_PROFILES_DIR / "seatbelt_base_policy.sbpl"
@@ -52,7 +52,7 @@ class SandboxSpec:
     """Per-user sandbox configuration.
 
     Only `user` is required. Other fields auto-derive defaults sensible for
-    the SuperTale layout (state/{user}/, output/{user}/, runtime/{user}/).
+    the AIGCDO layout (state/{user}/, output/{user}/, runtime/{user}/).
     """
 
     user: str
@@ -78,7 +78,7 @@ class SandboxSpec:
             SUPERTALE_ROOT / "src",
             SUPERTALE_ROOT / "integrations",
             SUPERTALE_ROOT / ".hermes",  # repo-pinned Hermes skills
-            SUPERTALE_ROOT / ".venv",  # SuperTale's main venv for skill scripts
+            SUPERTALE_ROOT / ".venv",  # AIGCDO's main venv for skill scripts
         ]
         return paths
 
@@ -419,10 +419,10 @@ def build_macos_profile(spec: SandboxSpec) -> str:
 
     home = spec.resolved_hermes_home()
 
-    parts: list[str] = ["\n;; ===== SuperTale per-user dynamic policy =====\n"]
+    parts: list[str] = ["\n;; ===== AIGCDO per-user dynamic policy =====\n"]
 
     # Hermes workers need outbound network access for the configured LLM
-    # provider and SuperTale API calls. File writes and agent-side tools remain
+    # provider and AIGCDO API calls. File writes and agent-side tools remain
     # constrained by the rules below and by the per-user toolset whitelist.
     parts.append("\n;; NETWORK: allow outbound LLM/API calls\n")
     parts.append("(allow network-outbound)\n")

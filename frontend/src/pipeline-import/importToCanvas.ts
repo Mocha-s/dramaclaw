@@ -38,7 +38,7 @@ export function importAssetsToCanvas(assets: ImportableAsset[]): void {
       previewImageUrl: asset.url,
       aspectRatio: "1:1",
       sourceFileName: asset.label,
-      // Hold onto the SuperTale provenance so a Commit back to pipeline can
+      // Hold onto the AIGCDO provenance so a Commit back to pipeline can
       // pre-fill its target dropdown later.
       __freezone_source: {
         kind: asset.kind,

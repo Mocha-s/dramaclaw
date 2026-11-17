@@ -54,7 +54,7 @@ FREEZONE_IMAGE_CAMERA_OPTIONS = {
 
 
 def resolve_freezone_image_provider(provider: Optional[str], *, strict: bool = True) -> str:
-    """把 Freezone 图片 provider 归一化到当前支持的 SuperTale 范围内。"""
+    """把 Freezone 图片 provider 归一化到当前支持的 AIGCDO 范围内。"""
     if provider and provider.strip():
         normalized = provider.strip().lower()
         if normalized not in SUPPORTED_FREEZONE_IMAGE_PROVIDERS:
@@ -331,7 +331,7 @@ def notes_suffix(*, style: str, notes: str, user_prompt: str) -> str:
         [
             "",
             "Hard requirements:",
-            "- Production-ready SuperTale asset candidate.",
+            "- Production-ready AIGCDO asset candidate.",
             "- No text, watermark, UI frame, contact sheet, or collage unless explicitly requested.",
             "- Preserve useful identity / scene / prop cues from references.",
         ]

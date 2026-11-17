@@ -1,6 +1,6 @@
 ---
 name: sketch-storyboard-director
-description: Use when doing a separate post-QC storyboard-directing pass on SuperTale sketches. This skill focuses on shot scale, camera angle, staging, composition, and beat-to-beat visual rhythm after basic sketch correctness has already passed QC.
+description: Use when doing a separate post-QC storyboard-directing pass on AIGCDO sketches. This skill focuses on shot scale, camera angle, staging, composition, and beat-to-beat visual rhythm after basic sketch correctness has already passed QC.
 ---
 
 # Sketch Storyboard Director

@@ -1,9 +1,9 @@
 ---
 name: dramaclaw-workflows
-description: Create, revise, confirm, run, or resume multi-node DramaClaw Freezone canvas workflows. Use for requests involving a workflow, several connected nodes, grouped production stages, storyboards, or text/image/video/audio pipelines; do not use for one standalone canvas operation.
+description: Create, revise, confirm, run, or resume multi-node AIGCDO Freezone canvas workflows. Use for requests involving a workflow, several connected nodes, grouped production stages, storyboards, or text/image/video/audio pipelines; do not use for one standalone canvas operation.
 ---
 
-# DramaClaw Workflows
+# AIGCDO Workflows
 
 Build one coherent workflow transaction, not a sequence of standalone canvas edits.
 
@@ -37,11 +37,11 @@ Build one coherent workflow transaction, not a sequence of standalone canvas edi
   advertised templates for resource reads. Do not enumerate or guess another user's
   private catalog IDs.
 - The Skill package/server display name does not determine a host's MCP registration key. Use the
-  exact `server` returned by the host. In DramaClaw's Codex adapter, filesystem-backed Skill files
+  exact `server` returned by the host. In AIGCDO's Codex adapter, filesystem-backed Skill files
   are read from `dramaclaw`; workflow catalog resources use `dramaclaw_workflows` (underscore).
   Never call `resources/read` with an inferred `dramaclaw-workflows` server key.
 - Use the portable `dramaclaw-workflows` MCP server for catalog discovery and deterministic
-  compilation when it is available. Use the authorized DramaClaw MCP server for draft persistence,
+  compilation when it is available. Use the authorized AIGCDO MCP server for draft persistence,
   approval, canvas commit, and execution. Tool names are host-neutral; call them through the MCP
   mechanism supported by the current agent.
 - `dramaclaw-workflows` is this Agent Skill package/server name, not a Workflow catalog `skill_id`.

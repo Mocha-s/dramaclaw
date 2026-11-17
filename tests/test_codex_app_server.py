@@ -928,7 +928,7 @@ async def test_real_gateway_app_server_native_tool_search_calls_concrete_mcp(
         "DRAMACLAW_NATIVE_TOOL_SEARCH_E2E_GATEWAY_KEY", ""
     ).strip()
     if not gateway_base_url or not gateway_api_key:
-        pytest.skip("a Tool Search-capable DramaClaw Gateway URL and key are required")
+        pytest.skip("a Tool Search-capable AIGCDO Gateway URL and key are required")
 
     bundled_codex = _integration_codex_binary()
     codex_bin = Path(os.environ.get("CODEX_BIN", "") or bundled_codex)
@@ -968,7 +968,7 @@ async def test_real_gateway_app_server_native_tool_search_calls_concrete_mcp(
             event
             async for event in client.thread_start().stream(
                 "为第 1 集准备系统音色，但不要确认执行。使用原生 Tool Search 找到并调用"
-                "唯一合适的 DramaClaw MCP 业务工具，然后简短报告确认要求。"
+                "唯一合适的 AIGCDO MCP 业务工具，然后简短报告确认要求。"
             )
         ]
     finally:
@@ -1230,7 +1230,7 @@ async def test_codex_stream_maps_structured_runtime_events(monkeypatch, tmp_path
         env={},
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=(),
         thread_config={},
         turn_metadata={},
@@ -1331,7 +1331,7 @@ async def test_codex_stream_times_out_before_first_runtime_progress(
         env={},
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=(),
         thread_config={},
         turn_metadata={},
@@ -1448,7 +1448,7 @@ async def test_codex_stream_times_out_after_runtime_becomes_idle(monkeypatch, tm
         env={},
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=(),
         thread_config={},
         turn_metadata={},
@@ -1588,7 +1588,7 @@ async def test_codex_stream_does_not_idle_timeout_while_waiting_for_user_input(
         env={},
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=(),
         thread_config={},
         turn_metadata={},
@@ -1664,7 +1664,7 @@ async def test_codex_stream_enforces_total_deadline_despite_continuous_progress(
         env={},
         model="DC-codex-agent-LLM",
         model_provider="dramaclaw_gateway",
-        developer_instructions="Use DramaClaw MCP only.",
+        developer_instructions="Use AIGCDO MCP only.",
         config_overrides=(),
         thread_config={},
         turn_metadata={},

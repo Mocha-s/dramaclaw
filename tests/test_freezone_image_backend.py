@@ -1099,7 +1099,7 @@ async def test_freezone_video_route_preserves_resolution_not_advertised_by_model
     await freezone_routes.freezone_video_gen(
         project="58",
         body=freezone_routes.FreezoneVideoGenRequest(
-            prompt="虾集视频",
+            prompt="藏境视频",
             model="seedance-2.0-fast",
             resolution="768p",
         ),
@@ -3945,7 +3945,7 @@ async def test_freezone_image_generation_preserves_catalog_independent_resolutio
     await freezone_routes.freezone_gen(
         project="58",
         body=freezone_routes.FreezoneGenRequest(
-            prompt="虾集图片",
+            prompt="藏境图片",
             image_size="4K",
             model="gpt-image-2",
         ),

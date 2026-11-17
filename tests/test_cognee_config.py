@@ -109,7 +109,7 @@ def test_cognee_preimport_is_observable_and_later_setup_is_guarded(tmp_path):
         import novelvideo.cognee.config  # noqa: F401
         from cognee.shared.logging_utils import setup_logging
 
-        assert "Cognee was imported before DramaClaw installed its logging guard" in (
+        assert "Cognee was imported before AIGCDO installed its logging guard" in (
             stream.getvalue()
         )
         assert not any(isinstance(item, PlainFileHandler) for item in root.handlers)

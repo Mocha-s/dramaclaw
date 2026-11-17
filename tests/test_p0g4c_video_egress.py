@@ -1884,7 +1884,7 @@ async def test_newapi_organization_submit_response_keeps_safe_error_and_terminal
 
     async def rejected(*_args, **_kwargs):
         raise NewApiVideoError(
-            f"DramaClawAPI submit failed: HTTP {status_code} - {response_body}",
+            f"AIGCDO API submit failed: HTTP {status_code} - {response_body}",
             request_id="req-1",
             status_code=status_code,
         )

@@ -23,7 +23,7 @@ from _api_runtime import api_enabled, wait_for_task_result_via_api  # noqa: E402
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Wait for storyboard director execute.")
-    parser.add_argument("project_dir", help="SuperTale project directory, e.g. output/admin/new")
+    parser.add_argument("project_dir", help="AIGCDO project directory, e.g. output/admin/new")
     parser.add_argument("--episode-num", type=int, required=True, help="Episode number")
     parser.add_argument("--scope", default=None, help="Task scope returned by the start script")
     parser.add_argument("--timeout-seconds", type=float, default=900.0)

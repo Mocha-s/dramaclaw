@@ -504,7 +504,7 @@ class CogneeStore:
         # 初始化项目 SQLite；Cognee 图谱上下文独立设置。
         await self._ensure_db()
 
-        # Cognee's graph/vector contexts are task-local, while DramaClaw adds
+        # Cognee's graph/vector contexts are task-local, while AIGCDO adds
         # the missing project-local base/relational contexts for Cognee 1.0.5.
         # Different projects can therefore initialize safely in Celery threads.
         with cognee_project_context(self.state_dir):

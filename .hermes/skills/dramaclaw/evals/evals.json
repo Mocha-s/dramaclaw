@@ -64,7 +64,7 @@
     {
       "id": 6,
       "prompt": "帮我写一个赛博朋克女总裁复仇短剧",
-      "expected_output": "Activate dramaclaw because this is an explicit production request, but do not create or ingest a screenplay from the one-line idea; direct the user to upload an existing screenplay in 虾料.",
+      "expected_output": "Activate dramaclaw because this is an explicit production request, but do not create or ingest a screenplay from the one-line idea; direct the user to upload an existing screenplay in 灵感.",
       "files": [],
       "expectations": [
         "Does not call a write or generation tool",
@@ -76,11 +76,11 @@
     {
       "id": 7,
       "prompt": "这个软件项目目前进度怎么样？",
-      "expected_output": "Do not activate dramaclaw without DramaClaw production context; ask which software project or answer from the active non-DramaClaw context.",
+      "expected_output": "Do not activate dramaclaw without AIGCDO production context; ask which software project or answer from the active non-DramaClaw context.",
       "files": [],
       "expectations": [
         "Does not activate dramaclaw solely because of generic project and progress words",
-        "Does not query the DramaClaw pipeline",
+        "Does not query the AIGCDO pipeline",
         "Does not assume a bound video production"
       ]
     },
@@ -91,7 +91,7 @@
       "files": [],
       "expectations": [
         "Does not activate dramaclaw",
-        "Does not call any DramaClaw tool",
+        "Does not call any AIGCDO tool",
         "Replies as ordinary conversation"
       ]
     }

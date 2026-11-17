@@ -1,4 +1,4 @@
-"""Durable server-side coordinator for outer 虾导 episode auto mode."""
+"""Durable server-side coordinator for outer 导台 episode auto mode."""
 
 from __future__ import annotations
 
@@ -811,9 +811,9 @@ class DirectorAutoCoordinator:
                 run_id=run.run_id,
                 username=run.username,
                 project_id=run.project_id,
-                reason="等待虾导空闲超时",
+                reason="等待导台空闲超时",
             )
-            await self._notify(run, "本集自动已暂停：虾导长时间处于忙碌状态。")
+            await self._notify(run, "本集自动已暂停：导台长时间处于忙碌状态。")
             return False
         prompt = instruction or (
             "第 {episode} 集成片合成已完成。请只读取并展示正式成片，然后简短收口；不要启动新的写任务。"
@@ -846,7 +846,7 @@ class DirectorAutoCoordinator:
                 "The user chose uploaded/recorded custom voices. Never substitute system voices. "
                 "If required custom voices are still missing at voice_setup, call "
                 "dramaclaw_control_episode_auto(action='pause'), then explain the missing items and "
-                "ask the user to upload or record them in 虾塘. Do not start audio generation."
+                "ask the user to upload or record them in 片场. Do not start audio generation."
                 "\n[/DRAMACLAW_VOICE_POLICY]"
             )
         turn_id = f"director-auto-{run.run_id}-{uuid.uuid4().hex[:10]}"
@@ -891,7 +891,7 @@ class DirectorAutoCoordinator:
                 project_id=run.project_id,
                 reason=str(exc),
             )
-            await self._notify(run, "本集自动已暂停：虾导继续执行失败，请检查服务状态后重试。")
+            await self._notify(run, "本集自动已暂停：导台继续执行失败，请检查服务状态后重试。")
             return False
 
     async def _run(self, run_id: str, username: str, project_id: str) -> None:
@@ -1056,7 +1056,7 @@ class DirectorAutoCoordinator:
                         project_id=project_id,
                         reason="自动续跑未产生写任务",
                     )
-                    await self._notify(run, "本集自动已暂停：虾导没有启动新的生成步骤，请检查当前前置条件。")
+                    await self._notify(run, "本集自动已暂停：导台没有启动新的生成步骤，请检查当前前置条件。")
                     return
                 await asyncio.sleep(POLL_SECONDS)
                 continue

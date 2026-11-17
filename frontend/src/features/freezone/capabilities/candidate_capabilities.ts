@@ -54,7 +54,7 @@ ${notes ? `Extra notes: ${notes}.` : ""}
 ${nodePrompt ? `Node note:\n${nodePrompt}` : ""}
 
 Hard requirements:
-- Production-ready SuperTale asset candidate.
+- Production-ready AIGCDO asset candidate.
 - No text, watermark, UI frame, contact sheet, or collage unless explicitly requested.
 - Preserve useful identity / scene / prop cues from references.`;
 }

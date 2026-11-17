@@ -333,7 +333,7 @@ async def test_indextts2_refunds_reserved_credit_on_generation_failure(monkeypat
         {
             "reservation_id": "reservation_1",
             "source": "indextts2_newapi",
-            "error": "DramaClawAPI IndexTTS2 response missing audio bytes or URL",
+            "error": "AIGCDO API IndexTTS2 response missing audio bytes or URL",
             "provider_request_id": "req_tts_1",
         }
     ]

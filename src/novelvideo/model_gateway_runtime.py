@@ -303,7 +303,7 @@ def create_request_scoped_gateway_model(
 
             api_key, base_url = platform_credential_factory()
             if not api_key or not base_url:
-                raise ValueError("API key not set. Configure DramaClawAPI credentials.")
+                raise ValueError("API key not set. Configure AIGCDO API credentials.")
             credential = RequestCredential(
                 reference=(
                     context.credential if context is not None else _platform_reference()
@@ -355,7 +355,7 @@ def create_request_scoped_gateway_model(
 
             api_key, base_url = platform_credential_factory()
             if not api_key or not base_url:
-                raise ValueError("API key not set. Configure DramaClawAPI credentials.")
+                raise ValueError("API key not set. Configure AIGCDO API credentials.")
             credential = RequestCredential(
                 reference=(
                     context.credential if context is not None else _platform_reference()

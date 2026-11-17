@@ -45,7 +45,7 @@ def custom_block_color(block_type: str) -> str:
     return f"#{channels[0]:02x}{channels[1]:02x}{channels[2]:02x}"
 
 
-# SuperTale voxel colors are object-class labels, not material colors.
+# AIGCDO voxel colors are object-class labels, not material colors.
 # A "table" is always table-colored even if the final artwork may make it wood,
 # metal, plastic, or marble. Real material/color comes later from style refs.
 VOXEL_SEMANTIC_PALETTE: Dict[str, Dict[str, str]] = load_object_type_registry()

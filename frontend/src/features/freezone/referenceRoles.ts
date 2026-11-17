@@ -3,7 +3,7 @@
 /**
  * Reference image role tagging (v1.6ζ).
  *
- * The base GenNode connects N reference images as a flat array. SuperTale's `nanobanana_grid` likewise
+ * The base GenNode connects N reference images as a flat array. AIGCDO's `nanobanana_grid` likewise
  * doesn't natively distinguish "use this as the character anchor" vs "use
  * this as the style reference" — but those have very different effects on
  * how the model uses the image.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch a DramaClaw MCP server from a local dramaclaw-ce checkout."""
+"""Launch a AIGCDO MCP server from a local dramaclaw-ce checkout."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only validation for a local DramaClaw Agent Kit installation."""
+"""Read-only validation for a local AIGCDO Agent Kit installation."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def _ce_source_requirement() -> dict[str, object]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     requirement = manifest.get("requires", {}).get("dramaclaw_ce")
     if not isinstance(requirement, dict):
-        raise SystemExit("Agent Kit manifest has no verifiable DramaClaw CE requirement")
+        raise SystemExit("Agent Kit manifest has no verifiable AIGCDO CE requirement")
     return requirement
 
 
@@ -34,7 +34,7 @@ def _validate_capability_contract(
 ) -> None:
     contract_name = str(requirement.get("contract_file") or "").strip()
     if not contract_name:
-        raise SystemExit("Agent Kit manifest has no DramaClaw CE contract_file")
+        raise SystemExit("Agent Kit manifest has no AIGCDO CE contract_file")
     try:
         contract = json.loads((ce_root / contract_name).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -72,7 +72,7 @@ def main() -> None:
     if not isinstance(required_files, list) or not all(
         isinstance(name, str) and name for name in required_files
     ):
-        raise SystemExit("Agent Kit manifest has invalid DramaClaw CE required_files")
+        raise SystemExit("Agent Kit manifest has invalid AIGCDO CE required_files")
     missing = [
         name
         for name in dict.fromkeys((*REQUIRED, *required_files))

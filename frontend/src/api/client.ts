@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
-// SuperTale API client. All freezone HTTP traffic goes through this single
+// AIGCDO API client. All freezone HTTP traffic goes through this single
 // ky instance so we set credentials + base URL + error normalization once.
 
 import ky, { HTTPError, type KyInstance, type Options } from "ky";
@@ -26,7 +26,7 @@ export class ApiError extends Error {
 
 const baseClient: KyInstance = ky.create({
   prefix: "/api/v1",
-  credentials: "include", // share st_session cookie set by SuperTale login
+  credentials: "include", // share st_session cookie set by AIGCDO login
   // The freezone backend is a remote dev box; transient drops (ECONNRESET) and
   // 5xx blips are common. ky retries network errors + 408/429/5xx with backoff,
   // but only on idempotent methods. Every canvas op here is idempotent (PUT is a
@@ -82,7 +82,7 @@ const baseClient: KyInstance = ky.create({
 });
 
 /**
- * Unwrap the canonical SuperTale `{ ok, data, error }` envelope.
+ * Unwrap the canonical AIGCDO `{ ok, data, error }` envelope.
  * Throws ApiError on non-ok responses.
  */
 export async function apiCall<T>(

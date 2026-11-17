@@ -1,4 +1,4 @@
-"""CE-owner-mode safety boundary for the DramaClaw Hermes plugin.
+"""CE-owner-mode safety boundary for the AIGCDO Hermes plugin.
 
 Tokenless CE-owner mode (``DRAMACLAW_CE_OWNER=1`` with no bearer token) drops
 the ``Authorization`` header entirely, so it must only ever target a loopback

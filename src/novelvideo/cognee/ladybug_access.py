@@ -1,7 +1,7 @@
 """Project-scoped Ladybug read/write access for Cognee.
 
 Ladybug permits either one read-write ``Database`` object or multiple read-only
-``Database`` objects for the same on-disk database.  DramaClaw writes the graph
+``Database`` objects for the same on-disk database.  AIGCDO writes the graph
 only while importing a novel; all later graph operations are read-only.
 
 This module bridges that lifecycle into Cognee 1.0.x, whose Ladybug adapter
@@ -80,7 +80,7 @@ def install_cognee_project_context_patch() -> None:
     """Add task-local base/relational storage routing to Cognee 1.0.5.
 
     Cognee already scopes graph, vector, and file storage with ContextVars, but
-    its base and relational configurations are process-global. DramaClaw keeps
+    its base and relational configurations are process-global. AIGCDO keeps
     a complete Cognee database under each project, so concurrent reads need the
     two missing project-local configuration layers as well.
     """

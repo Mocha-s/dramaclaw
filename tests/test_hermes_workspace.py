@@ -152,11 +152,11 @@ def test_fresh_create_layout(isolated_workspace, repo_skills, repo_plugins):
     assert _enabled_toolsets(config) == ["hermes-acp", "memory"]
     assert "    - dramaclaw" in config
     assert "    - freezone" not in config
-    assert "你是虾导" in (home / "SOUL.md").read_text()
+    assert "你是导台" in (home / "SOUL.md").read_text()
     memory = (home / "memories" / "MEMORY.md").read_text()
-    assert "虾导在 DramaClaw 会话中面向用户自称“虾导”" in memory
+    assert "导台在 AIGCDO 会话中面向用户自称“导台”" in memory
     assert "不要在普通回复开头自报身份" in memory
-    assert "我是虾导，DramaClaw 的小说转视频创作助手。" not in memory
+    assert "我是导台，AIGCDO 的小说转视频创作助手。" not in memory
 
 
 def test_project_workspace_keeps_hermes_native_state_under_project(
@@ -205,7 +205,7 @@ def test_freezone_profile_uses_isolated_workspace(
     assert "FREEZONE_CANVAS_ASSISTANT" in soul
     assert "command catalog" not in soul
     assert "只使用 Freezone 画布能力" in memory
-    assert "不得用 DramaClaw 主线工具" in memory
+    assert "不得用 AIGCDO 主线工具" in memory
     assert "创意咨询" not in memory
     assert "command catalog" not in memory
     assert len(soul) < 250
@@ -377,7 +377,7 @@ def test_freezone_profile_materializes_native_workflow_skills(
         {
             "id": "ecommerce-ad",
             "name": "电商广告",
-            "description": "动态生成电商广告工作流。 适用于：商品广告、带货视频。 选择后使用虾画确定性工具生成动态工作流。",
+            "description": "动态生成电商广告工作流。 适用于：商品广告、带货视频。 选择后使用造境确定性工具生成动态工作流。",
             "category": "ecommerce",
             "source": "hermes_native_workflow_skill",
             "allowed_recipe_ids": ["ecommerce-ad-image"],
@@ -1230,8 +1230,8 @@ def test_hermes_freezone_tool_limit_message_uses_freezone_context():
         "freezone_put_agent_catalog_recipe"
     )
 
-    assert "虾画" in message
-    assert "虾导" not in message
+    assert "造境" in message
+    assert "导台" not in message
     assert "beat" not in message
 
 
@@ -1520,11 +1520,11 @@ def test_legacy_identity_context_is_migrated(
 
     soul = (home / "SOUL.md").read_text(encoding="utf-8")
     memory = (memories / "MEMORY.md").read_text(encoding="utf-8")
-    assert "你是虾导" in soul
+    assert "你是导台" in soul
     assert "You are Hermes Agent" not in soul
-    assert "我是虾导，DramaClaw 的小说转视频创作助手。" not in memory
-    assert "DramaClaw 管理的虾导会话" in memory
-    assert "DramaClaw 管理的 Hermes 会话" not in memory
+    assert "我是导台，AIGCDO 的小说转视频创作助手。" not in memory
+    assert "AIGCDO 管理的导台会话" in memory
+    assert "AIGCDO 管理的 Hermes 会话" not in memory
 
 
 def test_stale_symlinks_removed(isolated_workspace, repo_skills, repo_plugins):
@@ -1595,3 +1595,11 @@ def test_torn_config_yaml_is_rebuilt_instead_of_running_without_the_tool_policy(
     rebuilt = yaml.safe_load(config.read_text(encoding="utf-8"))
     assert "terminal" in rebuilt["disabled_toolsets"]
     assert rebuilt["plugins"]["enabled"] == ["freezone"]
+
+
+def test_existing_workspace_identity_is_renamed(isolated_workspace, repo_skills, repo_plugins):
+    home = hw.ensure_user_hermes_workspace("admin")
+    (home / "SOUL.md").write_text("你是虾导。到「虾塘」上传。\n", encoding="utf-8")
+    hw.ensure_user_hermes_workspace("admin")
+    text = (home / "SOUL.md").read_text(encoding="utf-8")
+    assert "你是导台" in text and "片场" in text and "虾" not in text

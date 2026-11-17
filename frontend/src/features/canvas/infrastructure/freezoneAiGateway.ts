@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
-// AiGateway implementation that talks to SuperTale's `/api/v1/projects/<project_id>/freezone/*`
+// AiGateway implementation that talks to AIGCDO's `/api/v1/projects/<project_id>/freezone/*`
 // endpoints.
 //
 // Protocol mapping:
@@ -50,7 +50,7 @@ interface ProviderModel {
   model: string | null;
 }
 
-/** Split frontend model strings into SuperTale's provider/model pair. */
+/** Split frontend model strings into AIGCDO's provider/model pair. */
 const PLACEHOLDER_MODEL_TOKENS = new Set(["default", "auto", ""]);
 const SUPPORTED_PROVIDERS = new Set<FreezoneProvider>([
   "huimeng",
@@ -107,12 +107,12 @@ function currentCanvasId(): string {
   return readUrl().canvas ?? "default";
 }
 
-/** SuperTale's API uses "1:1" / "16:9" etc — pass through. */
+/** AIGCDO's API uses "1:1" / "16:9" etc — pass through. */
 function toAspectRatio(payload: GenerateImagePayload): string {
   return payload.aspectRatio || "1:1";
 }
 
-/** Normalize the frontend image-size enum (e.g. "1K") to SuperTale's
+/** Normalize the frontend image-size enum (e.g. "1K") to AIGCDO's
  * `image_size` field. We accept anything; backend currently uses "0.5K"/"1K"/"2K"/"4K". */
 function toImageSize(payload: GenerateImagePayload): string {
   const raw = (payload.size || "2K").toString();

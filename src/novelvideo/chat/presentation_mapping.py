@@ -220,7 +220,7 @@ def _extract_tool_chat_error(value: Any, *, redact: Callable[[str], str]) -> str
         if "Render 模式需要草图" in raw or "未生成可用图片" in raw:
             return (
                 "Render 任务没有生成可用图片：当前缺少必要草图前置。"
-                "请先在「虾塘」生成或确认对应 Beat 的草图后，再重新生成 Render。"
+                "请先在「片场」生成或确认对应 Beat 的草图后，再重新生成 Render。"
                 f"\n\n错误原因：{raw[:1200]}"
             )
         return None

@@ -606,7 +606,7 @@
     "syncingHistoryDescription": "正在连接导台并同步历史对话，请稍候。",
     "disclaimer": "导台可能会出错，请核对关键剧情、角色与资产信息。",
     "placeholder": "上传剧本后，说出要推进的分集、画面、配音或成片任务",
-    "freezonePlaceholder": "想画什么、改哪里，直接告诉造境",
+    "freezonePlaceholder": "想画什么、改哪里，直接告诉智核",
     "waiting": "等待聊天服务连接...",
     "waitingResponse": "等待导台回复",
     "waitingResponses": [
@@ -616,15 +616,15 @@
       "正在梳理相关信息",
       "正在组织更清楚的回答"
     ],
-    "freezoneWaitingResponse": "等待造境回复",
+    "freezoneWaitingResponse": "等待智核回复",
     "freezoneWaitingResponses": [
-      "造境正在看画布",
-      "造境正在理解节点",
-      "造境正在整理画布信息",
-      "造境正在判断下一步",
-      "造境正在准备画布操作",
-      "造境正在组织回复",
-      "造境正在把想法落到画布"
+      "智核正在看画布",
+      "智核正在理解节点",
+      "智核正在整理画布信息",
+      "智核正在判断下一步",
+      "智核正在准备画布操作",
+      "智核正在组织回复",
+      "智核正在把想法落到画布"
     ],
     "waitingLongResponse": "这次处理比平时久，仍在继续",
     "waitingVeryLongResponse": "仍在等待响应，你可以继续等待或停止",
@@ -718,11 +718,11 @@
   },
   "freezone": {
     "chat": {
-      "title": "导台",
-      "description": "在造境画布旁打开导台。",
-      "toggle": "打开造境导台",
-      "close": "收起造境导台",
-      "resize": "拖动调整造境导台宽度",
+      "title": "智核",
+      "description": "在造境画布旁打开智核。",
+      "toggle": "打开智核",
+      "close": "收起智核",
+      "resize": "拖动调整智核宽度",
       "floatWindow": "切换为浮窗",
       "dockRight": "停靠到右侧",
       "audioApproval": {
@@ -7477,9 +7477,9 @@
         "mediaCatalogCheckFailed": "检查官方媒体模型列表失败，请稍后重试。"
       },
       "brainclaw": {
-        "tab": "AIGCDO 网关（推荐）",
+        "tab": "智核（推荐）",
         "advancedTab": "高级自定义",
-        "title": "AIGCDO 网关（推荐）",
+        "title": "智核（推荐）",
         "description": "AIGCDO 会统一处理文本理解、内容生成、结构化输出、工具调用和视觉理解请求。已配置第三方文本网关时会自动复用对应的模型组，无需重复填写地址和 API Key。",
         "autoDescription": "已自动使用第三方文本 / 视觉理解网关；图像、视频、音频使用独立媒体组，无需重复配置地址和 API Key。",
         "model": "固定模型",

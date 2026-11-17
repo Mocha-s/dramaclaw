@@ -5482,7 +5482,7 @@ describe("canvas chat commands", () => {
       expect.objectContaining({
         type: "open_mainline_projection",
         status: "success",
-        label: "打开主线虾画",
+        label: "打开主线造境",
         output: expect.objectContaining({
           opened: true,
           canvas_id: "user_canvas",

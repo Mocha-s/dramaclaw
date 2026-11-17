@@ -1728,36 +1728,7 @@ button:hover .st-keyframe-video-play {
 
 
 
-  @keyframes companion-capsule-reward-hit {
-    0%,
-    100% {
-      filter: brightness(1) saturate(1);
-      transform: translateY(0) scale(1);
-    }
-    42% {
-      filter: brightness(1.32) saturate(1.18) drop-shadow(0 0 7px rgb(34 211 238 / 0.42));
-      transform: translateY(-1px) scale(1.18);
-    }
-    68% {
-      transform: translateY(0) scale(0.94);
-    }
-  }
 
-  @keyframes companion-capsule-sparkle {
-    0%,
-    100% {
-      opacity: 0;
-      transform: translate(0, 0);
-    }
-    34% {
-      opacity: 1;
-      transform: translate(-2px, -1px);
-    }
-    68% {
-      opacity: 0.55;
-      transform: translate(1px, -3px);
-    }
-  }
 
 
 

@@ -7,7 +7,7 @@ minutes later, with nothing to point at.
 
 What must NOT happen is the opposite mistake: worker stderr carries prompts,
 tool output and provider bodies, so forwarding it verbatim would route user
-content into DramaClaw's logs through a path no telemetry allowlist governs.
+content into AIGCDO's logs through a path no telemetry allowlist governs.
 """
 from __future__ import annotations
 

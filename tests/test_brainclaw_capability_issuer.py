@@ -1,4 +1,4 @@
-"""The DramaClaw side of the capability: minting and ACP injection."""
+"""The AIGCDO side of the capability: minting and ACP injection."""
 
 from __future__ import annotations
 

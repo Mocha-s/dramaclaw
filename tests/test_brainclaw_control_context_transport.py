@@ -171,7 +171,7 @@ def test_the_real_client_factory_installs_the_hook() -> None:
 
 
 def test_opaque_scope_signs_without_the_grouping_key(tmp_path: Path) -> None:
-    """A signer outside DramaClaw must never need the grouping key.
+    """A signer outside AIGCDO must never need the grouping key.
 
     Holding it would let that process derive or correlate group ids, which is
     exactly the separation the two-key design exists to keep.
