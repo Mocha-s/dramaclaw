@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import tempfile
 import time
 import uuid
@@ -189,7 +190,8 @@ def normalize_freezone_generation_resolution(value: str | None) -> str:
     return normalize_video_resolution(value)
 
 
-FREEZONE_GLOBAL_VIDEO_RESOLUTION_OPTIONS = ("720p", "768p", "1080p", "2k", "4k")
+_CUSTOM_VIDEO_RESOLUTION_RE = re.compile(r"\d{3,4}p|\dk|\d{3,4}x\d{3,4}")
+FREEZONE_GLOBAL_VIDEO_RESOLUTION_OPTIONS = ("480p", "720p", "768p", "1080p", "2k", "4k")
 
 
 def _freezone_video_model_from_backend(backend: str | None) -> str:
@@ -233,7 +235,9 @@ def normalize_video_resolution_for_backend(
 ) -> str:
     resolution = normalize_video_resolution(value)
     options = freezone_video_resolution_options(backend)
-    if resolution in options:
+    # A custom tier (e.g. "540p", "1280x720") is the user's explicit choice: pass it
+    # upstream, which decides whether the model supports it.
+    if resolution in options or _CUSTOM_VIDEO_RESOLUTION_RE.fullmatch(resolution):
         return resolution
     if "720p" in options:
         return "720p"

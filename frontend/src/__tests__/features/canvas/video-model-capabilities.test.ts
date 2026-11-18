@@ -57,7 +57,7 @@ describe("视频模式有效比例", () => {
 
 describe("Canvas video generation resolution contract", () => {
   it("exposes every global resolution and serializes the selected tier unchanged", () => {
-    expect(FREEZONE_VIDEO_RESOLUTIONS).toEqual(["720p", "768p", "1080p", "2k", "4k"]);
+    expect(FREEZONE_VIDEO_RESOLUTIONS).toEqual(["480p", "720p", "768p", "1080p", "2k", "4k"]);
     expect(qualityToResolution("4k")).toBe("4k");
   });
 });

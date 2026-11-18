@@ -418,13 +418,13 @@ def test_video_model_options_and_resolution_work() -> None:
     assert "Grok Video Channel" not in labels
     assert normalize_video_resolution("720P") == "720p"
     happyhorse = next(item for item in options if item["id"] == "happyhorse-1.0")
-    assert happyhorse["resolutionOptions"] == ["720p", "768p", "1080p", "2k", "4k"]
+    assert happyhorse["resolutionOptions"] == ["480p", "720p", "768p", "1080p", "2k", "4k"]
     assert happyhorse["minDuration"] == 3
     assert happyhorse["maxDuration"] == 15
     assert normalize_video_resolution_for_backend("happyhorse-1.0", "4k") == "4k"
-    assert normalize_video_resolution_for_backend("happyhorse-1.0", "480p") == "720p"
+    assert normalize_video_resolution_for_backend("happyhorse-1.0", "480p") == "480p"
     seedance_fast = next(item for item in options if item["id"] == "seedance-2.0-fast")
-    assert seedance_fast["resolutionOptions"] == ["720p", "768p", "1080p", "2k", "4k"]
+    assert seedance_fast["resolutionOptions"] == ["480p", "720p", "768p", "1080p", "2k", "4k"]
 
 
 def test_freezone_generation_preserves_requested_unadvertised_resolution():
@@ -455,14 +455,14 @@ def test_catalog_resolution_options_override_legacy_video_whitelist() -> None:
 def test_global_resolution_options_ignore_model_specific_whitelists():
     from novelvideo.freezone.video_node import freezone_video_resolution_options
 
-    expected = ("720p", "768p", "1080p", "2k", "4k")
+    expected = ("480p", "720p", "768p", "1080p", "2k", "4k")
     assert freezone_video_resolution_options("seedance-2.0-fast") == expected
     assert freezone_video_resolution_options("happyhorse-1.0") == expected
     assert freezone_video_resolution_options("grok-video-channel") == expected
 
 
 def test_backend_resolution_normalizer_does_not_downgrade_global_values():
-    expected = ("720p", "768p", "1080p", "2k", "4k")
+    expected = ("480p", "720p", "768p", "1080p", "2k", "4k")
     for backend in ("seedance-2.0-fast", "happyhorse-1.0", "grok-video-channel"):
         for resolution in expected:
             assert normalize_video_resolution_for_backend(backend, resolution) == resolution
@@ -481,6 +481,7 @@ def test_canvas_video_node_quality_options_are_global():
     from novelvideo.freezone.video_node import freezone_video_resolution_options
 
     assert freezone_video_resolution_options("catalog-model-with-one-option") == (
+        "480p",
         "720p",
         "768p",
         "1080p",
@@ -959,3 +960,22 @@ def test_validate_omni_reference_image_dimensions_rejects_extreme_aspect_ratio(
 
     assert "banner.png" in str(exc.value)
     assert "0.4" in str(exc.value) and "2.5" in str(exc.value)
+
+
+def test_custom_resolution_is_passed_upstream_and_garbage_is_not():
+    from novelvideo.freezone.video_node import normalize_video_resolution_for_backend as norm
+
+    assert norm("any", "480P") == "480p"
+    assert norm("any", "540p") == "540p"
+    assert norm("any", "1280x720") == "1280x720"
+    assert norm("any", "ultra; drop") == "720p"
+
+
+def test_pixel_size_is_replaced_by_resolution_and_ratio():
+    from novelvideo.generators.video_generator import NewApiVideoGenerator as G
+
+    modern = G._without_pixel_size({"size": "1366x768", "aspect_ratio": "16:9"}, "768p", modern=True)
+    assert modern == {"aspect_ratio": "16:9", "resolution": "768p"}
+    legacy = G._without_pixel_size(
+        {"size": "1366x768", "metadata": {"ratio": "16:9"}}, "768p", modern=False)
+    assert legacy == {"metadata": {"ratio": "16:9", "resolution": "768p"}}

@@ -6116,7 +6116,8 @@
         "followsSource": "跟随原片"
       },
       "quality": {
-        "title": "清晰度"
+        "title": "清晰度",
+        "custom": "自定义，如 540p 或 1280x720"
       },
       "duration": {
         "title": "视频时长"

@@ -8,14 +8,14 @@ import pytest
 def test_beat_resolution_options_are_global_for_every_backend():
     from novelvideo.api.routes.generation import _seedance2_resolution_options_for_backend
 
-    expected = ("720p", "768p", "1080p", "2k", "4k")
+    expected = ("480p", "720p", "768p", "1080p", "2k", "4k")
     assert _seedance2_resolution_options_for_backend("seedance-2.0-fast") == expected
     assert _seedance2_resolution_options_for_backend("happyhorse-1.0") == expected
     assert _seedance2_resolution_options_for_backend("grok-video-channel") == expected
     assert _seedance2_resolution_options_for_backend("catalog-without-options") == expected
 
 
-@pytest.mark.parametrize("resolution", ["720p", "768p", "1080p", "2k", "4k"])
+@pytest.mark.parametrize("resolution", ["480p", "720p", "768p", "1080p", "2k", "4k"])
 def test_explicit_beat_resolution_is_not_downgraded(resolution: str):
     from novelvideo.api.routes.generation import _seedance2_resolution_for_backend
 
@@ -28,7 +28,7 @@ def test_explicit_beat_resolution_rejects_legacy_unsupported_tier():
     from novelvideo.api.routes.generation import _seedance2_resolution_for_backend
 
     with pytest.raises(ValueError, match="resolution must be one of"):
-        _seedance2_resolution_for_backend("seedance-2.0-fast", "480p", explicit=True)
+        _seedance2_resolution_for_backend("seedance-2.0-fast", "360p", explicit=True)
 
 
 def test_explicit_beat_resolution_rejects_malformed_tier():
@@ -276,7 +276,7 @@ async def test_single_video_route_rejects_explicit_resolution_outside_product_se
         project="demo",
         episode_num=1,
         beat_num=1,
-        body=SingleVideoRequest(video_backend="generic-provider", resolution="480p"),
+        body=SingleVideoRequest(video_backend="generic-provider", resolution="360p"),
         user={"username": "admin"},
     )
 

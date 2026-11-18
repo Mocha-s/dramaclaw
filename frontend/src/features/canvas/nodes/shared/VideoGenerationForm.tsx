@@ -569,6 +569,27 @@ function VideoConfigChip({
               );
             })}
           </div>
+          {/* A tier the list lacks (e.g. 540p, 1280x720); upstream decides if the model takes it. */}
+          <input
+            type="text"
+            aria-label={t("node.videoNode.quality.custom")}
+            placeholder={t("node.videoNode.quality.custom")}
+            defaultValue={qualityOptions.includes(quality) ? "" : quality}
+            key={qualityOptions.includes(quality) ? "preset" : "custom"}
+            onBlur={(event) => {
+              const value = event.target.value.trim().toLowerCase();
+              if (/^(\d{3,4}p|\dk|\d{3,4}x\d{3,4})$/.test(value)) onChange({ quality: value });
+              else event.target.value = qualityOptions.includes(quality) ? "" : quality;
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+            className={`mb-4 w-full bg-transparent px-3 py-1.5 text-xs outline-none ${VIDEO_PARAM_BUTTON_BASE_CLASS} ${
+              qualityOptions.includes(quality)
+                ? VIDEO_PARAM_IDLE_BUTTON_CLASS
+                : VIDEO_PARAM_ACTIVE_BUTTON_CLASS
+            }`}
+          />
 
           <div className={VIDEO_PARAM_LABEL_CLASS}>
             {t("node.videoNode.duration.title")}

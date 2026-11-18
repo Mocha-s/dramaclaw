@@ -6,7 +6,7 @@ from typing import Literal, TypeVar
 
 ImageSize = Literal["1K", "2K", "4K"]
 ImageQuality = Literal["auto", "low", "medium", "high", "xhigh", "max"]
-VideoGenerationResolution = Literal["720p", "768p", "1080p", "2k", "4k"]
+VideoGenerationResolution = Literal["480p", "720p", "768p", "1080p", "2k", "4k"]
 
 IMAGE_SIZE_OPTIONS: tuple[ImageSize, ...] = ("1K", "2K", "4K")
 IMAGE_QUALITY_OPTIONS: tuple[ImageQuality, ...] = (
@@ -18,6 +18,7 @@ IMAGE_QUALITY_OPTIONS: tuple[ImageQuality, ...] = (
     "max",
 )
 VIDEO_GENERATION_RESOLUTION_OPTIONS: tuple[VideoGenerationResolution, ...] = (
+    "480p",
     "720p",
     "768p",
     "1080p",

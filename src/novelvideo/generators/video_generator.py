@@ -2693,6 +2693,23 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             payload.pop("metadata", None)
 
     @staticmethod
+    def _without_pixel_size(
+        payload: dict[str, object], resolution: object, *, modern: bool
+    ) -> dict[str, object]:
+        """The same request with its geometry as resolution + ratio only."""
+        result = {k: v for k, v in payload.items() if k not in ("size", "width", "height")}
+        text = str(resolution or "").strip()
+        if not text:
+            return result
+        if modern:
+            result.setdefault("resolution", text)
+        else:
+            metadata = dict(result.get("metadata") or {})
+            metadata.setdefault("resolution", text)
+            result["metadata"] = metadata
+        return result
+
+    @staticmethod
     def _modern_video_payload(payload: dict[str, object]) -> dict[str, object]:
         """Serialize the internal media request to the modern `/videos` body."""
         result = dict(payload)
@@ -3730,22 +3747,26 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             submit_headers = dict(request_headers or self.headers)
             if is_modern_video_endpoint:
                 submit_headers["Idempotency-Key"] = str(uuid.uuid4())
-            if organization_request:
-                submitted = await self._post_json(
-                    f"{request_base_url}{submit_endpoint}",
-                    payload,
-                    headers=submit_headers,
+            submit_url = f"{request_base_url}{submit_endpoint}"
+            # The legacy endpoint is posted with the client's default headers.
+            submit_kwargs = (
+                {"headers": submit_headers}
+                if organization_request or is_modern_video_endpoint else {}
+            )
+            try:
+                submitted = await self._post_json(submit_url, payload, **submit_kwargs)
+            except Exception as exc:
+                # Some upstream adapters (MiniMax) reject pixel sizes and say so; the
+                # request was not accepted, so resend it once as resolution + ratio.
+                if "use resolution and ratio" not in str(exc) or "size" not in payload:
+                    raise
+                payload = self._without_pixel_size(
+                    payload, request_resolution, modern=is_modern_video_endpoint
                 )
-            elif is_modern_video_endpoint:
-                submitted = await self._post_json(
-                    f"{request_base_url}{submit_endpoint}",
-                    payload,
-                    headers=submit_headers,
-                )
-            else:
-                submitted = await self._post_json(
-                    f"{request_base_url}{submit_endpoint}", payload
-                )
+                if is_modern_video_endpoint:
+                    submit_headers["Idempotency-Key"] = str(uuid.uuid4())
+                await update_current_model_call_log(request_payload=payload)
+                submitted = await self._post_json(submit_url, payload, **submit_kwargs)
             await update_current_model_call_log(
                 response_payload=submitted,
             )

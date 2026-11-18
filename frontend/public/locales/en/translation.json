@@ -6116,7 +6116,8 @@
         "followsSource": "Follows source"
       },
       "quality": {
-        "title": "Quality"
+        "title": "Quality",
+        "custom": "Custom, e.g. 540p or 1280x720"
       },
       "duration": {
         "title": "Duration"

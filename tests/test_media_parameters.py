@@ -26,6 +26,7 @@ def test_global_media_parameter_contract_has_exact_product_values() -> None:
         "max",
     )
     assert params.VIDEO_GENERATION_RESOLUTION_OPTIONS == (
+        "480p",
         "720p",
         "768p",
         "1080p",
@@ -41,7 +42,7 @@ def test_global_media_parameter_contract_has_exact_product_values() -> None:
         ("ImageQuality", ("auto", "low", "medium", "high", "xhigh", "max")),
         (
             "VideoGenerationResolution",
-            ("720p", "768p", "1080p", "2k", "4k"),
+            ("480p", "720p", "768p", "1080p", "2k", "4k"),
         ),
     ],
 )
@@ -60,7 +61,7 @@ def test_literal_aliases_match_the_public_values(
         ("validate_image_quality", ("auto", "low", "medium", "high", "xhigh", "max")),
         (
             "validate_video_generation_resolution",
-            ("720p", "768p", "1080p", "2k", "4k"),
+            ("480p", "720p", "768p", "1080p", "2k", "4k"),
         ),
     ],
 )
@@ -79,7 +80,7 @@ def test_validators_preserve_each_canonical_value(
     [
         ("validate_image_size", "8K"),
         ("validate_image_quality", "draft"),
-        ("validate_video_generation_resolution", "480p"),
+        ("validate_video_generation_resolution", "360p"),
     ],
 )
 def test_validators_reject_values_outside_the_global_contract(

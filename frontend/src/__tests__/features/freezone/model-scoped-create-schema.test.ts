@@ -86,7 +86,7 @@ describe("model-scoped node create schema", () => {
     expect(schema.model_id).toBe("minimax-h3");
     expect(schema.model_found).toBe(true);
     expect(schema.catalog_ready).toBe(true);
-    expect(fields.quality.options).toEqual(["720p", "768p", "1080p", "2k", "4k"]);
+    expect(fields.quality.options).toEqual(["480p", "720p", "768p", "1080p", "2k", "4k"]);
     expect(fields.aspectRatio.options).toEqual(["16:9"]);
     expect(fields.durationSec.description).toContain("6-10");
   });
@@ -159,7 +159,7 @@ describe("model-scoped node create schema", () => {
     expect(loaded.model_found).toBe(true);
     expect(loaded.catalog_ready).toBe(true);
     expect((loaded.create_schema as Record<string, { options?: string[] }>).quality.options)
-      .toEqual(["720p", "768p", "1080p", "2k", "4k"]);
+      .toEqual(["480p", "720p", "768p", "1080p", "2k", "4k"]);
   });
 
   it.each([

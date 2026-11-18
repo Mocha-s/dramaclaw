@@ -29,9 +29,9 @@ describe('媒体模型公共选项归一化', () => {
   });
 
   it('uses all product video resolution tiers when catalog omits them', () => {
-    expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p'] })).toEqual(['720p', '768p', '1080p', '2k', '4k']);
-    expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p', '1080p'] })).toEqual(['720p', '768p', '1080p', '2k', '4k']);
-    expect(resolveVideoModelResolutionOptions({})).toEqual(['720p', '768p', '1080p', '2k', '4k']);
+    expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p'] })).toEqual(['480p', '720p', '768p', '1080p', '2k', '4k']);
+    expect(resolveVideoModelResolutionOptions({ resolutionOptions: ['720p', '1080p'] })).toEqual(['480p', '720p', '768p', '1080p', '2k', '4k']);
+    expect(resolveVideoModelResolutionOptions({})).toEqual(['480p', '720p', '768p', '1080p', '2k', '4k']);
   });
 
   it('藏境图片和视频分辨率档位独立于模型目录并覆盖产品档位', async () => {
@@ -39,7 +39,7 @@ describe('媒体模型公共选项归一化', () => {
       await import('@/features/canvas/domain/freezoneGenerationResolutions');
     expect(FREEZONE_IMAGE_RESOLUTIONS).toEqual(['1K', '2K', '4K']);
     expect(FREEZONE_VIDEO_RESOLUTIONS).toEqual([
-      '720p', '768p', '1080p', '2k', '4k',
+      '480p', '720p', '768p', '1080p', '2k', '4k',
     ]);
   });
 
