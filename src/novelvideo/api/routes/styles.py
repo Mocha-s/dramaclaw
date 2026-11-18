@@ -125,6 +125,7 @@ async def get_style(
 async def get_style_preview(
     style_id: str,
     project: str | None = Query(None, description="项目名"),
+    v: str | None = None,
     user: dict = Depends(get_api_user),
 ):
     """返回预设风格的参考预览图。"""
@@ -166,6 +167,9 @@ async def get_style_preview(
         path=str(preview_path),
         media_type="image/png",
         filename=f"preview_{style_id}.png",
+        # Shipped with the build and requested as ?v=<asset version>: multi-megabyte
+        # PNGs the browser should fetch once.
+        headers={"Cache-Control": "private, max-age=31536000, immutable"} if v else None,
     )
 
 

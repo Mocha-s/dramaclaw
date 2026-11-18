@@ -7,6 +7,7 @@
 // 音频过去直接摆原生 <audio controls>——浏览器给的那条灰色胶囊和整个面板的深色
 // 皮肤格格不入，还会把卡片下沿的名字挤掉。这里换成「圆形播放键 + 波形进度条 +
 // 时间」，和视频卡的播放角标视觉对齐，两种非图片素材看起来才像一套东西。
+import { withMediaVariant } from '@/lib/media-url';
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -57,7 +58,7 @@ export function AssetLibraryItemMedia({ entry }: AssetLibraryItemMediaProps) {
   if (entry.media === 'audio') return <AudioThumb src={src} />;
   return (
     <img
-      src={src}
+      src={withMediaVariant(src, 'thumb')}
       alt={entry.name}
       className="h-full w-full object-cover"
       draggable={false}

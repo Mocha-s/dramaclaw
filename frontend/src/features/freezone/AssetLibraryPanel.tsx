@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
+import { withMediaVariant } from "@/lib/media-url";
 import {
   createContext,
   useCallback,
@@ -223,7 +224,9 @@ function MiniThumb({
   const isVideo = asset.mediaType === "video";
   const [imageFailed, setImageFailed] = useState(false);
   const thumbUrl = isThreeD || isVideo ? asset.coverUrl : asset.url;
-  const displayThumbUrl = thumbUrl ? withImageCacheBust(thumbUrl, cacheToken) : null;
+  const displayThumbUrl = thumbUrl
+    ? withMediaVariant(withImageCacheBust(thumbUrl, cacheToken), "thumb")
+    : null;
   const showImage =
     !imageFailed &&
     !isAudio &&
@@ -1058,7 +1061,9 @@ function AssetCard({
   const isAudio = asset.mediaType === "audio";
   const isVideo = asset.mediaType === "video";
   const thumbUrl = isThreeD || isVideo ? asset.coverUrl : asset.url;
-  const displayThumbUrl = thumbUrl ? withImageCacheBust(thumbUrl, cacheToken) : null;
+  const displayThumbUrl = thumbUrl
+    ? withMediaVariant(withImageCacheBust(thumbUrl, cacheToken), "thumb")
+    : null;
   const showImage =
     !isAudio &&
     Boolean(thumbUrl) &&

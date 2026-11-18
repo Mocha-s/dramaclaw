@@ -13,6 +13,7 @@ from novelvideo.api.auth import get_api_user
 from novelvideo.api.deps import ProjectResolution, resolve_project_scope
 from novelvideo.utils.thumbnails import (
     fresh_thumbnail,
+    prewarm,
     is_thumbnailable,
     normalize_variant,
     thumbnail_declined,
@@ -110,8 +111,8 @@ def _maybe_thumbnail_response(
     write-back readiness probe cost more than the transfer, and a freshly
     written variant is not in OSS yet anyway.
 
-    A cold one is a different trade entirely, so it is never built or queued
-    here. A valid image variant miss redirects to the same request URL without
+    A cold one is a different trade entirely, so it is never built here: it is
+    only handed to the bounded background prewarm queue for the next request. A valid image variant miss redirects to the same request URL without
     any ``st_thumb`` parameter. That keeps the temporary original response off
     the future variant's cache key and out of the proxy's thumbnail slice path.
     Thumbnail creation belongs to the generation-history write path; opening an
@@ -128,6 +129,9 @@ def _maybe_thumbnail_response(
             and normalize_variant(variant) is not None
             and is_thumbnailable(requested)
         ):
+            # Only the canvas history write path prewarms; uploads and library items
+            # would stay cold forever. The queue is bounded and off the request path.
+            prewarm(project_dir, requested, [variant])
             return _redirect_to_original_url(request)
         return None
     cache_control = _variant_cache_control(request)
@@ -176,7 +180,9 @@ def _resolve_project_file(resolved: ProjectResolution, file_path: str) -> Path:
     return requested
 
 
-def _serve_or_redirect_to_oss(requested: Path, *, as_download: bool):
+def _serve_or_redirect_to_oss(
+    requested: Path, *, as_download: bool, request: Request | None = None,
+):
     """Serve a resolved project file, preferring a 302 to a presigned OSS URL.
 
     OUTPUT_DIR is an ossfs mount, so every file here already exists in OSS. When
@@ -213,7 +219,20 @@ def _serve_or_redirect_to_oss(requested: Path, *, as_download: bool):
 
     if as_download:
         return FileResponse(path=str(requested), filename=requested.name)
-    return FileResponse(path=str(requested))
+    # Originals are megabytes over a slow link: let the browser keep them, under the
+    # same versioned-or-revalidate rule as variants.
+    cache_control = _variant_cache_control(request)
+    stat_result = requested.stat()
+    response = FileResponse(
+        path=str(requested), stat_result=stat_result, headers={"Cache-Control": cache_control},
+    )
+    if _etag_matches(request, response.headers.get("etag")):
+        return Response(status_code=304, headers={
+            "Cache-Control": cache_control,
+            "ETag": response.headers["etag"],
+            "Last-Modified": response.headers["last-modified"],
+        })
+    return response
 
 
 @router.get("/projects/{project}/files/{file_path:path}")
@@ -256,7 +275,7 @@ async def preview_file(
     )
     if thumbnail is not None:
         return thumbnail
-    return _serve_or_redirect_to_oss(requested, as_download=False)
+    return _serve_or_redirect_to_oss(requested, as_download=False, request=request)
 
 
 async def preview_project_media_file(
@@ -274,4 +293,4 @@ async def preview_project_media_file(
     )
     if thumbnail is not None:
         return thumbnail
-    return _serve_or_redirect_to_oss(requested, as_download=False)
+    return _serve_or_redirect_to_oss(requested, as_download=False, request=request)

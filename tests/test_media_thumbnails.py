@@ -1165,3 +1165,30 @@ def test_backfill_requires_a_target(backfill):
 def test_backfill_rejects_a_missing_directory(backfill, tmp_path):
     with pytest.raises(SystemExit):
         backfill.main([str(tmp_path / "nope")])
+
+
+def test_a_cold_variant_is_queued_so_the_next_request_gets_it(monkeypatch, tmp_path):
+    _write_png(tmp_path / "uploads" / "big.png", (2000, 1200))
+    client = _client(monkeypatch, tmp_path)
+    url = "/projects/demo/media/uploads/big.png"
+
+    cold = client.get(url, params={"st_thumb": "thumb"}, follow_redirects=False)
+    assert cold.status_code == 302
+    _drain_prewarm()
+
+    warm = client.get(url, params={"st_thumb": "thumb"}, follow_redirects=False)
+    assert warm.status_code == 200 and warm.headers["content-type"] == "image/webp"
+
+
+def test_originals_are_kept_by_the_browser(monkeypatch, tmp_path):
+    _write_png(tmp_path / "uploads" / "big.png", (2000, 1200))
+    client = _client(monkeypatch, tmp_path)
+    url = "/projects/demo/media/uploads/big.png"
+
+    versioned = client.get(url, params={"v": "7"})
+    assert versioned.headers["cache-control"] == "private, max-age=31536000, immutable"
+
+    bare = client.get(url)
+    assert bare.headers["cache-control"] == "private, no-cache"
+    again = client.get(url, headers={"If-None-Match": bare.headers["etag"]})
+    assert again.status_code == 304 and again.content == b""

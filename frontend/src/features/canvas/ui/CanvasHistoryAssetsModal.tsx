@@ -40,7 +40,7 @@ import {
   historyRecordWorldUrl,
 } from './NodeGenerationHistory';
 import type { FreezoneGenerationHistoryRecord } from '@/api/ops';
-import { resolveMediaUrl } from '@/lib/media-url';
+import { resolveMediaUrl, withMediaVariant } from '@/lib/media-url';
 import { readUrl } from '@/lib/url-params';
 import {
   buildStandaloneWorldManifest,
@@ -881,7 +881,7 @@ function AssetCard({
         // 画一个 3D 盒子占位，避免把 .sog 当 <img> 渲染导致裂图。
         asset.previewUrl ? (
           <img
-            src={asset.previewUrl}
+            src={withMediaVariant(asset.previewUrl, 'thumb')}
             alt={asset.label ?? ''}
             loading="lazy"
             className="h-full w-full object-cover"
@@ -907,7 +907,7 @@ function AssetCard({
         />
       ) : (
         <img
-          src={asset.previewUrl ?? asset.url}
+          src={withMediaVariant(asset.previewUrl ?? asset.url, 'thumb')}
           alt={asset.label ?? ''}
           loading="lazy"
           className="h-full w-full object-cover"
