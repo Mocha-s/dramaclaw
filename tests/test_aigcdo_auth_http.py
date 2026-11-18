@@ -388,3 +388,24 @@ async def test_turnstile_without_a_site_key_is_not_offered(tmp_path):
     async with http_app(tmp_path, lambda _: success(public_settings(turnstile_enabled=True))) as (client, _, _):
         data = (await client.get("/api/v1/auth/ui-config")).json()["data"]
         assert not data["login_supported"] and data["turnstile_site_key"] == ""
+
+
+async def test_login_page_settings_are_reused_and_survive_a_gateway_outage(tmp_path, monkeypatch):
+    from novelvideo import aigcdo_gateway
+
+    calls = []
+
+    def gateway(request):
+        calls.append(request.url.path)
+        if len(calls) > 1:
+            raise httpx.ConnectTimeout("down")
+        return success(public_settings())
+
+    async with http_app(tmp_path, gateway) as (client, _, _):
+        first = (await client.get("/api/v1/auth/ui-config")).json()
+        assert (await client.get("/api/v1/auth/ui-config")).json() == first
+        assert len(calls) == 1
+        later = aigcdo_gateway.time.monotonic() + aigcdo_gateway.AUTH_SETTINGS_TTL + 1
+        monkeypatch.setattr(aigcdo_gateway.time, "monotonic", lambda: later)
+        assert (await client.get("/api/v1/auth/ui-config")).json() == first
+        assert len(calls) == 2

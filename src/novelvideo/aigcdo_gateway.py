@@ -8,6 +8,7 @@ import logging
 import re
 from typing import Annotated, Any, Literal, TypeVar
 
+import time
 import httpx
 from pydantic import (
     AfterValidator,
@@ -22,6 +23,8 @@ from pydantic import (
 
 
 logger = logging.getLogger(__name__)
+
+AUTH_SETTINGS_TTL = 60
 
 _ERRORS = {
     "authentication_failed": (401, "Gateway authentication failed"),
@@ -231,6 +234,7 @@ class AigcdoGatewayClient:
             trust_env=False,
             transport=transport,
         )
+        self._auth_settings: tuple[float, GatewayAuthSettings] | None = None
 
     async def __aenter__(self) -> AigcdoGatewayClient:
         await self._http.__aenter__()
@@ -307,7 +311,19 @@ class AigcdoGatewayClient:
         return data
 
     async def public_auth_settings(self) -> GatewayAuthSettings:
-        return _parse(GatewayAuthSettings, await self._request("GET", "settings/public"))
+        # The login page waits on this and the gateway link is slow and lossy: reuse the
+        # last answer for a minute, and keep serving it while the gateway is unreachable.
+        cached = self._auth_settings
+        if cached and cached[0] > time.monotonic():
+            return cached[1]
+        try:
+            settings = _parse(GatewayAuthSettings, await self._request("GET", "settings/public"))
+        except AigcdoGatewayError as exc:
+            if cached and exc.code == "gateway_unavailable":
+                return cached[1]
+            raise
+        self._auth_settings = (time.monotonic() + AUTH_SETTINGS_TTL, settings)
+        return settings
 
     async def login(
         self, email: str, password: str, *, turnstile_token: str = "",

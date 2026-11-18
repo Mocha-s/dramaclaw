@@ -178,6 +178,7 @@ async def test_identity_mismatch_is_rejected_and_cookie_revoked(store):
 
 async def test_live_gateway_role_and_suspension_are_authoritative(store, monkeypatch):
     monkeypatch.setattr(sessions, "VERIFY_TTL", 0)  # whenever the gateway is asked, it wins
+    monkeypatch.setattr(sessions, "VERIFY_STALE_GRACE", 0)
     first = await store.create(gateway_session())
     second = await store.create(gateway_session())
     profile = gateway_session().user.model_dump(mode="json")
@@ -484,9 +485,42 @@ async def test_recent_gateway_verification_is_reused_but_local_logout_is_immedia
         assert calls == ["/api/v1/auth/me"]
         later = sessions.time.time() + sessions.VERIFY_TTL + 1
         monkeypatch.setattr(sessions.time, "time", lambda: later)
-        await auth.verify_session(login.raw_cookie)
+        # Just past the reuse window the old answer is served and re-checked behind the request.
+        assert await auth.verify_session(login.raw_cookie) == first
+        await next(iter(auth._reverifying.values()))
         assert calls == ["/api/v1/auth/me"] * 2
+        # Past the grace period the request waits for the gateway again.
+        later += sessions.VERIFY_TTL + sessions.VERIFY_STALE_GRACE + 1
+        await auth.verify_session(login.raw_cookie)
+        assert calls == ["/api/v1/auth/me"] * 3
         # A fresh cache entry never outlives the local session it was computed for.
         await auth.revoke_session(login.raw_cookie)
+        with pytest.raises(AuthError):
+            await auth.verify_session(login.raw_cookie)
+
+
+async def test_stale_verification_survives_a_gateway_outage_but_not_a_revocation(store, monkeypatch):
+    mode = {"me": "ok"}
+
+    def handle(request):
+        if mode["me"] == "down":
+            raise httpx.ConnectTimeout("down")
+        if mode["me"] == "revoked":
+            return httpx.Response(401, json={"code": 401})
+        return ok(gateway_session().user.model_dump(mode="json"))
+
+    login = await store.create(gateway_session())
+    async with AigcdoGatewayClient(transport=httpx.MockTransport(handle)) as gateway:
+        auth = AigcdoAuthPort(store, gateway)
+        first = await auth.verify_session(login.raw_cookie)
+        later = sessions.time.time() + sessions.VERIFY_TTL + 1
+        monkeypatch.setattr(sessions.time, "time", lambda: later)
+        mode["me"] = "down"
+        for _ in range(2):
+            assert await auth.verify_session(login.raw_cookie) == first
+            await next(iter(auth._reverifying.values()))
+        mode["me"] = "revoked"
+        assert await auth.verify_session(login.raw_cookie) == first
+        await next(iter(auth._reverifying.values()))
         with pytest.raises(AuthError):
             await auth.verify_session(login.raw_cookie)

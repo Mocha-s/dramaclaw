@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -34,6 +35,8 @@ SESSION_TTL = 7 * 86400
 REFRESH_CLAIM_TTL = 60
 # Every private request verifies its session; without reuse each one costs a gateway round trip.
 VERIFY_TTL = 30
+# How long a just-expired verification still answers requests while it is re-checked.
+VERIFY_STALE_GRACE = 300
 logger = logging.getLogger(__name__)
 
 
@@ -308,6 +311,7 @@ class AigcdoAuthPort:
         self.store = store
         self.gateway = gateway
         self._verified: dict[str, tuple[float, bytes, dict]] = {}
+        self._reverifying: dict[str, asyncio.Task] = {}
         # Who administers this installation; the gateway's own admin role means nothing here.
         self.admin_gateway_ids: set[int] = set()
 
@@ -340,13 +344,36 @@ class AigcdoAuthPort:
         # The local row was just re-read, so logout and expiry stay immediate; only a
         # gateway-side change (disable, role, password reset) waits out VERIFY_TTL here.
         # Task and Agent authority (verify_session_reference) always asks the gateway.
-        if cached and cached[0] > time.time() and cached[1] == session.cipher:
-            return dict(cached[2])
+        if cached and cached[1] == session.cipher:
+            now = time.time()
+            if cached[0] > now:
+                return dict(cached[2])
+            # The gateway link is slow and lossy: answer from the last result and re-check
+            # behind the request, so page loads neither wait on it nor fail with it.
+            if cached[0] + VERIFY_STALE_GRACE > now:
+                if session.cookie_hash not in self._reverifying:
+                    self._reverifying[session.cookie_hash] = asyncio.create_task(self._reverify(session))
+                return dict(cached[2])
+        return dict(await self._verify_and_cache(session))
+
+    async def _verify_and_cache(self, session: _Session) -> dict:
         verified = await self._verify(session)
         if len(self._verified) >= 4096:
             self._verified.clear()
         self._verified[session.cookie_hash] = (time.time() + VERIFY_TTL, session.cipher, verified)
-        return dict(verified)
+        return verified
+
+    async def _reverify(self, session: _Session) -> None:
+        try:
+            await self._verify_and_cache(session)
+        except AigcdoGatewayError as exc:
+            if exc.code != "gateway_unavailable":
+                self._verified.pop(session.cookie_hash, None)
+        except Exception:
+            # Revoked or suspended: the next request must ask again and fail properly.
+            self._verified.pop(session.cookie_hash, None)
+        finally:
+            self._reverifying.pop(session.cookie_hash, None)
 
     async def verify_session_reference(self, session_id: str) -> dict:
         return await self._verify(await self.store.load_reference(session_id))

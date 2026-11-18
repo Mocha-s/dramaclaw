@@ -322,6 +322,7 @@ async def test_origin_identity_revocation_and_gateway_outage(composed_app, monke
     import novelvideo.aigcdo_sessions as sessions
 
     monkeypatch.setattr(sessions, "VERIFY_TTL", 0)  # the reuse window has its own test
+    monkeypatch.setattr(sessions, "VERIFY_STALE_GRACE", 0)
     _, client, remote = composed_app
     await login(client)
     assert (await client.post("/api/v1/projects", headers={"Origin": "https://evil.example"},
