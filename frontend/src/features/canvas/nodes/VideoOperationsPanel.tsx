@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
+import { CustomQualityInput } from "@/features/canvas/nodes/shared/VideoGenerationForm";
 import {
   useCallback,
   useEffect,
@@ -1722,6 +1723,7 @@ function VideoConfigChip({
               );
             })}
           </div>
+          <CustomQualityInput quality={quality} options={qualityOptions} onChange={(q) => onChange({ quality: q })} />
 
           {!followInputDuration && (
             <>
