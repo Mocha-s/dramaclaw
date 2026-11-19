@@ -16,6 +16,9 @@ DEFAULT_FREEZONE_TEXT_WRITER_MODEL = "brainclaw"
 DEFAULT_FREEZONE_STORY_SCRIPT_MODEL = "brainclaw"
 DEFAULT_FREEZONE_RECIPE_COMPILER_MODEL = "brainclaw"
 DEFAULT_FREEZONE_VISION_MODEL = "brainclaw"
+# Lives here, not in api/schemas: the Hermes freezone plugin reads it from
+# Hermes's interpreter, where importing the API package fails.
+FREEZONE_DEFAULT_IMAGE_MODEL = "gpt-image-2"
 DEFAULT_VIDEO_PROMPT_OPTIMIZER_MODEL = "brainclaw"
 
 DEFAULT_TEXT_MODEL_BY_ENV = {

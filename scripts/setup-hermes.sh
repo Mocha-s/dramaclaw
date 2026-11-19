@@ -44,6 +44,26 @@ except Exception:
 PY
 }
 
+# Plugins under .hermes/plugins run in this interpreter and import
+# novelvideo.freezone.*, which need two packages Hermes does not bring. Taken at
+# the application's versions when it has a venv: the API process locks the same
+# bridge files.
+plugin_requirements_installed() {
+  "$HERMES_PYTHON" -c 'import jsonschema, portalocker' 2>/dev/null
+}
+
+install_plugin_requirements() {
+  command -v uv >/dev/null 2>&1 || {
+    echo "uv is required: https://docs.astral.sh/uv/" >&2; exit 2; }
+  if [ -x "$root_dir/.venv/bin/python" ]; then
+    uv pip freeze --python "$root_dir/.venv/bin/python" \
+      | grep -E '^(jsonschema|portalocker)==' \
+      | uv pip install --python "$HERMES_PYTHON" -r -
+  else
+    uv pip install --python "$HERMES_PYTHON" jsonschema portalocker
+  fi
+}
+
 if [ ! -x "$HERMES_PYTHON" ]; then
   if [ "$mode" = "--check" ] || [ "$mode" = "check" ]; then
     echo "Hermes isolated environment is not installed: $HERMES_ENV_DIR" >&2
@@ -59,6 +79,14 @@ if [ ! -x "$HERMES_PYTHON" ]; then
 fi
 
 if fork_is_installed; then
+  if ! plugin_requirements_installed; then
+    if [ "$mode" = "--check" ] || [ "$mode" = "check" ]; then
+      echo "Hermes is installed without the packages its plugins import, so" >&2
+      echo "every canvas tool would fail. Run: scripts/setup-hermes.sh" >&2
+      exit 1
+    fi
+    install_plugin_requirements
+  fi
   echo "Hermes fork is installed ($("$HERMES_CLI_PATH" --version 2>/dev/null | head -n 1))."
   exit 0
 fi
@@ -91,6 +119,7 @@ fi
 
 installed_sha="$(git -C "$HERMES_SOURCE_DIR" rev-parse HEAD)"
 uv pip install --python "$HERMES_PYTHON" -e "$HERMES_SOURCE_DIR[acp]"
+install_plugin_requirements
 HERMES_SOURCE_DIR="$HERMES_SOURCE_DIR" "$HERMES_PYTHON" "$root_dir/deploy/patch_hermes_acp_toolsets.py"
 
 if ! fork_is_installed; then

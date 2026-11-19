@@ -4,11 +4,11 @@ from copy import deepcopy
 from typing import Any
 import math
 
-from novelvideo.api.schemas import FREEZONE_DEFAULT_IMAGE_MODEL
 from novelvideo.freezone.clarifications import (
     video_model_constraint_adjustment_clarification,
 )
 from novelvideo.freezone.video_node import FREEZONE_DEFAULT_VIDEO_BACKEND
+from novelvideo.official_defaults import FREEZONE_DEFAULT_IMAGE_MODEL
 
 _RECOMMENDED_GENERATION_MODEL_VALUES = {
     "auto",

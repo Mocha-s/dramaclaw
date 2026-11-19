@@ -11,11 +11,10 @@ from novelvideo.models import SceneRef
 from novelvideo.media_parameters import ImageQuality, ImageSize
 from novelvideo.freezone.asset_copy import MAX_SOURCE_URL_LENGTH, MAX_SOURCES_PER_REQUEST
 from novelvideo.freezone.slots import PushTarget
+from novelvideo.official_defaults import FREEZONE_DEFAULT_IMAGE_MODEL
 
 ProjectStatus = Literal["active", "archived", "deleted"]
 ProjectStatusFilter = Literal["all", "active", "archived", "deleted", "visible"]
-FREEZONE_DEFAULT_IMAGE_SELECTION = "gpt-image-2"
-FREEZONE_DEFAULT_IMAGE_MODEL = FREEZONE_DEFAULT_IMAGE_SELECTION
 CANVAS_MAX_NODES = 50_000
 CANVAS_MAX_EDGES = 200_000
 

@@ -132,6 +132,10 @@ bubblewrap 沙箱（`security/sandbox_wrap.py::per_user_argv`）：
    否则 bwrap 报 `setting up uid map: Permission denied`。
    在 Docker 里这要求 `security_opt` 同时有 `seccomp:unconfined`、`apparmor:unconfined` 和 `systempaths=unconfined`（2026-11-17 逐项实测，缺一不可）。
 
+画布插件（`.hermes/plugins/freezone`）运行在 Hermes 自己的 Python 环境里，不是 API 的虚拟环境，
+它额外需要 `jsonschema` 和 `portalocker`。镜像构建和 `scripts/setup-hermes.sh` 都会装上；
+自行安装 Hermes 时要补装，否则助手能对话，但所有画布读写工具都会失败，而且上面的启动探测查不出来。
+
 **还没做的**：工作进程的出站网络没有限制（#346 P1② 的第二项）。
 它需要访问本机 API 和网关，目前也能访问宿主机能到达的其他地址。
 部署到云服务器时，请在安全组或防火墙上挡掉实例元数据地址 `169.254.169.254`

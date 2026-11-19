@@ -142,6 +142,12 @@ RUN set -eux; \
 #
 # HERMES_REF is a branch by default and resolves to whatever it points at when
 # the image is built. Pass a commit sha to make a build reproducible.
+#
+# Plugins under .hermes/plugins run in this interpreter, not the application's,
+# and import novelvideo.freezone.* from /app/src. Those need two packages Hermes
+# does not bring; they are taken at the application's versions because the API
+# process locks the same bridge files. The import check after them fails the
+# build instead of every canvas write failing at call time.
 ARG HERMES_REPO="https://github.com/dramaclaw/hermes-agent.git"
 ARG HERMES_REF="brainclaw/evidence-plane"
 RUN set -eux; \
@@ -155,6 +161,10 @@ RUN set -eux; \
     echo "$HERMES_SHA" > /opt/hermes-agent.sha; \
     rm -rf /opt/hermes-agent/.git; \
     uv pip install --system -e "/opt/hermes-agent[acp]"; \
+    uv pip freeze --python /app/.venv/bin/python | grep -E '^(jsonschema|portalocker)==' \
+      | uv pip install --system -r -; \
+    PYTHONPATH=src python3 -c 'import importlib, sys; [importlib.import_module(name) for name in sys.argv[1:]]' \
+      $(grep -rhoE --include='*.py' 'from novelvideo[A-Za-z0-9_.]+ import' .hermes/plugins | cut -d' ' -f2 | sort -u); \
     python3 deploy/patch_hermes_acp_toolsets.py; \
     hermes --version; \
     python3 deploy/verify_hermes_fork.py; \
