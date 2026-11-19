@@ -40,6 +40,24 @@ PLAN_TOOL_NAMES = frozenset({
 })
 
 
+CANVAS_COMMAND_TOOL_NAMES = frozenset({
+    "freezone_emit_canvas_command",
+    "freezone_validate_canvas_commands",
+})
+
+
+def _command_with_type(command: Any) -> Any:
+    """The node action catalog calls a command's `type` its `command_type`; models copy that key."""
+    if (
+        not isinstance(command, dict)
+        or "type" in command
+        or not isinstance(command.get("command_type"), str)
+    ):
+        return command
+    renamed = dict(command)
+    return {"type": renamed.pop("command_type"), **renamed}
+
+
 def normalize_workflow_tool_arguments(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     """Repair only lossless intent serialization mistakes before strict validation.
 
@@ -50,6 +68,9 @@ def normalize_workflow_tool_arguments(name: str, arguments: dict[str, Any]) -> d
     """
     if name in PLAN_TOOL_NAMES and isinstance(arguments.get("plan"), dict):
         return _normalize_plan_node_stage(arguments)
+    if name in CANVAS_COMMAND_TOOL_NAMES and isinstance(arguments.get("commands"), list):
+        # A rejected call fails the whole turn even when the model's retry succeeds.
+        return {**arguments, "commands": [_command_with_type(c) for c in arguments["commands"]]}
     if name not in {"workflow_intent_compile", "freezone_prepare_workflow_draft"}:
         return arguments
     if not isinstance(arguments.get("intent"), dict):

@@ -426,3 +426,52 @@ async def test_node_diagnostics_keep_plan_level_errors(monkeypatch, adapter):
         message = payload["message"]
     assert "plan.skill: field is required" in message
     assert "plan.nodes[0].scene: field is not allowed for node_type videoNode" in message
+
+
+def test_command_type_from_the_action_catalog_is_read_as_type_without_mutation():
+    args = {"commands": [
+        {"command_type": "update_node_data", "node_id": "n1", "data": {"prompt": "cat"}},
+        {"type": "run_node_action", "action": "generate_image", "node_id": "n1"},
+        {"type": "select_nodes", "command_type": "delete_nodes", "node_ids": ["n1"]},
+        {"command_type": 7},
+        "not a command",
+    ]}
+    original = deepcopy(args)
+    result = normalize_workflow_tool_arguments("freezone_emit_canvas_command", args)
+    assert result["commands"] == [
+        {"type": "update_node_data", "node_id": "n1", "data": {"prompt": "cat"}},
+        {"type": "run_node_action", "action": "generate_image", "node_id": "n1"},
+        # An explicit type wins and the stray key is left for the schema to reject.
+        {"type": "select_nodes", "command_type": "delete_nodes", "node_ids": ["n1"]},
+        {"command_type": 7},
+        "not a command",
+    ]
+    assert args == original
+    assert normalize_workflow_tool_arguments("freezone_update_node_data", args) is args
+
+
+@pytest.mark.asyncio
+async def test_emit_boundary_accepts_the_catalog_key_and_still_rejects_a_missing_type(monkeypatch):
+    import json
+    from novelvideo.chat import dramaclaw_mcp
+
+    monkeypatch.setenv("DRAMACLAW_TOOL_MODE", "freezone_canvas")
+    monkeypatch.setenv("DRAMACLAW_PROJECT_ID", "project-a")
+    name = "freezone_emit_canvas_command"
+    schema = dramaclaw_mcp._agent_tools()[name][0]
+    seen = []
+
+    def handler(args):
+        seen.append(args["commands"])
+        return json.dumps({"ok": False, "status": "sentinel", "error": "handler reached"})
+
+    monkeypatch.setattr(dramaclaw_mcp, "_agent_tools", lambda: {name: (schema, handler)})
+
+    await dramaclaw_mcp.call_tool(name, {"commands": [
+        {"command_type": "update_node_data", "node_id": "n1", "data": {"prompt": "cat"}},
+    ]})
+    assert seen == [[{"type": "update_node_data", "node_id": "n1", "data": {"prompt": "cat"}}]]
+
+    result = await dramaclaw_mcp.call_tool(name, {"commands": [{"node_id": "n1", "data": {}}]})
+    assert len(seen) == 1
+    assert json.loads(result.content[0].text)["error"] == "tool_arguments_invalid"
