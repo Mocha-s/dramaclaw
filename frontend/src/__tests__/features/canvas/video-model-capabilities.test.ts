@@ -5,7 +5,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import type { VideoGenMode } from "@/features/canvas/domain/canvasNodes";
-import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
+import {
+  FREEZONE_VIDEO_RESOLUTIONS,
+  normalizeVideoQuality,
+} from "@/features/canvas/domain/freezoneGenerationResolutions";
 import { qualityToResolution } from "@/features/canvas/nodes/VideoNode";
 import {
   audioReferenceDurationRejection,
@@ -59,6 +62,26 @@ describe("Canvas video generation resolution contract", () => {
   it("exposes every global resolution and serializes the selected tier unchanged", () => {
     expect(FREEZONE_VIDEO_RESOLUTIONS).toEqual(["480p", "720p", "768p", "1080p", "2k", "4k"]);
     expect(qualityToResolution("4k")).toBe("4k");
+  });
+
+  it("keeps a typed-in resolution instead of resetting the node to 720p", () => {
+    expect(normalizeVideoQuality("540p", FREEZONE_VIDEO_RESOLUTIONS)).toBe("540p");
+    expect(normalizeVideoQuality("1280x720", FREEZONE_VIDEO_RESOLUTIONS)).toBe("1280x720");
+    expect(normalizeVideoQuality("720P", FREEZONE_VIDEO_RESOLUTIONS)).toBe("720p");
+    expect(normalizeVideoQuality("ultra", FREEZONE_VIDEO_RESOLUTIONS)).toBe("720p");
+    expect(normalizeVideoQuality(undefined, FREEZONE_VIDEO_RESOLUTIONS)).toBe("720p");
+    // The backend lower-cases before matching, so a stored "540P" is valid too.
+    expect(normalizeVideoQuality("540P", FREEZONE_VIDEO_RESOLUTIONS)).toBe("540P");
+  });
+
+  it("reads the node's tier through the assistant approval card's model-scoped options", () => {
+    const approvalOptions = ["480P", "720P", "1080P"];
+    expect(normalizeVideoQuality("1080p", approvalOptions)).toBe("1080P");
+    expect(normalizeVideoQuality("540p", approvalOptions)).toBe("540p");
+    expect(normalizeVideoQuality(undefined, approvalOptions)).toBe("720P");
+    // A public tier the model does not offer is not a typed-in value: it falls back.
+    expect(normalizeVideoQuality("720P", ["480P"])).toBe("480P");
+    expect(normalizeVideoQuality("2k", approvalOptions)).toBe("720P");
   });
 });
 

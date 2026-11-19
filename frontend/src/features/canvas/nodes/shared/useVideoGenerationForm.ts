@@ -116,7 +116,10 @@ import { writeLastVideoModel } from "@/features/canvas/domain/lastVideoModel";
 import { useGenerationCreditCost } from "@/lib/queries/generation-credit-cost";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { filterMediaModelParamsForMode } from "@/features/canvas/domain/mediaModelParameters";
-import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
+import {
+  FREEZONE_VIDEO_RESOLUTIONS,
+  normalizeVideoQuality,
+} from "@/features/canvas/domain/freezoneGenerationResolutions";
 
 // Generated-video resolution is global; other capabilities remain model-scoped.
 const SCENE_OPTIMIZE_OPTIONS: ReadonlyArray<Seedance2SceneOptimize> = ["anime", "realistic"];
@@ -139,20 +142,6 @@ function videoQualityOptionsForModel(
   _model: { resolutionOptions?: string[] } | null | undefined,
 ): readonly VideoGenQuality[] {
   return FREEZONE_VIDEO_RESOLUTIONS as readonly VideoGenQuality[];
-}
-
-// 节点上存着的旧值可能是 "720P"，目录里现在写的是 "720p"：大小写不敏感地对上，
-// 别把用户选过的档位当非法值重置掉。
-function normalizeVideoQuality(
-  value: VideoGenQuality | undefined,
-  options: readonly VideoGenQuality[],
-): VideoGenQuality {
-  const configured = value
-    ? options.find((option) => option.toLowerCase() === value.toLowerCase())
-    : undefined;
-  const fallback =
-    options.find((option) => option.toLowerCase() === "720p") ?? options[0] ?? "720p";
-  return configured ?? fallback;
 }
 
 // 素材守卫两层叠加：先是模型能力（Seedance 1.x 只吃 1 张图之类，写死在能力模块

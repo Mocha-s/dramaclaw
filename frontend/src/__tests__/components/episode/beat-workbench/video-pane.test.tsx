@@ -1147,7 +1147,7 @@ describe("VideoPane Seedance2 inspector", () => {
     });
 
     await user.click(screen.getByRole("combobox", { name: "分辨率" }));
-    expect(screen.queryByRole("option", { name: "480p" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "480p" })).toBeInTheDocument();
     expect(await screen.findByRole("option", { name: "720p" })).toBeInTheDocument();
     expect(await screen.findByRole("option", { name: "768p" })).toBeInTheDocument();
     expect(await screen.findByRole("option", { name: "1080p" })).toBeInTheDocument();
@@ -1162,6 +1162,7 @@ describe("VideoPane Seedance2 inspector", () => {
     };
 
     expect(videoResolutionOptionsForBackend(backend.value, backend)).toEqual([
+      "480p",
       "720p",
       "768p",
       "1080p",
@@ -1214,7 +1215,7 @@ describe("VideoPane Seedance2 inspector", () => {
     );
     await user.click(screen.getByLabelText("分辨率"));
     expect(await screen.findByRole("option", { name: "720p" })).toBeInTheDocument();
-    expect(screen.queryByRole("option", { name: "480p" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "480p" })).toBeInTheDocument();
     expect(await screen.findByRole("option", { name: "768p" })).toBeInTheDocument();
     expect(await screen.findByRole("option", { name: "1080p" })).toBeInTheDocument();
     expect(await screen.findByRole("option", { name: "2k" })).toBeInTheDocument();

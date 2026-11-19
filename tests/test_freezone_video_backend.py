@@ -979,3 +979,72 @@ def test_pixel_size_is_replaced_by_resolution_and_ratio():
     legacy = G._without_pixel_size(
         {"size": "1366x768", "metadata": {"ratio": "16:9"}}, "768p", modern=False)
     assert legacy == {"metadata": {"ratio": "16:9", "resolution": "768p"}}
+
+
+def test_both_upstream_wordings_for_a_refused_pixel_size_are_recognised():
+    from novelvideo.generators.video_generator import NewApiVideoGenerator as G
+
+    assert G._rejects_pixel_size(RuntimeError(
+        'HTTP 400 - unsupported MegaAi size "1366x768"; use resolution and ratio'))
+    assert G._rejects_pixel_size(RuntimeError(
+        'HTTP 400 - {"error":{"message":"size is not supported by /v1/videos"}}'))
+    assert not G._rejects_pixel_size(RuntimeError("HTTP 400 - duration is not supported"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("refusal", [
+    'HTTP 400 - unsupported MegaAi size "1280x720"; use resolution and ratio',
+    'HTTP 400 - {"error":{"message":"size is not supported by /v1/videos"}}',
+])
+async def test_a_refused_pixel_size_is_resent_once_without_it(monkeypatch, tmp_path, refusal):
+    from novelvideo.generators import video_generator
+    from novelvideo.ports.local.usage import NoOpUsageMeter
+
+    monkeypatch.setattr(video_generator, "get_usage_meter", NoOpUsageMeter)
+    generator = video_generator.NewApiVideoGenerator(
+        api_key="test-gateway-key", endpoint="https://gateway.test/v1",
+        model="video-test", resolution="540p",
+    )
+    sent = []
+
+    async def post(_url, payload, **_kwargs):
+        sent.append(payload)
+        if len(sent) == 1:
+            raise video_generator.NewApiVideoError(refusal)
+        return {}  # no task id: the run stops here, after the resend
+
+    monkeypatch.setattr(generator, "_post_json", post)
+    await generator.generate(
+        prompt="a landscape", image_path="", output_path=str(tmp_path / "video.mp4"),
+        aspect_ratio="16:9",
+    )
+
+    assert [payload.get("size") for payload in sent] == ["960x540", None]
+    resent = {**sent[1], **(sent[1].get("metadata") or {})}
+    assert resent["resolution"] == "540p"
+    assert "16:9" in (resent.get("aspect_ratio"), resent.get("ratio"))
+
+
+@pytest.mark.asyncio
+async def test_other_submit_errors_are_not_resent(monkeypatch, tmp_path):
+    from novelvideo.generators import video_generator
+    from novelvideo.ports.local.usage import NoOpUsageMeter
+
+    monkeypatch.setattr(video_generator, "get_usage_meter", NoOpUsageMeter)
+    generator = video_generator.NewApiVideoGenerator(
+        api_key="test-gateway-key", endpoint="https://gateway.test/v1",
+        model="video-test", resolution="540p",
+    )
+    sent = []
+
+    async def post(_url, payload, **_kwargs):
+        sent.append(payload)
+        raise video_generator.NewApiVideoError("HTTP 400 - duration is not supported")
+
+    monkeypatch.setattr(generator, "_post_json", post)
+    await generator.generate(
+        prompt="a landscape", image_path="", output_path=str(tmp_path / "video.mp4"),
+        aspect_ratio="16:9",
+    )
+
+    assert len(sent) == 1

@@ -101,7 +101,10 @@ import {
   type VideoEmptyStateCtaMode,
 } from "@/features/canvas/nodes/shared/videoModelCapabilities";
 import { filterMediaModelParamsForMode } from "@/features/canvas/domain/mediaModelParameters";
-import { FREEZONE_VIDEO_RESOLUTIONS } from "@/features/canvas/domain/freezoneGenerationResolutions";
+import {
+  FREEZONE_VIDEO_RESOLUTIONS,
+  normalizeVideoQuality,
+} from "@/features/canvas/domain/freezoneGenerationResolutions";
 import {
   VIDEO_GENERATION_ASPECT_RATIOS,
   resolveImageDisplayUrl,
@@ -365,18 +368,6 @@ function videoQualityOptionsForModel(
   _model: { resolutionOptions?: string[] } | null | undefined,
 ): readonly VideoGenQuality[] {
   return FREEZONE_VIDEO_RESOLUTIONS as readonly VideoGenQuality[];
-}
-
-function normalizeVideoQuality(
-  value: VideoGenQuality | undefined,
-  options: readonly VideoGenQuality[],
-): VideoGenQuality {
-  const configured = value
-    ? options.find((option) => option.toLowerCase() === value.toLowerCase())
-    : undefined;
-  const fallback =
-    options.find((option) => option.toLowerCase() === "720p") ?? options[0] ?? "720p";
-  return configured ?? fallback;
 }
 
 function videoDurationBoundsForModel(

@@ -169,6 +169,7 @@ import {
   type CanvasNodeType,
   type VideoGenQuality,
 } from "@/features/canvas/domain/canvasNodes";
+import { normalizeVideoQuality } from "@/features/canvas/domain/freezoneGenerationResolutions";
 import { getDownstreamSpawnTypes } from "@/features/canvas/domain/nodeRegistry";
 import { VIDEO_GENERATION_ASPECT_RATIOS } from "@/features/canvas/application/imageData";
 import {
@@ -2643,10 +2644,8 @@ function normalizeVideoQualityForApproval(
   value: unknown,
   options: readonly VideoGenQuality[],
 ): VideoGenQuality {
-  const fallback = options.includes("720P") ? "720P" : options[0] ?? "720P";
-  return typeof value === "string" && options.includes(value as VideoGenQuality)
-    ? (value as VideoGenQuality)
-    : fallback;
+  // The node stores "1080p" or a typed-in tier; the card's own options are upper case.
+  return normalizeVideoQuality(typeof value === "string" ? value : undefined, options);
 }
 
 function videoDurationBoundsForApproval(

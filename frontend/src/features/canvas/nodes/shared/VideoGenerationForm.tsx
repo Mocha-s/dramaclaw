@@ -34,6 +34,7 @@ import type {
   VideoGenQuality,
   VideoNodeData,
 } from "@/features/canvas/domain/canvasNodes";
+import { CUSTOM_VIDEO_RESOLUTION_PATTERN } from "@/features/canvas/domain/freezoneGenerationResolutions";
 import { resolveImageDisplayUrl } from "@/features/canvas/application/imageData";
 import type { UpstreamContent } from "@/features/canvas/application/ports";
 import type {
@@ -445,7 +446,7 @@ export function CustomQualityInput({
       key={preset ? "preset" : quality}
       onBlur={(event) => {
         const value = event.target.value.trim().toLowerCase();
-        if (/^(\d{3,4}p|\dk|\d{3,4}x\d{3,4})$/.test(value)) onChange(value);
+        if (CUSTOM_VIDEO_RESOLUTION_PATTERN.test(value)) onChange(value);
         else event.target.value = preset ? "" : quality;
       }}
       onKeyDown={(event) => {

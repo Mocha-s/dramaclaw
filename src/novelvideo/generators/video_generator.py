@@ -2693,6 +2693,14 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             payload.pop("metadata", None)
 
     @staticmethod
+    def _rejects_pixel_size(error: object) -> bool:
+        """Whether a submit error says the upstream wants no pixel size at all."""
+        # shortcut: matches upstream wording, so an unrelated "... size is not supported"
+        # costs one extra rejected request; match an error code once the gateway sends one.
+        text = str(error)
+        return "use resolution and ratio" in text or "size is not supported" in text
+
+    @staticmethod
     def _without_pixel_size(
         payload: dict[str, object], resolution: object, *, modern: bool
     ) -> dict[str, object]:
@@ -3756,9 +3764,10 @@ class NewApiVideoGenerator(VideoGeneratorBase):
             try:
                 submitted = await self._post_json(submit_url, payload, **submit_kwargs)
             except Exception as exc:
-                # Some upstream adapters (MiniMax) reject pixel sizes and say so; the
-                # request was not accepted, so resend it once as resolution + ratio.
-                if "use resolution and ratio" not in str(exc) or "size" not in payload:
+                # Some upstream adapters (MiniMax, the /v1/videos gateway for some
+                # channels) reject pixel sizes and say so; the request was not
+                # accepted, so resend it once as resolution + ratio.
+                if "size" not in payload or not self._rejects_pixel_size(exc):
                     raise
                 payload = self._without_pixel_size(
                     payload, request_resolution, modern=is_modern_video_endpoint
