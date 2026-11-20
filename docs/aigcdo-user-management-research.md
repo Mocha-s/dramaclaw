@@ -638,6 +638,9 @@ Hermes 进程身份/专属模型配置与操作系统挂载隔离也仍需完成
 - **对话助手在生产上自动停用**：该机 `kernel.apparmor_restrict_unprivileged_userns=1`（Ubuntu 24.04 默认），
   bubblewrap 报 `setting up uid map: Permission denied`。按设计失败即关闭，其余功能不受影响。
   启用需要在宿主机把该 sysctl 设为 0（会放宽整台机器的限制，待用户决定）。
+- 2026-11-19 服务器换了公网 IP。厂商的换 IP 脚本（cloud-init 执行）把所有网卡的地址清空，
+  docker 网桥的网关地址也没了：容器仍是 healthy，但宿主机访问不到容器、容器也出不了网，整站超时约 2.5 小时。
+  把 `docker network inspect` 里的网关地址加回网桥后恢复，没有重启容器。再换 IP 时先看 `ip -4 addr` 里网桥有没有地址。
 
 ### 管理员、账单积分化、品牌清洗（2026-11-17 至 11-18，已部署 `2dc984a9`）
 
@@ -651,6 +654,38 @@ Hermes 进程身份/专属模型配置与操作系统挂载隔离也仍需完成
 - 登录页保留布局，去掉原项目 GitHub 入口，商务二维码为占位图；帮助链接暂指 `https://api.aigcdo.top`。
 - 测试：后端全量 8016 通过（13 项失败为 HEAD 基线）；前端全量 5157 通过。人机验证临时关闭期间，用测试账号在预览站点真实登录验证了管理员入口与账户页。
 - 未做：独立复核（子任务随会话中断）；充值故障待用户复测；`/download` 页与旧登录舞台组件仍有原项目链接；登录页视频仍走原项目 CDN。
+
+### 画布助手读写画布失败（2026-11-18 至 11-20，已部署 `e713c060`）
+
+现象：生产上“智核”能对话，改节点时回复“画布操作当前报错”。Hermes 会话库里的工具结果是
+`ModuleNotFoundError: No module named 'ulid'`，排查时库里的 4 次画布写入调用全部失败。
+
+原因（镜像从首次部署起就是这样，与 11-18 的几次热更新无关：`3bd47756` 镜像实测同样缺包）：
+
+- 画布插件 `.hermes/plugins/freezone` 跑在 Hermes 的解释器里（镜像中是系统 `/usr/local/bin/python`），
+  不是 API 的虚拟环境。那里没有 `jsonschema` 和 `portalocker`，插件开头的导入被 `try/except` 吞掉，
+  工作流目录和画布桥接都不可用。11-17 走查时没确认的“无法读取画布状态”就是它。
+- 写画布时还要导入 `workflow_preflight`，它为了一个常量导入 `novelvideo.api.schemas`，
+  连带加载整个 API 包，在 `python-ulid` 处失败。
+- 单机模式默认用 Codex，工具由 API 虚拟环境里的 MCP 服务提供，所以本机没有这个问题。
+
+修复：常量挪到 `official_defaults.py`，`workflow_preflight` 不再碰 API 包；`Dockerfile` 和
+`scripts/setup-hermes.sh` 按应用锁定的版本把 `jsonschema`、`portalocker` 装进 Hermes 的解释器，
+镜像构建时对插件的导入做一次检查。`tests/test_local_runtime_dependency_isolation.py`
+模拟 Hermes 解释器里有的包，防止插件的导入闭包再引入别的依赖（只覆盖导入期，函数内的延迟导入不在内）。
+
+同一批还修了两个与多用户无关的问题：助手把命令的 `type` 写成 `command_type` 时整轮被判失败
+（单机 Codex 下表现为“画布操作未完成：tool_arguments_invalid”）；视频节点手填的清晰度被改回 720p。
+
+验证：在部署镜像里以 AIGCDO 模式、按用户沙箱启动 Hermes 的解释器，真实执行
+`freezone_update_node_data` 的处理函数，API 侧取到待执行命令并回写回执，工具返回 `applied`；
+同一探针在现行镜像上复现 `No module named 'ulid'`。后端全量 8038 通过，14 项失败中 13 项是 HEAD 基线，
+1 项（`test_director_auto`）是定时偶发、单跑通过；前端全量 5155 通过，另 3 项是 11-18 加 480p 档位时
+漏改的断言，已修。
+
+生产已部署 `e713c060`（叠层镜像，回滚把 `CANVAS_VERSION` 改回 `a6b2ca47`），同一探针在生产沙箱里通过。
+
+未做：没有用真实账号在浏览器里跑一轮助手改节点（测试账号的会话已过期，重新登录要过人机验证）。
 
 ### 剩余实施清单（接续顺序）
 
